@@ -22,7 +22,11 @@ jobs:
         run: |
           STORY_NUMBER=${{ github.event.issue.number }}
           STORY_TITLE="${{ github.event.issue.title }}"
-          EPIC_NUMBER="${{ github.event.inputs.epic_number || github.event.issue.body | match('Epic: #([0-9]+)') }}"
+          EPIC_NUMBER="${{ github.event.inputs.epic_number }}"
+          if [ -z "$EPIC_NUMBER" ]; then
+            EPIC_NUMBER=$(echo "${{ github.event.issue.body }}" | grep -oE 'Epic: #[0-9]+' | grep -oE '[0-9]+')
+          fi
+
 
           if [ -z "$EPIC_NUMBER" ]; then
             echo "No Epic number found; exiting."
