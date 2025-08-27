@@ -1,0 +1,68 @@
+name: Update Epic Stories
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened]
+
+jobs:
+  update-epic:
+    if: contains(github.event.issue.labels.*.name, 'story')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Set up GitHub CLI
+        uses: actions/setup-gh@v2
+
+      - name: Update Epic checklist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STORY_NUMBER=${{ github.event.issue.number }}
+          STORY_TITLE="${{ github.event.issue.title }}"
+          EPIC_NUMBER="${{ github.event.inputs.epic_number }}"
+          if [ -z "$EPIC_NUMBER" ]; then
+            EPIC_NUMBER=$(echo "${{ github.event.issue.body }}" | grep -oE 'Epic: #[0-9]+' | grep -oE '[0-9]+')
+          fi
+
+
+          if [ -z "$EPIC_NUMBER" ]; then
+            echo "No Epic number found; exiting."
+            exit 0
+          fi
+
+          echo "Updating Epic #$EPIC_NUMBER with story #$STORY_NUMBER..."
+
+          # Fetch all stories linked to this Epic
+          STORY_ISSUES=$(gh issue list --label story --state all --json number,title,state,body --jq \
+            ".[] | select(.body | contains(\"Epic: #$EPIC_NUMBER\")) | {number, title, state}")
+
+          # Build checklist
+          CHECKLIST=""
+          echo "$STORY_ISSUES" | jq -c '.' | while read -r ISSUE; do
+            NUM=$(echo "$ISSUE" | jq -r .number)
+            TITLE=$(echo "$ISSUE" | jq -r .title)
+            STATE=$(echo "$ISSUE" | jq -r .state)
+            if [ "$STATE" = "closed" ]; then
+              CHECKLIST+="- [x] #$NUM $TITLE"$'\n'
+            else
+              CHECKLIST+="- [ ] #$NUM $TITLE"$'\n'
+            fi
+          done
+
+          # Fetch Epic body
+          EPIC_BODY=$(gh issue view "$EPIC_NUMBER" --json body -q ".body")
+
+          # Replace or add checklist section
+          if echo "$EPIC_BODY" | grep -q "## Stories"; then
+            NEW_BODY=$(echo "$EPIC_BODY" | sed "/## Stories/,\$c## Stories\n$CHECKLIST")
+          else
+            NEW_BODY="$EPIC_BODY\n\n## Stories\n$CHECKLIST"
+          fi
+
+          # Update Epic issue body
+          gh issue edit "$EPIC_NUMBER" --body "$NEW_BODY"
+
+          echo "Epic #$EPIC_NUMBER checklist updated."

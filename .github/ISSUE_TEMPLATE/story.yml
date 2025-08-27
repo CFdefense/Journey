@@ -1,0 +1,43 @@
+name: Story
+description: Create a user story.
+title: "[STORY] <Story title>"
+labels: ["story"]
+projects: ["CFdefense/2"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature or requirement from a user perspective.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what must be true for this story to be considered complete.
+      placeholder: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Criteria 3
+    validations:
+      required: true
+  - type: textarea
+    id: dev-notes
+    attributes:
+      label: Developer Notes
+      description: Additional notes and considerations for implementation
+    validations:
+      required: true
+  - type: input
+    id: epic_number
+    attributes:
+      label: Parent Epic Number
+      description: Enter the number of the Epic this story belongs to (e.g., 100)
+      placeholder: 100
+  - type: textarea
+    id: epic_reference
+    attributes:
+      label: Parent Epic
+      description: This field will automatically link to the parent Epic.
+      default: "Epic: #${{ epic_number }}"

@@ -1,0 +1,31 @@
+name: Miscellaneous
+description: Create a miscellaneous issue.
+title: "[MISC] <Issue title>"
+labels: ["misc"]
+projects: ["CFdefense/2"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature or requirement from a user perspective.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what must be true for this story to be considered complete.
+      placeholder: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Criteria 3
+    validations:
+      required: true
+  - type: textarea
+    id: dev-notes
+    attributes:
+      label: Developer Notes
+      description: Additional notes and considerations for implementation
+    validations:
+      required: true
