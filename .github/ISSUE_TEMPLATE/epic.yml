@@ -3,6 +3,8 @@ description: Create an epic.
 title: "[EPIC] <Epic title>"
 labels: ["epic"]
 projects: ["CFdefense/2"]
+assignees:
+  - gabrielle-knapp1
 body:
   - type: textarea
     id: description
