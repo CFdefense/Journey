@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Set up GitHub CLI
-        uses: actions/setup-gh@v2
+        uses: actions4gh/setup-gh@v1.0.2
 
       - name: Update Epic checklist
         env:
@@ -22,11 +22,7 @@ jobs:
         run: |
           STORY_NUMBER=${{ github.event.issue.number }}
           STORY_TITLE="${{ github.event.issue.title }}"
-          EPIC_NUMBER="${{ github.event.inputs.epic_number }}"
-          if [ -z "$EPIC_NUMBER" ]; then
-            EPIC_NUMBER=$(echo "${{ github.event.issue.body }}" | grep -oE 'Epic: #[0-9]+' | grep -oE '[0-9]+')
-          fi
-
+          EPIC_NUMBER=$(echo "${{ github.event.issue.body }}" | grep -oE '#[0-9]+' | tail -n1 | grep -oE '[0-9]+')
 
           if [ -z "$EPIC_NUMBER" ]; then
             echo "No Epic number found; exiting."
@@ -36,12 +32,18 @@ jobs:
           echo "Updating Epic #$EPIC_NUMBER with story #$STORY_NUMBER..."
 
           # Fetch all stories linked to this Epic
-          STORY_ISSUES=$(gh issue list --label story --state all --json number,title,state,body --jq \
-            ".[] | select(.body | contains(\"Epic: #$EPIC_NUMBER\")) | {number, title, state}")
+          STORY_ISSUES=$(gh issue list --label story --state all \
+            --json number,title,state,body --jq \
+            ".[]
+             | { number, title, state,
+                 epic: (.body
+                        | capture(\".*#(?<num>[0-9]+)\"; \"m\")?
+                        | .num ) }
+             | select(.epic == \"$EPIC_NUMBER\")")
 
           # Build checklist
           CHECKLIST=""
-          echo "$STORY_ISSUES" | jq -c '.' | while read -r ISSUE; do
+          while read -r ISSUE; do
             NUM=$(echo "$ISSUE" | jq -r .number)
             TITLE=$(echo "$ISSUE" | jq -r .title)
             STATE=$(echo "$ISSUE" | jq -r .state)
@@ -50,7 +52,7 @@ jobs:
             else
               CHECKLIST+="- [ ] #$NUM $TITLE"$'\n'
             fi
-          done
+          done < <(echo "$STORY_ISSUES" | jq -c '.')
 
           # Fetch Epic body
           EPIC_BODY=$(gh issue view "$EPIC_NUMBER" --json body -q ".body")
@@ -59,7 +61,7 @@ jobs:
           if echo "$EPIC_BODY" | grep -q "## Stories"; then
             NEW_BODY=$(echo "$EPIC_BODY" | sed "/## Stories/,\$c## Stories\n$CHECKLIST")
           else
-            NEW_BODY="$EPIC_BODY\n\n## Stories\n$CHECKLIST"
+            NEW_BODY="$EPIC_BODY"$'\n\n'"## Stories"$'\n'"$CHECKLIST"
           fi
 
           # Update Epic issue body

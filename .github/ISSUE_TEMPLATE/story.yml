@@ -26,18 +26,14 @@ body:
     id: dev-notes
     attributes:
       label: Developer Notes
-      description: Additional notes and considerations for implementation
+      description: (Optional) Additional notes and considerations for implementation
     validations:
-      required: true
+      required: false
   - type: input
     id: epic_number
     attributes:
       label: Parent Epic Number
-      description: Enter the number of the Epic this story belongs to (e.g., 100)
-      placeholder: 100
-  - type: textarea
-    id: epic_reference
-    attributes:
-      label: Parent Epic
-      description: This field will automatically link to the parent Epic.
-      default: "Epic: #${{ epic_number }}"
+      description: Enter the number of the Epic this story belongs to (e.g., #100)
+      placeholder: #100
+    validations:
+      required: true
