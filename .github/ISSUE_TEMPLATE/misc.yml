@@ -26,6 +26,6 @@ body:
     id: dev-notes
     attributes:
       label: Developer Notes
-      description: Additional notes and considerations for implementation
+      description: (Optional) Additional notes and considerations for implementation
     validations:
-      required: true
+      required: false

@@ -3,6 +3,8 @@ description: Create an epic.
 title: "[EPIC] <Epic title>"
 labels: ["epic"]
 projects: ["CFdefense/2"]
+assignees:
+  - gabrielle-knapp1
 body:
   - type: textarea
     id: description
@@ -26,12 +28,14 @@ body:
     id: dev-notes
     attributes:
       label: Developer Notes
-      description: Additional notes and considerations for implementation
+      description: (Optional)Additional notes and considerations for implementation
     validations:
-      required: true
+      required: false
   - type: textarea
     id: stories
     attributes:
       label: Stories
       description: Add related story issue numbers below. This will be auto-updated as stories are added and link to this epic.
       placeholder: Stories to be added...
+    validations:
+      required: false
