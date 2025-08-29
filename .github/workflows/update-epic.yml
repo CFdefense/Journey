@@ -2,7 +2,7 @@ name: Update Epic Stories
 
 on:
   issues:
-    types: [opened, edited, closed, reopened]
+    types: [opened, edited]
 
 jobs:
   update-epic:
@@ -58,10 +58,10 @@ jobs:
           EPIC_BODY=$(gh issue view "$EPIC_NUMBER" --json body -q ".body")
 
           # Replace or add checklist section
-          if echo "$EPIC_BODY" | grep -q "## Stories"; then
-            NEW_BODY=$(echo "$EPIC_BODY" | sed "/## Stories/,\$c## Stories\n$CHECKLIST")
+          if echo "$EPIC_BODY" | grep -q "### Stories"; then
+            NEW_BODY=$(echo "$EPIC_BODY" | sed "/### Stories/,\$c### Stories\n$CHECKLIST")
           else
-            NEW_BODY="$EPIC_BODY"$'\n\n'"## Stories"$'\n'"$CHECKLIST"
+            NEW_BODY="$EPIC_BODY"$'\n\n'"### Stories"$'\n'"$CHECKLIST"
           fi
 
           # Update Epic issue body

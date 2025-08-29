@@ -1,6 +1,6 @@
 name: Story
 description: Create a user story.
-title: "[STORY] <Story title>"
+title: "[STORY] Title"
 labels: ["story"]
 projects: ["CFdefense/2"]
 body:
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Acceptance Criteria
       description: Define what must be true for this story to be considered complete.
-      placeholder: |
+      value: |
         - [ ] Criteria 1
         - [ ] Criteria 2
         - [ ] Criteria 3
@@ -26,14 +26,14 @@ body:
     id: dev-notes
     attributes:
       label: Developer Notes
-      description: (Optional) Additional notes and considerations for implementation
+      description: (Optional) Additional notes, considerations, or specific details for implementation
     validations:
       required: false
   - type: input
     id: epic_number
     attributes:
       label: Parent Epic Number
-      description: Enter the number of the Epic this story belongs to (e.g., #100)
+      description: Enter the number of the Epic this story belongs to (e.g., #100; include pound symbol)
       placeholder: #100
     validations:
       required: true
