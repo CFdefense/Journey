@@ -3,7 +3,7 @@
 
 ## Related Issue(s)
 <!-- Link the issue(s) this PR addresses -->
-Closes #<issue-number>
+* #<issue-number>
 
 ## Testing
 <!-- Steps to verify this PR works as intended -->

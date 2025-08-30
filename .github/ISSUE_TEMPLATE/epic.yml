@@ -1,6 +1,6 @@
 name: Epic
 description: Create an epic.
-title: "[EPIC] <Epic title>"
+title: "[EPIC] Title"
 labels: ["epic"]
 projects: ["CFdefense/2"]
 assignees:
@@ -18,7 +18,7 @@ body:
     attributes:
       label: Acceptance Criteria
       description: Define what must be true for this epic to be considered complete.
-      placeholder: |
+      value: |
         - [ ] Criteria 1
         - [ ] Criteria 2
         - [ ] Criteria 3
@@ -28,7 +28,7 @@ body:
     id: dev-notes
     attributes:
       label: Developer Notes
-      description: (Optional)Additional notes and considerations for implementation
+      description: (Optional) Additional notes, considerations, or specific details for implementation
     validations:
       required: false
   - type: textarea
