@@ -31,11 +31,3 @@ body:
       description: (Optional) Additional notes, considerations, or specific details for implementation
     validations:
       required: false
-  - type: textarea
-    id: stories
-    attributes:
-      label: Stories
-      description: Add related story issue numbers below. This will be auto-updated as stories are added and link to this epic.
-      placeholder: Stories to be added...
-    validations:
-      required: false

@@ -29,11 +29,3 @@ body:
       description: (Optional) Additional notes, considerations, or specific details for implementation
     validations:
       required: false
-  - type: input
-    id: epic_number
-    attributes:
-      label: Parent Epic Number
-      description: Enter the number of the Epic this story belongs to (e.g., #100; include pound symbol)
-      placeholder: #100
-    validations:
-      required: true
