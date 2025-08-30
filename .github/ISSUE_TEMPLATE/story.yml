@@ -1,6 +1,6 @@
 name: Story
 description: Create a user story.
-title: "[STORY] Title"
+title: "[Epic Title] Title"
 labels: ["story"]
 projects: ["CFdefense/2"]
 body:
