@@ -22,21 +22,52 @@ jobs:
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
 
           # Fetch open issues and their ProjectV2 fields
-          ISSUES=$(gh api graphql --paginate -f query="
+          ISSUES=$(gh api graphql --paginate -f query='
           query {
-            repository(owner:\"CFdefense\", name:\"Capping2025\") {
+            repository(owner:"CFdefense", name:"Capping2025") {
               issues(first:100, states:OPEN) {
+                pageInfo {
+                  endCursor
+                  startCursor
+                  hasNextPage
+                  hasPreviousPage
+                }
                 nodes {
                   title
                   url
                   assignees(first:5) { nodes { login } }
                   projectItems(first:50) {
+                    pageInfo {
+                      endCursor
+                      startCursor
+                      hasNextPage
+                      hasPreviousPage
+                    }
                     nodes {
                       fieldValues(first:20) {
+                        pageInfo {
+                          endCursor
+                          startCursor
+                          hasNextPage
+                          hasPreviousPage
+                        }
                         nodes {
                           __typename
-                          ... on ProjectV2ItemFieldDateValue { date }
-                          field { name }
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field {
+                              __typename
+                              ... on ProjectV2Field {
+                                name
+                              }
+                              ... on ProjectV2IterationField {
+                                name
+                              }
+                              ... on ProjectV2SingleSelectField {
+                                name
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -44,7 +75,7 @@ jobs:
                 }
               }
             }
-          }" --jq '.data.repository.issues.nodes[]')
+          }' --jq '.data.repository.issues.nodes[]')
 
           # Extract Due Date field safely using jq
           ISSUES=$(echo "$ISSUES" | jq -c '
