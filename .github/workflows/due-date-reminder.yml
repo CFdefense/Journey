@@ -34,36 +34,33 @@ jobs:
                         nodes {
                           __typename
                           field { name }
-                          ... on ProjectV2ItemFieldDateValue { date }
+                          date  # safe to include; will be null for non-date types
                         }
                       }
                     }
                   }
                 }
-                pageInfo {
-                  hasNextPage
-                  endCursor
-                }
+                pageInfo { hasNextPage endCursor }
               }
             }
           }' --jq '.data.repository.issues.nodes[]')
 
           # Extract Due Date field safely using jq
           ISSUES=$(echo "$ISSUES" | jq -c '
-            {
-              title: .title,
-              url: .url,
-              assignees: (.assignees.nodes | map(.login)),
-              due: (
-                .projectItems.nodes
-                | map(.fieldValues.nodes
-                      | map(select(.__typename=="ProjectV2ItemFieldDateValue" and .field.name=="Due Date"))
-                      | .[0].date)
-                | map(select(. != null))
-                | .[0]
-              )
-            }
-            | select(.due != null)
+          {
+            title: .title,
+            url: .url,
+            assignees: (.assignees.nodes | map(.login)),
+            due: (
+              .projectItems.nodes
+              | map(.fieldValues.nodes
+                    | map(select(.__typename=="ProjectV2ItemFieldDateValue" and .field.name=="Due Date"))
+                    | .[0].date)
+              | map(select(. != null))
+              | .[0]
+            )
+          }
+          | select(.due != null)
           ')
 
           # Prepare embeds
