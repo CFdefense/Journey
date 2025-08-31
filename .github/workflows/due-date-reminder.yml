@@ -84,6 +84,9 @@ jobs:
             }
           }' --jq '.data.repository.issues.nodes[]')
 
+          echo "All issues
+          echo "$ISSUES" | jq
+
           # Extract Due Date field safely using jq
           ISSUES=$(echo "$ISSUES" | jq -c '
             {
