@@ -1,0 +1,98 @@
+name: Issue Due Date Reminder
+
+on:
+  schedule:
+    # switch these on November 2 at 2:00 am
+    - cron: "59 3 * * *"   # 3:59 UTC == 11:59 PM New York (DST)
+    # - cron: "59 4 * * *"   # 4:59 UTC == 11:59 PM New York (Standard Time)
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Send due reminders
+        run: |
+          NOW=$(date -u +%s)
+          TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
+
+          # Fetch all open issues with pagination
+          ISSUES=$(gh api graphql --paginate -f query='
+          query($endCursor: String) {
+            repository(owner:"CFdefense", name:"Capping2025") {
+              issues(first:100, after:$endCursor, states:OPEN) {
+                nodes {
+                  title
+                  url
+                  assignees(first:5) { nodes { login } }
+                  projectItems(first:50) {
+                    nodes {
+                      fieldValues(first:20) {
+                        nodes {
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field { name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+              }
+            }
+          }' --jq '.data.repository.issues.nodes[] |
+            {title, url, assignees: (.assignees.nodes | map(.login)), due: (.projectItems.nodes[].fieldValues.nodes[] | select(.field.name=="Due Date") | .date)}' |
+            jq -c 'select(.due != null)')
+
+          # Collect due-soon issues into embeds
+          EMBEDS="[]"
+          echo "$ISSUES" | while read issue; do
+            DUE=$(echo $issue | jq -r .due)
+            TITLE=$(echo $issue | jq -r .title)
+            URL=$(echo $issue | jq -r .url)
+            ASSIGNEES=$(echo $issue | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+
+            DUE_EPOCH=$(date -d "$DUE" +%s)
+            if [ $DUE_EPOCH -ge $NOW ] && [ $DUE_EPOCH -le $TWO_DAYS ]; then
+              echo "Queuing reminder for: $TITLE ($DUE)"
+              EMBEDS=$(echo "$EMBEDS" | jq \
+                --arg title "$TITLE" \
+                --arg url "$URL" \
+                --arg due "$DUE" \
+                --arg assignees "$ASSIGNEES" \
+                --argjson epoch $DUE_EPOCH \
+                '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+            fi
+          done
+
+          COUNT=$(echo "$EMBEDS" | jq 'length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "Sorting $COUNT reminders by due date..."
+            EMBEDS=$(echo "$EMBEDS" | jq 'sort_by(.epoch) | map(del(.epoch))')
+            HEADER="📢 $COUNT issue(s) due in the next 48 hours:"
+
+            # Break embeds into chunks of 10 (Discord limit)
+            CHUNKS=$(( (COUNT + 9) / 10 ))
+            for i in $(seq 0 $((CHUNKS-1))); do
+              START=$((i*10))
+              END=$((START+10))
+              SUBSET=$(echo "$EMBEDS" | jq ".[$START:$END]")
+
+              echo "Sending chunk $((i+1))/$CHUNKS..."
+              curl -H "Content-Type: application/json" \
+                -X POST \
+                -d "{\"content\": \"$HEADER\", \"embeds\": $SUBSET}" \
+                ${{ secrets.DISCORD_WEBHOOK }}
+            done
+          else
+            echo "No issues due soon. No message sent."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
