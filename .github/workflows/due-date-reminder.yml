@@ -33,26 +33,14 @@ jobs:
                       fieldValues(first:20) {
                         nodes {
                           __typename
-                          ... on ProjectV2ItemFieldDateValue {
-                            date
-                            field { name }
-                          }
-                          ... on ProjectV2ItemFieldTextValue {
-                            text
-                            field { name }
-                          }
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            field { name }
-                          }
+                          field { name }
+                          ... on ProjectV2ItemFieldDateValue { date }
+                          ... on ProjectV2ItemFieldTextValue { text }
+                          ... on ProjectV2ItemFieldSingleSelectValue { name }
                         }
                       }
                     }
                   }
-                }
-                pageInfo {
-                  hasNextPage
-                  endCursor
                 }
               }
             }
