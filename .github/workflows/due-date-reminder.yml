@@ -12,18 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Send due reminders
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
 
           # Fetch open issues and their ProjectV2 fields
-          ISSUES=$(gh api graphql --paginate -f query='
-          query($endCursor: String) {
-            repository(owner:"CFdefense", name:"Capping2025") {
-              issues(first:100, after:$endCursor, states:OPEN) {
+          ISSUES=$(gh api graphql --paginate -f query="
+          query {
+            repository(owner:\"CFdefense\", name:\"Capping2025\") {
+              issues(first:100, states:OPEN) {
                 nodes {
                   title
                   url
@@ -33,19 +35,16 @@ jobs:
                       fieldValues(first:20) {
                         nodes {
                           __typename
-                          ... on ProjectV2ItemFieldDateValue {
-                            date
-                          }
+                          ... on ProjectV2ItemFieldDateValue { date }
                           field { name }
                         }
                       }
                     }
                   }
                 }
-                pageInfo { hasNextPage endCursor }
               }
             }
-          }' --jq '.data.repository.issues.nodes[]')
+          }" --jq '.data.repository.issues.nodes[]')
 
           # Extract Due Date field safely using jq
           ISSUES=$(echo "$ISSUES" | jq -c '
@@ -107,5 +106,3 @@ jobs:
           else
             echo "No issues due soon. No message sent."
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
