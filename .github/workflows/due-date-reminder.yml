@@ -26,6 +26,8 @@ jobs:
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
 
+          echo "NOW: $NOW, TWO_DAYS: $TWO_DAYS"
+
           # Fetch open issues and their ProjectV2 fields
           ISSUES=$(gh api graphql --paginate -f query='
           query {
@@ -100,14 +102,19 @@ jobs:
             | select(.due != null)
           ')
 
+          echo "All issues with Due Date:"
+          echo "$ISSUES" | jq
+
           EMBEDS="[]"
-          echo "$ISSUES" | while read -r issue; do
+          for issue in $(echo "$ISSUES" | jq -c '.'); do
             DUE=$(echo "$issue" | jq -r .due)
             TITLE=$(echo "$issue" | jq -r .title)
             URL=$(echo "$issue" | jq -r .url)
             ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
 
-            DUE_EPOCH=$(date -d "$DUE" +%s)
+            echo "DUE raw: $DUE"
+            DUE_EPOCH=$(date -u -d "$DUE" +%s 2>/dev/null || echo "0")
+            echo "DUE epoch: $DUE_EPOCH"
             if [ "$DUE_EPOCH" -ge "$NOW" ] && [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
               echo "Queuing reminder for: $TITLE ($DUE)"
               EMBEDS=$(echo "$EMBEDS" | jq \
@@ -117,6 +124,8 @@ jobs:
                 --arg assignees "$ASSIGNEES" \
                 --argjson epoch "$DUE_EPOCH" \
                 '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+            else
+                echo "❌ Skipping: $TITLE ($DUE)"
             fi
           done
 
