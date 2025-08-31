@@ -31,10 +31,12 @@ jobs:
                   projectItems(first:50) {
                     nodes {
                       fieldValues(first:20) {
-                        nodes {
+                      nodes {
                           __typename
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                          }
                           field { name }
-                          date  # safe to include; will be null for non-date types
                         }
                       }
                     }
