@@ -32,8 +32,17 @@ jobs:
                     nodes {
                       fieldValues(first:20) {
                         nodes {
+                          __typename
                           ... on ProjectV2ItemFieldDateValue {
                             date
+                            field { name }
+                          }
+                          ... on ProjectV2ItemFieldTextValue {
+                            text
+                            field { name }
+                          }
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
                             field { name }
                           }
                         }
@@ -47,9 +56,24 @@ jobs:
                 }
               }
             }
-          }' --jq '.data.repository.issues.nodes[] |
-            {title, url, assignees: (.assignees.nodes | map(.login)), due: (.projectItems.nodes[].fieldValues.nodes[] | select(.field.name=="Due Date") | .date)}' |
-            jq -c 'select(.due != null)')
+          }' --jq '.data.repository.issues.nodes[]')
+
+          ISSUES=$(echo "$ISSUES" | jq -c '
+          {
+            title: .title,
+            url: .url,
+            assignees: (.assignees.nodes | map(.login)),
+            due: (
+              .projectItems.nodes
+              | map(.fieldValues.nodes
+                    | map(select(.__typename=="ProjectV2ItemFieldDateValue" and .field.name=="Due Date"))
+                    | .[0].date)
+              | map(select(. != null))
+              | .[0]
+            )
+          }
+          | select(.due != null)
+          ')
 
           # Collect due-soon issues into embeds
           EMBEDS="[]"
