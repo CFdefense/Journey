@@ -19,7 +19,7 @@ jobs:
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
 
-          # Fetch all open issues with pagination
+          # Fetch all open issues, get only __typename and field.name for ProjectV2 fields
           ISSUES=$(gh api graphql --paginate -f query='
           query($endCursor: String) {
             repository(owner:"CFdefense", name:"Capping2025") {
@@ -35,35 +35,38 @@ jobs:
                           __typename
                           field { name }
                           ... on ProjectV2ItemFieldDateValue { date }
-                          ... on ProjectV2ItemFieldTextValue { text }
-                          ... on ProjectV2ItemFieldSingleSelectValue { name }
                         }
                       }
                     }
                   }
                 }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
               }
             }
           }' --jq '.data.repository.issues.nodes[]')
 
+          # Extract Due Date field safely using jq
           ISSUES=$(echo "$ISSUES" | jq -c '
-          {
-            title: .title,
-            url: .url,
-            assignees: (.assignees.nodes | map(.login)),
-            due: (
-              .projectItems.nodes
-              | map(.fieldValues.nodes
-                    | map(select(.__typename=="ProjectV2ItemFieldDateValue" and .field.name=="Due Date"))
-                    | .[0].date)
-              | map(select(. != null))
-              | .[0]
-            )
-          }
-          | select(.due != null)
+            {
+              title: .title,
+              url: .url,
+              assignees: (.assignees.nodes | map(.login)),
+              due: (
+                .projectItems.nodes
+                | map(.fieldValues.nodes
+                      | map(select(.__typename=="ProjectV2ItemFieldDateValue" and .field.name=="Due Date"))
+                      | .[0].date)
+                | map(select(. != null))
+                | .[0]
+              )
+            }
+            | select(.due != null)
           ')
 
-          # Collect due-soon issues into embeds
+          # Prepare embeds
           EMBEDS="[]"
           echo "$ISSUES" | while read issue; do
             DUE=$(echo $issue | jq -r .due)
