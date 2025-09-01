@@ -69,50 +69,52 @@ jobs:
           echo "Issues with due date:"
           echo "$ISSUES" | jq
 
-          EMBEDS="[]"
-          echo "$ISSUES" | jq -c '.[]' | while read -r issue; do
-            DUE=$(echo "$issue" | jq -r .dueDate)
+          EMBEDS_OVERDUE="[]"
+          EMBEDS_SOON="[]"
+          for issue in $(echo "$ISSUES" | jq -c '.[]'); do
+          DUE=$(echo "$issue" | jq -r .dueDate)
             TITLE=$(echo "$issue" | jq -r .title)
             URL=$(echo "$issue" | jq -r .url)
             ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
 
-            echo "DUE raw: $DUE"
-            DUE_EPOCH=$(date -u -d "$DUE" +%s 2>/dev/null || echo "0")
-            echo "DUE epoch: $DUE_EPOCH"
+            # Parse due date as UTC
+            DUE_EPOCH=$(TZ="America/New_York" date -d "${DUE} 23:58:00" +%s)
 
-            if [ "$DUE_EPOCH" -ge "$NOW" ] && [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
-              echo "Queuing reminder for: $TITLE ($DUE)"
-              EMBEDS=$(echo "$EMBEDS" | jq \
+            if [ "$DUE_EPOCH" -lt "$NOW" ]; then
+              # Overdue
+              EMBEDS_OVERDUE=$(echo "$EMBEDS_OVERDUE" | jq \
                 --arg title "$TITLE" \
                 --arg url "$URL" \
                 --arg due "$DUE" \
                 --arg assignees "$ASSIGNEES" \
                 --argjson epoch "$DUE_EPOCH" \
-                '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+                '. + [{"title": $title, "url": $url, "description": "❗ Overdue since " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+            elif [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
+              # Due soon
+              EMBEDS_SOON=$(echo "$EMBEDS_SOON" | jq \
+                --arg title "$TITLE" \
+                --arg url "$URL" \
+                --arg due "$DUE" \
+                --arg assignees "$ASSIGNEES" \
+                --argjson epoch "$DUE_EPOCH" \
+                '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15105570, "epoch": $epoch}]')
             else
-              echo "❌ Skipping: $TITLE ($DUE)"
+              echo "Skipping future issue: $TITLE ($DUE)"
             fi
           done
 
-          COUNT=$(echo "$EMBEDS" | jq 'length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "Sorting $COUNT reminders by due date..."
-            EMBEDS=$(echo "$EMBEDS" | jq 'sort_by(.epoch) | map(del(.epoch))')
-            HEADER="📢 $COUNT issue(s) due in the next 48 hours:"
-
-            # Break embeds into chunks of 10 (Discord limit)
-            CHUNKS=$(( (COUNT + 9) / 10 ))
-            for i in $(seq 0 $((CHUNKS-1))); do
-              START=$((i*10))
-              END=$((START+10))
-              SUBSET=$(echo "$EMBEDS" | jq ".[$START:$END]")
-
-              echo "Sending chunk $((i+1))/$CHUNKS..."
+          send_embeds() {
+            local embeds=$1
+            local header=$2
+            COUNT=$(echo "$embeds" | jq 'length')
+            if [ "$COUNT" -gt 0 ]; then
+              EMBEDS_SORTED=$(echo "$embeds" | jq 'sort_by(.epoch) | map(del(.epoch))')
               curl -H "Content-Type: application/json" \
                 -X POST \
-                -d "{\"content\": \"$HEADER\", \"embeds\": $SUBSET}" \
+                -d "{\"content\": \"$header\", \"embeds\": $EMBEDS_SORTED}" \
                 "$DISCORD_WEBHOOK"
-            done
-          else
-            echo "No issues due soon. No message sent."
-          fi
+            fi
+          }
+
+          send_embeds "$EMBEDS_OVERDUE" "❗ Overdue issues:"
+          send_embeds "$EMBEDS_SOON" "📢 Issues due in the next 48 hours:"
