@@ -12,18 +12,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Send due reminders
+        env:
+          GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
+          echo "NOW: $NOW, TWO_DAYS: $TWO_DAYS"
 
-          # Fetch all open issues with pagination
+          # Fetch open issues and their ProjectV2 fields
           ISSUES=$(gh api graphql --paginate -f query='
-          query($endCursor: String) {
+          query {
             repository(owner:"CFdefense", name:"Capping2025") {
-              issues(first:100, after:$endCursor, states:OPEN) {
+              issues(first:100, states:OPEN) {
+                pageInfo {
+                  endCursor
+                  startCursor
+                  hasNextPage
+                  hasPreviousPage
+                }
                 nodes {
                   title
                   url
@@ -34,65 +44,107 @@ jobs:
                         nodes {
                           ... on ProjectV2ItemFieldDateValue {
                             date
-                            field { name }
+                            field { ... on ProjectV2Field { name } }
                           }
                         }
                       }
                     }
                   }
                 }
-                pageInfo {
-                  hasNextPage
-                  endCursor
-                }
               }
             }
-          }' --jq '.data.repository.issues.nodes[] |
-            {title, url, assignees: (.assignees.nodes | map(.login)), due: (.projectItems.nodes[].fieldValues.nodes[] | select(.field.name=="Due Date") | .date)}' |
-            jq -c 'select(.due != null)')
+          }' --jq '
+            .data.repository.issues.nodes[] |
+            {
+              title: .title,
+              url: .url,
+              assignees: [.assignees.nodes[].login],
+              dueDate: (
+                .projectItems.nodes[].fieldValues.nodes[]
+                | select(.field.name=="Due")
+                | .date
+              )
+            }
+          ' | jq -s '.')
 
-          # Collect due-soon issues into embeds
-          EMBEDS="[]"
-          echo "$ISSUES" | while read issue; do
-            DUE=$(echo $issue | jq -r .due)
-            TITLE=$(echo $issue | jq -r .title)
-            URL=$(echo $issue | jq -r .url)
-            ASSIGNEES=$(echo $issue | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+          echo "Issues with due date:"
+          echo "$ISSUES" | jq
 
-            DUE_EPOCH=$(date -d "$DUE" +%s)
-            if [ $DUE_EPOCH -ge $NOW ] && [ $DUE_EPOCH -le $TWO_DAYS ]; then
-              echo "Queuing reminder for: $TITLE ($DUE)"
-              EMBEDS=$(echo "$EMBEDS" | jq \
-                --arg title "$TITLE" \
-                --arg url "$URL" \
-                --arg due "$DUE" \
-                --arg assignees "$ASSIGNEES" \
-                --argjson epoch $DUE_EPOCH \
-                '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+          mapfile -t ISSUE_ARRAY < <(echo "$ISSUES" | jq -c '.[]')
+          EMBEDS_OVERDUE="[]"
+          EMBEDS_SOON="[]"
+          for issue in "${ISSUE_ARRAY[@]}"; do
+            DUE=$(echo "$issue" | jq -r .dueDate)
+            TITLE=$(echo "$issue" | jq -r .title)
+            URL=$(echo "$issue" | jq -r .url)
+            ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+
+            # Parse due date as UTC
+            if [ -z "$DUE" ] || [ "$DUE" = "null" ]; then
+              echo "Skipping issue with no due date: $TITLE"
+              continue
+            fi
+            if ! DUE_EPOCH=$(TZ="America/New_York" date -d "${DUE} 23:58:00" +%s 2>/dev/null); then
+              echo "Skipping issue with invalid due date: $TITLE ($DUE)"
+              continue
+            fi
+
+            if [ "$DUE_EPOCH" -lt "$NOW" ]; then
+              # Overdue
+              EMBEDS_OVERDUE=$(echo "$EMBEDS_OVERDUE" | jq --arg title "$TITLE" \
+                                                            --arg url "$URL" \
+                                                            --arg due "$DUE" \
+                                                            --arg assignees "$ASSIGNEES" \
+              '
+                . + [{
+                  "title": $title,
+                  "url": $url,
+                  "description": "❗ Overdue since \($due)\n👤 Assignee(s): \($assignees)",
+                  "color": 15158332
+                }]
+              ')
+            elif [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
+              # Due soon
+              EMBEDS_SOON=$(echo "$EMBEDS_SOON" | jq --arg title "$TITLE" \
+                                                        --arg url "$URL" \
+                                                        --arg due "$DUE" \
+                                                        --arg assignees "$ASSIGNEES" \
+              '
+                . + [{
+                  "title": $title,
+                  "url": $url,
+                  "description": "⚠️ Due on \($due)\n👤 Assignee(s): \($assignees)",
+                  "color": 15105570
+                }]
+              ')
+            else
+              echo "Skipping future issue: $TITLE ($DUE)"
             fi
           done
 
-          COUNT=$(echo "$EMBEDS" | jq 'length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "Sorting $COUNT reminders by due date..."
-            EMBEDS=$(echo "$EMBEDS" | jq 'sort_by(.epoch) | map(del(.epoch))')
-            HEADER="📢 $COUNT issue(s) due in the next 48 hours:"
+          send_embeds_chunked() {
+            local embeds=$1
+            local header=$2
+            COUNT=$(echo "$embeds" | jq 'length')
+            if [ "$COUNT" -eq 0 ]; then
+              return
+            fi
 
-            # Break embeds into chunks of 10 (Discord limit)
+            EMBEDS_SORTED=$(echo "$embeds" | jq 'sort_by(.epoch) | map(del(.epoch))')
+            # Split into chunks of 10
             CHUNKS=$(( (COUNT + 9) / 10 ))
+
             for i in $(seq 0 $((CHUNKS-1))); do
               START=$((i*10))
               END=$((START+10))
-              SUBSET=$(echo "$EMBEDS" | jq ".[$START:$END]")
-
+              SUBSET=$(echo "$EMBEDS_SORTED" | jq ".[$START:$END]")
+              WEBHOOK_URL=$(echo "$DISCORD_WEBHOOK" | tr -d '\r\n')
               echo "Sending chunk $((i+1))/$CHUNKS..."
-              curl -H "Content-Type: application/json" \
-                -X POST \
-                -d "{\"content\": \"$HEADER\", \"embeds\": $SUBSET}" \
-                ${{ secrets.DISCORD_WEBHOOK }}
+              curl -H "Content-Type: application/json" -X POST \
+                -d "{\"content\": \"$header\", \"embeds\": $SUBSET}" \
+                "$WEBHOOK_URL"
             done
-          else
-            echo "No issues due soon. No message sent."
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          }
+
+          send_embeds_chunked "$EMBEDS_OVERDUE" "❗ Overdue issues:"
+          send_embeds_chunked "$EMBEDS_SOON" "📢 Issues due in the next 48 hours:"
