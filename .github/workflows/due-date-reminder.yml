@@ -69,16 +69,24 @@ jobs:
           echo "Issues with due date:"
           echo "$ISSUES" | jq
 
+          mapfile -t ISSUE_ARRAY < <(echo "$ISSUES" | jq -c '.[]')
           EMBEDS_OVERDUE="[]"
           EMBEDS_SOON="[]"
-          for issue in $(echo "$ISSUES" | jq -c '.[]'); do
-          DUE=$(echo "$issue" | jq -r .dueDate)
+          for issue in "${ISSUE_ARRAY[@]}"; do
+            DUE=$(echo "$issue" | jq -r .dueDate)
             TITLE=$(echo "$issue" | jq -r .title)
             URL=$(echo "$issue" | jq -r .url)
             ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
 
             # Parse due date as UTC
-            DUE_EPOCH=$(TZ="America/New_York" date -d "${DUE} 23:58:00" +%s)
+            if [ -z "$DUE" ] || [ "$DUE" = "null" ]; then
+              echo "Skipping issue with no due date: $TITLE"
+              continue
+            fi
+            if ! DUE_EPOCH=$(TZ="America/New_York" date -d "${DUE} 23:58:00" +%s 2>/dev/null); then
+              echo "Skipping issue with invalid due date: $TITLE ($DUE)"
+              continue
+            fi
 
             if [ "$DUE_EPOCH" -lt "$NOW" ]; then
               # Overdue
@@ -103,18 +111,29 @@ jobs:
             fi
           done
 
-          send_embeds() {
+          send_embeds_chunked() {
             local embeds=$1
             local header=$2
             COUNT=$(echo "$embeds" | jq 'length')
-            if [ "$COUNT" -gt 0 ]; then
-              EMBEDS_SORTED=$(echo "$embeds" | jq 'sort_by(.epoch) | map(del(.epoch))')
+            if [ "$COUNT" -eq 0 ]; then
+              return
+            fi
+
+            EMBEDS_SORTED=$(echo "$embeds" | jq 'sort_by(.epoch) | map(del(.epoch))')
+            # Split into chunks of 10
+            CHUNKS=$(( (COUNT + 9) / 10 ))
+
+            for i in $(seq 0 $((CHUNKS-1))); do
+              START=$((i*10))
+              END=$((START+10))
+              SUBSET=$(echo "$EMBEDS_SORTED" | jq ".[$START:$END]")
+              echo "Sending chunk $((i+1))/$CHUNKS..."
               curl -H "Content-Type: application/json" \
                 -X POST \
-                -d "{\"content\": \"$header\", \"embeds\": $EMBEDS_SORTED}" \
+                -d "{\"content\": \"$header\", \"embeds\": $SUBSET}" \
                 "$DISCORD_WEBHOOK"
-            fi
+            done
           }
 
-          send_embeds "$EMBEDS_OVERDUE" "❗ Overdue issues:"
-          send_embeds "$EMBEDS_SOON" "📢 Issues due in the next 48 hours:"
+          send_embeds_chunked "$EMBEDS_OVERDUE" "❗ Overdue issues:"
+          send_embeds_chunked "$EMBEDS_SOON" "📢 Issues due in the next 48 hours:"
