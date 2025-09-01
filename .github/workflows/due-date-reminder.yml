@@ -70,7 +70,7 @@ jobs:
           echo "$ISSUES" | jq
 
           EMBEDS="[]"
-          for issue in $(echo "$ISSUES" | jq -c '.[]'); do
+          echo "$ISSUES" | jq -c '.[]' | while read -r issue; do
             DUE=$(echo "$issue" | jq -r .dueDate)
             TITLE=$(echo "$issue" | jq -r .title)
             URL=$(echo "$issue" | jq -r .url)
