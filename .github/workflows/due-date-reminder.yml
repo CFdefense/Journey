@@ -7,11 +7,6 @@ on:
     # - cron: "59 4 * * *"   # 4:59 UTC == 11:59 PM New York (Standard Time)
   workflow_dispatch:
 
-permissions:
-  contents: read
-  issues: read
-  repository-projects: read
-
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -21,7 +16,7 @@ jobs:
 
       - name: Send due reminders
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
           gh auth status
 
