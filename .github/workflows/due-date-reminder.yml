@@ -90,22 +90,36 @@ jobs:
 
             if [ "$DUE_EPOCH" -lt "$NOW" ]; then
               # Overdue
-              EMBEDS_OVERDUE=$(echo "$EMBEDS_OVERDUE" | jq \
-                --arg title "$TITLE" \
-                --arg url "$URL" \
-                --arg due "$DUE" \
-                --arg assignees "$ASSIGNEES" \
-                --argjson epoch "$DUE_EPOCH" \
-                '. + [{"title": $title, "url": $url, "description": "❗ Overdue since " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15158332, "epoch": $epoch}]')
+              EMBEDS_OVERDUE=$(echo "$EMBEDS_OVERDUE" | jq --arg title "$TITLE" \
+                                                            --arg url "$URL" \
+                                                            --arg due "$DUE" \
+                                                            --arg assignees "$ASSIGNEES" \
+                                                            --argjson epoch "$DUE_EPOCH" \
+              '
+                . + [{
+                  "title": $title,
+                  "url": $url,
+                  "description": "❗ Overdue since \($due)\n👤 Assignee(s): \($assignees)",
+                  "color": 15158332,
+                  "epoch": $epoch
+                }]
+              ')
             elif [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
               # Due soon
-              EMBEDS_SOON=$(echo "$EMBEDS_SOON" | jq \
-                --arg title "$TITLE" \
-                --arg url "$URL" \
-                --arg due "$DUE" \
-                --arg assignees "$ASSIGNEES" \
-                --argjson epoch "$DUE_EPOCH" \
-                '. + [{"title": $title, "url": $url, "description": "⚠️ Due on " + $due + "\n👤 Assignee(s): " + $assignees, "color": 15105570, "epoch": $epoch}]')
+              EMBEDS_SOON=$(echo "$EMBEDS_SOON" | jq --arg title "$TITLE" \
+                                                        --arg url "$URL" \
+                                                        --arg due "$DUE" \
+                                                        --arg assignees "$ASSIGNEES" \
+                                                        --argjson epoch "$DUE_EPOCH" \
+              '
+                . + [{
+                  "title": $title,
+                  "url": $url,
+                  "description": "⚠️ Due on \($due)\n👤 Assignee(s): \($assignees)",
+                  "color": 15105570,
+                  "epoch": $epoch
+                }]
+              ')
             else
               echo "Skipping future issue: $TITLE ($DUE)"
             fi
