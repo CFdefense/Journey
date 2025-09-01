@@ -17,6 +17,7 @@ jobs:
       - name: Send due reminders
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
