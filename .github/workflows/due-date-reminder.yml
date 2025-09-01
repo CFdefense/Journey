@@ -125,6 +125,8 @@ jobs:
             fi
           done
 
+          WEBHOOK_URL=$(echo "$DISCORD_WEBHOOK" | tr -d '\r\n')
+
           send_embeds_chunked() {
             local embeds=$1
             local header=$2
@@ -144,8 +146,8 @@ jobs:
               echo "Sending chunk $((i+1))/$CHUNKS..."
               curl -H "Content-Type: application/json" \
                 -X POST \
-                -d "{\"content\": \"$header\", \"embeds\": $SUBSET}" \
-                "$DISCORD_WEBHOOK"
+                -d "$(jq -n --arg content "$header" --argjson embeds "$SUBSET" '{content: $content, embeds: $embeds}')" \
+                "$WEBHOOK_URL"
             done
           }
 
