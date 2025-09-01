@@ -94,14 +94,12 @@ jobs:
                                                             --arg url "$URL" \
                                                             --arg due "$DUE" \
                                                             --arg assignees "$ASSIGNEES" \
-                                                            --argjson epoch "$DUE_EPOCH" \
               '
                 . + [{
                   "title": $title,
                   "url": $url,
                   "description": "❗ Overdue since \($due)\n👤 Assignee(s): \($assignees)",
-                  "color": 15158332,
-                  "epoch": $epoch
+                  "color": 15158332
                 }]
               ')
             elif [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
@@ -110,22 +108,18 @@ jobs:
                                                         --arg url "$URL" \
                                                         --arg due "$DUE" \
                                                         --arg assignees "$ASSIGNEES" \
-                                                        --argjson epoch "$DUE_EPOCH" \
               '
                 . + [{
                   "title": $title,
                   "url": $url,
                   "description": "⚠️ Due on \($due)\n👤 Assignee(s): \($assignees)",
-                  "color": 15105570,
-                  "epoch": $epoch
+                  "color": 15105570
                 }]
               ')
             else
               echo "Skipping future issue: $TITLE ($DUE)"
             fi
           done
-
-          WEBHOOK_URL=$(echo "$DISCORD_WEBHOOK" | tr -d '\r\n')
 
           send_embeds_chunked() {
             local embeds=$1
@@ -143,10 +137,10 @@ jobs:
               START=$((i*10))
               END=$((START+10))
               SUBSET=$(echo "$EMBEDS_SORTED" | jq ".[$START:$END]")
+              WEBHOOK_URL=$(echo "$DISCORD_WEBHOOK" | tr -d '\r\n')
               echo "Sending chunk $((i+1))/$CHUNKS..."
-              curl -H "Content-Type: application/json" \
-                -X POST \
-                -d "$(jq -n --arg content "$header" --argjson embeds "$SUBSET" '{content: $content, embeds: $embeds}')" \
+              curl -H "Content-Type: application/json" -X POST \
+                -d "{\"content\": \"$header\", \"embeds\": $SUBSET}" \
                 "$WEBHOOK_URL"
             done
           }
