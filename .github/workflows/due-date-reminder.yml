@@ -18,8 +18,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          gh auth status
-
           NOW=$(date -u +%s)
           TWO_DAYS=$((NOW + 172800)) # 48 hours ahead
           echo "NOW: $NOW, TWO_DAYS: $TWO_DAYS"
@@ -66,7 +64,7 @@ jobs:
                 | .date
               )
             }
-          ')
+          ' | jq -s '.')
 
           echo "Issues with due date:"
           echo "$ISSUES" | jq
