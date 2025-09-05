@@ -36,4 +36,9 @@ Try to avoid making PRs until all changes are implemented, or use a draft-PR if 
 Do not use GitHub's Development section to link an issue to a PR. We don't want issues to close when a PR is merged.
 Instead, just write down the issue number in the PR Related Issue(s).
 ## Branches
-When doing any work, create a separate branch with a name that corresponds to the story/misc issue. When a story has been completed, avoid deleting its branch until after the epic is done and accepted.
+When doing any work, create a separate branch with a name that corresponds to the story/misc issue.
+When a story has been completed, avoid deleting its branch until after the epic is done and accepted.
+## Milestones
+Our milestones correspond to the different phases of development from project planning to deployment.
+All epics will be assigned to a milestone. Stories and misc issues will not be.
+Milestones have a hard deadline, so it's important to keep that in mind when creating epics and picking up stories.

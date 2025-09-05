@@ -11,3 +11,7 @@
 [click here](https://brightspace.marist.edu/d2l/home/57958)
 ## Project Idea
 Travel agent that plans each day during your travel. The website creates an itinerary based on your location. Users may make changes or ask the agent to make changes to the itinerary.
+## Build Project (WIP)
+In dev we can use react as a backend to make changes to UI/UX, and that should hopefully make development easier.
+
+In prod, we would compile the react files into html/css/js files (or however it works) and just serve them with our backend (axum).
