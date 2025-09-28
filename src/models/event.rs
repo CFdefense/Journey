@@ -26,7 +26,14 @@ pub struct Event {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EventType {
-    // TODO: Add event types...
+    Concert,
+    Museum,
+    Restaurant,
+    Hike,
+    Festival,
+    Sports,
+    Other,
+    // TODO: Add more event types...
 }
 
 // TODO: More Payloads...
