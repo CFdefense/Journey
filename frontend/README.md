@@ -1,3 +1,11 @@
+### FOR US 
+To run this on your computer, cd to the frontend/ folder
+Then run the command 'npm run dev'
+This will open on http://localhost:5173/
+
+
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
