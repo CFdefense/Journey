@@ -1,7 +1,10 @@
 ### FOR US 
 To run this on your computer, cd to the frontend/ folder
+(If it is your first time, run the command 'npm install')
 Then run the command 'npm run dev'
 This will open on http://localhost:5173/
+The page will hotreload as you make changes
+If the page is acting funny check errors by going into the dev tools
 
 
 
