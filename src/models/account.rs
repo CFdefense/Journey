@@ -7,10 +7,14 @@
  *   Models for the account table and payloads which interact with it.
  *
  * Include:
- *   Account            - Model representing an intance of the Account table
+ *   Account            - Model representing an instance of the Account table
  *   LoginPayload       - Model representing the payload for a login
  *   SignupPayload      - Model representing the payload for a signup
  */
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
     pub id: i32,
     pub username: String,
@@ -18,17 +22,21 @@ pub struct Account {
     pub password: String,
     pub first_name: String,
     pub last_name: String,
-    // Preferences...
+    // TODO: More Preferences...
 }
 
+#[derive(Debug, Deserialize)]
 pub struct LoginPayload {
     pub username: String,
     pub password: String,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct SignupPayload {
     pub username: String,
     pub first_name: String,
     pub last_name: String,
     pub password: String,
 }
+
+// TODO: More Payloads...
