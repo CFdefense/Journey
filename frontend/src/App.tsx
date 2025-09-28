@@ -17,6 +17,7 @@ function App() {
       <nav>
         <Link to="/">Home</Link> |{" "}
         <Link to="/create">Create</Link> |{" "}
+        <Link to="/view">View</Link> |{" "}
         <Link to="/account">Account</Link> |{" "}
         <Link to="/login">Login</Link> |{" "}
         <Link to="/signup">Signup</Link>
@@ -26,7 +27,7 @@ function App() {
       <Routes>
         <Route path="/" element={<IndexPage />} />
         <Route path="/create" element={<CreateItinerary />} />
-        <Route path="/view/:id" element={<ViewItinerary />} />
+        <Route path="/view" element={<ViewItinerary />} />
         <Route path="/account" element={<Account />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
