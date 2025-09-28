@@ -4,6 +4,8 @@ mod middleware;
 mod models;
 mod log;
 mod constants;
+
+#[cfg(test)]
 mod test;
 
 fn main() {
