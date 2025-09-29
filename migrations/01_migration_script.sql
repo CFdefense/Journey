@@ -25,7 +25,6 @@ CREATE TYPE event_type AS ENUM (
 -- Accounts table
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
