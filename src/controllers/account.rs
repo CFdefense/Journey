@@ -1,26 +1,36 @@
 /*
  * src/models/Account.rs
  *
- * File for Account table models
+ * File for Account Controller API Endpoints
  *
  * Purpose:
- *   Models for the account table and payloads which interact with it.
+ *   Serve Account Related API Requests
  *
  * Include:
- *   Account            - Model representing an instance of the Account table
- *   LoginPayload       - Model representing the payload for a login
- *   SignupPayload      - Model representing the payload for a signup
+ *   api_signup         - /account/signup -> serves signup functionality
+ *   api_login          - /account/login  -> serves login functionality
+ *   api_test           - /account/test   -> serves test of account api functionality
  */
 
-use axum::{routing::{get, post}, Json, Router};
-use serde_json::{json, Value};
-pub async fn api_signup() {
-}
+use axum::{
+    Json, Router,
+    routing::{get, post},
+};
+use serde_json::{Value, json};
 
-pub async fn api_login() {
-}
+/// /account/signup
+/// Logic goes here
+///
+///
+pub async fn api_signup() {}
 
-pub async fn test_account() -> Json<Value> {
+/// /account/login
+/// Logic goes here
+///
+///
+pub async fn api_login() {}
+
+pub async fn api_test() -> Json<Value> {
     Json(json!({
         "message": "test endpoint"
     }))
@@ -28,7 +38,7 @@ pub async fn test_account() -> Json<Value> {
 
 pub fn account_routes() -> Router {
     Router::new()
-    .route("/signup", post(api_signup))
-    .route("/login", post(api_login))
-    .route("/test", get(test_account))
+        .route("/signup", post(api_signup))
+        .route("/login", post(api_login))
+        .route("/test", get(api_test))
 }
