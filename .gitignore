@@ -1,11 +1,7 @@
 /tmp/
 .env
-
-# Added by cargo
-
 /target
-
-# Added by vite template
+/.zed
 
 # Logs
 /frontend/logs
@@ -20,3 +16,5 @@
 /frontend/dist
 /frontend/dist-ssr
 /frontend/*.local
+
+/logs
