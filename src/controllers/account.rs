@@ -14,8 +14,15 @@
 
 use axum::{
     Extension, Json, Router,
+    http::StatusCode,
     routing::{get, post},
 };
+
+use argon2::{
+    Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+};
+
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tracing::{error, info, trace};
@@ -36,7 +43,7 @@ use crate::models::account::*;
 /// # Responses
 /// - `201 Created` with JSON body `{ "id": "..."}`
 /// - `400 Bad Request` if the input is invalid.
-/// - `409 Conflict` if the email already exists.
+/// - '500 Internal` if internal error with parsing.
 ///
 /// # Examples
 /// ```bash
@@ -54,6 +61,10 @@ pub async fn api_signup(
     Extension(pool): Extension<PgPool>,
     payload: SignupPayload,
 ) -> Result<Json<Value>> {
+    info!(
+        "HANDLER ->> /api/signup 'api_signup' - Payload: {:?}",
+        payload
+    );
 }
 
 /// Attempt user login
@@ -83,6 +94,44 @@ pub async fn api_login(
     Extension(pool): Extension<PgPool>,
     payload: LoginPayload,
 ) -> Result<Json<Account>> {
+    info!(
+        "HANDLER ->> /api/login 'api_login' - Payload: {:?}",
+        payload
+    );
+
+    // Get user from database
+    let user_result = sqlx::query!(
+        "SELECT id, email, password
+         FROM accounts
+         WHERE email = $1;",
+        payload.email
+    )
+    .fetch_one(&pool)
+    .await;
+
+    match user_result {
+        Ok(result) => {
+            // Verify password
+            let parsed_hash = PasswordHash::new(&result.password)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            // Attempt to match the password hashes
+            if let Err(_) =
+                Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash)
+            {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+
+            // TODO: Build Cookie
+        }
+        Err(_) => {
+            error!(
+                "ERROR ->> /api/signup 'api_signup' REASON: No account for Email: {}",
+                payload.email
+            );
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
 }
 
 pub async fn api_test() -> Json<Value> {
