@@ -56,11 +56,29 @@ pub async fn api_signup(
 ) -> Result<Json<Value>> {
 }
 
-/// /account/login
-/// Will get a LoginPayload from frontend
-/// Validate Login Credentials
-/// Redirect Accordingly
-/// Set Useer Cookies
+/// Attempt user login
+///
+/// # Method
+/// `POST /account/login`
+///
+/// # Request Body
+/// - `email`: A valid email address (string, required).
+/// - 'password': The user's password (string, required).
+///
+/// # Responses
+/// - `201 Login Sucess` with JSON body `{ "id": "...", "token": "..."}`
+/// - `400 Bad Request` if the input is invalid.
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3000/account/login
+///   -H "Content-Type: application/json"
+///   -d '{
+///        "email": "alice@example.com",
+///        "password": "password123."
+///       }'
+/// ```
+///
 pub async fn api_login(
     Extension(pool): Extension<PgPool>,
     payload: LoginPayload,
