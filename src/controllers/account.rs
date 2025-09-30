@@ -22,10 +22,33 @@ use tracing::{error, info, trace};
 
 use crate::models::account::*;
 
-/// /account/signup
-/// Will get a SignupPayload from frontend
-/// Validate Payload Contents
-/// Create a New Account in Database
+/// Create a new user.
+///
+/// # Method
+/// `POST /account/signup`
+///
+/// # Request Body
+/// - `email`: A valid email address (string, required).
+/// - `first_name`: The user's first name (string, required).
+/// - 'last_name': The user's last name (string, required).
+/// - 'password': The user's password (string, required).
+///
+/// # Responses
+/// - `201 Created` with JSON body `{ "id": "..."}`
+/// - `400 Bad Request` if the input is invalid.
+/// - `409 Conflict` if the email already exists.
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3000/account/signgup
+///   -H "Content-Type: application/json"
+///   -d '{
+///        "email": "alice@example.com",
+///        "first_name": "alice",
+///        "last_name": "grace",
+///        "password": "password123."
+///       }'
+/// ```
 ///
 pub async fn api_signup(
     Extension(pool): Extension<PgPool>,
