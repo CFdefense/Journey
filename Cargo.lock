@@ -11,6 +11,7 @@ dependencies = [
  "dotenv",
  "pgvector",
  "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",
