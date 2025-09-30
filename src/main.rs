@@ -6,7 +6,7 @@ mod log;
 mod constants;
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 fn main() {
 	dotenv::dotenv().unwrap();
