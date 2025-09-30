@@ -79,6 +79,7 @@ jobs:
   code_cov:
     name: Code Coverage
     runs-on: ubuntu-latest
+    needs: [tests]
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
