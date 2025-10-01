@@ -1,7 +1,15 @@
+#![allow(unexpected_cfgs)]
+
 mod controllers;
 mod db;
 mod middleware;
 mod models;
+mod log;
+mod constants;
+mod error;
+
+#[cfg(test)]
+mod test;
 
 use std::env;
 use std::net::SocketAddr;
@@ -69,7 +77,6 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await?;
-
 
     Ok(())
 }
