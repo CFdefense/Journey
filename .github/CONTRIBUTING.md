@@ -70,4 +70,6 @@ Automated checks and testing will run when a PR is opened to merge to main.
 Jobs like clippy will probably fail because it denies everything.
 You can ignore clippy, but try to address as many warnings as you can.
 
-The jobs required to merge are Check, Tests, and Benchmarks.
+The jobs required to merge are Check, Tests, Benchmarks, and Code Coverage.
+
+For frontend development, try to include screenshots when there are visual changes.
