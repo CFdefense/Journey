@@ -75,3 +75,10 @@
 .login-box input:focus {
   box-shadow: 0 0 8px #30A0E0;
 }
+
+.login-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
