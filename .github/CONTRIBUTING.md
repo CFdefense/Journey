@@ -51,19 +51,15 @@ You can run tests locally with:
 ```sh
 cargo test --all-targets --all-features --locked
 ```
-### Unit Tests
 Stories should include unit testing in their acceptance criteria when new functionality is added.
-
-Unit tests go in /src/tests.rs. If the file becomes long and confusing, we can break it up into multiple files.
-
 Your tests should cover every possilble condition, control flow path, and edge case that you can think of.
 
+Unit tests go in /tests/*.rs. Name the file after the thing you're testing.
 Unit tests should be used for small chunks of logic, like testing one endpoint, or one complex function.
-### Integration Tests
-Integration tests go in /tests. Each integration test will have its own file and entry point.
+They shouldn't test external dependencies like API calls.
 
 Integration tests test the entire application and all of its dependencies to ensure that it works correctly.
-
+Each integration tests should have its own file in /tests.
 Since we don't want to spend a lot of money on API calls just for integration testing, we can use mock API calls.
 ## PRs
 Automated checks and testing will run when a PR is opened to merge to main.

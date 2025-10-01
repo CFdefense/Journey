@@ -8,9 +8,6 @@ mod log;
 mod constants;
 mod error;
 
-#[cfg(test)]
-mod tests;
-
 #[cfg(not(tarpaulin_include))]
 fn main() {
 	dotenv::dotenv().unwrap();
