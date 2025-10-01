@@ -4,6 +4,7 @@ mod middleware;
 mod models;
 mod log;
 mod constants;
+mod error;
 
 #[cfg(test)]
 mod test;
