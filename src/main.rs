@@ -4,6 +4,7 @@ mod global;
 mod log;
 mod middleware;
 mod models;
+mod error;
 
 #[cfg(test)]
 mod test;

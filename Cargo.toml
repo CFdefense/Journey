@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = "0.8.4" # docs failed to build - update later
+axum = { version = "0.6", features = ["macros", "multipart"] }
+tower-cookies = "0.9"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres"] }
 tokio = { version = "1.47.1", features = [ "full" ] }
 pgvector = { version = "0.4.1", features = ["sqlx"] }
@@ -16,3 +17,4 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "registry"]
 dotenv = "0.15.0"
 serde_json = "1.0"
 argon2 = "0.5.0"
+regex = "1"
