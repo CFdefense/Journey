@@ -4,7 +4,6 @@ use std::env;
 // Pgpool- A pool of PostgreSQL connections
 // PgPoolOptions - The "configuration options" for creating a pool (the max number of connections).
 
-#[cfg(not(tarpaulin_include))]
 pub async fn create_pool() -> PgPool {
     // Retrieve the database URL from an environment variable
     let database_url = env::var("DATABASE_URL")

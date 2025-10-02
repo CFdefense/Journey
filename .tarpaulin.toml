@@ -1,0 +1,10 @@
+
+[run]
+exclude-files = [
+  "src/main.rs",
+  "src/controllers/account.rs",
+]
+
+[report]
+out = ["Stdout"]
+fail-under = 80
