@@ -95,14 +95,14 @@ jobs:
               # Set Start date if missing
               if [ "$START" = "null" ] || [ -z "$START" ]; then
                 gh api graphql -f query='
-                mutation {
+                mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
                   updateProjectV2ItemFieldValue(input:{
                     clientMutationId:"roadmap_gh_action"
                     fieldId:$fId
                     itemId:$iId
                     projectId:$pId
                     value:{date:$val}
-                  })
+                  }) {clientMutationId}
                 }' -F fId=$START_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
               fi
 
@@ -112,14 +112,14 @@ jobs:
                   if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
                     DUE_DATE=$(date -d "$TODAY + $DAYS day" +%Y-%m-%d)
                     gh api graphql -f query='
-                    mutation{
+                    mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
                       updateProjectV2ItemFieldValue(input:{
                         clientMutationId:"roadmap_gh_action"
                         fieldId:$fId
                         itemId:$iId
                         projectId:$pId
                         value:{date:$val}
-                      })
+                      }) {clientMutationId}
                     }' -F fId=$DUE_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$DUE_DATE
                   fi
                 fi
