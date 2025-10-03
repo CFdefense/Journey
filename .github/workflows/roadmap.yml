@@ -3,8 +3,8 @@ name: Roadmap
 on:
   schedule:
     # switch these on November 2 at 2:00 am
-    - cron: "59 3 * * *"   # 3:59 UTC == 11:59 PM New York (DST)
-    # - cron: "59 4 * * *"   # 4:59 UTC == 11:59 PM New York (Standard Time)
+    - cron: "30 3 * * *"   # 3:30 UTC == 11:30 PM New York (DST)
+    # - cron: "30 4 * * *"   # 4:30 UTC == 11:30 PM New York (Standard Time)
   workflow_dispatch:
 
 jobs:
