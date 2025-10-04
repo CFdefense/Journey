@@ -81,12 +81,12 @@ jobs:
 
           echo "$FIELDS" | jq -c '.[]' | while read -r row; do
             STATUS=$(echo "$row" | jq -r '.Status.value')
-            START=$(echo "$row"  | jq -r '.Start.value')
+            STARTED=$(echo "$row"  | jq -r '.Started.value')
             DUE=$(echo "$row"    | jq -r '.Due.value')
             DAYS=$(echo "$row"   | jq -r '.Days.value')
             TYPE=$(echo "$row"   | jq -r '.Type.value')
 
-            START_ID=$(echo "$row" | jq -r '.Start.id')
+            STARTED_ID=$(echo "$row" | jq -r '.Started.id')
             DUE_ID=$(echo "$row"   | jq -r '.Due.id')
 
             ITEM_ID=$(echo "$row"    | jq -r '.itemId')
@@ -95,19 +95,19 @@ jobs:
             TODAY=$(date +%Y-%m-%d)
 
             echo "$STATUS"
-            echo "$START"
+            echo "$STARTED"
             echo "$DUE"
             echo "$DAYS"
             echo "$TYPE"
-            echo "$START_ID"
+            echo "$STARTED_ID"
             echo "$DUE_ID"
             echo "$ITEM_ID"
             echo "$PROJECT_ID"
             echo "$TODAY"
 
             if [ "$STATUS" = "In Progress" ] || [ "$STATUS" = "In Review" ]; then
-              # Set Start date if missing
-              if [ "$START" = "null" ] || [ -z "$START" ]; then
+              # Set Started date if missing
+              if [ "$STARTED" = "null" ] || [ -z "$STARTED" ]; then
                 gh api graphql -f query='
                 mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
                   updateProjectV2ItemFieldValue(input:{
@@ -117,10 +117,10 @@ jobs:
                     projectId:$pId
                     value:{date:$val}
                   }) {clientMutationId}
-                }' -F fId=$START_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
+                }' -F fId=$STARTED_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
               fi
 
-              # If story, with Days, and Due missing → set Due = Start + Days
+              # If story, with Days, and Due missing → set Due = Started + Days
               if [ "$TYPE" = "Story" ]; then
                 if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
                   if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
