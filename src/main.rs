@@ -2,14 +2,16 @@
 
 mod controllers;
 mod db;
+mod global;
+mod log;
 mod middleware;
 mod models;
-mod log;
-mod constants;
+
 mod error;
 
 #[cfg(test)]
 mod test;
+
 
 use std::env;
 use std::net::SocketAddr;
