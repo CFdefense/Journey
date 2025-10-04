@@ -87,7 +87,7 @@ jobs:
             STATUS=$(echo "$row" | jq -r '.Status.value')
             STARTED=$(echo "$row"  | jq -r '.Started.value')
             DUE=$(echo "$row"    | jq -r '.Due.value')
-            DAYS=$(echo "$row" | jq -r '(.Days.value | floor) // empty')
+            DAYS=$(echo "$row" | jq -r 'if (.Days.value | type) == "number" then (.Days.value | floor) else empty end')
             TYPE=$(echo "$row"   | jq -r '.Type.value')
 
             DUE_ID=$(echo "$row"   | jq -r '.Due.id')
