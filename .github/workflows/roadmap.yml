@@ -79,7 +79,7 @@ jobs:
 
           echo "$FIELDS"
 
-          for row in $(echo "$FIELDS" | jq -c '.[]'); do
+          echo "$FIELDS" | jq -c '.[]' | while read -r row; do
             STATUS=$(echo "$row" | jq -r '.Status.value')
             START=$(echo "$row"  | jq -r '.Start.value')
             DUE=$(echo "$row"    | jq -r '.Due.value')
