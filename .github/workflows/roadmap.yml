@@ -11,8 +11,8 @@ jobs:
   roadmap:
     runs-on: ubuntu-latest
     steps:
-      - name: Install GitHub CLI
-        uses: actions/setup-gh-cli@v2
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
       - name: Process roadmap logic
         env:
