@@ -31,7 +31,8 @@ jobs:
                 nodes {
                   projectV2(number:2) {
                     id
-                    field(name:"Started") {... on ProjectV2Field {id}}
+                    startedField: field(name:"Started") {... on ProjectV2Field {id}}
+                    dueField: field(name:"Due") {... on ProjectV2Field {id}}
                   }
                   projectItems(first:1){
                     nodes{
@@ -77,22 +78,23 @@ jobs:
             | . + {
                 "itemId": $item.id,
                 "projectId": $issue.projectV2.id,
-                "startedId": $issue.projectV2.field.id
+                "startedId": $issue.projectV2.startedField.id,
+                "dueId": $issue.projectV2.dueField.id
               }
           ' | jq -s '.')
 
           echo "$FIELDS"
 
           echo "$FIELDS" | jq -c '.[]' | while read -r row; do
-            STATUS=$(echo "$row" | jq -r '.Status.value')
-            STARTED=$(echo "$row"  | jq -r '.Started.value')
-            DUE=$(echo "$row"    | jq -r '.Due.value')
-            DAYS=$(echo "$row" | jq -r 'if (.Days.value | type) == "number" then (.Days.value | floor) else empty end')
-            TYPE=$(echo "$row"   | jq -r '.Type.value')
-
-            DUE_ID=$(echo "$row"   | jq -r '.Due.id')
+            STATUS=$(echo "$row"  | jq -r '.Status.value')
+            STARTED=$(echo "$row" | jq -r '.Started.value')
+            DUE=$(echo "$row"     | jq -r '.Due.value')
+            DAYS=$(echo "$row"    | jq -r 'if (.Days.value | type) == "number" then (.Days.value | floor) else empty end')
+            TYPE=$(echo "$row"    | jq -r '.Type.value')
 
             STARTED_ID=$(echo "$row" | jq -r '.startedId')
+            DUE_ID=$(echo "$row"     | jq -r '.dueId')
+
             ITEM_ID=$(echo "$row"    | jq -r '.itemId')
             PROJECT_ID=$(echo "$row" | jq -r '.projectId')
 
