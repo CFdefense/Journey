@@ -133,6 +133,8 @@ jobs:
           DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Run clippy
         run: cargo clippy --all-targets --all-features --locked -- -D warnings
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
 
   tests:
     name: Unit and Integration Tests
