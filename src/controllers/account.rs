@@ -249,17 +249,10 @@ pub async fn api_login(
     }
 }
 
-pub async fn api_test() -> Json<Value> {
-    Json(json!({
-        "message": "test endpoint"
-    }))
-}
-
 pub fn account_routes() -> Router {
     Router::new()
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))
-        .route("/test", get(api_test))
 }
 
 #[cfg(test)]
