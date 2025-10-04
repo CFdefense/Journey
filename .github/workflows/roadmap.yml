@@ -63,6 +63,7 @@ jobs:
             | . as $issue
             | $issue.projectItems.nodes[0] as $item
             | $item.fieldValues.nodes
+            | map(select(.field.name != null))      # ignore any nodes missing a field name
             | map({
                 (.field.name): {
                   "id": .id,
@@ -75,6 +76,8 @@ jobs:
                 "projectId": $issue.projectV2.id
               }
           ' | jq -s '.')
+
+          echo "$FIELDS"
 
           for row in $(echo "$FIELDS" | jq -c '.[]'); do
             STATUS=$(echo "$row" | jq -r '.Status.value')
@@ -90,6 +93,17 @@ jobs:
             PROJECT_ID=$(echo "$row" | jq -r '.projectId')
 
             TODAY=$(date +%Y-%m-%d)
+
+            echo "$STATUS"
+            echo "$START"
+            echo "$DUE"
+            echo "$DAYS"
+            echo "$TYPE"
+            echo "$START_ID"
+            echo "$DUE_ID"
+            echo "$ITEM_ID"
+            echo "$PROJECT_ID"
+            echo "$TODAY"
 
             if [ "$STATUS" = "In Progress" ] || [ "$STATUS" = "In Review" ]; then
               # Set Start date if missing
