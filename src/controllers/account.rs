@@ -12,7 +12,7 @@
  *   api_test           - /account/test   -> serves test of account api functionality
  */
 
- use axum::{
+use axum::{
     Extension, Json, Router,
     http::StatusCode,
     routing::{get, post},
@@ -22,14 +22,17 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use tower_cookies::{Cookie, Cookies, cookie::{SameSite, time::Duration}};
+use tower_cookies::{
+    Cookie, Cookies,
+    cookie::{SameSite, time::Duration},
+};
 
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tracing::{error, info};
 
-use crate::models::account::*;
 use crate::error::ApiResult;
+use crate::models::account::*;
 
 /// Create a new user.
 ///
@@ -78,12 +81,10 @@ pub async fn api_signup(
     }
 
     // Check if user already exists
-    let existing_user_result = sqlx::query!(
-        "SELECT id FROM accounts WHERE email = $1",
-        payload.email
-    )
-    .fetch_optional(&pool)
-    .await;
+    let existing_user_result =
+        sqlx::query!("SELECT id FROM accounts WHERE email = $1", payload.email)
+            .fetch_optional(&pool)
+            .await;
 
     match existing_user_result {
         Ok(Some(_)) => {
@@ -111,7 +112,10 @@ pub async fn api_signup(
     let password_hash = argon2
         .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|e| {
-            error!("ERROR ->> /api/signup 'api_signup' REASON: Failed to hash password: {:?}", e);
+            error!(
+                "ERROR ->> /api/signup 'api_signup' REASON: Failed to hash password: {:?}",
+                e
+            );
             StatusCode::INTERNAL_SERVER_ERROR
         })?
         .to_string();
@@ -219,7 +223,10 @@ pub async fn api_login(
             // Create a token value (in a real app, this would be a JWT or similar)
             let token_value = format!("user-{}.exp.sign", result.id);
 
-            info!("INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}", token_value, on_production);
+            info!(
+                "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",
+                token_value, on_production
+            );
 
             // Build the cookie with enhanced security
             let cookie = Cookie::build("auth-token", token_value.clone())
@@ -227,7 +234,11 @@ pub async fn api_login(
                 .path("/")
                 .secure(on_production)
                 .http_only(true)
-                .same_site(if on_production { SameSite::None } else { SameSite::Lax })
+                .same_site(if on_production {
+                    SameSite::None
+                } else {
+                    SameSite::Lax
+                })
                 .max_age(Duration::days(3))
                 .finish();
 
@@ -259,8 +270,8 @@ pub fn account_routes() -> Router {
 mod tests {
     use super::*;
     use argon2::{
-        password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
         Argon2,
+        password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
     };
 
     /// Test password verification logic
@@ -269,7 +280,7 @@ mod tests {
         let password = "test_password123";
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        
+
         // Hash the password
         let password_hash = argon2
             .hash_password(password.as_bytes(), &salt)
@@ -314,7 +325,11 @@ mod tests {
             .path("/")
             .secure(on_production)
             .http_only(true)
-            .same_site(if on_production { SameSite::None } else { SameSite::Lax })
+            .same_site(if on_production {
+                SameSite::None
+            } else {
+                SameSite::Lax
+            })
             .max_age(Duration::days(3))
             .finish();
 
@@ -338,7 +353,11 @@ mod tests {
             .path("/")
             .secure(on_production)
             .http_only(true)
-            .same_site(if on_production { SameSite::None } else { SameSite::Lax })
+            .same_site(if on_production {
+                SameSite::None
+            } else {
+                SameSite::Lax
+            })
             .max_age(Duration::days(3))
             .finish();
 
@@ -402,9 +421,17 @@ mod tests {
         // But both should verify the same password
         let parsed_hash1 = PasswordHash::new(&hash1).unwrap();
         let parsed_hash2 = PasswordHash::new(&hash2).unwrap();
-        
-        assert!(Argon2::default().verify_password(password.as_bytes(), &parsed_hash1).is_ok());
-        assert!(Argon2::default().verify_password(password.as_bytes(), &parsed_hash2).is_ok());
+
+        assert!(
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed_hash1)
+                .is_ok()
+        );
+        assert!(
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed_hash2)
+                .is_ok()
+        );
     }
 
     /// Test that password hash cannot be reversed to plain text
@@ -421,7 +448,7 @@ mod tests {
 
         // Hash should not contain the plain password
         assert!(!password_hash.contains(password));
-        
+
         // Hash should be significantly longer than input
         assert!(password_hash.len() > password.len() * 2);
     }
@@ -430,7 +457,7 @@ mod tests {
     #[test]
     fn test_signup_response_structure() {
         use crate::models::account::SignupResponse;
-        
+
         let response = SignupResponse {
             id: 123,
             email: "test@example.com".to_string(),
@@ -444,7 +471,7 @@ mod tests {
     #[test]
     fn test_login_response_structure() {
         use crate::models::account::LoginResponse;
-        
+
         let response = LoginResponse {
             id: 456,
             token: "user-456.exp.sign".to_string(),
@@ -467,7 +494,7 @@ mod tests {
         assert!(result.is_ok());
 
         let password_hash = result.unwrap().to_string();
-        
+
         // Verify the hash works
         let parsed_hash = PasswordHash::new(&password_hash).unwrap();
         assert!(
@@ -475,7 +502,7 @@ mod tests {
                 .verify_password(test_password.as_bytes(), &parsed_hash)
                 .is_ok()
         );
-        
+
         // But wrong password should fail
         assert!(
             Argon2::default()
@@ -519,7 +546,7 @@ mod tests {
         // 128 characters with required complexity
         let max_password = "A".to_string() + &"a".repeat(126) + "1";
         assert_eq!(max_password.len(), 128);
-        
+
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
 
@@ -536,5 +563,4 @@ mod tests {
                 .is_ok()
         );
     }
-
 }

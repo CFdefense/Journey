@@ -12,13 +12,12 @@ mod error;
 #[cfg(test)]
 mod test;
 
-
+use axum::Router;
+use http::{Method, header::HeaderValue};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use axum::Router;
 use tower_http::cors::CorsLayer;
-use http::{Method, header::HeaderValue};
 
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -42,7 +41,11 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     / TODO: Ensure we have all the right values below, may need to constrict the requests we accept
     */
     let cors = CorsLayer::new()
-        .allow_origin(front_end_url.parse::<HeaderValue>().expect("Invalid frontend_url format"))
+        .allow_origin(
+            front_end_url
+                .parse::<HeaderValue>()
+                .expect("Invalid frontend_url format"),
+        )
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers([
@@ -59,9 +62,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // TODO: Intialize cookies
 
     // Build the main router with CORS middleware
-    let app = Router::new()
-        .nest("/account", account_routes)
-        .layer(cors);
+    let app = Router::new().nest("/account", account_routes).layer(cors);
 
     /*
     / Bind the router to a specific port

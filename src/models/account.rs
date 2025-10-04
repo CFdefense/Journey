@@ -12,8 +12,8 @@
  *   SignupPayload      - Model representing the payload for a signup
  */
 
-use serde::{Deserialize, Serialize};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
@@ -57,28 +57,28 @@ impl SignupPayload {
         if password.len() < 8 {
             return Err("Password must be at least 8 characters long".to_string());
         }
-        
+
         if password.len() > 128 {
             return Err("Password must be 128 characters or less".to_string());
         }
-        
+
         // Only allow ASCII characters (prevents potential encoding issues)
         if !password.is_ascii() {
             return Err("Password must contain only ASCII characters".to_string());
         }
-        
+
         if !password.chars().any(|c| c.is_uppercase()) {
             return Err("Password must contain at least one uppercase letter".to_string());
         }
-        
+
         if !password.chars().any(|c| c.is_lowercase()) {
             return Err("Password must contain at least one lowercase letter".to_string());
         }
-        
+
         if !password.chars().any(|c| c.is_numeric()) {
             return Err("Password must contain at least one number".to_string());
         }
-        
+
         Ok(())
     }
 
@@ -89,38 +89,37 @@ impl SignupPayload {
         if email_trimmed.is_empty() {
             return Err("Email is required".to_string());
         }
-        
+
         if !Self::validate_email(email_trimmed) {
             return Err("Invalid email format".to_string());
         }
-        
+
         // Validate first name (trim before checking)
         let first_name_trimmed = self.first_name.trim();
         if first_name_trimmed.is_empty() {
             return Err("First name is required".to_string());
         }
-        
+
         if first_name_trimmed.len() > 50 {
             return Err("First name must be 50 characters or less".to_string());
         }
-        
+
         // Validate last name (trim before checking)
         let last_name_trimmed = self.last_name.trim();
         if last_name_trimmed.is_empty() {
             return Err("Last name is required".to_string());
         }
-        
+
         if last_name_trimmed.len() > 50 {
             return Err("Last name must be 50 characters or less".to_string());
         }
-        
+
         // Validate password
         Self::validate_password(&self.password)?;
-        
+
         Ok(())
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginResponse {
@@ -325,7 +324,10 @@ mod tests {
         };
         let result = payload.validate();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "First name must be 50 characters or less");
+        assert_eq!(
+            result.unwrap_err(),
+            "First name must be 50 characters or less"
+        );
     }
 
     #[test]
@@ -338,7 +340,10 @@ mod tests {
         };
         let result = payload.validate();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Last name must be 50 characters or less");
+        assert_eq!(
+            result.unwrap_err(),
+            "Last name must be 50 characters or less"
+        );
     }
 
     #[test]
