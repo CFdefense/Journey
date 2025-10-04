@@ -83,8 +83,6 @@ jobs:
               }
           ' | jq -s '.')
 
-          echo "$FIELDS"
-
           echo "$FIELDS" | jq -c '.[]' | while read -r row; do
             STATUS=$(echo "$row"  | jq -r '.Status.value')
             STARTED=$(echo "$row" | jq -r '.Started.value')
@@ -99,17 +97,6 @@ jobs:
             PROJECT_ID=$(echo "$row" | jq -r '.projectId')
 
             TODAY=$(date +%Y-%m-%d)
-
-            echo "$STATUS"
-            echo "$STARTED"
-            echo "$DUE"
-            echo "$DAYS"
-            echo "$TYPE"
-            echo "$DUE_ID"
-            echo "$STARTED_ID"
-            echo "$ITEM_ID"
-            echo "$PROJECT_ID"
-            echo "$TODAY"
 
             if [ "$STATUS" = "In Progress" ] || [ "$STATUS" = "In Review" ]; then
               # Set Started date if missing
