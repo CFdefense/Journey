@@ -29,7 +29,10 @@ jobs:
                   hasPreviousPage
                 }
                 nodes {
-                  projectV2(number:2) { id }
+                  projectV2(number:2) {
+                    id
+                    field(name:"Started") {... on ProjectV2Field {id}}
+                  }
                   projectItems(first:1){
                     nodes{
                       id
@@ -73,7 +76,8 @@ jobs:
             | add
             | . + {
                 "itemId": $item.id,
-                "projectId": $issue.projectV2.id
+                "projectId": $issue.projectV2.id,
+                "startedId": $issue.projectV2.field.id
               }
           ' | jq -s '.')
 
@@ -86,9 +90,9 @@ jobs:
             DAYS=$(echo "$row"   | jq -r '.Days.value')
             TYPE=$(echo "$row"   | jq -r '.Type.value')
 
-            STARTED_ID=$(echo "$row" | jq -r '.Started.id')
             DUE_ID=$(echo "$row"   | jq -r '.Due.id')
 
+            STARTED_ID=$(echo "$row" | jq -r '.startedId')
             ITEM_ID=$(echo "$row"    | jq -r '.itemId')
             PROJECT_ID=$(echo "$row" | jq -r '.projectId')
 
@@ -99,8 +103,8 @@ jobs:
             echo "$DUE"
             echo "$DAYS"
             echo "$TYPE"
-            echo "$STARTED_ID"
             echo "$DUE_ID"
+            echo "$STARTED_ID"
             echo "$ITEM_ID"
             echo "$PROJECT_ID"
             echo "$TODAY"
