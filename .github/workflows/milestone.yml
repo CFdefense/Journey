@@ -1,0 +1,135 @@
+name: Milestone
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+jobs:
+  milestone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GitHub CLI
+        uses: actions/setup-gh-cli@v2
+
+      - name: Sync epic/story fields
+        env:
+          GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
+          LABELS=$(gh api repos/CFdefense/Capping2025/issues/$ISSUE_NUMBER --jq '.labels[].name')
+
+          if echo "$LABELS" | grep -qi "epic"; then
+            # Epic: sum child story Days
+
+            RESULT=$(gh api graphql -f query='
+            query($num:Int!) {
+              repository(owner:"CFdefense", name:"Capping2025"){
+                issue(number:$num){
+                  milestone { id }
+                  projectV2(number:2) { id }
+                  projectItems(first:1){
+                    nodes{
+                      id
+                      fieldValues(first:10){
+                        nodes{
+                          ... on ProjectV2ItemFieldNumberValue {
+                            id
+                            number
+                            field { ... on ProjectV2Field { name } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  subIssues(first:100) {
+                    nodes {
+                      projectItems(first:1){
+                        nodes{
+                          fieldValues(first:10){
+                            nodes{
+                              ... on ProjectV2ItemFieldNumberValue {
+                                number
+                                field { ... on ProjectV2Field { name } }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -F num=$ISSUE_NUMBER | jq '{
+              milestoneId: .data.repository.issue.milestone.id,
+              projectId: .data.repository.issue.projectV2.id,
+              epicItemId: .data.repository.issue.projectItems.nodes[0].id,
+              epicDaysId: (
+                .data.repository.issue.projectItems.nodes[0].fieldValues.nodes[]
+                | select(.field.name=="Days")
+                | .id
+              ),
+              epicDays: (
+                .data.repository.issue.projectItems.nodes[0].fieldValues.nodes[]
+                | select(.field.name=="Days")
+                | .number
+              ),
+              newDays: (
+                [.data.repository.issue.subIssues.nodes[]
+                  .projectItems.nodes[]
+                  .fieldValues.nodes[]
+                  | select(.field.name=="Days")
+                  | .number]
+                | add // 0
+              )
+            }')
+
+            PROJECT_ID=$(echo "$RESULT" | jq -r '.projectId')
+            EPIC_ITEM_ID=$(echo "$RESULT" | jq -r '.epicItemId')
+            EPIC_DAYS_ID=$(echo "$RESULT" | jq -r '.epicDaysId')
+            EPIC_DAYS=$(echo "$RESULT" | jq -r '.epicDays')
+            NEW_DAYS=$(echo "$RESULT" | jq -r '.newDays')
+
+            if [ "$EPIC_DAYS" != "$NEW_DAYS" ]; then
+              gh api graphql -f query='
+              mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
+                updateProjectV2ItemFieldValue(input:{
+                  clientMutationId:"milestone_gh_action"
+                  fieldId:$fId
+                  itemId:$iId
+                  projectId:$pId
+                  value:{number:$val}
+                }) {clientMutationId}
+              }' -F fId=$EPIC_DAYS_ID -F iId=$EPIC_ITEM_ID -F pId=$PROJECT_ID -F val=$NEW_DAYS
+            fi
+          elif echo "$LABELS" | grep -qi "story"; then
+            # Story: Set this issue's milestone to parent issue's milestone, if it exists
+
+            RESULT=$(gh api graphql -f query='
+            query($num:Int!) {
+              repository(owner:"CFdefense", name:"Capping2025"){
+                issue(number:$num){
+                  id
+                  milestone { id }
+                  parent {
+                    milestone { id }
+                  }
+                }
+              }
+            }' -F num=$ISSUE_NUMBER)
+
+            STORY_ID=$(echo "$RESULT" | jq -r '.data.repository.issue.id')
+            PARENT_MILESTONE_ID=$(echo "$RESULT" | jq -r '.data.repository.issue.parent.milestone.id')
+            ISSUE_MILESTONE_ID=$(echo "$RESULT" | jq -r '.data.repository.issue.milestone.id')
+
+            if [ -n "$PARENT_MILESTONE_ID" ] && [ "$ISSUE_MILESTONE_ID" != "$PARENT_MILESTONE_ID" ]; then
+              gh api graphql -f query='
+              mutation($sId:ID!, $mId:ID!) {
+                updateIssue(input:{
+                  clientMutationId:"milestone_gh_action"
+                  id:$sId
+                  milestoneId:$mId
+                }) {clientMutationId}
+              }' -F sId=$STORY_ID -F mId=$PARENT_MILESTONE_ID
+            fi
+          fi
