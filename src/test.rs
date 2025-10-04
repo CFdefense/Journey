@@ -1,5 +1,5 @@
 use {
-    crate::{global::*, log},
+    crate::{global::*, log, db},
     std::{fs, io::Write, path::Path, time::Duration},
     tracing::{error, info, trace},
 };
@@ -55,7 +55,7 @@ fn test_db_pool_panics_without_env() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             // Should panic due to missing env var
-            let _ = crate::db::create_pool().await;
+            let _ = db::create_pool().await;
         });
     });
 
@@ -87,7 +87,7 @@ async fn test_db_pool_connects_and_selects() {
         std::env::set_var("DATABASE_URL", database_url);
     }
 
-    let pool = crate::db::create_pool().await;
+    let pool = db::create_pool().await;
 
     // Simple liveness query
     let row: (i32,) = sqlx::query_as("SELECT 1")
