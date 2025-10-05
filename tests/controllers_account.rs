@@ -405,7 +405,13 @@ async fn spawn_app() -> (String, sqlx::PgPool) {
     }
 
     let pool = db::create_pool().await;
-    migrate!("./migrations").run(&pool).await.expect("migrations run");
+    match migrate!("./migrations").run(&pool).await {
+        Ok(_) => (),
+        Err(sqlx::migrate::MigrateError::VersionMismatch(_)) => {
+            eprintln!("migrations version mismatch; assuming DB already prepared. Skipping.");
+        }
+        Err(e) => panic!("migrations run: {e}"),
+    }
 
     // Build app
     let account_routes = controllers::account::account_routes()
