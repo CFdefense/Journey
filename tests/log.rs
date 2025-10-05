@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 	use {
-		capping2025::{constants::*, log},
+		capping2025::{global::*, log},
 		std::{fs, io::Write, path::Path, time::Duration},
 		tracing::{error, info, trace}
 	};

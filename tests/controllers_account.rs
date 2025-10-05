@@ -393,8 +393,11 @@ async fn test_signup_conflict_on_duplicate_email() {
 }
 
 async fn spawn_app() -> (String, sqlx::PgPool) {
+	// Only use dotenvy for local testing
+	// CI testing should use GitHub environment variables
+	_ = dotenvy::dotenv();
+
     // Ensure env and database
-    dotenv::dotenv().ok();
     if std::env::var("DATABASE_URL").is_err() {
         unsafe {
             std::env::set_var(
