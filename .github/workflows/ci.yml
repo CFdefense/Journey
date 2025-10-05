@@ -32,54 +32,198 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  check:
-    name: Check
+  sqlx_prepare:
+    name: SQLx Migration Prepare
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
+      - name: Prepare SQLx offline data
+        run: cargo sqlx prepare --database-url postgres://postgres:password@localhost:5432/capping2025
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Check all workspaces
         run: cargo check --all-targets --all-features --locked
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Run clippy
         run: cargo clippy --all-targets --all-features --locked -- -D warnings
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
 
   tests:
     name: Unit and Integration Tests
     runs-on: ubuntu-latest
     needs: [check]
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Run tests
         run: cargo test --all-targets --all-features --locked
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
 
   bench:
     name: Benchmarks
     runs-on: ubuntu-latest
     needs: [check]
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Run benchmarks
         run: cargo bench --all-targets --all-features --locked
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
 
   code_cov:
     name: Code Coverage
     runs-on: ubuntu-latest
     needs: [tests]
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -87,5 +231,15 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-tarpaulin
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Setup database
+        run: |
+          sqlx database create
+          psql postgres://postgres:password@localhost:5432/capping2025 -f migrations/01_migration_script.sql
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
       - name: Run Code Coverage
         run: cargo tarpaulin --all-targets --all-features --locked --fail-under 80 --out Stdout Html
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025

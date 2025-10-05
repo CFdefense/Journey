@@ -1,7 +1,7 @@
 use {
-	crate::{constants::*, log},
-	std::{fs, io::Write, path::Path, time::Duration},
-	tracing::{error, info, trace}
+    crate::{global::*, log},
+    std::{fs, io::Write, path::Path, time::Duration},
+    tracing::{error, info, trace},
 };
 
 /// Verifies that `logs/latest.log` is created and written to from log events.
@@ -33,13 +33,15 @@ fn test_logger() {
 /// Verifies that `logs/crash.log` is created and written to on a panic.
 #[test]
 fn test_panic_handler() {
-	_ = fs::remove_file(CRASH_LOG);
-	log::init_panic_handler();
-	std::panic::catch_unwind(||{
-		panic!("Test panic");
-	}).unwrap_err();
-	assert!(fs::read_to_string(CRASH_LOG).unwrap().len() > 0);
+    _ = fs::remove_file(CRASH_LOG);
+    log::init_panic_handler();
+    std::panic::catch_unwind(|| {
+        panic!("Test panic");
+    })
+    .unwrap_err();
+    assert!(fs::read_to_string(CRASH_LOG).unwrap().len() > 0);
 }
+
 
 /// Verifies that `db::create_pool` panics when `DATABASE_URL` is not set.
 #[test]
