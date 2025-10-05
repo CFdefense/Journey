@@ -64,6 +64,12 @@ INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (3, 'ch
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton');
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis');
 
+-- Ensure the accounts id sequence matches the max(id) after manual inserts
+SELECT setval(
+    pg_get_serial_sequence('accounts', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 0) FROM accounts), 1)
+);
+
 -- Events
 INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name) VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'Hike', 'A beautiful stroll along a river in this cute small town.', 'Family Walking Path');
 INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name) VALUES (2, '35 Campus Court', 12601, 'Poughkeepsie', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos');
@@ -74,12 +80,24 @@ INSERT INTO events (id, street_address, postal_code, city, event_type, event_des
 INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name) VALUES (7, '1 Rue de la Seine', 00000, 'Paris', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower');
 INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name) VALUES (8, '3 Rue de la Museu', 00000, 'Paris', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre');
 
+-- Ensure the events id sequence matches the max(id)
+SELECT setval(
+    pg_get_serial_sequence('events', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 0) FROM events), 1)
+);
+
 -- Itineraries
 INSERT INTO itineraries (id, account_id, is_public, date) VALUES (1, 1, FALSE, '2025-11-05 00:00:00'); -- Ellie
 INSERT INTO itineraries (id, account_id, is_public, date) VALUES (2, 2, TRUE, '2025-10-12 00:00:00'); -- Nick
 INSERT INTO itineraries (id, account_id, is_public, date) VALUES (3, 3, TRUE, '2025-12-01 00:00:00'); --Christian
 INSERT INTO itineraries (id, account_id, is_public, date) VALUES (4, 4, FALSE, '2025-07-15 00:00:00'); -- Ethan
 INSERT INTO itineraries (id, account_id, is_public, date) VALUES (5, 5, FALSE, '2025-08-15 00:00:00'); -- Peter
+
+-- Ensure the itineraries id sequence matches the max(id)
+SELECT setval(
+    pg_get_serial_sequence('itineraries', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 0) FROM itineraries), 1)
+);
 
 -- Event List 
 -- Itinerary 1 (Nick to NYC + Poopsie)
@@ -99,3 +117,9 @@ INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (6, 4, 6
 --Itinerary 5 (peter in paris)
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (7, 5, 7, 'Morning'); --Eiffel Tower
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (8, 5, 8, 'Afternoon'); --Lourve 
+
+-- Ensure the event_list id sequence matches the max(id)
+SELECT setval(
+    pg_get_serial_sequence('event_list', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 0) FROM event_list), 1)
+);
