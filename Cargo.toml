@@ -31,3 +31,7 @@ path = "src/main.rs"
 
 [dev-dependencies]
 sqlx-cli = "0.8"
+tower = "0.4"
+serial_test = "3"
+anyhow = "1"
+httpc-test = "0.1"

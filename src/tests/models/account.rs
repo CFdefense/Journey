@@ -8,7 +8,7 @@
  *   password strength requirements, and signup payload validation.
  */
 
-use capping2025::models::account::SignupPayload;
+use crate::models::account::SignupPayload;
 
 // ===== Email Validation Tests =====
 

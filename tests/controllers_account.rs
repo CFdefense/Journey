@@ -18,6 +18,15 @@ use tower_cookies::{
 };
 
 use capping2025::models::account::{SignupResponse, LoginResponse};
+use capping2025::{controllers, db};
+use axum::{Router, Extension};
+use serde_json::json;
+use tower_cookies::CookieManagerLayer;
+use chrono::Utc;
+use serial_test::serial;
+use anyhow::{anyhow, Result};
+use std::net::TcpListener;
+use sqlx::migrate;
 
 /// Test password verification logic
 #[test]
@@ -303,4 +312,152 @@ fn test_signup_max_password_length() {
             .verify_password(max_password.as_bytes(), &parsed_hash)
             .is_ok()
     );
+}
+
+#[tokio::test]
+#[serial]
+async fn test_signup_and_login_happy_path() {
+    let (base, _pool) = spawn_app().await;
+    let hc = httpc_test::new_client(&base).unwrap();
+
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("user+{}@example.com", unique);
+
+    // Signup
+    let resp = hc
+        .do_post(
+            "/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Alice",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 201);
+
+    // Login
+    let resp = hc
+        .do_post(
+            "/account/login",
+            json!({
+                "email": format!("user+{}@example.com", unique),
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 200);
+}
+
+#[tokio::test]
+#[serial]
+async fn test_signup_conflict_on_duplicate_email() {
+    let (base, _pool) = spawn_app().await;
+    let hc = httpc_test::new_client(&base).unwrap();
+
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("dupe+{}@example.com", unique);
+
+    // First signup should succeed
+    let resp1 = hc
+        .do_post(
+            "/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Bob",
+                "last_name": "Dupe",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp1.status().as_u16(), 201);
+
+    // Second signup with same email should 409
+    let resp2 = hc
+        .do_post(
+            "/account/signup",
+            json!({
+                "email": format!("dupe+{}@example.com", unique),
+                "first_name": "Bob",
+                "last_name": "Dupe",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp2.status().as_u16(), 409);
+}
+
+async fn spawn_app() -> (String, sqlx::PgPool) {
+    // Ensure env and database
+    dotenv::dotenv().ok();
+    if std::env::var("DATABASE_URL").is_err() {
+        unsafe {
+            std::env::set_var(
+                "DATABASE_URL",
+                "postgres://postgres:password@localhost:5432/capping2025",
+            );
+        }
+    }
+
+    let pool = db::create_pool().await;
+    migrate!("./migrations").run(&pool).await.expect("migrations run");
+
+    // Build app
+    let account_routes = controllers::account::account_routes()
+        .layer(Extension(pool.clone()))
+        .layer(CookieManagerLayer::new());
+    let app = Router::new().nest("/account", account_routes);
+
+    // Bind to ephemeral port and spawn server
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+    let addr = listener.local_addr().unwrap();
+    let server = axum::Server::from_tcp(listener)
+        .unwrap()
+        .serve(app.into_make_service());
+    tokio::spawn(server);
+
+    (format!("http://{}", addr), pool)
+}
+
+#[tokio::test]
+#[serial]
+async fn test_http_signup_and_login_flow() -> Result<()> {
+    let (base, _pool) = spawn_app().await;
+    let hc = httpc_test::new_client(&base)?;
+
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("user+{}@example.com", unique);
+
+    // Signup
+    let resp = hc
+        .do_post(
+            "/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Alice",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await?;
+    if !resp.status().is_success() { return Err(anyhow!("signup failed: {}", resp.status())); }
+
+    // Login
+    let resp = hc
+        .do_post(
+            "/account/login",
+            json!({
+                "email": format!("user+{}@example.com", unique),
+                "password": "Password123"
+            }),
+        )
+        .await?;
+    if !resp.status().is_success() { return Err(anyhow!("login failed: {}", resp.status())); }
+
+    Ok(())
 }

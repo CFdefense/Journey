@@ -17,7 +17,7 @@ use tower_cookies::{
     cookie::{SameSite, time::Duration},
 };
 
-use capping2025::models::account::{SignupResponse, LoginResponse};
+use crate::models::account::{SignupResponse, LoginResponse};
 
 /// Test password verification logic
 #[test]
