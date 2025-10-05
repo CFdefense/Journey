@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
 import "./Login.css";
+import { login } from "../api/login";
 
 export default function Login() {
  const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
@@ -8,20 +9,21 @@ export default function Login() {
  const [error, setError] = useState(""); // for showing error messages
  const navigate = useNavigate();
 
- const handleSubmit = (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault(); // stops the page from refreshing 
       console.log("email: " + email + " password: " + password)
 
-      // *****this will be replaced by backend validation API call
-      if(email === "123@gmail.com" && password === "123") {
+      try {
+        const result = await login({email, password});
+        console.log("Login successful: " + result);
         setError("");
-        navigate("/create") // go to itinerary creation page by default
-      } else {
-        setError("Invalid username or password.")
+        localStorage.setItem("authToken", result.token);
+        navigate("/create");
+      } catch (err: any) {
+        setError(err.message || "Login failed.");
       }
+ };
       
- }
- 
   return (
     <div className="login-container">
       <div className="login-box">
@@ -61,4 +63,5 @@ export default function Login() {
     </div>
   );
 }
+
 
