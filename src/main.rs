@@ -6,24 +6,22 @@ mod global;
 mod log;
 mod middleware;
 mod models;
-
 mod error;
-
-#[cfg(test)]
-mod test;
 
 use axum::Router;
 use http::{Method, header::HeaderValue};
-
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use tower_http::cors::CorsLayer;
 
+#[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Load our evironment variables
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
+    log::init_panic_handler();
+	log::init_logger();
 
     // Read and store loaded environment variables
     let api_base_url = env::var("API_BASE_URL").expect("API_BASE_URL must be set");
