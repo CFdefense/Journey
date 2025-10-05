@@ -1,4 +1,4 @@
--- In psql run \i migrations/migration_script.sql\
+-- In psql run \i migrations/01_migration_script.sql\
 -- IMPORTANT RUN FROM THE ROOT OF THE REPO DIRECTORY
 -- This will wipe the database
 
