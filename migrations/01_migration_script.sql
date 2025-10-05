@@ -58,9 +58,10 @@ CREATE TABLE event_list (
 
 ------- Dummy data to test ---------
 --Accounts
+-- CF: Password is "whatisrust"
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp');
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo');
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (3, 'christianfarrell@gmail.com', 'whatisrust', 'christian', 'farrell');
+INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell'); 
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton');
 INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis');
 
