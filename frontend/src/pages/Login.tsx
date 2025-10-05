@@ -3,17 +3,17 @@ import { useNavigate , Link} from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
- const [userName, setUsername] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
+ const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
  const [password, setPassword] = useState("");
  const [error, setError] = useState(""); // for showing error messages
  const navigate = useNavigate();
 
  const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault(); // stops the page from refreshing 
-      console.log("username: " + userName + " password: " + password)
+      console.log("email: " + email + " password: " + password)
 
       // *****this will be replaced by backend validation API call
-      if(userName === "123" && password === "123") {
+      if(email === "123@gmail.com" && password === "123") {
         setError("");
         navigate("/create") // go to itinerary creation page by default
       } else {
@@ -28,11 +28,11 @@ export default function Login() {
         <h1>Login Page</h1>
         <form onSubmit={handleSubmit}>
           <label>
-            Username:
+            Email:
             <input
               type="text"
-              value={userName}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </label>
