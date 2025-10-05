@@ -1,5 +1,5 @@
 use {
-	Capping2025::db,
+	capping2025::db,
 	tracing::info
 };
 

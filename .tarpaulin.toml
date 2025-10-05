@@ -2,7 +2,6 @@
 [run]
 exclude-files = [
   "src/main.rs",
-  "src/controllers/account.rs",
 ]
 
 [report]

@@ -12,6 +12,7 @@
  *   SignupPayload      - Model representing the payload for a signup
  */
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +37,100 @@ pub struct SignupPayload {
     pub first_name: String,
     pub last_name: String,
     pub password: String,
+}
+
+impl SignupPayload {
+    /// Validate email format using regex
+    pub fn validate_email(email: &str) -> bool {
+        let email_regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+        email_regex.is_match(email)
+    }
+
+    /// Validate password strength
+    /// - Minimum 8 characters
+    /// - Maximum 128 characters
+    /// - At least one uppercase letter
+    /// - At least one lowercase letter
+    /// - At least one number
+    /// - Only ASCII characters allowed (for security and compatibility)
+    pub fn validate_password(password: &str) -> Result<(), String> {
+        if password.len() < 8 {
+            return Err("Password must be at least 8 characters long".to_string());
+        }
+
+        if password.len() > 128 {
+            return Err("Password must be 128 characters or less".to_string());
+        }
+
+        // Only allow ASCII characters (prevents potential encoding issues)
+        if !password.is_ascii() {
+            return Err("Password must contain only ASCII characters".to_string());
+        }
+
+        if !password.chars().any(|c| c.is_uppercase()) {
+            return Err("Password must contain at least one uppercase letter".to_string());
+        }
+
+        if !password.chars().any(|c| c.is_lowercase()) {
+            return Err("Password must contain at least one lowercase letter".to_string());
+        }
+
+        if !password.chars().any(|c| c.is_numeric()) {
+            return Err("Password must contain at least one number".to_string());
+        }
+
+        Ok(())
+    }
+
+    /// Validate the entire signup payload
+    pub fn validate(&self) -> Result<(), String> {
+        // Validate email (trim before checking)
+        let email_trimmed = self.email.trim();
+        if email_trimmed.is_empty() {
+            return Err("Email is required".to_string());
+        }
+
+        if !Self::validate_email(email_trimmed) {
+            return Err("Invalid email format".to_string());
+        }
+
+        // Validate first name (trim before checking)
+        let first_name_trimmed = self.first_name.trim();
+        if first_name_trimmed.is_empty() {
+            return Err("First name is required".to_string());
+        }
+
+        if first_name_trimmed.len() > 50 {
+            return Err("First name must be 50 characters or less".to_string());
+        }
+
+        // Validate last name (trim before checking)
+        let last_name_trimmed = self.last_name.trim();
+        if last_name_trimmed.is_empty() {
+            return Err("Last name is required".to_string());
+        }
+
+        if last_name_trimmed.len() > 50 {
+            return Err("Last name must be 50 characters or less".to_string());
+        }
+
+        // Validate password
+        Self::validate_password(&self.password)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub id: i32,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SignupResponse {
+    pub id: i32,
+    pub email: String,
 }
 
 // TODO: More Payloads...

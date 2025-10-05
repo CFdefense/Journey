@@ -19,11 +19,23 @@ In prod, we would compile the react files into html/css/js files (or however it 
 ## Database
 Bring container up
 ```sh
+# Windows
 docker-compose up -d
+
+# Unix (make sure docker.service and docker.socket are active and running)
+sudo docker compose up -d
 ```
 Login to database
 ```sh
 psql -h localhost -p 5431 -U postgres -d travelagent
+```
+Kill database
+```sh
+# Windows
+# TODO
+
+# Unix
+sudo docker compose down db
 ```
 ## Development
 Install Rust using your package manager or from their [website](https://rust-lang.org/tools/install/).

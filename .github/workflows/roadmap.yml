@@ -1,0 +1,135 @@
+name: Roadmap
+
+on:
+  schedule:
+    # switch these on November 2 at 2:00 am
+    - cron: "30 3 * * *"   # 3:30 UTC == 11:30 PM New York (DST)
+    # - cron: "30 4 * * *"   # 4:30 UTC == 11:30 PM New York (Standard Time)
+  workflow_dispatch:
+
+jobs:
+  roadmap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Process roadmap logic
+        env:
+          GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
+        run: |
+          FIELDS=$(gh api graphql --paginate -f query='
+          query {
+            repository(owner:"CFdefense", name:"Capping2025"){
+              issues(first:100, states:OPEN){
+                pageInfo {
+                  endCursor
+                  startCursor
+                  hasNextPage
+                  hasPreviousPage
+                }
+                nodes {
+                  projectV2(number:2) {
+                    id
+                    startedField: field(name:"Started") {... on ProjectV2Field {id}}
+                    dueField: field(name:"Due") {... on ProjectV2Field {id}}
+                  }
+                  projectItems(first:1){
+                    nodes{
+                      id
+                      fieldValues(first:10){
+                        nodes{
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            id
+                            field { ... on ProjectV2Field { name } }
+                          }
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                            id
+                            field { ... on ProjectV2SingleSelectField { name } }
+                          }
+                        ... on ProjectV2ItemFieldNumberValue {
+                            number
+                            id
+                            field { ... on ProjectV2Field { name } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' | jq -r '
+            .data.repository.issues.nodes[]
+            | select(.projectItems.nodes | length > 0)  # skip issues not in the project
+            | . as $issue
+            | $issue.projectItems.nodes[0] as $item
+            | $item.fieldValues.nodes
+            | map(select(.field.name != null))      # ignore any nodes missing a field name
+            | map({
+                (.field.name): {
+                  "id": .id,
+                  "value": (.date // .name // .number)
+                }
+              })
+            | add
+            | . + {
+                "itemId": $item.id,
+                "projectId": $issue.projectV2.id,
+                "startedId": $issue.projectV2.startedField.id,
+                "dueId": $issue.projectV2.dueField.id
+              }
+          ' | jq -s '.')
+
+          echo "$FIELDS" | jq -c '.[]' | while read -r row; do
+            STATUS=$(echo "$row"  | jq -r '.Status.value')
+            STARTED=$(echo "$row" | jq -r '.Started.value')
+            DUE=$(echo "$row"     | jq -r '.Due.value')
+            DAYS=$(echo "$row"    | jq -r 'if (.Days.value | type) == "number" then (.Days.value | floor) else empty end')
+            TYPE=$(echo "$row"    | jq -r '.Type.value')
+
+            STARTED_ID=$(echo "$row" | jq -r '.startedId')
+            DUE_ID=$(echo "$row"     | jq -r '.dueId')
+
+            ITEM_ID=$(echo "$row"    | jq -r '.itemId')
+            PROJECT_ID=$(echo "$row" | jq -r '.projectId')
+
+            TODAY=$(date +%Y-%m-%d)
+
+            if [ "$STATUS" = "In Progress" ] || [ "$STATUS" = "In Review" ]; then
+              # Set Started date if missing
+              if [ "$STARTED" = "null" ] || [ -z "$STARTED" ]; then
+                gh api graphql -f query='
+                mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    clientMutationId:"roadmap_gh_action"
+                    fieldId:$fId
+                    itemId:$iId
+                    projectId:$pId
+                    value:{date:$val}
+                  }) {clientMutationId}
+                }' -F fId=$STARTED_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
+              fi
+
+              # If story, with Days, and Due missing → set Due = Started + Days
+              if [ "$TYPE" = "Story" ]; then
+                if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
+                  if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
+                    DUE_DATE=$(date -d "$TODAY + $DAYS day" +%Y-%m-%d)
+                    gh api graphql -f query='
+                    mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
+                      updateProjectV2ItemFieldValue(input:{
+                        clientMutationId:"roadmap_gh_action"
+                        fieldId:$fId
+                        itemId:$iId
+                        projectId:$pId
+                        value:{date:$val}
+                      }) {clientMutationId}
+                    }' -F fId=$DUE_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$DUE_DATE
+                  fi
+                fi
+              fi
+            fi
+          done

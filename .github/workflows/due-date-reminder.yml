@@ -38,9 +38,9 @@ jobs:
                   title
                   url
                   assignees(first:5) { nodes { login } }
-                  projectItems(first:50) {
+                  projectItems(first:1) {
                     nodes {
-                      fieldValues(first:20) {
+                      fieldValues(first:10) {
                         nodes {
                           ... on ProjectV2ItemFieldDateValue {
                             date
