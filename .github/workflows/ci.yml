@@ -10,9 +10,6 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: full
   DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: password
-  POSTGRES_DB: capping2025
 
 jobs:
   format:
@@ -42,6 +39,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
@@ -68,6 +69,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
@@ -94,6 +99,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
@@ -122,6 +131,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
@@ -148,6 +161,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
@@ -174,6 +191,10 @@ jobs:
     services:
       postgres:
         image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: capping2025
         ports:
           - 5432:5432
         options: >-
