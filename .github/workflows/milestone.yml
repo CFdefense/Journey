@@ -18,9 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          set -eo pipefail
-
-          ISSUES=$(gh api graphql --paginate -f query='
+          ISSUES_RAW=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025"){
               issues(first:100, states:OPEN){
@@ -47,7 +45,7 @@ jobs:
                           ... on ProjectV2ItemFieldSingleSelectValue {
                             id
                             name
-                            field { ... on ProjectV2Field { name } }
+                            field { ... on ProjectV2SingleSelectField { name } }
                           }
                         }
                       }
@@ -78,38 +76,38 @@ jobs:
               }
             }
           }' | jq '{
-            projectId: (.data.repository.issues.nodes[0].projectV2.id // "null"),
-            issues: [
-              .data.repository.issues.nodes[] | {
-                issueId: .id,
-                milestoneId: .milestone.id,
-                itemId: (.projectItems.nodes[0].id // null),
-                type: (
-                  .projectItems.nodes[0].fieldValues.nodes[]
-                  | select(.field.name=="Type")
-                  | .name
-                ) // null,
-                days: (
-                  (.projectItems.nodes[0].fieldValues.nodes[]
-                   | select(.field.name=="Days")
-                   | { id: (.id // null), number: (.number // 0) })
-                  // { id:null, number:0 }
-                ),
-                parent: (
-                  if .parent != null then {
-                    id: .parent.id,
-                    milestoneId: .parent.milestone.id
-                  } else null end
-                ),
-                subDays: (
-                  [(.subIssues.nodes[]
-                    | .projectItems.nodes[0].fieldValues.nodes[]
-                    | select(.field.name=="Days")
-                    | .number // 0)]
-                  | add // 0
-                ),
-              }
-            ]
+            projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
+            issues: (
+              .data.repository.issues.nodes
+              | map({
+                  issueId: .id,
+                  milestoneId: (.milestone.id // null),
+                  itemId: (.projectItems.nodes[0].id? // null),
+                  type: (
+                    .projectItems.nodes[0].fieldValues.nodes[]?
+                    | select(.field.name=="Type")
+                    | .name
+                  ),
+                  days: (
+                    (.projectItems.nodes[0].fieldValues.nodes[]?
+                     | select(.field.name=="Days")
+                     | { id: (.id // null), number: (.number // 0) })
+                  ),
+                  parent: (
+                    if .parent != null then {
+                      id: .parent.id,
+                      milestoneId: .parent.milestone.id
+                    } else null end
+                  ),
+                  subDays: (
+                    [(.subIssues.nodes[]?
+                      | .projectItems.nodes[0].fieldValues.nodes[]?
+                      | select(.field.name=="Days")
+                      | .number // 0)]
+                    | add // 0
+                  )
+                })
+            )
           }')
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
