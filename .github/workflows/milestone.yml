@@ -75,9 +75,7 @@ jobs:
                 }
               }
             }
-          }')
-          echo "$ISSUES_RAW"
-          ISSUES=$(echo "$ISSUES_RAW" | jq '{
+          }' | jq '{
             projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
             issues: (
               .data.repository.issues.nodes
@@ -114,14 +112,9 @@ jobs:
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
 
-          echo "Issues: $ISSUES"
-
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
             ITEM_ID=$(echo "$row" | jq -r '.itemId')
-
-            echo "Type: $TYPE"
-            echo "Item ID: $ITEM_ID"
 
             if [ "$TYPE" = "Story" ]; then
               MILESTONE_ID=$(echo "$row" | jq -r '.milestoneId')
@@ -129,14 +122,7 @@ jobs:
               PARENT_MILESTONE_ID=$(echo "$row" | jq -r '.parent.milestoneId')
               ISSUE_ID=$(echo "$row" | jq -r '.issueId')
 
-              echo "Milestone ID: $MILESTONE_ID"
-              echo "Parent ID: $PARENT_ID"
-              echo "Parent Milestone ID: $PARENT_MILESTONE_ID"
-              echo "Issue ID: $ISSUE_ID"
-
               if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ]; then
-                echo "setting milestone for issue"
-
                 gh api graphql -f query='
                 mutation($sId:ID!, $mId:ID!) {
                   updateIssue(input:{
