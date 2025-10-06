@@ -18,8 +18,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          set -eo pipefail
-
           ISSUES=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025"){
@@ -114,9 +112,14 @@ jobs:
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
 
+          echo "Issues: $ISSUES"
+
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
             ITEM_ID=$(echo "$row" | jq -r '.itemId')
+
+            echo "Type: $TYPE"
+            echo "Item ID: $ITEM_ID"
 
             if [ "$TYPE" = "Story" ]; then
               MILESTONE_ID=$(echo "$row" | jq -r '.milestoneId')
