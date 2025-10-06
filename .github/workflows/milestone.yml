@@ -124,7 +124,14 @@ jobs:
               PARENT_MILESTONE_ID=$(echo "$row" | jq -r '.parent.milestoneId')
               ISSUE_ID=$(echo "$row" | jq -r '.issueId')
 
+              echo "Milestone ID: $MILESTONE_ID"
+              echo "Parent ID: $PARENT_ID"
+              echo "Parent Milestone ID: $PARENT_MILESTONE_ID"
+              echo "Issue ID: $ISSUE_ID"
+
               if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ]; then
+                echo "setting milestone for issue"
+
                 gh api graphql -f query='
                 mutation($sId:ID!, $mId:ID!) {
                   updateIssue(input:{
