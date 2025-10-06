@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
 import "./Login.css";
-import { login } from "../api/login";
+import { apiLogin } from "../api/login";
 
 export default function Login() {
  const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
@@ -14,7 +14,7 @@ export default function Login() {
       console.log("email: " + email + " password: " + password)
 
       try {
-        const result = await login({email, password});
+        const result = await apiLogin({email, password});
         console.log("Login successful: " + result);
         setError("");
         localStorage.setItem("authToken", result.token);

@@ -10,14 +10,21 @@ export interface LoginResponse {
     token: string; 
 }
 
-/**
- * Calls the Rust backend's /account/login endpoint to attempt user authentication.
- *
- * @param payload { email, password } The user's credentials.
- * @returns A promise resolving to LoginResponse if successful, or throws an error if not.
- */
+/// Handles user login via the Rust backend API.
+///
+/// # Method
+/// Calls `POST /account/login` through `apiLogin`.
+///
+/// # Behavior
+/// - Collects email and password input from the user.
+/// - Sends login request to backend.
+/// - On success: stores auth token and navigates to `/create`.
+/// - On failure: displays the error message received from backend.
+///
+/// # Returns
+/// A rendered login form component that manages authentication flow.
 
-export async function login(payload: LoginRequest): Promise<LoginResponse> {
+export async function apiLogin(payload: LoginRequest): Promise<LoginResponse> {
   console.log("Calling login API with payload:", payload);
   
     try {
@@ -30,12 +37,11 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
       body: JSON.stringify(payload),
     });
 
-
     // handle all errors from backend
     if(!response.ok) {
         if (response.status === 400) {
         throw new Error("Invalid email or password.");
-      } else if (response.status === 501) {
+      } else if (response.status === 500) {
         throw new Error("Server error.");
       } else {
         throw new Error(`Unexpected error: ${response.status}`);
