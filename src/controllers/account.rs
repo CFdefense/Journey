@@ -35,6 +35,8 @@ use base64::Engine;
 
 use crate::error::ApiResult;
 use crate::models::account::*;
+use crate::middleware::{auth_middleware, AuthUser};
+use serde::Serialize;
 
 /// Create a new user.
 ///
@@ -267,8 +269,17 @@ pub async fn api_login(
     }
 }
 
+#[derive(Serialize)]
+pub struct MeResponse { id: i32 }
+
+pub async fn api_me(Extension(user): Extension<AuthUser>) -> ApiResult<Json<MeResponse>> {
+    Ok(Json(MeResponse { id: user.id }))
+}
+
 pub fn account_routes() -> Router {
     Router::new()
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))
+        .route("/me", post(api_me))
+        .route_layer(axum::middleware::from_fn(auth_middleware))
 }
