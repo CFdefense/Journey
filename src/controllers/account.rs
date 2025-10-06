@@ -1,5 +1,5 @@
 /*
- * src/models/Account.rs
+ * src/controllers/account.rs
  *
  * File for Account Controller API Endpoints
  *
@@ -7,9 +7,9 @@
  *   Serve Account Related API Requests
  *
  * Include:
- *   api_signup         - /account/signup -> serves signup functionality
- *   api_login          - /account/login  -> serves login functionality
- *   api_test           - /account/test   -> serves test of account api functionality
+ *   api_signup         - POST /account/signup -> creates an account
+ *   api_login          - POST /account/login  -> authenticates and sets auth cookie
+ *   api_me             - POST /account/me     -> returns current user (protected by middleware)
  */
 
 use axum::{
@@ -32,7 +32,7 @@ use tracing::{error, info};
 use chrono::{Utc, Duration as ChronoDuration};
  
 
-use crate::error::ApiResult;
+use crate::error::{ApiResult, AppError, PublicError, PrivateError};
 use crate::models::account::*;
 use crate::middleware::{auth_middleware, AuthUser};
 use serde::Serialize;
@@ -50,12 +50,13 @@ use serde::Serialize;
 ///
 /// # Responses
 /// - `201 CREATED` - Signup successful with JSON body `{ "id": i32, "email": string }`
-/// - `409 CONFLICT` - Email already exists in the database
-/// - `500 INTERNAL_SERVER_ERROR` - Database error or password hashing failure
+/// - `400 BAD_REQUEST` - Validation failure (public error)
+/// - `409 CONFLICT` - Email already exists (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/account/signgup
+/// curl -X POST http://localhost:3000/account/signup
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -80,7 +81,7 @@ pub async fn api_signup(
             "ERROR ->> /api/signup 'api_signup' REASON: Validation failed: {}",
             validation_error
         );
-        return Err(StatusCode::BAD_REQUEST);
+        return Err(PublicError::Validation(validation_error).into());
     }
 
     // Check if user already exists
@@ -95,14 +96,14 @@ pub async fn api_signup(
                 "ERROR ->> /api/signup 'api_signup' REASON: Email already exists: {}",
                 payload.email
             );
-            return Err(StatusCode::CONFLICT);
+            return Err(PublicError::Conflict("email already exists".to_string()).into());
         }
         Err(e) => {
             error!(
                 "ERROR ->> /api/signup 'api_signup' REASON: Database query error: {:?}",
                 e
             );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(AppError::from(PrivateError::Db(e)));
         }
         Ok(None) => {
             // User doesn't exist, proceed with signup
@@ -119,7 +120,7 @@ pub async fn api_signup(
                 "ERROR ->> /api/signup 'api_signup' REASON: Failed to hash password: {:?}",
                 e
             );
-            StatusCode::INTERNAL_SERVER_ERROR
+            AppError::from(PrivateError::PasswordHash(e))
         })?
         .to_string();
 
@@ -156,7 +157,7 @@ pub async fn api_signup(
                 "ERROR ->> /api/signup 'api_signup' REASON: Database insert error: {:?}",
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(AppError::from(PrivateError::Db(e)))
         }
     }
 }
@@ -171,9 +172,9 @@ pub async fn api_signup(
 /// - 'password': The user's password (string, required).
 ///
 /// # Responses
-/// - `200 OK` - Login successful with JSON body `{ "id": i32, "token": string }` + auth cookie set
-/// - `400 BAD_REQUEST` - Invalid credentials (wrong email or password)
-/// - `500 INTERNAL_SERVER_ERROR` - Database error or password verification failure
+/// - `200 OK` - Login successful with JSON body `{ "id": i32, "token": string }` and `auth-token` private cookie set
+/// - `400 BAD_REQUEST` - Invalid credentials (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
 ///
 /// # Examples
 /// ```bash
@@ -184,6 +185,10 @@ pub async fn api_signup(
 ///        "password": "password123."
 ///       }'
 /// ```
+///
+/// Notes:
+/// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
+/// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
 ///
 pub async fn api_login(
     cookies: Cookies,
@@ -210,13 +215,13 @@ pub async fn api_login(
         Ok(result) => {
             // Verify password
             let parsed_hash = PasswordHash::new(&result.password)
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                .map_err(|e| AppError::from(PrivateError::PasswordHash(e)))?;
 
             // Attempt to match the password hashes
             if let Err(_) =
                 Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash)
             {
-                return Err(StatusCode::BAD_REQUEST);
+                return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
             }
 
             // Create token and set cookie as before
@@ -262,7 +267,7 @@ pub async fn api_login(
                 "ERROR ->> /api/signup 'api_signup' REASON: No account for Email: {}",
                 payload.email
             );
-            return Err(StatusCode::BAD_REQUEST);
+            return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
         }
     }
 }
@@ -270,6 +275,19 @@ pub async fn api_login(
 #[derive(Serialize)]
 pub struct MeResponse { id: i32 }
 
+/// TEMPORARY ROUTE FOR TESTING
+/// Return the current authenticated user.
+///
+/// # Method
+/// `POST /account/me`
+///
+/// # Auth
+/// Protected by `auth_middleware` which validates the `auth-token` private cookie,
+/// checks expiration, and injects `Extension<AuthUser>`.
+///
+/// # Responses
+/// - `200 OK` - `{ "id": i32 }` for the authenticated user
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 pub async fn api_me(Extension(user): Extension<AuthUser>) -> ApiResult<Json<MeResponse>> {
     Ok(Json(MeResponse { id: user.id }))
 }

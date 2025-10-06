@@ -3,18 +3,23 @@ use axum::response::{IntoResponse, Response};
 use std::fmt;
 use tracing::error;
 
-pub type ApiResult<T> = std::result::Result<T, StatusCode>;
+// Unified API result type
+pub type ApiResult<T> = std::result::Result<T, AppError>;
 
-// Rich error type for internal logging and status mapping
+// Errors safe to expose to clients (public)
 #[derive(Debug)]
-pub enum Error {
+pub enum PublicError {
     Validation(String),
     BadRequest(String),
-    Unauthorized(String),
-    Forbidden(String),
-    NotFound(String),
-    Cookie(String),
-    Auth(String),
+    Unauthorized,
+    Forbidden,
+    NotFound,
+    Conflict(String),
+}
+
+// Internal errors that should not leak details (private)
+#[derive(Debug)]
+pub enum PrivateError {
     Db(sqlx::Error),
     PasswordHash(argon2::password_hash::Error),
     Json(serde_json::Error),
@@ -22,69 +27,83 @@ pub enum Error {
     Internal(String),
 }
 
-impl Error {
+// Wrapper type used by handlers
+#[derive(Debug)]
+pub enum AppError {
+    Public(PublicError),
+    Private(PrivateError),
+}
+
+impl AppError {
     pub fn status_code(&self) -> StatusCode {
         match self {
-            Error::Validation(_) => StatusCode::BAD_REQUEST,
-            Error::BadRequest(_) => StatusCode::BAD_REQUEST,
-            Error::Unauthorized(_) | Error::Auth(_) | Error::Cookie(_) => StatusCode::UNAUTHORIZED,
-            Error::Forbidden(_) => StatusCode::FORBIDDEN,
-            Error::NotFound(_) => StatusCode::NOT_FOUND,
-            Error::Json(_) => StatusCode::BAD_REQUEST,
-            Error::Db(_) | Error::PasswordHash(_) | Error::Env(_) | Error::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Public(e) => match e {
+                PublicError::Validation(_) => StatusCode::BAD_REQUEST,
+                PublicError::BadRequest(_) => StatusCode::BAD_REQUEST,
+                PublicError::Unauthorized => StatusCode::UNAUTHORIZED,
+                PublicError::Forbidden => StatusCode::FORBIDDEN,
+                PublicError::NotFound => StatusCode::NOT_FOUND,
+                PublicError::Conflict(_) => StatusCode::CONFLICT,
+            },
+            AppError::Private(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
     pub fn log(&self) {
         match self {
-            Error::Db(e) => error!(target: "api_error", kind = "db", error = ?e, "Database error"),
-            Error::PasswordHash(e) => error!(target: "api_error", kind = "hash", error = ?e, "Password hashing error"),
-            Error::Json(e) => error!(target: "api_error", kind = "json", error = ?e, "JSON error"),
-            Error::Env(e) => error!(target: "api_error", kind = "env", error = ?e, "Env var error"),
-            Error::Validation(m) => error!(target: "api_error", kind = "validation", message = %m),
-            Error::BadRequest(m) => error!(target: "api_error", kind = "bad_request", message = %m),
-            Error::Unauthorized(m) => error!(target: "api_error", kind = "unauthorized", message = %m),
-            Error::Forbidden(m) => error!(target: "api_error", kind = "forbidden", message = %m),
-            Error::NotFound(m) => error!(target: "api_error", kind = "not_found", message = %m),
-            Error::Cookie(m) => error!(target: "api_error", kind = "cookie", message = %m),
-            Error::Auth(m) => error!(target: "api_error", kind = "auth", message = %m),
-            Error::Internal(m) => error!(target: "api_error", kind = "internal", message = %m),
+            AppError::Public(e) => match e {
+                PublicError::Validation(m) => error!(target: "api_error", kind = "validation", message = %m),
+                PublicError::BadRequest(m) => error!(target: "api_error", kind = "bad_request", message = %m),
+                PublicError::Unauthorized => error!(target: "api_error", kind = "unauthorized"),
+                PublicError::Forbidden => error!(target: "api_error", kind = "forbidden"),
+                PublicError::NotFound => error!(target: "api_error", kind = "not_found"),
+                PublicError::Conflict(m) => error!(target: "api_error", kind = "conflict", message = %m),
+            },
+            AppError::Private(e) => match e {
+                PrivateError::Db(err) => error!(target: "api_error", kind = "db", error = ?err, "Database error"),
+                PrivateError::PasswordHash(err) => error!(target: "api_error", kind = "hash", error = ?err, "Password hashing error"),
+                PrivateError::Json(err) => error!(target: "api_error", kind = "json", error = ?err, "JSON error"),
+                PrivateError::Env(err) => error!(target: "api_error", kind = "env", error = ?err, "Env var error"),
+                PrivateError::Internal(m) => error!(target: "api_error", kind = "internal", message = %m),
+            },
         }
     }
 }
 
-impl fmt::Display for Error {
+impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Validation(m) => write!(f, "validation error: {m}"),
-            Error::BadRequest(m) => write!(f, "bad request: {m}"),
-            Error::Unauthorized(m) => write!(f, "unauthorized: {m}"),
-            Error::Forbidden(m) => write!(f, "forbidden: {m}"),
-            Error::NotFound(m) => write!(f, "not found: {m}"),
-            Error::Cookie(m) => write!(f, "cookie error: {m}"),
-            Error::Auth(m) => write!(f, "auth error: {m}"),
-            Error::Db(e) => write!(f, "db error: {e}"),
-            Error::PasswordHash(e) => write!(f, "password hash error: {e}"),
-            Error::Json(e) => write!(f, "json error: {e}"),
-            Error::Env(e) => write!(f, "env error: {e}"),
-            Error::Internal(m) => write!(f, "internal error: {m}"),
+            AppError::Public(e) => match e {
+                PublicError::Validation(m) => write!(f, "validation error: {m}"),
+                PublicError::BadRequest(m) => write!(f, "bad request: {m}"),
+                PublicError::Unauthorized => write!(f, "unauthorized"),
+                PublicError::Forbidden => write!(f, "forbidden"),
+                PublicError::NotFound => write!(f, "not found"),
+                PublicError::Conflict(m) => write!(f, "conflict: {m}"),
+            },
+            AppError::Private(e) => match e {
+                PrivateError::Db(err) => write!(f, "db error: {err}"),
+                PrivateError::PasswordHash(err) => write!(f, "password hash error: {err}"),
+                PrivateError::Json(err) => write!(f, "json error: {err}"),
+                PrivateError::Env(err) => write!(f, "env error: {err}"),
+                PrivateError::Internal(m) => write!(f, "internal error: {m}"),
+            },
         }
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for AppError {}
 
-impl From<sqlx::Error> for Error { fn from(e: sqlx::Error) -> Self { Error::Db(e) } }
-impl From<argon2::password_hash::Error> for Error { fn from(e: argon2::password_hash::Error) -> Self { Error::PasswordHash(e) } }
-impl From<serde_json::Error> for Error { fn from(e: serde_json::Error) -> Self { Error::Json(e) } }
-impl From<std::env::VarError> for Error { fn from(e: std::env::VarError) -> Self { Error::Env(e) } }
+impl From<PublicError> for AppError { fn from(e: PublicError) -> Self { AppError::Public(e) } }
+impl From<PrivateError> for AppError { fn from(e: PrivateError) -> Self { AppError::Private(e) } }
+impl From<sqlx::Error> for AppError { fn from(e: sqlx::Error) -> Self { AppError::Private(PrivateError::Db(e)) } }
+impl From<argon2::password_hash::Error> for AppError { fn from(e: argon2::password_hash::Error) -> Self { AppError::Private(PrivateError::PasswordHash(e)) } }
+impl From<serde_json::Error> for AppError { fn from(e: serde_json::Error) -> Self { AppError::Private(PrivateError::Json(e)) } }
+impl From<std::env::VarError> for AppError { fn from(e: std::env::VarError) -> Self { AppError::Private(PrivateError::Env(e)) } }
 
-impl From<Error> for StatusCode {
-    fn from(e: Error) -> Self { e.status_code() }
-}
-
-impl IntoResponse for Error {
+impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        // Log full details internally, return only status code outward
         self.log();
         self.status_code().into_response()
     }
