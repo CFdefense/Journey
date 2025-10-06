@@ -1,0 +1,88 @@
+/* Container to center the signup box */
+.signup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  background: #FFE3B3; /* light cream background for the whole page */
+}
+
+/* The box that holds the form */
+.signup-box {
+  background: #ffffff; /* white card */
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  width: 380px;
+  text-align: left;
+  border-top: 6px solid #30A0E0; /* lighter blue stripe for signup */
+}
+
+/* Heading */
+.signup-box h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #30A0E0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+/* Labels */
+.signup-box label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #006BBB;
+}
+
+/* Input fields */
+.signup-box input {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #30A0E0; /* sky blue border */
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.signup-box input:focus {
+  border-color: #006BBB;
+  outline: none;
+  box-shadow: 0 0 8px #30A0E0;
+}
+
+/* Submit button */
+.signup-box button {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(90deg, #00C897, #30A0E0); /* teal → sky blue gradient */
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.signup-box button:hover {
+  background: linear-gradient(90deg, #30A0E0, #00C897);
+  transform: translateY(-2px);
+}
+
+/* Error message */
+.signup-box p {
+  text-align: center;
+  margin-top: 10px;
+  color: red;
+  font-weight: 500;
+}
+
+/* Extra actions (e.g., link to login page) */
+.signup-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
