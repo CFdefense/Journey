@@ -79,36 +79,37 @@ jobs:
           echo "$ISSUES_RAW"
           ISSUES=$(echo "$ISSUES_RAW" | jq '{
             projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
-            issues: [
-              .data.repository.issues.nodes[] | {
-                issueId: .id,
-                milestoneId: (.milestone.id // null),
-                itemId: (.projectItems.nodes[0].id? // null),
-                type: (
-                  .projectItems.nodes[0].fieldValues.nodes[]?
-                  | select(.field.name=="Type")
-                  | .name
-                ),
-                days: (
-                  (.projectItems.nodes[0].fieldValues.nodes[]?
-                   | select(.field.name=="Days")
-                   | { id: (.id // null), number: (.number // 0) })
-                ),
-                parent: (
-                  if .parent != null then {
-                    id: .parent.id,
-                    milestoneId: .parent.milestone.id
-                  } else null end
-                ),
-                subDays: (
-                  [(.subIssues.nodes[]?
-                    | .projectItems.nodes[0].fieldValues.nodes[]?
-                    | select(.field.name=="Days")
-                    | .number // 0)]
-                  | add // 0
-                )
-              }
-            ]
+            issues: (
+              .data.repository.issues.nodes
+              | map({
+                  issueId: .id,
+                  milestoneId: (.milestone.id // null),
+                  itemId: (.projectItems.nodes[0].id? // null),
+                  type: (
+                    .projectItems.nodes[0].fieldValues.nodes[]?
+                    | select(.field.name=="Type")
+                    | .name
+                  ),
+                  days: (
+                    (.projectItems.nodes[0].fieldValues.nodes[]?
+                     | select(.field.name=="Days")
+                     | { id: (.id // null), number: (.number // 0) })
+                  ),
+                  parent: (
+                    if .parent != null then {
+                      id: .parent.id,
+                      milestoneId: .parent.milestone.id
+                    } else null end
+                  ),
+                  subDays: (
+                    [(.subIssues.nodes[]?
+                      | .projectItems.nodes[0].fieldValues.nodes[]?
+                      | select(.field.name=="Days")
+                      | .number // 0)]
+                    | add // 0
+                  )
+                })
+            )
           }')
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
