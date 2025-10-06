@@ -87,8 +87,8 @@ jobs:
                 type: (
                   .projectItems.nodes[0].fieldValues.nodes[]
                   | select(.field.name=="Type")
-                  | .name
-                ) // null,
+                  | .name // null
+                ),
                 days: (
                   (.projectItems.nodes[0].fieldValues.nodes[]
                    | select(.field.name=="Days")
