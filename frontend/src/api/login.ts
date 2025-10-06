@@ -1,13 +1,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export interface LoginRequest {
-    email: string; 
-    password: string;
+  email: string;
+  password: string;
 }
 
 export interface LoginResponse {
-    id: number; 
-    token: string; 
+  id: number;
+  token: string;
 }
 
 /**
@@ -19,21 +19,20 @@ export interface LoginResponse {
 
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   console.log("Calling login API with payload:", payload);
-  
-    try {
+
+  try {
     const response = await fetch(`${API_BASE_URL}/account/login`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
       credentials: "include", // needed param for dealing with cookies
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
-
     // handle all errors from backend
-    if(!response.ok) {
-        if (response.status === 400) {
+    if (!response.ok) {
+      if (response.status === 400) {
         throw new Error("Invalid email or password.");
       } else if (response.status === 501) {
         throw new Error("Server error.");
@@ -43,10 +42,8 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
     }
     const res: LoginResponse = await response.json();
     return res;
-    
-    } catch (error) {
-        console.error("Login API error: ", error);
-        throw error;
-    }
-
+  } catch (error) {
+    console.error("Login API error: ", error);
+    throw error;
+  }
 }
