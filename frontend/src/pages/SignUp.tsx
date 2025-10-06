@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
 import "../styles/Signup.css";
 import { apiSignUp } from "../api/signup";
+import * as logic from "../logic/SignUpLogic";
 
 export default function Login() {
  const [firstName, setFirstName] = useState(""); 
  const [lastName, setLastName] = useState(""); 
  const [email, setEmail] = useState(""); 
  const [password, setPassword] = useState("");
- const [password2, setPassword2] = useState("");
+ const [confirmPassword, setConfirmPassword] = useState("");
  const [error, setError] = useState(""); 
  const navigate = useNavigate();
 
@@ -16,6 +17,33 @@ export default function Login() {
       e.preventDefault(); // stops the page from refreshing 
       console.log(email, password, firstName, lastName);
 
+      // sanitize user input
+      const emailError = logic.checkIfValidEmail(email);
+        if (emailError) {
+          setError(emailError);
+          return;
+        }
+
+        const nameError = logic.checkIfValidName(firstName, lastName);
+        if (nameError) {
+          setError(nameError);
+          return;
+        }
+
+        const passwordError = logic.checkIfValidPassword(password);
+        if (passwordError) {
+          setError(passwordError);
+          return;
+        }
+
+        const matchError = logic.checkIfPasswordsMatch(password, confirmPassword);
+        if (matchError) {
+          setError(matchError);
+          return;
+        }
+
+
+    
       try {
         const result = await apiSignUp({email, firstName, lastName, password});
         console.log("Account Creation successful: " + result);
@@ -73,8 +101,8 @@ export default function Login() {
             Re-Enter Password:
             <input
               type="password"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
           </label>
