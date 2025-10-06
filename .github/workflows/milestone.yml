@@ -105,7 +105,7 @@ jobs:
                     | select(.field.name=="Days")
                     | .number // 0)]
                   | add // 0
-                ),
+                )
               }
             ]
           }')
