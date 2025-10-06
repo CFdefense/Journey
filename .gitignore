@@ -18,3 +18,4 @@
 /frontend/*.local
 
 /logs
+/src/logs

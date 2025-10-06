@@ -8,12 +8,13 @@ mod middleware;
 mod models;
 mod error;
 
-use axum::Router;
+use axum::{Router, Extension};
 use http::{Method, header::HeaderValue};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use tower_http::cors::CorsLayer;
+use tower_cookies::CookieManagerLayer;
 
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
@@ -28,8 +29,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let front_end_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
     let bind_address = env::var("BIND_ADDRESS").expect("BIND_ADDRESS must be set");
 
-    // Initialize the database pool connection (TODO: use in extensions)
-    let _pool = db::create_pool();
+    // Initialize the database pool connection
+    let pool = db::create_pool().await;
 
     /*
     / Configure CORS
@@ -54,14 +55,18 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             http::header::HeaderName::from_static("x-requested-with"),
         ]);
 
-    // Import routes
-    let account_routes = controllers::account::account_routes();
+    // Import routes (attach shared state and cookies)
+    let account_routes = controllers::account::account_routes()
+        .layer(Extension(pool.clone()))
+        .layer(CookieManagerLayer::new());
     // TODO: Add More...
 
     // TODO: Intialize cookies
 
     // Build the main router with CORS middleware
-    let app = Router::new().nest("/account", account_routes).layer(cors);
+    let app = Router::new()
+        .nest("/account", account_routes)
+        .layer(cors);
 
     /*
     / Bind the router to a specific port
