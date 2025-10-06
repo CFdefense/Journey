@@ -30,6 +30,8 @@ use tower_cookies::{
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tracing::{error, info};
+use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
+use base64::Engine;
 
 use crate::error::ApiResult;
 use crate::models::account::*;
@@ -221,7 +223,8 @@ pub async fn api_login(
             let on_production = app_env == "production";
 
             // Create a token value (in a real app, this would be a JWT or similar)
-            let token_value = format!("user-{}.exp.sign", result.id);
+            let raw_token = format!("user-{}.exp.sign", result.id);
+            let token_value = B64.encode(raw_token.as_bytes());
 
             info!(
                 "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",

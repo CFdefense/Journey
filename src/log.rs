@@ -46,7 +46,7 @@ pub fn init_panic_handler() {
 
         error!("Panic - see crash.log");
 
-        let path = Path::new(CRASH_LOG);
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(CRASH_LOG);
         fs::create_dir_all(path.parent().expect(FS_ERR)).expect(FS_ERR);
         let file = File::create(path).expect("Could not create crash log file");
         let backtrace = std::backtrace::Backtrace::capture();
@@ -65,8 +65,15 @@ pub fn init_panic_handler() {
 /// See `.env` variable `RUST_LOG` for layer filter. These variables should be loaded into the environment for the filter to work.
 /// See [dotenv].
 pub fn init_logger() {
+    // Always write logs under the project root, not the current working directory
+    let logs_dir_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(LOG_DIR);
+    fs::create_dir_all(&logs_dir_path).expect("Could not create logs directory");
+    let logs_dir_str = logs_dir_path
+        .to_str()
+        .expect("logs dir path must be valid UTF-8");
+
     let (log_writer, log_guard) =
-        tracing_appender::non_blocking(rolling::never(LOG_DIR, LATEST_LOG));
+        tracing_appender::non_blocking(rolling::never(logs_dir_str, LATEST_LOG));
     unsafe {
         // Safety
         //
