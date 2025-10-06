@@ -30,8 +30,7 @@ use tower_cookies::{
 use sqlx::PgPool;
 use tracing::{error, info};
 use chrono::{Utc, Duration as ChronoDuration};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
-use base64::Engine;
+ 
 
 use crate::error::ApiResult;
 use crate::models::account::*;
@@ -228,8 +227,7 @@ pub async fn api_login(
             // Create a token value (in a real app, this would be a JWT or similar)
             // Embed expiration epoch seconds inside the token for server-side validation
             let exp_epoch = (Utc::now() + ChronoDuration::days(3)).timestamp();
-            let raw_token = format!("user-{}.{}.sign", result.id, exp_epoch);
-            let token_value = B64.encode(raw_token.as_bytes());
+            let token_value = format!("user-{}.{}.sign", result.id, exp_epoch);
 
             info!(
                 "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",

@@ -3,8 +3,6 @@ use axum::{
     middleware::Next,
     response::IntoResponse,
 };
-use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
-use base64::Engine;
 use chrono::Utc;
 use sqlx::PgPool;
 use tower_cookies::cookie::{Cookie, CookieJar, Key};
@@ -60,14 +58,7 @@ pub async fn auth_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl Into
         Some(c) => c,
         None => return StatusCode::UNAUTHORIZED.into_response(),
     };
-    let decoded = match B64.decode(decrypted.value()) {
-        Ok(b) => b,
-        Err(_) => return StatusCode::UNAUTHORIZED.into_response(),
-    };
-    let token = match String::from_utf8(decoded) {
-        Ok(s) => s,
-        Err(_) => return StatusCode::UNAUTHORIZED.into_response(),
-    };
+    let token = decrypted.value().to_string();
 
     // Expect format: user-<id>.<exp>.sign
     let parts: Vec<&str> = token.split('.').collect();
