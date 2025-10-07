@@ -114,6 +114,12 @@ export default function Login() {
           <button type="submit">Create Account</button>
         </form>
         {error && <p style={{ color: "red" }}>{error}</p>}
+
+        <div className="signup-actions">
+        <Link to="/login" className="back-to-login-button">
+            Already Have An Account?
+        </Link>
+      </div>
       
       </div>
     </div>

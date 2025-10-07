@@ -86,3 +86,23 @@
   gap: 10px;
   justify-content: center;
 }
+
+
+/* Back to login button */
+.back-to-login-button {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: #ffffff;
+  border: 2px solid #30A0E0;
+  border-radius: 8px;
+  color: #30A0E0;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s, transform 0.2s;
+}
+
+.back-to-login-button:hover {
+  background: #30A0E0;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
