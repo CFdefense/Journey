@@ -7,9 +7,9 @@
  *   Serve Account Related API Requests
  *
  * Include:
- *   api_signup         - /account/signup -> serves signup functionality
- *   api_login          - /account/login  -> serves login functionality
- *   api_test           - /account/test   -> serves test of account api functionality
+ *   api_signup         - /api/account/signup -> serves signup functionality
+ *   api_login          - /api/account/login  -> serves login functionality
+ *   api_test           - /api/account/test   -> serves test of account api functionality
  */
 
 use axum::{
@@ -37,7 +37,7 @@ use crate::models::account::*;
 /// Create a new user.
 ///
 /// # Method
-/// `POST /account/signup`
+/// `POST /api/account/signup`
 ///
 /// # Request Body
 /// - `email`: A valid email address (string, required).
@@ -52,7 +52,7 @@ use crate::models::account::*;
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/account/signgup
+/// curl -X POST http://localhost:3000/api/account/signgup
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -67,14 +67,14 @@ pub async fn api_signup(
     Json(payload): Json<SignupPayload>,
 ) -> ApiResult<(StatusCode, Json<SignupResponse>)> {
     info!(
-        "HANDLER ->> /api/signup 'api_signup' - Payload: {:?}",
+        "HANDLER ->> /api/account/signup 'api_signup' - Payload: {:?}",
         payload
     );
 
     // Validate input
     if let Err(validation_error) = payload.validate() {
         error!(
-            "ERROR ->> /api/signup 'api_signup' REASON: Validation failed: {}",
+            "ERROR ->> /api/account/signup 'api_signup' REASON: Validation failed: {}",
             validation_error
         );
         return Err(StatusCode::BAD_REQUEST);
@@ -89,14 +89,14 @@ pub async fn api_signup(
     match existing_user_result {
         Ok(Some(_)) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Email already exists: {}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Email already exists: {}",
                 payload.email
             );
             return Err(StatusCode::CONFLICT);
         }
         Err(e) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Database query error: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Database query error: {:?}",
                 e
             );
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -113,7 +113,7 @@ pub async fn api_signup(
         .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|e| {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Failed to hash password: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Failed to hash password: {:?}",
                 e
             );
             StatusCode::INTERNAL_SERVER_ERROR
@@ -136,7 +136,7 @@ pub async fn api_signup(
     match insert_result {
         Ok(record) => {
             info!(
-                "INFO ->> /api/signup 'api_signup' - Created user with ID: {}",
+                "INFO ->> /api/account/signup 'api_signup' - Created user with ID: {}",
                 record.id
             );
 
@@ -150,7 +150,7 @@ pub async fn api_signup(
         }
         Err(e) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Database insert error: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Database insert error: {:?}",
                 e
             );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -161,7 +161,7 @@ pub async fn api_signup(
 /// Attempt user login
 ///
 /// # Method
-/// `POST /account/login`
+/// `POST /api/account/login`
 ///
 /// # Request Body
 /// - `email`: A valid email address (string, required).
@@ -174,7 +174,7 @@ pub async fn api_signup(
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/account/login
+/// curl -X POST http://localhost:3000/api/account/login
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -188,7 +188,7 @@ pub async fn api_login(
     Json(payload): Json<LoginPayload>,
 ) -> ApiResult<Json<LoginResponse>> {
     info!(
-        "HANDLER ->> /api/login 'api_login' - Payload: {:?}",
+        "HANDLER ->> /api/account/login 'api_login' - Payload: {:?}",
         payload
     );
 
@@ -224,7 +224,7 @@ pub async fn api_login(
             let token_value = format!("user-{}.exp.sign", result.id);
 
             info!(
-                "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",
+                "INFO ->> /api/account/login 'api_login' - Generated token value: {}. Production is: {}",
                 token_value, on_production
             );
 
@@ -252,7 +252,7 @@ pub async fn api_login(
         }
         Err(_) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: No account for Email: {}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: No account for Email: {}",
                 payload.email
             );
             return Err(StatusCode::BAD_REQUEST);

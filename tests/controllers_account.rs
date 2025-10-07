@@ -326,7 +326,7 @@ async fn test_signup_and_login_happy_path() {
     // Signup
     let resp = hc
         .do_post(
-            "/account/signup",
+            "/api/account/signup",
             json!({
                 "email": email,
                 "first_name": "Alice",
@@ -341,7 +341,7 @@ async fn test_signup_and_login_happy_path() {
     // Login
     let resp = hc
         .do_post(
-            "/account/login",
+            "/api/account/login",
             json!({
                 "email": format!("user+{}@example.com", unique),
                 "password": "Password123"
@@ -364,7 +364,7 @@ async fn test_signup_conflict_on_duplicate_email() {
     // First signup should succeed
     let resp1 = hc
         .do_post(
-            "/account/signup",
+            "/api/account/signup",
             json!({
                 "email": email,
                 "first_name": "Bob",
@@ -379,7 +379,7 @@ async fn test_signup_conflict_on_duplicate_email() {
     // Second signup with same email should 409
     let resp2 = hc
         .do_post(
-            "/account/signup",
+            "/api/account/signup",
             json!({
                 "email": format!("dupe+{}@example.com", unique),
                 "first_name": "Bob",
@@ -420,7 +420,9 @@ async fn spawn_app() -> (String, sqlx::PgPool) {
     let account_routes = controllers::account::account_routes()
         .layer(Extension(pool.clone()))
         .layer(CookieManagerLayer::new());
-    let app = Router::new().nest("/account", account_routes);
+    let api_routes = Router::new()
+        .nest("/api", account_routes);
+    let app = Router::new().nest("/api", api_routes);
 
     // Bind to ephemeral port and spawn server
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
@@ -445,7 +447,7 @@ async fn test_http_signup_and_login_flow() -> Result<()> {
     // Signup
     let resp = hc
         .do_post(
-            "/account/signup",
+            "/api/account/signup",
             json!({
                 "email": email,
                 "first_name": "Alice",
@@ -459,7 +461,7 @@ async fn test_http_signup_and_login_flow() -> Result<()> {
     // Login
     let resp = hc
         .do_post(
-            "/account/login",
+            "/api/account/login",
             json!({
                 "email": format!("user+{}@example.com", unique),
                 "password": "Password123"

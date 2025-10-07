@@ -13,7 +13,10 @@ use http::{Method, header::HeaderValue};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use tower_http::cors::CorsLayer;
+use tower_http::{
+	cors::CorsLayer,
+	services::ServeDir
+};
 use tower_cookies::CookieManagerLayer;
 
 #[cfg(not(tarpaulin_include))]
@@ -63,10 +66,16 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     // TODO: Intialize cookies
 
-    // Build the main router with CORS middleware
-    let app = Router::new()
-        .nest("/account", account_routes)
+    // API routes with CORS middleware
+    let api_routes = Router::new()
+    	.nest("/account", account_routes)
+     	// TODO: nest other routes (like itinerary and stuff)
         .layer(cors);
+
+    // Build the main router
+    let app = Router::new()
+        .nest("/api", api_routes)
+        .nest_service("/", ServeDir::new("./frontend/dist"));
 
     /*
     / Bind the router to a specific port
