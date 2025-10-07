@@ -42,17 +42,21 @@ export default function Login() {
           return;
         }
 
-
-    
       try {
-        const result = await apiSignUp({email, firstName, lastName, password});
-        console.log("Account Creation successful: " + result);
+      const result = await apiSignUp({
+        email,
+        first_name: firstName, // rust backend expects snake case as json variable
+        last_name: lastName,
+        password,
+      });
+
+        console.log("Account creation successful:", result);
         setError("");
         navigate("/create");
       } catch (err: any) {
         setError(err.message || "Sign Up failed.");
       }
- };
+  };
       
   return (
     <div className="signup-container">
