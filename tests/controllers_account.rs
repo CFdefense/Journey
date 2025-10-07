@@ -17,8 +17,9 @@ use tower_cookies::{
     cookie::{SameSite, time::Duration},
 };
 
-use capping2025::models::account::{SignupResponse, LoginResponse};
-use capping2025::{controllers, db};
+extern crate capping2025 as app;
+use app::models::account::{SignupResponse, LoginResponse};
+use app::{controllers, db};
 use axum::{Router, Extension};
 use serde_json::json;
 use tower_cookies::CookieManagerLayer;
@@ -28,6 +29,10 @@ use serial_test::serial;
 use anyhow::{anyhow, Result};
 use std::net::TcpListener;
 use sqlx::migrate;
+use std::sync::Once;
+
+// Ensure logger initializes only once across the test suite
+static TEST_LOG_INIT: Once = Once::new();
 
 /// Test password verification logic
 #[test]
@@ -413,6 +418,16 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
 	// CI testing should use GitHub environment variables
 	_ = dotenvy::dotenv();
 
+	// Initialize project logger once so test logs are written to logs/latest.log
+	TEST_LOG_INIT.call_once(|| {
+		// Set a default log level for tests if not provided
+		if std::env::var("RUST_LOG").is_err() {
+			unsafe { std::env::set_var("RUST_LOG", "debug") };
+		}
+        app::log::init_panic_handler();
+        app::log::init_logger();
+	});
+
     // Ensure env and database
     if std::env::var("DATABASE_URL").is_err() {
         unsafe {
@@ -433,10 +448,11 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
     }
 
     // Build app
-    let key = Key::generate();
+    // Use an encryption/signing key for private cookies
+    let cookie_key = Key::generate();
     let account_routes = controllers::account::account_routes()
         .layer(Extension(pool.clone()))
-        .layer(Extension(key.clone()))
+        .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new());
     let app = Router::new().nest("/account", account_routes);
 
@@ -448,7 +464,8 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
         .serve(app.into_make_service());
     tokio::spawn(server);
 
-    (format!("http://{}", addr), pool, key)
+    // Use localhost instead of 127.0.0.1 to match cookie domain
+    (format!("http://localhost:{}", addr.port()), pool, cookie_key)
 }
 
 #[tokio::test]
@@ -487,4 +504,56 @@ async fn test_http_signup_and_login_flow() -> Result<()> {
     if !resp.status().is_success() { return Err(anyhow!("login failed: {}", resp.status())); }
 
     Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn test_auth_required_for_me_endpoint() {
+    let (base, _pool, _key) = spawn_app().await;
+    let hc = httpc_test::new_client(&base).unwrap();
+
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("auth_test+{}@example.com", unique);
+
+    // First, signup a user (should work without auth)
+    let resp = hc
+        .do_post(
+            "/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Auth",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 201, "Signup should work without authentication");
+
+    // Try to access /me without authentication (should fail)
+    let resp = hc
+        .do_post("/account/me", json!({}))
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 401, "Accessing /me without auth should return 401");
+
+    // Login to get auth cookie
+    let resp = hc
+        .do_post(
+            "/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 200, "Login should succeed");
+
+    // Now try to access /me with auth cookie (should work)
+    let resp = hc
+        .do_post("/account/me", json!({}))
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 200, "Accessing /me with auth should return 200");
 }
