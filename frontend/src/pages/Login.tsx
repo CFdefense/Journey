@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import "./Login.css";
-import { login } from "../api/login";
-import { AUTH_TOKEN_LOCAL } from "./Globals";
+import { useState } from 'react';
+import { useNavigate , Link} from "react-router-dom"; 
+import "../styles/Login.css";
+import { apiLogin } from "../api/account";
+import { AUTH_TOKEN_LOCAL } from "../helpers/Globals";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
@@ -14,17 +14,17 @@ export default function Login() {
     e.preventDefault(); // stops the page from refreshing
     console.log("email: " + email + " password: " + password);
 
-    try {
-      const result = await login({ email, password });
-      console.log("Login successful: " + result);
-      setError("");
-      localStorage.setItem(AUTH_TOKEN_LOCAL, result.token);
-      navigate("/create");
-    } catch (err: any) {
-      setError(err.message || "Login failed.");
-    }
-  };
-
+      try {
+        const result = await apiLogin({email, password});
+        console.log("Login successful: " + result);
+        setError("");
+        localStorage.setItem("authToken", result.token);
+        navigate("/create");
+      } catch (err: any) {
+        setError(err.message || "Login failed.");
+      }
+ };
+      
   return (
     <div className="login-container">
       <div className="login-box">
