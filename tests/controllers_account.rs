@@ -452,7 +452,7 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
     let cookie_key = Key::generate();
     let account_routes = controllers::account::account_routes()
         .layer(Extension(pool.clone()))
-        .layer(Extension(cookie_key))
+        .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new());
     let app = Router::new().nest("/account", account_routes);
 
@@ -465,7 +465,7 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
     tokio::spawn(server);
 
     // Use localhost instead of 127.0.0.1 to match cookie domain
-    (format!("http://localhost:{}", addr.port()), pool)
+    (format!("http://localhost:{}", addr.port()), pool, cookie_key)
 }
 
 #[tokio::test]
@@ -509,7 +509,7 @@ async fn test_http_signup_and_login_flow() -> Result<()> {
 #[tokio::test]
 #[serial]
 async fn test_auth_required_for_me_endpoint() {
-    let (base, _pool) = spawn_app().await;
+    let (base, _pool, _key) = spawn_app().await;
     let hc = httpc_test::new_client(&base).unwrap();
 
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
