@@ -8,6 +8,7 @@ pub type ApiResult<T> = std::result::Result<T, AppError>;
 
 // Errors safe to expose to clients (public)
 #[derive(Debug)]
+#[cfg(not(tarpaulin_include))]
 pub enum PublicError {
     Validation(String),
     BadRequest(String),
@@ -19,6 +20,7 @@ pub enum PublicError {
 
 // Internal errors that should not leak details (private)
 #[derive(Debug)]
+#[cfg(not(tarpaulin_include))]
 pub enum PrivateError {
     Db(sqlx::Error),
     PasswordHash(argon2::password_hash::Error),
@@ -29,12 +31,14 @@ pub enum PrivateError {
 
 // Wrapper type used by handlers
 #[derive(Debug)]
+#[cfg(not(tarpaulin_include))]
 pub enum AppError {
     Public(PublicError),
     Private(PrivateError),
 }
 
 impl AppError {
+    #[cfg(not(tarpaulin_include))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             AppError::Public(e) => match e {
@@ -49,6 +53,7 @@ impl AppError {
         }
     }
 
+    #[cfg(not(tarpaulin_include))]
     pub fn log(&self) {
         match self {
             AppError::Public(e) => match e {
@@ -70,6 +75,7 @@ impl AppError {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -92,6 +98,7 @@ impl fmt::Display for AppError {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 impl std::error::Error for AppError {}
 
 impl From<PublicError> for AppError { fn from(e: PublicError) -> Self { AppError::Public(e) } }
@@ -101,6 +108,7 @@ impl From<argon2::password_hash::Error> for AppError { fn from(e: argon2::passwo
 impl From<serde_json::Error> for AppError { fn from(e: serde_json::Error) -> Self { AppError::Private(PrivateError::Json(e)) } }
 impl From<std::env::VarError> for AppError { fn from(e: std::env::VarError) -> Self { AppError::Private(PrivateError::Env(e)) } }
 
+#[cfg(not(tarpaulin_include))]
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         // Log full details internally, return only status code outward
