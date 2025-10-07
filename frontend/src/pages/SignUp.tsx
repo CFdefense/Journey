@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
 import "../styles/Signup.css";
-import { apiSignUp } from "../api/signup";
-import * as logic from "../logic/SignUpLogic";
+import { apiSignUp } from "../api/account";
+import * as logic from "../helpers/account";
 
 export default function Login() {
  const [firstName, setFirstName] = useState(""); 
