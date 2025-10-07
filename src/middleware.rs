@@ -19,11 +19,6 @@ pub struct AuthUser {
 /// - Validates embedded expiration and that the user exists in DB
 /// - Inserts `AuthUser` into request extensions on success; otherwise 401
 pub async fn auth_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl IntoResponse {
-    let path = req.uri().path();
-    if path.ends_with("/signup") || path.ends_with("/login") {
-        return next.run(req).await;
-    }
-
     let key = match req.extensions().get::<Key>() {
         Some(k) => k.clone(),
         None => return StatusCode::UNAUTHORIZED.into_response(),
@@ -47,7 +42,9 @@ pub async fn auth_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl Into
     let mut jar = CookieJar::new();
     for pair in cookie_str.split(';') {
         let s = pair.trim();
-        if s.is_empty() { continue; }
+        if s.is_empty() {
+            continue;
+        }
         if let Ok(parsed) = Cookie::parse(s.to_string()) {
             jar.add(parsed);
         }
@@ -62,7 +59,7 @@ pub async fn auth_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl Into
 
     // Expect format: user-<id>.<exp>.sign
     let parts: Vec<&str> = token.split('.').collect();
-    
+
     if parts.len() != 3 || parts[2] != "sign" || !parts[0].starts_with("user-") {
         return StatusCode::UNAUTHORIZED.into_response();
     }
@@ -77,21 +74,20 @@ pub async fn auth_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl Into
         Err(_) => return StatusCode::UNAUTHORIZED.into_response(),
     };
 
-    if Utc::now().timestamp() > exp { 
-        return StatusCode::UNAUTHORIZED.into_response(); 
+    if Utc::now().timestamp() > exp {
+        return StatusCode::UNAUTHORIZED.into_response();
     }
 
     // Ensure user exists
-    let exists_row = sqlx::query_as::<_, (bool,)>(
-            "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1)"
-        )
-        .bind(user_id)
-        .fetch_one(&pool)
-        .await
-        .unwrap_or((false,));
+    let exists_row =
+        sqlx::query_as::<_, (bool,)>("SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1)")
+            .bind(user_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap_or((false,));
 
-    if !exists_row.0 { 
-        return StatusCode::UNAUTHORIZED.into_response(); 
+    if !exists_row.0 {
+        return StatusCode::UNAUTHORIZED.into_response();
     }
 
     // Attach user to request

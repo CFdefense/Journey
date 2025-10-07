@@ -12,11 +12,7 @@
  *   api_me             - POST /account/me     -> returns current user (protected by middleware)
  */
 
-use axum::{
-    Extension, Json, Router,
-    http::StatusCode,
-    routing::post,
-};
+use axum::{Extension, Json, Router, http::StatusCode, routing::post};
 
 use argon2::{
     Argon2,
@@ -24,17 +20,16 @@ use argon2::{
 };
 use tower_cookies::{
     Cookie, Cookies,
-    cookie::{SameSite, time::Duration, Key},
+    cookie::{Key, SameSite, time::Duration},
 };
 
+use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
 use tracing::{error, info};
-use chrono::{Utc, Duration as ChronoDuration};
- 
 
-use crate::error::{ApiResult, AppError, PublicError, PrivateError};
+use crate::error::{ApiResult, AppError, PrivateError, PublicError};
+use crate::middleware::{AuthUser, auth_middleware};
 use crate::models::account::*;
-use crate::middleware::{auth_middleware, AuthUser};
 use serde::Serialize;
 
 /// Create a new user.
@@ -273,7 +268,9 @@ pub async fn api_login(
 }
 
 #[derive(Serialize)]
-pub struct MeResponse { id: i32 }
+pub struct MeResponse {
+    id: i32,
+}
 
 /// TEMPORARY ROUTE FOR TESTING
 /// Return the current authenticated user.
@@ -294,8 +291,8 @@ pub async fn api_me(Extension(user): Extension<AuthUser>) -> ApiResult<Json<MeRe
 
 pub fn account_routes() -> Router {
     Router::new()
-        .route("/signup", post(api_signup))
-        .route("/login", post(api_login))
         .route("/me", post(api_me))
         .route_layer(axum::middleware::from_fn(auth_middleware))
+        .route("/signup", post(api_signup))
+        .route("/login", post(api_login))
 }
