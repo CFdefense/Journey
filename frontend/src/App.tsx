@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import IndexPage from "./pages/IndexPage";
 import CreateItinerary from "./pages/CreateItinerary";
@@ -6,19 +6,16 @@ import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
-import './App.css'
+import "./App.css";
 
 function App() {
-   return (
+  return (
     <Router>
       {/* Navigation */}
       <nav>
-        <Link to="/">Home</Link> |{" "}
-        <Link to="/create">Create</Link> |{" "}
-        <Link to="/view">View</Link> |{" "}
-        <Link to="/account">Account</Link> |{" "}
-        <Link to="/login">Login</Link> |{" "}
-        <Link to="/signup">Signup</Link>
+        <Link to="/">Home</Link> | <Link to="/create">Create</Link> |{" "}
+        <Link to="/view">View</Link> | <Link to="/account">Account</Link> |{" "}
+        <Link to="/login">Login</Link> | <Link to="/signup">Signup</Link>
       </nav>
 
       {/* Routes */}
@@ -34,4 +31,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
