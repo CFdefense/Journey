@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
 import "../styles/Login.css";
 import { apiLogin } from "../api/account";
-import { AUTH_TOKEN_LOCAL } from "./Globals";
+import { AUTH_TOKEN_LOCAL } from "../helpers/Globals";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState

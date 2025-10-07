@@ -1,4 +1,4 @@
-import { AUTH_TOKEN_LOCAL } from "./Globals";
+import { AUTH_TOKEN_LOCAL } from "../helpers/Globals";
 import { useNavigate } from "react-router-dom";
 
 export default function Account() {
