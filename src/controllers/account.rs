@@ -15,7 +15,7 @@
 use axum::{
     Extension, Json, Router,
     http::StatusCode,
-    routing::{get, post},
+    routing::post,
 };
 
 use argon2::{
@@ -24,12 +24,12 @@ use argon2::{
 };
 use tower_cookies::{
     Cookie, Cookies,
-    cookie::{SameSite, time::Duration},
+    cookie::{SameSite, time::Duration, Key},
 };
 
-use serde_json::{Value, json};
 use sqlx::PgPool;
 use tracing::{error, info};
+use chrono::{Utc, Duration as ChronoDuration};
 
 use crate::error::ApiResult;
 use crate::models::account::*;
@@ -184,6 +184,7 @@ pub async fn api_signup(
 ///
 pub async fn api_login(
     cookies: Cookies,
+    Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<LoginPayload>,
 ) -> ApiResult<Json<LoginResponse>> {
@@ -221,7 +222,9 @@ pub async fn api_login(
             let on_production = app_env == "production";
 
             // Create a token value (in a real app, this would be a JWT or similar)
-            let token_value = format!("user-{}.exp.sign", result.id);
+            // Embed expiration epoch seconds inside the token for server-side validation
+            let exp_epoch = (Utc::now() + ChronoDuration::days(3)).timestamp();
+            let token_value = format!("user-{}.{}.sign", result.id, exp_epoch);
 
             info!(
                 "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",
@@ -229,6 +232,7 @@ pub async fn api_login(
             );
 
             // Build the cookie with enhanced security
+            // Store encrypted (private) cookie so value is confidential and authenticated
             let cookie = Cookie::build("auth-token", token_value.clone())
                 .domain(domain.to_string())
                 .path("/")
@@ -242,8 +246,8 @@ pub async fn api_login(
                 .max_age(Duration::days(3))
                 .finish();
 
-            // Add the cookie
-            cookies.add(cookie);
+            // encrypt/sign cookie (private cookie via CookieManagerLayer key)
+            cookies.private(&key).add(cookie.clone());
 
             return Ok(Json(LoginResponse {
                 id: result.id,
