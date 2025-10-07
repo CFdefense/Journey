@@ -8,16 +8,24 @@ mod middleware;
 mod models;
 mod error;
 
-use axum::{Router, Extension};
-use http::{Method, header::HeaderValue};
+use axum::{
+	Router,
+	Extension,
+	body::Body,
+	response::{Response, IntoResponse},
+	routing::get_service
+};
+use http::{Method, header::HeaderValue, StatusCode};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
+use std::path::Path;
 use tower_http::{
 	cors::CorsLayer,
-	services::ServeDir
+	services::{ServeDir, ServeFile}
 };
 use tower_cookies::CookieManagerLayer;
+use crate::global::*;
 
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
@@ -75,7 +83,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Build the main router
     let app = Router::new()
         .nest("/api", api_routes)
-        .nest_service("/", ServeDir::new("./frontend/dist"));
+        // Static files served from /dist.
+        // Fallback must be index.html since react handles routing on front end
+        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))));
 
     /*
     / Bind the router to a specific port
