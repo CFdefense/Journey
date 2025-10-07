@@ -23,7 +23,7 @@ use app::{controllers, db};
 use axum::{Router, Extension};
 use serde_json::json;
 use tower_cookies::CookieManagerLayer;
-use tower_cookies::cookie::Key;
+use tower_cookies::cookie::{Key, CookieJar};
 use chrono::Utc;
 use serial_test::serial;
 use anyhow::{anyhow, Result};
@@ -323,7 +323,7 @@ fn test_signup_max_password_length() {
 #[tokio::test]
 #[serial]
 async fn test_signup_and_login_happy_path() {
-    let (base, _pool) = spawn_app().await;
+    let (base, _pool, key) = spawn_app().await;
     let hc = httpc_test::new_client(&base).unwrap();
 
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
@@ -356,12 +356,27 @@ async fn test_signup_and_login_happy_path() {
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200);
+    // Extract cookie and decrypt via private jar
+    let set_cookie = resp.header("set-cookie").unwrap();
+    // Parse full Set-Cookie line (handles '=' inside value)
+    let parsed = Cookie::parse(set_cookie.to_string()).unwrap();
+    let mut jar = CookieJar::new();
+    jar.add(parsed.clone());
+    let decrypted = jar.private(&key).get(parsed.name()).unwrap();
+    // token: user-<id>.<exp>.sign
+    let parts: Vec<&str> = decrypted.value().split('.').collect();
+    assert_eq!(parts.len(), 3);
+    assert!(parts[0].starts_with("user-"));
+    assert_eq!(parts[2], "sign");
+    let exp: i64 = parts[1].parse().unwrap();
+    let now = chrono::Utc::now().timestamp();
+    assert!(exp > now);
 }
 
 #[tokio::test]
 #[serial]
 async fn test_signup_conflict_on_duplicate_email() {
-    let (base, _pool) = spawn_app().await;
+    let (base, _pool, _key) = spawn_app().await;
     let hc = httpc_test::new_client(&base).unwrap();
 
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
@@ -398,7 +413,7 @@ async fn test_signup_conflict_on_duplicate_email() {
     assert_eq!(resp2.status().as_u16(), 409);
 }
 
-async fn spawn_app() -> (String, sqlx::PgPool) {
+async fn spawn_app() -> (String, sqlx::PgPool, Key) {
 	// Only use dotenvy for local testing
 	// CI testing should use GitHub environment variables
 	_ = dotenvy::dotenv();
@@ -456,7 +471,7 @@ async fn spawn_app() -> (String, sqlx::PgPool) {
 #[tokio::test]
 #[serial]
 async fn test_http_signup_and_login_flow() -> Result<()> {
-    let (base, _pool) = spawn_app().await;
+    let (base, _pool, _key) = spawn_app().await;
     let hc = httpc_test::new_client(&base)?;
 
     let unique = Utc::now().timestamp_nanos_opt().unwrap();

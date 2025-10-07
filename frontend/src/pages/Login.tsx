@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { useNavigate , Link} from "react-router-dom"; 
-import "./Login.css";
-import { login } from "../api/login";
+import "../styles/Login.css";
+import { apiLogin } from "../api/account";
+import { AUTH_TOKEN_LOCAL } from "../helpers/Globals";
 
 export default function Login() {
- const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
- const [password, setPassword] = useState("");
- const [error, setError] = useState(""); // for showing error messages
- const navigate = useNavigate();
+  const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // for showing error messages
+  const navigate = useNavigate();
 
- const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault(); // stops the page from refreshing 
-      console.log("email: " + email + " password: " + password)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // stops the page from refreshing
+    console.log("email: " + email + " password: " + password);
 
       try {
-        const result = await login({email, password});
+        const result = await apiLogin({email, password});
         console.log("Login successful: " + result);
         setError("");
         localStorage.setItem("authToken", result.token);
@@ -58,10 +59,7 @@ export default function Login() {
             <button type="button">Create Account</button>
           </Link>
         </div>
-      
       </div>
     </div>
   );
 }
-
-
