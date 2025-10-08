@@ -31,7 +31,10 @@ jobs:
                 nodes {
                   id
                   milestone { id }
-                  projectV2(number:2) { id }
+                  projectV2(number:2) {
+                    id
+                    daysFieldId: field(name:"Days") {... on ProjectV2Field {id}}
+                  }
                   projectItems(first:1){
                     nodes{
                       id
@@ -77,6 +80,7 @@ jobs:
             }
           }' | jq '{
             projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
+            daysId: (.data.repository.issues.nodes[0].projectV2.daysFieldId.id),
             issues: (
               .data.repository.issues.nodes
               | map({
@@ -92,9 +96,9 @@ jobs:
                     (
                       [.projectItems.nodes[0].fieldValues.nodes[]?
                         | select(.field.name=="Days")
-                        | { id: (.id // null), number: (.number // 0) }]
+                        | (.number // 0)]
                       | first
-                    ) // { id: null, number: 0 }
+                    ) // 0
                   ),
                   parent: (
                     if .parent != null then {
@@ -116,6 +120,7 @@ jobs:
           echo "$ISSUES"
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
+          DAYS_ID=$(echo "$ISSUES" | jq -r '.daysId')
 
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
@@ -142,8 +147,7 @@ jobs:
                 }' -F sId=$ISSUE_ID -F mId=$PARENT_MILESTONE_ID
               fi
             elif [ "$TYPE" = "Epic" ]; then
-              DAYS=$(echo "$row" | jq -r '.days.number')
-              DAYS_ID=$(echo "$row" | jq -r '.days.id')
+              DAYS=$(echo "$row" | jq -r '.days')
               SUB_DAYS=$(echo "$row" | jq -r '.subDays')
 
               echo "$DAYS"
