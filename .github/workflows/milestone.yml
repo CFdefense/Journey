@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          ISSUES_RAW=$(gh api graphql --paginate -f query='
+          ISSUES=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025"){
               issues(first:100, states:OPEN){
