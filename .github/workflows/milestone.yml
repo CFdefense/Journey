@@ -110,11 +110,16 @@ jobs:
             )
           }')
 
+          echo "$ISSUES"
+
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
 
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
             ITEM_ID=$(echo "$row" | jq -r '.itemId')
+
+            echo "$TYPE"
+            echo "$ITEM_ID"
 
             if [ "$TYPE" = "Story" ]; then
               MILESTONE_ID=$(echo "$row" | jq -r '.milestoneId')
@@ -136,6 +141,10 @@ jobs:
               DAYS=$(echo "$row" | jq -r '.days.number')
               DAYS_ID=$(echo "$row" | jq -r '.days.id')
               SUB_DAYS=$(echo "$row" | jq -r '.subDays')
+
+              echo "$DAYS"
+              echo "$DAYS_ID"
+              echo "$SUB_DAYS"
 
               if [ "$DAYS" != "$SUB_DAYS" ]; then
                 gh api graphql -f query='
