@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import EventCard from "./EventCard"; // 👈 import your new component
+import EventCard from "./EventCard"; // import your new component
 import "../styles/Itinerary.css";
 
 interface Event {
