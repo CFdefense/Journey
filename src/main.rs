@@ -8,14 +8,23 @@ mod middleware;
 mod models;
 mod error;
 
-use axum::{Router, Extension};
+use axum::{
+	Router,
+	Extension,
+	routing::get_service
+};
 use http::{Method, header::HeaderValue};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use tower_http::cors::CorsLayer;
+use std::path::Path;
+use tower_http::{
+	cors::CorsLayer,
+	services::{ServeDir, ServeFile}
+};
 use tower_cookies::cookie::Key;
 use tower_cookies::CookieManagerLayer;
+use crate::global::*;
 
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
@@ -65,10 +74,20 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         .layer(CookieManagerLayer::new());
     // TODO: Add More...
 
-    // Build the main router with CORS middleware
-    let app = Router::new()
-        .nest("/account", account_routes)
+    // TODO: Intialize cookies
+
+    // API routes with CORS middleware
+    let api_routes = Router::new()
+    	.nest("/account", account_routes)
+     	// TODO: nest other routes (like itinerary and stuff)
         .layer(cors);
+
+    // Build the main router
+    let app = Router::new()
+        .nest("/api", api_routes)
+        // Static files served from /dist.
+        // Fallback must be index.html since react handles routing on front end
+        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))));
 
     /*
     / Bind the router to a specific port

@@ -7,9 +7,9 @@
  *   Serve Account Related API Requests
  *
  * Include:
- *   api_signup         - POST /account/signup -> creates an account
- *   api_login          - POST /account/login  -> authenticates and sets auth cookie
- *   api_me             - POST /account/me     -> returns current user (protected by middleware)
+ *   api_signup         - POST /api/account/signup -> creates an account
+ *   api_login          - POST /api/account/login  -> authenticates and sets auth cookie
+ *   api_me             - POST /api/account/me     -> returns current user (protected by middleware)
  */
 
 use axum::{Extension, Json, Router, http::StatusCode, routing::post};
@@ -35,7 +35,7 @@ use serde::Serialize;
 /// Create a new user.
 ///
 /// # Method
-/// `POST /account/signup`
+/// `POST /api/account/signup`
 ///
 /// # Request Body
 /// - `email`: A valid email address (string, required).
@@ -51,7 +51,7 @@ use serde::Serialize;
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/account/signup
+/// curl -X POST http://localhost:3000/api/account/signup
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -66,14 +66,14 @@ pub async fn api_signup(
     Json(payload): Json<SignupPayload>,
 ) -> ApiResult<(StatusCode, Json<SignupResponse>)> {
     info!(
-        "HANDLER ->> /api/signup 'api_signup' - Payload: {:?}",
+        "HANDLER ->> /api/account/signup 'api_signup' - Payload: {:?}",
         payload
     );
 
     // Validate input
     if let Err(validation_error) = payload.validate() {
         error!(
-            "ERROR ->> /api/signup 'api_signup' REASON: Validation failed: {}",
+            "ERROR ->> /api/account/signup 'api_signup' REASON: Validation failed: {}",
             validation_error
         );
         return Err(PublicError::Validation(validation_error).into());
@@ -88,14 +88,14 @@ pub async fn api_signup(
     match existing_user_result {
         Ok(Some(_)) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Email already exists: {}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Email already exists: {}",
                 payload.email
             );
             return Err(PublicError::Conflict("email already exists".to_string()).into());
         }
         Err(e) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Database query error: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Database query error: {:?}",
                 e
             );
             return Err(AppError::from(PrivateError::Db(e)));
@@ -112,7 +112,7 @@ pub async fn api_signup(
         .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|e| {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Failed to hash password: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Failed to hash password: {:?}",
                 e
             );
             AppError::from(PrivateError::PasswordHash(e))
@@ -135,7 +135,7 @@ pub async fn api_signup(
     match insert_result {
         Ok(record) => {
             info!(
-                "INFO ->> /api/signup 'api_signup' - Created user with ID: {}",
+                "INFO ->> /api/account/signup 'api_signup' - Created user with ID: {}",
                 record.id
             );
 
@@ -149,7 +149,7 @@ pub async fn api_signup(
         }
         Err(e) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: Database insert error: {:?}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: Database insert error: {:?}",
                 e
             );
             Err(AppError::from(PrivateError::Db(e)))
@@ -160,7 +160,7 @@ pub async fn api_signup(
 /// Attempt user login
 ///
 /// # Method
-/// `POST /account/login`
+/// `POST /api/account/login`
 ///
 /// # Request Body
 /// - `email`: A valid email address (string, required).
@@ -173,7 +173,7 @@ pub async fn api_signup(
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/account/login
+/// curl -X POST http://localhost:3000/api/account/login
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -192,7 +192,7 @@ pub async fn api_login(
     Json(payload): Json<LoginPayload>,
 ) -> ApiResult<Json<LoginResponse>> {
     info!(
-        "HANDLER ->> /api/login 'api_login' - Payload: {:?}",
+        "HANDLER ->> /api/account/login 'api_login' - Payload: {:?}",
         payload
     );
 
@@ -230,7 +230,7 @@ pub async fn api_login(
             let token_value = format!("user-{}.{}.sign", result.id, exp_epoch);
 
             info!(
-                "INFO ->> /api/login 'api_login' - Generated token value: {}. Production is: {}",
+                "INFO ->> /api/account/login 'api_login' - Generated token value: {}. Production is: {}",
                 token_value, on_production
             );
 
@@ -259,7 +259,7 @@ pub async fn api_login(
         }
         Err(_) => {
             error!(
-                "ERROR ->> /api/signup 'api_signup' REASON: No account for Email: {}",
+                "ERROR ->> /api/account/signup 'api_signup' REASON: No account for Email: {}",
                 payload.email
             );
             return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
@@ -276,7 +276,7 @@ pub struct MeResponse {
 /// Return the current authenticated user.
 ///
 /// # Method
-/// `POST /account/me`
+/// `POST /api/account/me`
 ///
 /// # Auth
 /// Protected by `auth_middleware` which validates the `auth-token` private cookie,
