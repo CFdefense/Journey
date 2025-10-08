@@ -1,3 +1,10 @@
+import ChatBox from "../components/ChatBox";
+
 export default function CreateItinerary() {
-  return <h1>Create Itinerary Page</h1>;
+   return (
+    <div>
+      <h1>Create Itinerary Page</h1>
+      <ChatBox />
+    </div>
+  );
 }
