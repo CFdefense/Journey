@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import IndexPage from "./pages/IndexPage";
-import CreateItinerary from "./pages/CreateItinerary";
+import Home from "./pages/Home";
 import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
 import Login from "./pages/Login";
@@ -12,7 +12,7 @@ function App() {
     <Router>
       {/* Navigation */}
       <nav>
-        <Link to="/">Home</Link> | <Link to="/create">Create</Link> |{" "}
+        <Link to="/">Index</Link> | <Link to="/create">Home</Link> |{" "}
         <Link to="/view">View</Link> | <Link to="/account">Account</Link> |{" "}
         <Link to="/login">Login</Link> | <Link to="/signup">Signup</Link>
       </nav>
@@ -20,7 +20,7 @@ function App() {
       {/* Routes */}
       <Routes>
         <Route path="/" element={<IndexPage />} />
-        <Route path="/create" element={<CreateItinerary />} />
+        <Route path="/create" element={<Home />} />
         <Route path="/view" element={<ViewItinerary />} />
         <Route path="/account" element={<Account />} />
         <Route path="/login" element={<Login />} />
