@@ -11,11 +11,9 @@ mod error;
 use axum::{
 	Router,
 	Extension,
-	body::Body,
-	response::{Response, IntoResponse},
 	routing::get_service
 };
-use http::{Method, header::HeaderValue, StatusCode};
+use http::{Method, header::HeaderValue};
 use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -24,6 +22,7 @@ use tower_http::{
 	cors::CorsLayer,
 	services::{ServeDir, ServeFile}
 };
+use tower_cookies::cookie::Key;
 use tower_cookies::CookieManagerLayer;
 use crate::global::*;
 
@@ -67,8 +66,11 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         ]);
 
     // Import routes (attach shared state and cookies)
+    // Use an encryption/signing key for private cookies
+    let cookie_key = Key::generate();
     let account_routes = controllers::account::account_routes()
         .layer(Extension(pool.clone()))
+        .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new());
     // TODO: Add More...
 
