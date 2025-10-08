@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          ISSUES=$(gh api graphql --paginate -f query='
+          ISSUES_RAW=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025"){
               issues(first:100, states:OPEN){
@@ -75,7 +75,8 @@ jobs:
                 }
               }
             }
-          }' | jq '{
+          }')
+          ISSUES=$(echo "$ISSUES_RAW" | jq '{
             projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
             issues: (
               .data.repository.issues.nodes
@@ -110,6 +111,7 @@ jobs:
             )
           }')
 
+          echo "$ISSUES_RAW"
           echo "$ISSUES"
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
