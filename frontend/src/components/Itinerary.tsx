@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "../styles/Itinerary.css"
 import {
   DragDropContext,
   Droppable,
@@ -13,7 +14,7 @@ interface EventItem {
   link?: string;
 }
 
-const initialEvents: EventItem[] = [
+const initialEvents: EventItem[] = [ //array of events that will be put in the itinerary
   { id: "1", time: "08:00 AM", title: "wake" },
   { id: "2", time: "10:00 AM", title: "eat" },
   { id: "3", time: "12:30 PM", title: "lunch" },
