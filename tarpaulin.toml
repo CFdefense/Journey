@@ -1,0 +1,8 @@
+[run]
+run-types = ["AllTargets"]
+all-features = true
+
+[report]
+output-dir = "tmp"
+out = ["Stdout", "Html"]
+fail-under = 80

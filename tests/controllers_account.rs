@@ -455,7 +455,7 @@ async fn spawn_app() -> (String, sqlx::PgPool, Key) {
         .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new());
     let api_routes = Router::new()
-        .nest("/api", account_routes);
+        .nest("/account", account_routes);
     let app = Router::new().nest("/api", api_routes);
 
     // Bind to ephemeral port and spawn server
