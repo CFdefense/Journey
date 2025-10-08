@@ -1,9 +1,0 @@
-
-[run]
-exclude-files = [
-  "src/main.rs",
-]
-
-[report]
-out = ["Stdout"]
-fail-under = 80

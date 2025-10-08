@@ -14,7 +14,7 @@ pub struct AuthUser {
 }
 
 /// Auth middleware for account routes
-/// - Skips `/account/signup` and `/account/login`
+/// - Skips `/api/account/signup` and `/api/account/login`
 /// - Decrypts `auth-token` private cookie using `Key` from extensions
 /// - Validates embedded expiration and that the user exists in DB
 /// - Inserts `AuthUser` into request extensions on success; otherwise 401
