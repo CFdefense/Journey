@@ -10,7 +10,7 @@ import type {
 /// Handles user login via the Rust backend API.
 ///
 /// # Method
-/// Calls `POST /account/login` through `apiLogin`.
+/// Calls `POST /api/account/login` through `apiLogin`.
 ///
 /// # Behavior
 /// - Collects email and password input from the user.
@@ -23,9 +23,9 @@ import type {
 
 export async function apiLogin(payload: LoginRequest): Promise<LoginResponse> {
   console.log("Calling login API with payload:", payload);
-  
+
     try {
-    const response = await fetch(`${API_BASE_URL}/account/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/account/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,7 +46,7 @@ export async function apiLogin(payload: LoginRequest): Promise<LoginResponse> {
     }
     const res: LoginResponse = await response.json();
     return res;
-    
+
     } catch (error) {
         console.error("Login API error: ", error);
         throw error;
@@ -57,7 +57,7 @@ export async function apiLogin(payload: LoginRequest): Promise<LoginResponse> {
 /// Handles user registration via the Rust backend API.
 ///
 /// # Method
-/// Sends a `POST /account/signup` request to create a new user account.
+/// Sends a `POST /api/account/signup` request to create a new user account.
 ///
 /// # Behavior
 /// - Accepts a `SignUpRequest` payload containing `email`, `first_name`, `last_name`, and `password`.
@@ -70,14 +70,14 @@ export async function apiLogin(payload: LoginRequest): Promise<LoginResponse> {
 ///   - Throws a generic error for any other unexpected status code.
 ///
 /// # Returns
-/// A `Promise<SignUpResponse>` resolving to the backend response if successful,  
+/// A `Promise<SignUpResponse>` resolving to the backend response if successful,
 /// or throws an error if registration fails.
 
 export async function apiSignUp(payload: SignUpRequest): Promise<SignUpResponse> {
   console.log("Calling signup API with payload:", payload);
-  
+
     try {
-    const response = await fetch(`${API_BASE_URL}/account/signup`, {
+    const response = await fetch(`${API_BASE_URL}/api/account/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -98,7 +98,7 @@ export async function apiSignUp(payload: SignUpRequest): Promise<SignUpResponse>
     }
     const res: SignUpResponse = await response.json();
     return res;
-    
+
     } catch (error) {
         console.error("Sign Up API error: ", error);
         throw error;
