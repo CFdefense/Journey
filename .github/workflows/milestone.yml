@@ -167,7 +167,7 @@ jobs:
                     projectId:$pId
                     value:{number:$val}
                   }) {clientMutationId}
-                }' -F fId=$DAYS_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$SUB_DAYS
+                }' -F fId=$DAYS_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -f val=$SUB_DAYS
               fi
             fi
           done
