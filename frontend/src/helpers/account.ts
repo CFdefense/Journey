@@ -1,3 +1,5 @@
+import { AUTH_TOKEN_LOCAL } from "../helpers/globals";
+
 export function checkIfValidEmail(email: string): string | null {
 	const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 	if (!emailRegex.test(email)) {
@@ -50,3 +52,8 @@ export function checkIfPasswordsMatch(password: string, confirmPassword: string)
 	}
 	return null;
 }
+
+export function isUserLoggedIn(): boolean {
+	const token = localStorage.getItem(AUTH_TOKEN_LOCAL);
+  	return token !== null && token.trim() !== "";
+}	
