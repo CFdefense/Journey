@@ -46,8 +46,8 @@ CREATE TABLE accounts (
     last_name VARCHAR(255) NOT NULL,
     budget_preference budget_bucket,
     risk_preference risk_tolerence,
-    allergies JSONB DEFAULT '[]'::jsonb,
-    disabilities JSONB DEFAULT '[]'::jsonb
+    food_allergies VARCHAR(255),
+    disabilities VARCHAR(255)
 );
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
@@ -78,11 +78,11 @@ CREATE TABLE event_list (
 ------- Dummy data to test ---------
 --Accounts
 -- CF: Password is "whatisrust"
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 'Very low budget', 'Adventurer', '[]',' ["Blind", "Deaf"]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 'Low budget', 'Risk Taker', '[]', '[]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'Medium budget', 'Chill vibes', '["Tree Nuts", "Peanuts"]', '["Mobility Impaired - Wheelchair"]'); 
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 'High budget', 'Light Fun', '["Dairy", "Eggs", "Custom: Quinoa"]', '["Custom: Bad Ankle"]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 'Luxury budget', 'Chill vibes','["Dairy", "Custom: Pine nuts", "Custom: Kiwi"]', '["Custom: Lazy"]');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 'Very low budget', 'Adventurer', 'Vegan', 'Blind,Deaf');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 'Low budget', 'Risk Taker', 'Gluten Free,Hates Cheese', '');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'Medium budget', 'Chill vibes', 'Tree Nuts,Peanuts', 'Mobility Impaired - Wheelchair'); 
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 'High budget', 'Light Fun', 'Dairy,Eggs,Quinoa', 'Bad Ankle');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 'Luxury budget', 'Chill vibes','Dairy,Pine nuts,Kiwi','Lazy');
 
 -- Ensure the accounts id sequence matches the max(id) after manual inserts
 SELECT setval(
