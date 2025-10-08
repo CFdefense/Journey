@@ -140,7 +140,7 @@ jobs:
               DAYS_ID=$(echo "$row" | jq -r '.days.id')
               SUB_DAYS=$(echo "$row" | jq -r '.subDays')
 
-              if [ "$DAYS" != "$SUB_DAYS" ]; then
+              if [ "$DAYS" != "$SUB_DAYS" ] && [ -n "$DAYS_ID" ] && [ "$DAYS_ID" != "null" ]; then
                 gh api graphql -f query='
                 mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
                   updateProjectV2ItemFieldValue(input:{
