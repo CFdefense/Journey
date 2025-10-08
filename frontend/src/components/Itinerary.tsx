@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import EventCard from "./EventCard"; // 👈 import your new component
 import "../styles/Itinerary.css";
 
 interface Event {
   id: string;
   title: string;
+  desc?: string;
 }
 
 interface TimeBlock {
@@ -13,7 +15,6 @@ interface TimeBlock {
 
 const Itinerary: React.FC = () => {
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([
-    { time: "08:00 AM", events: [] },
     { time: "09:00 AM", events: [] },
     { time: "10:00 AM", events: [] },
     { time: "11:00 AM", events: [] },
@@ -23,31 +24,36 @@ const Itinerary: React.FC = () => {
   ]);
 
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([
-    { id: "1", title: "Breakfast" },
-    { id: "2", title: "Team Meeting" },
-    { id: "3", title: "Lunch with Client" },
-    { id: "4", title: "Gym" },
+    { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
+    { id: "2", title: "Capping Meeting", desc: "Make user stories" },
+    { id: "3", title: "Lunch", desc: "Halal Shack" },
+    { id: "4", title: "Work on itinerary", desc: "Grind time" }
   ]);
 
-  const onDragStart = (e: React.DragEvent, event: Event) => {
-    e.dataTransfer.setData("eventId", event.id);
+  const onDragStart = (e: React.DragEvent, event: Event) => { 
+    e.dataTransfer.setData("eventId", event.id); //grabs the event block (and its data based on id)
   };
 
   const onDrop = (e: React.DragEvent, timeIndex: number) => {
-    const eventId = e.dataTransfer.getData("eventId");
+    const eventId = e.dataTransfer.getData("eventId"); 
     const draggedEvent =
-      unassignedEvents.find((ev) => ev.id === eventId) ||
+      unassignedEvents.find((ev) => ev.id === eventId) || //checks the unassigned events or timeblocks for the event id
       timeBlocks.flatMap((tb) => tb.events).find((ev) => ev.id === eventId);
-
 
     if (!draggedEvent) return;
 
-    // Remove from unassigned or old time block
+    // Remove from unassigned or other time blocks
     setUnassignedEvents((prev) => prev.filter((ev) => ev.id !== eventId));
     setTimeBlocks((prev) =>
       prev.map((tb, i) =>
         i === timeIndex
-          ? { ...tb, events: [...tb.events, draggedEvent] }
+          ? {
+              ...tb,
+              events: [
+                ...tb.events.filter((ev) => ev.id !== eventId),
+                draggedEvent,
+              ],
+            }
           : { ...tb, events: tb.events.filter((ev) => ev.id !== eventId) }
       )
     );
@@ -58,23 +64,24 @@ const Itinerary: React.FC = () => {
   };
 
   return (
-    <div className="itinerary-container">
+    <div className="itinerary-page">
+      {/* 🔹 Unassigned Events Section */}
       <div className="unassigned-section">
         <h3>Unassigned Events</h3>
         <div className="unassigned-list">
           {unassignedEvents.map((event) => (
-            <div
+            <EventCard
               key={event.id}
-              className="event-card"
+              title={event.title}
+              desc={event.desc}
               draggable
               onDragStart={(e) => onDragStart(e, event)}
-            >
-              {event.title}
-            </div>
+            />
           ))}
         </div>
       </div>
 
+      {/* 🔹 Main Itinerary Section */}
       <div className="itinerary-section">
         <h3>Itinerary</h3>
         <div className="itinerary-list">
@@ -88,14 +95,13 @@ const Itinerary: React.FC = () => {
               <div className="time-label">{block.time}</div>
               <div className="events-area">
                 {block.events.map((event) => (
-                  <div
+                  <EventCard
                     key={event.id}
-                    className="event-card"
+                    title={event.title}
+                    desc={event.desc}
                     draggable
                     onDragStart={(e) => onDragStart(e, event)}
-                  >
-                    {event.title}
-                  </div>
+                  />
                 ))}
               </div>
             </div>

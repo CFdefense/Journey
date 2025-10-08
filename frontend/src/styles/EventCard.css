@@ -1,0 +1,31 @@
+.event-card {
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 1rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease, background 0.2s ease;
+  max-width: 90%;
+}
+
+.event-card:hover {
+  background-color: #d3d3d3;
+  transform: scale(1.03);
+}
+
+.event-card:active {
+  cursor: grabbing;
+}
+
+.event-title {
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.event-desc {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.3;
+}
