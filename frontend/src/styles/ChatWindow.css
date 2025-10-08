@@ -1,4 +1,4 @@
-/* Overall chat container */
+/* Chat container */
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -6,14 +6,14 @@
   height: 80vh;
   width: 400px;
   margin: auto;
-  background: #FFE3B3; /* same light cream background */
+  background: #FFE3B3; /* light cream background */
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   border-top: 6px solid #30A0E0;
 }
 
-/* Scrollable area for messages */
+/* Scrollable message area */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -23,7 +23,7 @@
   gap: 0.75rem;
 }
 
-/* Base style for messages */
+/* Base message style */
 .chat-message {
   padding: 0.8rem 1rem;
   border-radius: 12px;
@@ -33,15 +33,15 @@
   line-height: 1.4;
 }
 
-/* User (sent) messages — aligned right */
+/* Sent messages (user) */
 .chat-message.user {
   align-self: flex-end;
   background: linear-gradient(90deg, #00C897, #30A0E0);
-  color: white;
+  color: #ffffff;
   border-top-right-radius: 0;
 }
 
-/* Bot (received) messages — aligned left */
+/* Received messages (bot) */
 .chat-message.bot {
   align-self: flex-start;
   background: #ffffff;
@@ -53,10 +53,11 @@
 /* Input area */
 .message-input {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  padding: 0.6rem;
   border-top: 2px solid #30A0E0;
-  padding-top: 0.75rem;
-  background: #ffffff;
+  background: #ffffff; /* unified background for both input and button */
   border-radius: 8px;
 }
 
@@ -65,15 +66,26 @@
   flex: 1;
   border: 2px solid #30A0E0;
   border-radius: 8px;
-  padding: 0.6rem;
+  padding: 0.6rem 0.8rem;
   font-size: 1rem;
-  color: #333;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  background: #f8fcff; /* soft blue-tinted background for readability */
+  color: #003b60; /* dark text for contrast */
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+
+.message-box::placeholder {
+  color: #8bbad9;
+  transition: color 0.3s;
+}
+
+.message-box:focus::placeholder {
+  color: transparent; /* disappears when typing */
 }
 
 .message-box:focus {
   border-color: #006BBB;
   outline: none;
+  background: #ffffff;
   box-shadow: 0 0 8px #30A0E0;
 }
 
