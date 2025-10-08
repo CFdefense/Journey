@@ -1,4 +1,4 @@
-import {Itinerary} from '../components/Itinerary.tsx';
+import Itinerary from '../components/Itinerary.tsx';
 
 export default function ViewItineraryPage() {
   return (

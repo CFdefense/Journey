@@ -1,75 +1,109 @@
 import React, { useState } from "react";
-import "../styles/Itinerary.css"
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  type DropResult,
-} from "@hello-pangea/dnd";
+import "../styles/Itinerary.css";
 
-interface EventItem {
+interface Event {
   id: string;
-  time: string;
   title: string;
-  link?: string;
 }
 
-const initialEvents: EventItem[] = [ //array of events that will be put in the itinerary
-  { id: "1", time: "08:00 AM", title: "wake" },
-  { id: "2", time: "10:00 AM", title: "eat" },
-  { id: "3", time: "12:30 PM", title: "lunch" },
-  { id: "4", time: "02:00 PM", title: "walk" },
-  { id: "5", time: "06:00 PM", title: "dinner" },
-];
+interface TimeBlock {
+  time: string;
+  events: Event[];
+}
 
-export const Itinerary: React.FC = () => {
-  const [events, setEvents] = useState<EventItem[]>(initialEvents);
+const Itinerary: React.FC = () => {
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([
+    { time: "08:00 AM", events: [] },
+    { time: "09:00 AM", events: [] },
+    { time: "10:00 AM", events: [] },
+    { time: "11:00 AM", events: [] },
+    { time: "12:00 PM", events: [] },
+    { time: "01:00 PM", events: [] },
+    { time: "02:00 PM", events: [] },
+  ]);
 
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
+  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([
+    { id: "1", title: "Breakfast" },
+    { id: "2", title: "Team Meeting" },
+    { id: "3", title: "Lunch with Client" },
+    { id: "4", title: "Gym" },
+  ]);
 
-    const updated = Array.from(events);
-    const [moved] = updated.splice(result.source.index, 1);
-    updated.splice(result.destination.index, 0, moved);
-    setEvents(updated);
+  const onDragStart = (e: React.DragEvent, event: Event) => {
+    e.dataTransfer.setData("eventId", event.id);
+  };
+
+  const onDrop = (e: React.DragEvent, timeIndex: number) => {
+    const eventId = e.dataTransfer.getData("eventId");
+    const draggedEvent =
+      unassignedEvents.find((ev) => ev.id === eventId) ||
+      timeBlocks.flatMap((tb) => tb.events).find((ev) => ev.id === eventId);
+
+
+    if (!draggedEvent) return;
+
+    // Remove from unassigned or old time block
+    setUnassignedEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+    setTimeBlocks((prev) =>
+      prev.map((tb, i) =>
+        i === timeIndex
+          ? { ...tb, events: [...tb.events, draggedEvent] }
+          : { ...tb, events: tb.events.filter((ev) => ev.id !== eventId) }
+      )
+    );
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   return (
     <div className="itinerary-container">
-      <h2 className="itinerary-title">Your Itinerary</h2>
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="itinerary">
-          {(provided) => (
+      <div className="unassigned-section">
+        <h3>Unassigned Events</h3>
+        <div className="unassigned-list">
+          {unassignedEvents.map((event) => (
             <div
-              className="itinerary-list"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
+              key={event.id}
+              className="event-card"
+              draggable
+              onDragStart={(e) => onDragStart(e, event)}
             >
-              {events.map((event, index) => (
-                <Draggable key={event.id} draggableId={event.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      className={`itinerary-item ${
-                        snapshot.isDragging ? "dragging" : ""
-                      }`}
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <div className="itinerary-info">
-                        <p className="itinerary-time">{event.time}</p>
-                        <p className="itinerary-event">{event.title}</p>
-                      </div>
-                      <span className="drag-handle">⋮⋮</span>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
+              {event.title}
             </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+          ))}
+        </div>
+      </div>
+
+      <div className="itinerary-section">
+        <h3>Itinerary</h3>
+        <div className="itinerary-list">
+          {timeBlocks.map((block, index) => (
+            <div
+              key={block.time}
+              className="time-block"
+              onDrop={(e) => onDrop(e, index)}
+              onDragOver={onDragOver}
+            >
+              <div className="time-label">{block.time}</div>
+              <div className="events-area">
+                {block.events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="event-card"
+                    draggable
+                    onDragStart={(e) => onDragStart(e, event)}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
+
+export default Itinerary;

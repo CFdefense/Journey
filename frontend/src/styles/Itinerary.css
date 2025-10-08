@@ -1,130 +1,80 @@
-/* Main container */
 .itinerary-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 16px;
-  background-color: #547bc8;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  font-family: "Segoe UI", Roboto, sans-serif;
-}
-
-/* Title */
-.itinerary-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin-bottom: 24px;
-  color: #222;
-}
-
-/* List wrapper (the timeline itself) */
-.itinerary-list {
-  position: relative;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding-left: 40px;
-  border-left: 3px solid #d0d7de; /* vertical timeline line */
-}
-
-/* Each item */
-.itinerary-item {
-  position: relative;
-  display: flex;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  background-color: #9dcdda;
-  border: 1px solid #9dcdda;
-  border-radius: 6px;
-  padding: 12px 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-  cursor: grab;
-  margin-left: -20px; /* overlaps timeline line slightly */
+  width: 100%;
+  max-width: 1000px;
+  margin: 30px auto;
+  gap: 20px;
+  color:#000;
 }
 
-.itinerary-item:hover {
-  background-color: #f3f4f6;
-}
-
-/* Dragging state */
-.itinerary-item.dragging {
-  background-color: #e0f7fa;
-  border-color: #00acc1;
-  box-shadow: 0 4px 10px rgba(0, 172, 193, 0.2);
-}
-
-/* Timeline dot */
-.itinerary-item::before {
-  content: "";
-  position: absolute;
-  left: -29px;
-  top: 18px;
-  width: 14px;
-  height: 14px;
-  background-color: #00acc1;
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px #d0d7de;
-}
-
-/* Info layout */
-.itinerary-info {
+.itinerary-section {
   flex: 1;
+  background-color: #f7f7f7;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  min-height: 600px;
+  width: 250px;
+}
+
+.unassigned-section {
+flex: 1;
+background-color: transparent;
+padding: 20px;
+border-radius: 8px;
+border: 1px solid #ccc;
+width: 100px;
+}
+
+
+.unassigned-list,
+.itinerary-list {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  color:#000;
 }
 
-.itinerary-time {
-  font-weight: 600;
-  color: #007b83;
-  font-size: 0.9rem;
-  margin-bottom: 4px;
+.time-block {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 6px;
+  min-height: 80px;
 }
 
-.itinerary-event {
-  font-size: 1.1rem;
-  color: #222;
+.time-label {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color:#000;
 }
 
-/* Drag handle */
-.drag-handle {
-  color: #bbb;
-  font-size: 1.3rem;
-  user-select: none;
-  align-self: center;
+.events-area {
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.drag-handle:hover {
-  color: #666;
+.event-card {
+  background-color: #e0e0e0;
+  color: #000;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: grab;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .itinerary-list {
-    padding-left: 28px;
-    gap: 16px;
-  }
+.event-card:active {
+  cursor: grabbing;
+}
 
-  .itinerary-item {
-    margin-left: -12px;
-    padding: 10px 12px;
-  }
+.event-card:hover {
+  background-color: #d5d5d5;
+}
 
-  .itinerary-title {
-    font-size: 1.5rem;
-  }
-
-  .itinerary-time {
-    font-size: 0.85rem;
-  }
-
-  .itinerary-event {
-    font-size: 1rem;
-  }
+.unassigned-section h3,
+.itinerary-section h3 {
+  text-align: center;
 }
