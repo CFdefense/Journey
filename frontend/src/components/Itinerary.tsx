@@ -10,6 +10,7 @@ interface EventItem {
   id: string;
   time: string;
   title: string;
+  link?: string;
 }
 
 const initialEvents: EventItem[] = [
