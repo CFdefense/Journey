@@ -22,6 +22,21 @@ CREATE TYPE event_type AS ENUM (
     'Other'
 );
 
+CREATE TYPE risk_tolerence AS ENUM (
+    'Chill vibes',
+    'Light Fun',
+    'Adventurer',
+    'Risk Taker'
+);
+
+CREATE TYPE budget_bucket AS ENUM (
+    'Very low budget',
+    'Low budget',
+    'Medium budget',
+    'High budget',
+    'Luxury budget'
+);
+
 -- Accounts table
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
@@ -29,8 +44,8 @@ CREATE TABLE accounts (
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    budget_preference INTEGER,
-    risk_preference INTEGER,
+    budget_preference budget_bucket,
+    risk_preference risk_tolerence,
     allergies JSONB DEFAULT '[]'::jsonb,
     disabilities JSONB DEFAULT '[]'::jsonb
 );
@@ -63,11 +78,11 @@ CREATE TABLE event_list (
 ------- Dummy data to test ---------
 --Accounts
 -- CF: Password is "whatisrust"
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 3, 2, '[]','["Blind", "Deaf"]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 2, 1, '[]', '[]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 1, 3, '["Tree Nuts", "Peanuts"]','["Mobility Impaired - Wheelchair"]'); 
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 2, 2, '["Dairy", "Eggs", "Custom: Quinoa"]','["Custom: Bad Ankle]');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 1, 1,'["Dairy", "Custom: Pine nuts", "Custom: Kiwi"]','[Custom: Lazy]');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 'Very low budget', 'Adventurer', '[]',' ["Blind", "Deaf"]');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 'Low budget', 'Risk Taker', '[]', '[]');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'Medium budget', 'Chill vibes', '["Tree Nuts", "Peanuts"]', '["Mobility Impaired - Wheelchair"]'); 
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 'High budget', 'Light Fun', '["Dairy", "Eggs", "Custom: Quinoa"]', '["Custom: Bad Ankle"]');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 'Luxury budget', 'Chill vibes','["Dairy", "Custom: Pine nuts", "Custom: Kiwi"]', '["Custom: Lazy"]');
 
 -- Ensure the accounts id sequence matches the max(id) after manual inserts
 SELECT setval(
