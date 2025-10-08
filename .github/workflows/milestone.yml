@@ -113,11 +113,17 @@ jobs:
             )
           }')
 
+          echo "$ISSUES"
+
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
 
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
             ITEM_ID=$(echo "$row" | jq -r '.itemId')
+
+            echo "$TYPE"
+            echo "$ITEM_ID"
+            echo "$row"
 
             if [ "$TYPE" = "Story" ]; then
               MILESTONE_ID=$(echo "$row" | jq -r '.milestoneId')
@@ -140,7 +146,14 @@ jobs:
               DAYS_ID=$(echo "$row" | jq -r '.days.id')
               SUB_DAYS=$(echo "$row" | jq -r '.subDays')
 
+              echo "$DAYS"
+              echo "$DAYS_ID"
+              echo "$SUB_DAYS"
+
               if [ "$DAYS" != "$SUB_DAYS" ] && [ -n "$DAYS_ID" ] && [ "$DAYS_ID" != "null" ]; then
+
+                echo "$setting days"
+
                 gh api graphql -f query='
                 mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
                   updateProjectV2ItemFieldValue(input:{
