@@ -46,8 +46,8 @@ CREATE TABLE accounts (
     last_name VARCHAR(255) NOT NULL,
     budget_preference budget_bucket,
     risk_preference risk_tolerence,
-    food_allergies VARCHAR(255),
-    disabilities VARCHAR(255)
+    food_allergies TEXT,
+    disabilities TEXT
 );
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
