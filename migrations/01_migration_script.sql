@@ -8,6 +8,8 @@ DROP TABLE IF EXISTS itineraries CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
 DROP TABLE IF EXISTS accounts CASCADE;
 DROP TYPE IF EXISTS event_type CASCADE;
+DROP TYPE IF EXISTS risk_tolerence CASCADE;
+DROP TYPE IF EXISTS budget_bucket CASCADE;
 
 CREATE EXTENSION IF NOT EXISTS vector; -- Use PGVECTOR (kept for future use)
 
@@ -22,13 +24,32 @@ CREATE TYPE event_type AS ENUM (
     'Other'
 );
 
+CREATE TYPE risk_tolerence AS ENUM (
+    'Chill vibes',
+    'Light Fun',
+    'Adventurer',
+    'Risk Taker'
+);
+
+CREATE TYPE budget_bucket AS ENUM (
+    'Very low budget',
+    'Low budget',
+    'Medium budget',
+    'High budget',
+    'Luxury budget'
+);
+
 -- Accounts table
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL
+    last_name VARCHAR(255) NOT NULL,
+    budget_preference budget_bucket,
+    risk_preference risk_tolerence,
+    food_allergies TEXT,
+    disabilities TEXT
 );
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
@@ -59,11 +80,11 @@ CREATE TABLE event_list (
 ------- Dummy data to test ---------
 --Accounts
 -- CF: Password is "whatisrust"
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp');
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo');
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell'); 
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton');
-INSERT INTO accounts (id, email, password, first_name, last_name) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 'Very low budget', 'Adventurer', 'Vegan', 'Blind,Deaf');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 'Low budget', 'Risk Taker', 'Gluten Free,Hates Cheese', '');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'Medium budget', 'Chill vibes', 'Tree Nuts,Peanuts', 'Mobility Impaired - Wheelchair'); 
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 'High budget', 'Light Fun', 'Dairy,Eggs,Quinoa', 'Bad Ankle');
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 'Luxury budget', 'Chill vibes','Dairy,Pine nuts,Kiwi','Lazy');
 
 -- Ensure the accounts id sequence matches the max(id) after manual inserts
 SELECT setval(
