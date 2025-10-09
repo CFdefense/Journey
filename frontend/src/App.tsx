@@ -12,7 +12,7 @@ function App() {
     <Router>
       {/* Navigation */}
       <nav>
-        <Link to="/">Index</Link> | <Link to="/create">Home</Link> |{" "}
+        <Link to="/">Index</Link> | <Link to="/home">Home</Link> |{" "}
         <Link to="/view">View</Link> | <Link to="/account">Account</Link> |{" "}
         <Link to="/login">Login</Link> | <Link to="/signup">Signup</Link>
       </nav>
@@ -20,7 +20,7 @@ function App() {
       {/* Routes */}
       <Routes>
         <Route path="/" element={<IndexPage />} />
-        <Route path="/create" element={<Home />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/view" element={<ViewItinerary />} />
         <Route path="/account" element={<Account />} />
         <Route path="/login" element={<Login />} />
