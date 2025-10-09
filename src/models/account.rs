@@ -14,7 +14,7 @@
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-    use sqlx::Type; // <--- ADD THIS
+use sqlx::Type; // <--- ADD THIS
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
