@@ -122,6 +122,8 @@ jobs:
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
           DAYS_ID=$(echo "$ISSUES" | jq -r '.daysId')
 
+          echo "$DAYS_ID"
+
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
             ITEM_ID=$(echo "$row" | jq -r '.itemId')
@@ -147,16 +149,15 @@ jobs:
                 }' -F sId=$ISSUE_ID -F mId=$PARENT_MILESTONE_ID
               fi
             elif [ "$TYPE" = "Epic" ]; then
-              DAYS=$(echo "$row" | jq -r '.days')
-              SUB_DAYS=$(echo "$row" | jq -r '.subDays')
+              DAYS=$(echo "$row" | jq '.days')
+              SUB_DAYS=$(echo "$row" | jq '.subDays')
 
               echo "$DAYS"
-              echo "$DAYS_ID"
               echo "$SUB_DAYS"
 
               if [ "$DAYS" != "$SUB_DAYS" ] && [ -n "$DAYS_ID" ] && [ "$DAYS_ID" != "null" ]; then
 
-                echo "$setting days"
+                echo "setting days"
 
                 gh api graphql -f query='
                 mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
@@ -167,7 +168,7 @@ jobs:
                     projectId:$pId
                     value:{number:$val}
                   }) {clientMutationId}
-                }' -F fId=$DAYS_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -f val=$SUB_DAYS
+                }' -F fId=$DAYS_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$SUB_DAYS
               fi
             fi
           done
