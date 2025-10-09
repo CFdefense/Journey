@@ -3,8 +3,8 @@ name: Roadmap
 on:
   schedule:
     # switch these on November 2 at 2:00 am
-    - cron: "30 3 * * *"   # 3:30 UTC == 11:30 PM New York (DST)
-    # - cron: "30 4 * * *"   # 4:30 UTC == 11:30 PM New York (Standard Time)
+    - cron: "45 3 * * *"   # 3:45 UTC == 11:45 PM New York (DST)
+    # - cron: "45 4 * * *"   # 4:45 UTC == 11:45 PM New York (Standard Time)
   workflow_dispatch:
 
 jobs:
@@ -113,22 +113,19 @@ jobs:
                 }' -F fId=$STARTED_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
               fi
 
-              # If story, with Days, and Due missing → set Due = Started + Days
-              if [ "$TYPE" = "Story" ]; then
-                if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
-                  if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
-                    DUE_DATE=$(date -d "$TODAY + $DAYS day" +%Y-%m-%d)
-                    gh api graphql -f query='
-                    mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
-                      updateProjectV2ItemFieldValue(input:{
-                        clientMutationId:"roadmap_gh_action"
-                        fieldId:$fId
-                        itemId:$iId
-                        projectId:$pId
-                        value:{date:$val}
-                      }) {clientMutationId}
-                    }' -F fId=$DUE_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$DUE_DATE
-                  fi
+              if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
+                if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
+                  DUE_DATE=$(date -d "$TODAY + $DAYS day" +%Y-%m-%d)
+                  gh api graphql -f query='
+                  mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
+                    updateProjectV2ItemFieldValue(input:{
+                      clientMutationId:"roadmap_gh_action"
+                      fieldId:$fId
+                      itemId:$iId
+                      projectId:$pId
+                      value:{date:$val}
+                    }) {clientMutationId}
+                  }' -F fId=$DUE_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$DUE_DATE
                 fi
               fi
             fi

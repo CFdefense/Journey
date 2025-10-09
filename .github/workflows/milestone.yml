@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
         run: |
-          ISSUES_RAW=$(gh api graphql --paginate -f query='
+          ISSUES=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025"){
               issues(first:100, states:OPEN){
@@ -31,7 +31,10 @@ jobs:
                 nodes {
                   id
                   milestone { id }
-                  projectV2(number:2) { id }
+                  projectV2(number:2) {
+                    id
+                    daysFieldId: field(name:"Days") {... on ProjectV2Field {id}}
+                  }
                   projectItems(first:1){
                     nodes{
                       id
@@ -77,6 +80,7 @@ jobs:
             }
           }' | jq '{
             projectId: (.data.repository.issues.nodes[0].projectV2.id // null),
+            daysId: (.data.repository.issues.nodes[0].projectV2.daysFieldId.id),
             issues: (
               .data.repository.issues.nodes
               | map({
@@ -89,9 +93,12 @@ jobs:
                     | .name
                   ),
                   days: (
-                    (.projectItems.nodes[0].fieldValues.nodes[]?
-                     | select(.field.name=="Days")
-                     | { id: (.id // null), number: (.number // 0) })
+                    (
+                      [.projectItems.nodes[0].fieldValues.nodes[]?
+                        | select(.field.name=="Days")
+                        | (.number // 0)]
+                      | first
+                    ) // 0
                   ),
                   parent: (
                     if .parent != null then {
@@ -111,6 +118,7 @@ jobs:
           }')
 
           PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
+          DAYS_ID=$(echo "$ISSUES" | jq -r '.daysId')
 
           echo "$ISSUES" | jq -c '.issues[]' | while read -r row; do
             TYPE=$(echo "$row" | jq -r '.type')
@@ -133,11 +141,10 @@ jobs:
                 }' -F sId=$ISSUE_ID -F mId=$PARENT_MILESTONE_ID
               fi
             elif [ "$TYPE" = "Epic" ]; then
-              DAYS=$(echo "$row" | jq -r '.days.number')
-              DAYS_ID=$(echo "$row" | jq -r '.days.id')
-              SUB_DAYS=$(echo "$row" | jq -r '.subDays')
+              DAYS=$(echo "$row" | jq '.days')
+              SUB_DAYS=$(echo "$row" | jq '(.subDays // 0) | tonumber | round')
 
-              if [ "$DAYS" != "$SUB_DAYS" ]; then
+              if [ "$DAYS" != "$SUB_DAYS" ] && [ -n "$DAYS_ID" ] && [ "$DAYS_ID" != "null" ]; then
                 gh api graphql -f query='
                 mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
                   updateProjectV2ItemFieldValue(input:{
