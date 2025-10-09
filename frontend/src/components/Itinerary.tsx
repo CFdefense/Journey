@@ -15,12 +15,9 @@ interface TimeBlock {
 
 const Itinerary: React.FC = () => {
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([
-    { time: "09:00 AM", events: [] },
-    { time: "10:00 AM", events: [] },
-    { time: "11:00 AM", events: [] },
-    { time: "12:00 PM", events: [] },
-    { time: "01:00 PM", events: [] },
-    { time: "02:00 PM", events: [] },
+    { time: "Morning", events: [] },
+    { time: "Afternoon", events: [] },
+    { time: "Evening", events: [] }
   ]);
 
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([

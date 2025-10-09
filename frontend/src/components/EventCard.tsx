@@ -6,6 +6,12 @@ interface EventCardProps {
   title: string;
   desc?: string;
   draggable?: boolean;
+  time?: string;
+  address?: string;
+  postal_code?: number;
+  city?: string;
+  type?: string;
+
   onDragStart?: (e: React.DragEvent) => void;
 }
 
