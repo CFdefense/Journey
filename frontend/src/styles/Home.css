@@ -1,0 +1,26 @@
+/* src/styles/CreateItinerary.css */
+
+.create-itinerary-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* This wraps ChatWindow and Itinerary side by side */
+.itinerary-layout {
+  display: flex;
+  justify-content: center; /* center them horizontally */
+  align-items: flex-start; /* align tops */
+  gap: 2rem; /* space between them */
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+/* Optional: give each section some size control */
+.itinerary-layout > * {
+  flex: 1;
+  max-width: 600px;
+}
+
+/* You can tweak ChatWindow or Itinerary individually if needed */
