@@ -22,15 +22,14 @@ pub struct Account {
     pub password: String,
     pub first_name: String,
     pub last_name: String,
-    pub budget_preference: Option<BudgetBucket>,  // or custom enum type
-    pub risk_preference: Option<RiskTolerence>,    // or custom enum type
+    pub budget_preference: Option<budget_bucket>,  // or custom enum type
+    pub risk_preference: Option<risk_tolerence>,    // or custom enum type
     pub food_allergies: Option<String>,          // TEXT field with comma-separated values
     pub disabilities: Option<String>,       // TEXT field with comma-separated values
     // TODO: More Preferences...
 }
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[sqlx(type_name = "budget_bucket", rename_all = "snake_case")]
-pub enum BudgetBucket {
+pub enum budget_bucket {
     #[serde(rename = "Very low budget")]
     VeryLowBudget,
     #[serde(rename = "Low budget")]
@@ -43,10 +42,8 @@ pub enum BudgetBucket {
     LuxuryBudget,
 }
 
-// Corresponds to the risk_tolerence ENUM in SQL
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[sqlx(type_name = "risk_tolerence", rename_all = "snake_case")]
-pub enum RiskTolerence {
+pub enum risk_tolerence {
     #[serde(rename = "Chill vibes")]
     ChillVibes,
     #[serde(rename = "Light Fun")]
@@ -69,10 +66,10 @@ pub struct SignupPayload {
     pub first_name: String,
     pub last_name: String,
     pub password: String,
-    pub budget_preference: Option<BudgetBucket>, 
-    pub risk_preference: Option<RiskTolerence>,   
-    pub food_allergies: Option<String>,        
-    pub disabilities: Option<String>,         
+    ///pub budget_preference: Option<BudgetBucket>, 
+    ///pub risk_preference: Option<RiskTolerence>,   
+    ///pub food_allergies: Option<String>,        
+    ///pub disabilities: Option<String>,         
 }
 
 impl SignupPayload {
