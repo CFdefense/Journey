@@ -71,10 +71,6 @@ pub struct SignupPayload {
     pub first_name: String,
     pub last_name: String,
     pub password: String,
-    pub budget_preference: Option<BudgetBucket>,
-    pub risk_preference: Option<RiskTolerence>,
-    pub food_allergies: Option<String>,
-    pub disabilities: Option<String>,
 }
 
 impl SignupPayload {
