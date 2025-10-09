@@ -121,13 +121,23 @@ pub async fn api_signup(
 
     // Insert new user into database
     let insert_result = sqlx::query!(
-        "INSERT INTO accounts (email, first_name, last_name, password)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id",
+        r#"
+        INSERT INTO accounts (
+            email, first_name, last_name, password,
+            budget_preference, risk_preference, food_allergies, disabilities
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+        "#,
         payload.email,
         payload.first_name,
         payload.last_name,
-        password_hash
+        password_hash,
+        // Add bindings for the 4 new optional fields from the payload
+        payload.budget_preference as _,
+        payload.risk_preference as _,
+        payload.food_allergies,
+        payload.disabilities,
     )
     .fetch_one(&pool)
     .await;

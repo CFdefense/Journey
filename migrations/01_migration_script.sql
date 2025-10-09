@@ -22,14 +22,14 @@ CREATE TYPE event_type AS ENUM (
     'Other'
 );
 
-CREATE TYPE risk_tolerence AS ENUM (
+CREATE TYPE RiskTolerence AS ENUM (
     'Chill vibes',
     'Light Fun',
     'Adventurer',
     'Risk Taker'
 );
 
-CREATE TYPE budget_bucket AS ENUM (
+CREATE TYPE BudgetBucket AS ENUM (
     'Very low budget',
     'Low budget',
     'Medium budget',
@@ -44,8 +44,8 @@ CREATE TABLE accounts (
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    budget_preference budget_bucket,
-    risk_preference risk_tolerence,
+    budget_preference BudgetBucket,
+    risk_preference RiskTolerence,
     food_allergies TEXT,
     disabilities TEXT
 );

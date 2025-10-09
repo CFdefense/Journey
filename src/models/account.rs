@@ -14,6 +14,7 @@
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+    use sqlx::Type; // <--- ADD THIS
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
@@ -22,14 +23,16 @@ pub struct Account {
     pub password: String,
     pub first_name: String,
     pub last_name: String,
-    pub budget_preference: Option<budget_bucket>,  // or custom enum type
-    pub risk_preference: Option<risk_tolerence>,    // or custom enum type
+    pub budget_preference: Option<BudgetBucket>, // NEW: Now uses Option<Enum>
+    pub risk_preference: Option<RiskTolerence>,    // or custom enum type
     pub food_allergies: Option<String>,          // TEXT field with comma-separated values
     pub disabilities: Option<String>,       // TEXT field with comma-separated values
     // TODO: More Preferences...
 }
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
-pub enum budget_bucket {
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type)] 
+#[sqlx(type_name = "budget_bucket", rename_all = "snake_case")]
+pub enum BudgetBucket {
     #[serde(rename = "Very low budget")]
     VeryLowBudget,
     #[serde(rename = "Low budget")]
@@ -42,8 +45,10 @@ pub enum budget_bucket {
     LuxuryBudget,
 }
 
+// ADD `Type` and `sqlx` attributes here
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-pub enum risk_tolerence {
+#[sqlx(type_name = "risk_tolerence", rename_all = "snake_case")]
+pub enum RiskTolerence {
     #[serde(rename = "Chill vibes")]
     ChillVibes,
     #[serde(rename = "Light Fun")]
@@ -66,10 +71,10 @@ pub struct SignupPayload {
     pub first_name: String,
     pub last_name: String,
     pub password: String,
-    ///pub budget_preference: Option<BudgetBucket>, 
-    ///pub risk_preference: Option<RiskTolerence>,   
-    ///pub food_allergies: Option<String>,        
-    ///pub disabilities: Option<String>,         
+    pub budget_preference: Option<BudgetBucket>,
+    pub risk_preference: Option<RiskTolerence>,
+    pub food_allergies: Option<String>,
+    pub disabilities: Option<String>,
 }
 
 impl SignupPayload {
