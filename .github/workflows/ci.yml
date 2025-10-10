@@ -33,6 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: "true"
+          cache-all-crates: true"
+          cache-workspace-crates: "true"
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
