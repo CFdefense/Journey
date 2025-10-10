@@ -1,6 +1,9 @@
 [run]
-run-types = ["AllTargets"]
+run-types = ["Benchmarks", "Examples", "Doctests", "Tests"]
 all-features = true
+force-clean = false
+skip-clean = true
+locked = true
 
 [report]
 output-dir = "tmp"

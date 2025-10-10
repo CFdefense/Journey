@@ -216,4 +216,4 @@ jobs:
           sqlx database create
           psql "$DATABASE_URL" -f migrations/01_migration_script.sql
       - name: Run Code Coverage
-        run: cargo tarpaulin --all-targets --all-features --locked --fail-under 80 --out Stdout Html
+        run: cargo tarpaulin # uses tarpaulin.toml
