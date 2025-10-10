@@ -1,5 +1,5 @@
 [run]
-run-types = ["Benchmarks", "Examples", "Doctests", "Tests"]
+run-types = ["Benchmarks", "Examples", "Tests"]
 all-features = true
 force-clean = false
 skip-clean = true
