@@ -1,5 +1,5 @@
 [run]
-run-types = ["Benchmarks", "Examples", "Tests"]
+run-types = ["Bins"]
 all-features = true
 force-clean = false
 skip-clean = true

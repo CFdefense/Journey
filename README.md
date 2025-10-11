@@ -11,36 +11,9 @@
 [click here](https://brightspace.marist.edu/d2l/home/57958)
 ## Project Idea
 Travel agent that plans each day during your travel. The website creates an itinerary based on your location. Users may make changes or ask the agent to make changes to the itinerary.
-## Build Project (WIP)
-In dev we can use react as a backend to make changes to UI/UX, and that should hopefully make development easier.
-
-In prod, we would compile the react files into html/css/js files (or however it works) and just serve them with our backend (axum).
-
-## Database
-Bring container up
-```sh
-# Windows
-docker-compose up -d
-
-# Unix (make sure docker.service and docker.socket are active and running)
-sudo docker compose up -d
-```
-Login to database
-```sh
-psql -h localhost -p 5431 -U postgres -d travelagent
-```
-Kill database
-```sh
-# Windows
-# TODO
-
-# Unix
-sudo docker compose down db
-```
-## Development
-Install Rust using your package manager or from their [website](https://rust-lang.org/tools/install/).
-
-Make a `.env` with these variables
+## Build Project
+### Environment Variables
+Make a `.env` in the root directory with these variables
 ```
 POSTGRES_USER=""
 POSTGRES_PASSWORD=""
@@ -52,17 +25,45 @@ BIND_ADDRESS=""
 OPENAI_API_KEY=""
 RUST_LOG=""
 ```
-Run the project
+Make a `.env` in the /frontend directory with these variables
+```
+VITE_API_BASE_URL="http://localhost:3001"
+```
+### Database
+You need an active connection to the database to compile. This brings the db container up.
+```sh
+# Windows
+docker-compose up -d
+
+# Unix (make sure docker.service and docker.socket are active and running)
+sudo docker compose up -d
+```
+Login to database
+```sh
+psql -h localhost -p 5431 -U postgres -d travelagent
+```
+Run migrations (in psql command line - should have prompt `travelagent=# `)
+```sql
+\i migrations/01_migration_script.sql
+```
+Kill database (after you're done)
+```sh
+# Windows
+# TODO
+
+# Unix
+sudo docker compose down db
+```
+### Rust
+Install Rust using your package manager (likely called `rustup`) or from their [website](https://rust-lang.org/tools/install/).
+
+Run the server
 ```sh
 cargo run
 ```
-Run the linter
+Run tests
 ```sh
-cargo clippy --all-targets
-```
-Run the tests
-```sh
-cargo test --all-targets
+cargo test
 ```
 Run code coverage
 ```sh
@@ -70,5 +71,5 @@ Run code coverage
 cargo install cargo-tarpaulin
 
 # Run code coverage
-cargo tarpaulin --all-targets --fail-under 80 --out Stdout Html --output-dir ./tmp
+cargo tarpaulin
 ```
