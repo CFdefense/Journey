@@ -8,6 +8,9 @@ mod middleware;
 mod models;
 mod error;
 
+#[cfg(test)]
+mod tests;
+
 use axum::{
 	Router,
 	Extension,

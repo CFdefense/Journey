@@ -49,17 +49,17 @@ Stick to the scope defined in the story. If other issues arrise, you should make
 Tests are automatically run when a PR is made to merge to main. All tests must pass in order to merge to main.
 You can run tests locally with:
 ```sh
-cargo test --all-targets --all-features --locked
+cargo test
 ```
 Stories should include unit testing in their acceptance criteria when new functionality is added.
 Your tests should cover every possilble condition, control flow path, and edge case that you can think of.
 
-Unit tests go in /tests/*.rs. Name the file after the thing you're testing.
-Unit tests should be used for small chunks of logic, like testing one endpoint, or one complex function.
+Tests go in /src/tests.rs
+
+Unit tests should be used for small chunks of logic, like testing one controller, or one complex function.
 They shouldn't test external dependencies like API calls.
 
 Integration tests test the entire application and all of its dependencies to ensure that it works correctly.
-Each integration tests should have its own file in /tests.
 Since we don't want to spend a lot of money on API calls just for integration testing, we can use mock API calls.
 ## PRs
 Automated checks and testing will run when a PR is opened to merge to main.
