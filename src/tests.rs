@@ -566,6 +566,7 @@ fn test_db_pool_panics_without_env() {
 /// Run with: `cargo test -- --ignored`
 #[tokio::test]
 #[ignore]
+#[serial]
 async fn test_db_pool_connects_and_selects() {
 	let database_url = match std::env::var("DATABASE_URL") {
 		Ok(v) => v,
