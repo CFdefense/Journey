@@ -26,7 +26,6 @@ pub struct Event {
 }
 
 #[derive(Debug, Serialize, Deserialize, Type)]
-#[sqlx(type_name = "event_type")]
 pub enum EventType {
     Concert,
     Museum,
@@ -36,6 +35,16 @@ pub enum EventType {
     Sports,
     Other,
     // TODO: Add more event types...
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateEventPayload {
+    pub street_address: Option<String>,
+    pub postal_code: Option<i32>,
+    pub city: Option<String>,
+    pub event_type: Option<EventType>,
+    pub event_description: Option<String>,
+    pub event_name: Option<String>,
 }
 
 // TODO: More Payloads...
