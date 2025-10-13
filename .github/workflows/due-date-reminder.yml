@@ -50,13 +50,14 @@ jobs:
             }
           }')
           ISSUES=$(echo $"ISSUES_RAW" | jq '
-          .data.repository.issues.nodes[] |
-          {
-            title: .title,
-            url: .url,
-            assignees: [.assignees.nodes[].login],
-            dueDate: (.projectItems.nodes[].fieldValueByName.date // "null")
-          }')
+            .data.repository.issues.nodes[] |
+            {
+              title: .title,
+              url: .url,
+              assignees: [.assignees.nodes[].login],
+              dueDate: (.projectItems.nodes[].fieldValueByName.date // "null")
+            }
+          ')
 
           echo "Issues with due date:"
           echo "$ISSUES_RAW"
