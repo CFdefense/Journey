@@ -68,15 +68,14 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             http::header::HeaderName::from_static("x-requested-with"),
         ]);
 
-    // Import routes (attach shared state and cookies)
     // Use an encryption/signing key for private cookies
     let cookie_key = Key::generate();
-    
+
     // API routes with CORS middleware
     let api_routes = Router::new()
     	.nest("/account", controllers::account::account_routes())
         .nest("/itinerary", controllers::itinerary::itinerary_routes());
-     	// TODO: nest other routes (like itinerary and stuff)
+     	// TODO: nest other routes...
 
     // Build the main router
     let app = Router::new()

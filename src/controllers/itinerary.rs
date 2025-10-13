@@ -16,7 +16,17 @@ pub async fn api_saved_itineraries(
         user.id
     );
 
-    Ok(Json(SavedResponse { itineraries: vec![] }))
+    // Fetch all itineraries for the user
+    let itineraries: Vec<Itinerary> = sqlx::query_as!(
+        Itinerary,
+        r#"SELECT id, account_id, is_public, date FROM itineraries WHERE account_id = $1"#,
+        user.id
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| AppError::from(e))?;
+
+    Ok(Json(SavedResponse { itineraries }))
 }
 
 pub fn itinerary_routes() -> Router {

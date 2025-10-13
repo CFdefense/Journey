@@ -81,6 +81,7 @@ pub fn init_logger() {
 	})
 }
 
+#[allow(unused)]
 pub fn log_writer() -> &'static mut NonBlocking {
 	#[allow(static_mut_refs)]
 	unsafe {LOG_WRITER.get_mut().expect("Logger not initialized")}

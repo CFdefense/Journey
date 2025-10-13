@@ -173,11 +173,23 @@ pub async fn api_login(
         payload
     );
 
-    // Get user from database
-    let user_result = sqlx::query!(
-        "SELECT id, email, password
-         FROM accounts
-         WHERE email = $1;",
+    // Get user from database as Account
+    let user_result = sqlx::query_as!(
+        Account,
+        r#"
+        SELECT 
+            id,
+            email,
+            password,
+            first_name,
+            last_name,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        FROM accounts
+        WHERE email = $1
+        "#,
         payload.email
     )
     .fetch_one(&pool)
@@ -264,18 +276,21 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<Jso
 pub async fn api_current(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>,
-) -> ApiResult<Json<CurrentResponse>> {
+) -> ApiResult<Json<Account>> {
     info!(
         "HANDLER ->> /api/account/current 'api_current' - User ID: {}",
         user.id
     );
-    // Load current user's public fields from DB
-    let rec = sqlx::query!(
+    // Load current user's full account row
+    let account = sqlx::query_as!(
+        Account,
         r#"
         SELECT
+            id,
             email,
             first_name,
             last_name,
+            password,
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             food_allergies,
@@ -287,31 +302,19 @@ pub async fn api_current(
     )
     .fetch_one(&pool)
     .await
-    .map_err(|e| {
-        AppError::from(e)
-    })?;
+    .map_err(|e| AppError::from(e))?;
 
-    Ok(Json(CurrentResponse {
-        id: user.id,
-        email: rec.email,
-        first_name: rec.first_name,
-        last_name: rec.last_name,
-        budget_preference: rec.budget_preference,
-        risk_preference: rec.risk_preference,
-        food_allergies: rec.food_allergies,
-        disabilities: rec.disabilities,
-    }))
+    Ok(Json(account))
 }
 
 pub async fn api_update(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>, 
     Json(payload): Json<UpdatePayload>
-) -> ApiResult<Json<UpdateResponse>> {
-    let user_id = user.id;
+) -> ApiResult<Json<Account>> {
     info!(
         "HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",
-        user_id, payload
+        user.id, payload
     );
 
     // If password provided, hash it before update
@@ -328,7 +331,8 @@ pub async fn api_update(
         None
     };
 
-    let rec = sqlx::query!(
+    let account = sqlx::query_as!(
+        Account,
         r#"
         UPDATE accounts SET
             email = COALESCE($1, email),
@@ -341,7 +345,9 @@ pub async fn api_update(
             disabilities = COALESCE($8, disabilities)
         WHERE id = $9
         RETURNING
+            id,
             email,
+            password,
             first_name,
             last_name,
             budget_preference as "budget_preference: BudgetBucket",
@@ -349,33 +355,21 @@ pub async fn api_update(
             food_allergies,
             disabilities
         "#,
-        payload.email.clone(),
-        payload.first_name.clone(),
-        payload.last_name.clone(),
+        payload.email,
+        payload.first_name,
+        payload.last_name,
         hashed_password,
-        payload.budget_preference.clone() as Option<BudgetBucket>,
-        payload.risk_preference.clone() as Option<RiskTolerence>,
-        payload.food_allergies.clone(),
-        payload.disabilities.clone(),
-        user_id
+        payload.budget_preference as Option<BudgetBucket>,
+        payload.risk_preference as Option<RiskTolerence>,
+        payload.food_allergies,
+        payload.disabilities,
+        user.id
     )
     .fetch_one(&pool)
     .await
     .map_err(|e| AppError::from(e))?;
 
-    // Build typed response
-    let resp = UpdateResponse {
-        id: user_id,
-        email: rec.email,
-        first_name: rec.first_name,
-        last_name: rec.last_name,
-        budget_preference: rec.budget_preference,
-        risk_preference: rec.risk_preference,
-        food_allergies: rec.food_allergies,
-        disabilities: rec.disabilities,
-    };
-
-    Ok(Json(resp))
+    Ok(Json(account))
 }
 
 pub fn account_routes() -> Router {

@@ -23,6 +23,7 @@
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use sqlx::Type;
 
 /// Row model for the `accounts` table.
@@ -37,7 +38,7 @@ use sqlx::Type;
 ///   - `risk_preference`: Optional risk tolerance enum
 ///   - `food_allergies`: Optional text notes
 ///   - `disabilities`: Optional text notes
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Account {
     pub id: i32,
     pub email: String,
