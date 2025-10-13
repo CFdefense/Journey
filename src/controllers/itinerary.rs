@@ -17,7 +17,7 @@ use tracing::info;
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::models::itinerary::*;
-use crate::models::event_list::EventList;
+use crate::models::event::Event;
 
 /// Get all saved itineraries for the authenticated user.
 ///
@@ -107,7 +107,7 @@ pub async fn api_get_itinerary(
     Ok(Json(ItineraryResponse { itinerary }))
 }
 
-/// Get event list for a specific itinerary.
+/// Get events for a specific itinerary.
 ///
 /// # Method
 /// `GET /api/itinerary/{id}/events`
@@ -117,7 +117,7 @@ pub async fn api_get_itinerary(
 /// checks expiration, and injects `Extension<AuthUser>`.
 ///
 /// # Responses
-/// - `200 OK` - JSON body `{ "events": [EventList] }` containing event list for the itinerary
+/// - `200 OK` - JSON body `Vec<Event>` containing events for the itinerary
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 /// - `404 NOT_FOUND` - When itinerary doesn't exist or doesn't belong to user
 /// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
@@ -132,7 +132,7 @@ pub async fn api_get_itinerary_events(
     Extension(user): Extension<AuthUser>,
     Path(itinerary_id): Path<i32>,
     Extension(pool): Extension<PgPool>,
-) -> ApiResult<Json<EventListResponse>> {
+) -> ApiResult<Json<Vec<Event>>> {
     info!(
         "HANDLER ->> /api/itinerary/{}/events 'api_get_itinerary_events' - User ID: {}",
         itinerary_id, user.id
@@ -150,26 +150,27 @@ pub async fn api_get_itinerary_events(
     .map_err(|e| AppError::from(e))?
     .ok_or(AppError::NotFound)?;
 
-    // Fetch event list for this itinerary
-    let events: Vec<EventList> = sqlx::query_as!(
-        EventList,
-        r#"SELECT id, itinerary_id, event_id, time_of_day FROM event_list WHERE itinerary_id = $1"#,
-        itinerary_id
+    // Fetch events for this itinerary by joining event_list with events
+    let events: Vec<Event> = sqlx::query_as::<_, Event>(
+        r#"SELECT e.id, e.street_address, e.postal_code, e.city, e.event_type, e.event_description, e.event_name 
+           FROM events e 
+           INNER JOIN event_list el ON e.id = el.event_id 
+           WHERE el.itinerary_id = $1"#,
     )
+    .bind(itinerary_id)
     .fetch_all(&pool)
     .await
     .map_err(|e| AppError::from(e))?;
 
-    Ok(Json(EventListResponse { events }))
+    Ok(Json(events))
 }
-
 
 /// Create the itinerary routes with authentication middleware.
 ///
 /// # Routes
 /// - `GET /saved` - Get user's saved itineraries (protected)
 /// - `GET /{id}` - Get single itinerary metadata (protected)
-/// - `GET /{id}/events` - Get event list for itinerary (protected)
+/// - `GET /{id}/events` - Get events for itinerary (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
