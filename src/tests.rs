@@ -667,13 +667,18 @@ async fn test_endpoints() {
     // Build app
     // Use an encryption/signing key for private cookies
     let cookie_key = Key::generate();
-    let account_routes = controllers::account::account_routes()
+    let account_routes = controllers::account::account_routes();
+    let itinerary_routes = controllers::itinerary::itinerary_routes();
+    let event_routes = controllers::event::event_routes();
+    let api_routes = Router::new()
+        .nest("/account", account_routes)
+        .nest("/itinerary", itinerary_routes)
+        .nest("/event", event_routes);
+    let app = Router::new()
+        .nest("/api", api_routes)
         .layer(Extension(pool.clone()))
         .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new());
-    let api_routes = Router::new()
-        .nest("/account", account_routes);
-    let app = Router::new().nest("/api", api_routes);
 
     // Bind to ephemeral port and spawn server
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
@@ -695,7 +700,13 @@ async fn test_endpoints() {
 	    async {test_update_endpoint_returns_account(&hc).await},
 	    async {test_update_endpoint_partial_fields(&hc).await},
 	    async {test_update_endpoint_with_preferences(&hc).await},
-      	// just throw all the tests in here
+	    async {test_saved_itineraries_endpoint(&hc).await},
+	    async {test_get_itinerary_endpoint(&hc).await},
+	    async {test_get_itinerary_events_endpoint(&hc).await},
+	    async {test_itinerary_endpoints_require_auth(&hc).await},
+	    async {test_event_endpoints_require_auth(&hc).await},
+	    async {test_get_event_endpoint(&hc).await},
+        // just throw all the tests in here
     );
 }
 
@@ -1103,4 +1114,218 @@ async fn test_update_endpoint_with_preferences(hc: &Client) {
 
     // Verify response is successful
     assert!(update_resp.status().is_success());
+}
+
+async fn test_saved_itineraries_endpoint(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Saved",
+                "last_name": "Itineraries",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /saved endpoint returns user's itineraries
+    let saved_resp = hc
+        .do_get("/api/itinerary/saved")
+        .await
+        .unwrap();
+    assert_eq!(saved_resp.status().as_u16(), 200);
+
+    // Verify response is successful
+    assert!(saved_resp.status().is_success());
+}
+
+async fn test_get_itinerary_endpoint(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("get_itinerary+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Get",
+                "last_name": "Itinerary",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /{id} endpoint with non-existent itinerary (should return 404)
+    let get_resp = hc
+        .do_get("/api/itinerary/999999")
+        .await
+        .unwrap();
+    assert_eq!(get_resp.status().as_u16(), 404);
+
+    // Test with invalid ID format (should return 400)
+    let invalid_resp = hc
+        .do_get("/api/itinerary/invalid")
+        .await
+        .unwrap();
+    assert_eq!(invalid_resp.status().as_u16(), 400);
+}
+
+async fn test_get_itinerary_events_endpoint(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("itinerary_events+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Itinerary",
+                "last_name": "Events",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /{id}/events endpoint with non-existent itinerary (should return 404)
+    let events_resp = hc
+        .do_get("/api/itinerary/999999/events")
+        .await
+        .unwrap();
+    assert_eq!(events_resp.status().as_u16(), 404);
+
+    // Test with invalid ID format (should return 400)
+    let invalid_resp = hc
+        .do_get("/api/itinerary/invalid/events")
+        .await
+        .unwrap();
+    assert_eq!(invalid_resp.status().as_u16(), 400);
+}
+
+async fn test_itinerary_endpoints_require_auth(hc: &Client) {
+    // Test that itinerary endpoints require authentication
+    let saved_resp = hc
+        .do_get("/api/itinerary/saved")
+        .await
+        .unwrap();
+    assert_eq!(saved_resp.status().as_u16(), 401, "Saved itineraries should require auth");
+
+    let get_resp = hc
+        .do_get("/api/itinerary/1")
+        .await
+        .unwrap();
+    assert_eq!(get_resp.status().as_u16(), 401, "Get itinerary should require auth");
+
+    let events_resp = hc
+        .do_get("/api/itinerary/1/events")
+        .await
+        .unwrap();
+    assert_eq!(events_resp.status().as_u16(), 401, "Get itinerary events should require auth");
+}
+
+async fn test_event_endpoints_require_auth(hc: &Client) {
+    // Test that event endpoints require authentication
+    let get_resp = hc
+        .do_get("/api/event/1")
+        .await
+        .unwrap();
+    assert_eq!(get_resp.status().as_u16(), 401, "Event endpoint should require auth");
+}
+
+async fn test_get_event_endpoint(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("get_event+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Get",
+                "last_name": "Event",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /{id} endpoint with non-existent event (should return 404)
+    let get_resp = hc
+        .do_get("/api/event/999999")
+        .await
+        .unwrap();
+    assert_eq!(get_resp.status().as_u16(), 404);
+
+    // Test with invalid ID format (should return 400)
+    let invalid_resp = hc
+        .do_get("/api/event/invalid")
+        .await
+        .unwrap();
+    assert_eq!(invalid_resp.status().as_u16(), 400);
 }

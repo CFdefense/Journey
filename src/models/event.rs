@@ -12,8 +12,9 @@
  */
 
 use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, Type};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Event {
     pub id: i32,
     pub street_address: String,
@@ -24,7 +25,7 @@ pub struct Event {
     pub event_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 pub enum EventType {
     Concert,
     Museum,
@@ -34,6 +35,16 @@ pub enum EventType {
     Sports,
     Other,
     // TODO: Add more event types...
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateEventPayload {
+    pub street_address: Option<String>,
+    pub postal_code: Option<i32>,
+    pub city: Option<String>,
+    pub event_type: Option<EventType>,
+    pub event_description: Option<String>,
+    pub event_name: Option<String>,
 }
 
 // TODO: More Payloads...

@@ -74,7 +74,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // API routes with CORS middleware
     let api_routes = Router::new()
     	.nest("/account", controllers::account::account_routes())
-        .nest("/itinerary", controllers::itinerary::itinerary_routes());
+        .nest("/itinerary", controllers::itinerary::itinerary_routes())
+        .nest("/event", controllers::event::event_routes());
      	// TODO: nest other routes...
 
     // Build the main router
