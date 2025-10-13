@@ -24,7 +24,7 @@ jobs:
           echo "NOW: $NOW, TWO_DAYS: $TWO_DAYS"
 
           # Fetch open issues and their ProjectV2 fields
-          ISSUES=$(gh api graphql --paginate -f query='
+          ISSUES_RAW=$(gh api graphql --paginate -f query='
           query {
             repository(owner:"CFdefense", name:"Capping2025") {
               issues(first:100, states:OPEN) {
@@ -53,7 +53,8 @@ jobs:
                 }
               }
             }
-          }' --jq '
+          }')
+          ISSUES = (echo $"ISSUES_RAW" | jq '
             .data.repository.issues.nodes[] |
             {
               title: .title,
@@ -68,7 +69,8 @@ jobs:
           ' | jq -s '.')
 
           echo "Issues with due date:"
-          echo "$ISSUES" | jq
+          echo "$ISSUES_RAW"
+          echo "$ISSUES"
 
           mapfile -t ISSUE_ARRAY < <(echo "$ISSUES" | jq -c '.[]')
           EMBEDS_OVERDUE="[]"
