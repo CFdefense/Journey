@@ -167,4 +167,9 @@ pub struct SignupResponse {
     pub email: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ValidateResponse {
+    pub id: i32,
+}
+
 // TODO: More Payloads...
