@@ -59,15 +59,10 @@ pub struct Account {
 #[derive(Debug, Serialize, Deserialize, Clone, Type)] 
 #[sqlx(type_name = "budget_bucket")]
 pub enum BudgetBucket {
-    #[serde(rename = "Very low budget")]
     VeryLowBudget,
-    #[serde(rename = "Low budget")]
     LowBudget,
-    #[serde(rename = "Medium budget")]
     MediumBudget,
-    #[serde(rename = "High budget")]
     HighBudget,
-    #[serde(rename = "Luxury budget")]
     LuxuryBudget,
 }
 
@@ -76,15 +71,11 @@ pub enum BudgetBucket {
 /// - Fields:
 ///   - Enum variants representing risk appetite
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[sqlx(type_name = "risk_tolerence", rename_all = "snake_case")]
+#[sqlx(type_name = "risk_tolerence")]
 pub enum RiskTolerence {
-    #[serde(rename = "Chill vibes")]
     ChillVibes,
-    #[serde(rename = "Light Fun")]
     LightFun,
-    #[serde(rename = "Adventurer")]
     Adventurer,
-    #[serde(rename = "Risk Taker")]
     RiskTaker,
 }
 
