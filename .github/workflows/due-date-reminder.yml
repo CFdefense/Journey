@@ -54,7 +54,7 @@ jobs:
               }
             }
           }')
-          ISSUES = (echo $"ISSUES_RAW" | jq '
+          ISSUES=$(echo $"ISSUES_RAW" | jq '
             .data.repository.issues.nodes[] |
             {
               title: .title,
