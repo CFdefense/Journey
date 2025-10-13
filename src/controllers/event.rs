@@ -69,6 +69,6 @@ pub async fn api_get_event(
 ///
 pub fn event_routes() -> Router {
     Router::new()
-        .route("/{id}", get(api_get_event))
+        .route("/:id", get(api_get_event))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

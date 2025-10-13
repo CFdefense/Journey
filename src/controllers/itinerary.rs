@@ -178,7 +178,7 @@ pub async fn api_get_itinerary_events(
 pub fn itinerary_routes() -> Router {
     Router::new()
         .route("/saved", get(api_saved_itineraries))
-        .route("/{id}", get(api_get_itinerary))
-        .route("/{id}/events", get(api_get_itinerary_events))
+        .route("/:id", get(api_get_itinerary))
+        .route("/:id/events", get(api_get_itinerary_events))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }
