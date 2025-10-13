@@ -25,7 +25,7 @@ use tower_cookies::{
 
 use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
-use tracing::{error, info};
+use tracing::info;
 
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
@@ -71,10 +71,6 @@ pub async fn api_signup(
 
     // Validate input
     if let Err(validation_error) = payload.validate() {
-        error!(
-            "ERROR ->> /api/account/signup 'api_signup' REASON: Validation failed: {}",
-            validation_error
-        );
         return Err(AppError::Validation(validation_error));
     }
 
@@ -86,17 +82,9 @@ pub async fn api_signup(
 
     match existing_user_result {
         Ok(Some(_)) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Email already exists: {}",
-                payload.email
-            );
             return Err(AppError::Conflict("email already exists".to_string()));
         }
         Err(e) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Database query error: {:?}",
-                e
-            );
             return Err(AppError::from(e));
         }
         Ok(None) => {
@@ -109,10 +97,7 @@ pub async fn api_signup(
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(payload.password.as_bytes(), &salt)
-        .map_err(|e| {
-            error!("hash password error: {:?}", e);
-            AppError::from(e)
-        })?
+        .map_err(|e| AppError::from(e))?
         .to_string();
 
     // Insert new user into database
@@ -144,10 +129,6 @@ pub async fn api_signup(
             ))
         }
         Err(e) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Database insert error: {:?}",
-                e
-            );
             Err(AppError::from(e))
         }
     }
@@ -254,10 +235,6 @@ pub async fn api_login(
             }));
         }
         Err(e) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: No account for Email: {}",
-                payload.email
-            );
             return Err(AppError::from(e));
         }
     }
@@ -311,10 +288,6 @@ pub async fn api_current(
     .fetch_one(&pool)
     .await
     .map_err(|e| {
-        error!(
-            "ERROR ->> /api/account/current 'api_current' REASON: DB fetch error: {:?}",
-            e
-        );
         AppError::from(e)
     })?;
 
@@ -388,13 +361,7 @@ pub async fn api_update(
     )
     .fetch_one(&pool)
     .await
-    .map_err(|e| {
-        error!(
-            "ERROR ->> /api/account/update 'api_update' REASON: DB update error: {:?}",
-            e
-        );
-        AppError::from(e)
-    })?;
+    .map_err(|e| AppError::from(e))?;
 
     // Build typed response
     let resp = UpdateResponse {

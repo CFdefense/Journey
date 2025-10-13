@@ -36,13 +36,13 @@ impl AppError {
     #[cfg(not(tarpaulin_include))]
     pub fn log(&self) {
         match self {
-            AppError::Validation(m) => error!(target: "api_error", kind = "validation", message = %m),
-            AppError::BadRequest(m) => error!(target: "api_error", kind = "bad_request", message = %m),
-            AppError::Unauthorized => error!(target: "api_error", kind = "unauthorized"),
-            AppError::Forbidden => error!(target: "api_error", kind = "forbidden"),
-            AppError::NotFound => error!(target: "api_error", kind = "not_found"),
-            AppError::Conflict(m) => error!(target: "api_error", kind = "conflict", message = %m),
-            AppError::Internal(m) => error!(target: "api_error", kind = "internal", message = %m),
+            AppError::Validation(m) => error!(target: "api_error", prefix = "ERROR ->>", kind = "validation", message = %m),
+            AppError::BadRequest(m) => error!(target: "api_error", prefix = "ERROR ->>", kind = "bad_request", message = %m),
+            AppError::Unauthorized => error!(target: "api_error", prefix = "ERROR ->>", kind = "unauthorized"),
+            AppError::Forbidden => error!(target: "api_error", prefix = "ERROR ->>", kind = "forbidden"),
+            AppError::NotFound => error!(target: "api_error", prefix = "ERROR ->>", kind = "not_found"),
+            AppError::Conflict(m) => error!(target: "api_error", prefix = "ERROR ->>", kind = "conflict", message = %m),
+            AppError::Internal(m) => error!(target: "api_error", prefix = "ERROR ->>", kind = "internal", message = %m),
         }
     }
 }

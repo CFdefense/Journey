@@ -71,10 +71,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Import routes (attach shared state and cookies)
     // Use an encryption/signing key for private cookies
     let cookie_key = Key::generate();
-    let account_routes = controllers::account::account_routes()
-        .layer(Extension(pool.clone()))
-        .layer(Extension(cookie_key.clone()))
-        .layer(CookieManagerLayer::new());
+    let account_routes = controllers::account::account_routes();
     // TODO: Add More...
 
     // TODO: Intialize cookies
@@ -90,7 +87,10 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         .nest("/api", api_routes)
         // Static files served from /dist.
         // Fallback must be index.html since react handles routing on front end
-        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))));
+        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))))
+        .layer(Extension(pool.clone()))
+        .layer(Extension(cookie_key.clone()))
+        .layer(CookieManagerLayer::new());
 
     /*
     / Bind the router to a specific port
