@@ -1,15 +1,24 @@
 /*
- * src/models/Account.rs
+ * src/models/account.rs
  *
- * File for Account table models
+ * File for Account table models and related payload/response types
  *
  * Purpose:
- *   Models for the account table and payloads which interact with it.
+ *   Strongly-typed models for the `accounts` table, enums for preferences,
+ *   request payloads, and response DTOs used by account routes.
  *
  * Include:
- *   Account            - Model representing an instance of the Account table
- *   LoginPayload       - Model representing the payload for a login
- *   SignupPayload      - Model representing the payload for a signup
+ *   Account              - Row model for the accounts table
+ *   BudgetBucket         - Enum mapped to DB type budget_bucket
+ *   RiskTolerence        - Enum mapped to DB type risk_tolerence
+ *   LoginPayload         - Request payload for POST /api/account/login
+ *   SignupPayload        - Request payload for POST /api/account/signup
+ *   UpdatePayload        - Request payload for POST /api/account/update
+ *   LoginResponse        - API route response for POST /api/account/login
+ *   SignupResponse       - API route response for POST /api/account/signup
+ *   ValidateResponse     - API route response for POST /api/account/validate
+ *   UpdateResponse       - API route response for POST /api/account/update
+ *   CurrentResponse      - API route response for GET  /api/account/current
  */
 
 use regex::Regex;
@@ -23,15 +32,15 @@ pub struct Account {
     pub password: String,
     pub first_name: String,
     pub last_name: String,
-    pub budget_preference: Option<BudgetBucket>, // NEW: Now uses Option<Enum>
-    pub risk_preference: Option<RiskTolerence>,    // or custom enum type
-    pub food_allergies: Option<String>,          // TEXT field with comma-separated values
-    pub disabilities: Option<String>,       // TEXT field with comma-separated values
+    pub budget_preference: Option<BudgetBucket>, 
+    pub risk_preference: Option<RiskTolerence>,
+    pub food_allergies: Option<String>,
+    pub disabilities: Option<String>,
     // TODO: More Preferences...
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)] 
-#[sqlx(type_name = "budget_bucket", rename_all = "snake_case")]
+#[sqlx(type_name = "budget_bucket")]
 pub enum BudgetBucket {
     #[serde(rename = "Very low budget")]
     VeryLowBudget,
@@ -72,6 +81,20 @@ pub struct SignupPayload {
     pub last_name: String,
     pub password: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdatePayload {
+    pub email: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub password: Option<String>,
+    pub budget_preference: Option<BudgetBucket>,
+    pub risk_preference: Option<RiskTolerence>,
+    pub food_allergies: Option<String>,
+    pub disabilities: Option<String>,
+}
+
+// TODO: More Payloads...
 
 impl SignupPayload {
     /// Validate email format using regex
@@ -172,4 +195,28 @@ pub struct ValidateResponse {
     pub id: i32,
 }
 
-// TODO: More Payloads...
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateResponse {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub budget_preference: Option<BudgetBucket>,
+    pub risk_preference: Option<RiskTolerence>,
+    pub food_allergies: Option<String>,
+    pub disabilities: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CurrentResponse {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub budget_preference: Option<BudgetBucket>,
+    pub risk_preference: Option<RiskTolerence>,
+    pub food_allergies: Option<String>,
+    pub disabilities: Option<String>,
+}
+
+// TODO: More Responses...

@@ -12,7 +12,7 @@
  *   api_me             - POST /api/account/me     -> returns current user (protected by middleware)
  */
 
-use axum::{Extension, Json, Router, http::StatusCode, routing::post};
+use axum::{Extension, Json, Router, http::StatusCode, routing::{get, post}};
 
 use argon2::{
     Argon2,
@@ -27,8 +27,8 @@ use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
 use tracing::{error, info};
 
-use crate::error::{ApiResult, AppError, PrivateError, PublicError};
-use crate::middleware::{AuthUser, auth_middleware};
+use crate::error::{ApiResult, AppError};
+use crate::middleware::{AuthUser, middleware_auth};
 use crate::models::account::*;
 
 /// Create a new user.
@@ -75,7 +75,7 @@ pub async fn api_signup(
             "ERROR ->> /api/account/signup 'api_signup' REASON: Validation failed: {}",
             validation_error
         );
-        return Err(PublicError::Validation(validation_error).into());
+        return Err(AppError::Validation(validation_error));
     }
 
     // Check if user already exists
@@ -90,14 +90,14 @@ pub async fn api_signup(
                 "ERROR ->> /api/account/signup 'api_signup' REASON: Email already exists: {}",
                 payload.email
             );
-            return Err(PublicError::Conflict("email already exists".to_string()).into());
+            return Err(AppError::Conflict("email already exists".to_string()));
         }
         Err(e) => {
             error!(
                 "ERROR ->> /api/account/signup 'api_signup' REASON: Database query error: {:?}",
                 e
             );
-            return Err(AppError::from(PrivateError::Db(e)));
+            return Err(AppError::from(e));
         }
         Ok(None) => {
             // User doesn't exist, proceed with signup
@@ -110,11 +110,8 @@ pub async fn api_signup(
     let password_hash = argon2
         .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|e| {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Failed to hash password: {:?}",
-                e
-            );
-            AppError::from(PrivateError::PasswordHash(e))
+            error!("hash password error: {:?}", e);
+            AppError::from(e)
         })?
         .to_string();
 
@@ -151,7 +148,7 @@ pub async fn api_signup(
                 "ERROR ->> /api/account/signup 'api_signup' REASON: Database insert error: {:?}",
                 e
             );
-            Err(AppError::from(PrivateError::Db(e)))
+            Err(AppError::from(e))
         }
     }
 }
@@ -209,13 +206,13 @@ pub async fn api_login(
         Ok(result) => {
             // Verify password
             let parsed_hash = PasswordHash::new(&result.password)
-                .map_err(|e| AppError::from(PrivateError::PasswordHash(e)))?;
+                .map_err(|e| AppError::from(e))?;
 
             // Attempt to match the password hashes
             if let Err(_) =
                 Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash)
             {
-                return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
+                return Err(AppError::BadRequest("invalid credentials".to_string()));
             }
 
             // Create token and set cookie as before
@@ -256,12 +253,12 @@ pub async fn api_login(
                 token: token_value,
             }));
         }
-        Err(_) => {
+        Err(e) => {
             error!(
                 "ERROR ->> /api/account/signup 'api_signup' REASON: No account for Email: {}",
                 payload.email
             );
-            return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
+            return Err(AppError::from(e));
         }
     }
 }
@@ -280,13 +277,146 @@ pub async fn api_login(
 /// - `200 OK` - `{ "id": i32 }` for the authenticated user
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<Json<ValidateResponse>> {
+    info!(
+        "HANDLER ->> /api/account/validate 'api_validate' - User ID: {}",
+        user.id
+    );
     Ok(Json(ValidateResponse { id: user.id }))
+}
+
+pub async fn api_current(
+    Extension(pool): Extension<PgPool>,
+    Extension(user): Extension<AuthUser>,
+) -> ApiResult<Json<CurrentResponse>> {
+    info!(
+        "HANDLER ->> /api/account/current 'api_current' - User ID: {}",
+        user.id
+    );
+    // Load current user's public fields from DB
+    let rec = sqlx::query!(
+        r#"
+        SELECT
+            email,
+            first_name,
+            last_name,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        FROM accounts
+        WHERE id = $1
+        "#,
+        user.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "ERROR ->> /api/account/current 'api_current' REASON: DB fetch error: {:?}",
+            e
+        );
+        AppError::from(e)
+    })?;
+
+    Ok(Json(CurrentResponse {
+        id: user.id,
+        email: rec.email,
+        first_name: rec.first_name,
+        last_name: rec.last_name,
+        budget_preference: rec.budget_preference,
+        risk_preference: rec.risk_preference,
+        food_allergies: rec.food_allergies,
+        disabilities: rec.disabilities,
+    }))
+}
+
+pub async fn api_update(
+    Extension(pool): Extension<PgPool>,
+    Extension(user): Extension<AuthUser>, 
+    Json(payload): Json<UpdatePayload>
+) -> ApiResult<Json<UpdateResponse>> {
+    let user_id = user.id;
+    info!(
+        "HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",
+        user_id, payload
+    );
+
+    // If password provided, hash it before update
+    let hashed_password: Option<String> = if let Some(pw) = &payload.password {
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        Some(
+            argon2
+                .hash_password(pw.as_bytes(), &salt)
+                .map_err(|e| AppError::from(e))?
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    let rec = sqlx::query!(
+        r#"
+        UPDATE accounts SET
+            email = COALESCE($1, email),
+            first_name = COALESCE($2, first_name),
+            last_name = COALESCE($3, last_name),
+            password = COALESCE($4, password),
+            budget_preference = COALESCE($5, budget_preference),
+            risk_preference = COALESCE($6, risk_preference),
+            food_allergies = COALESCE($7, food_allergies),
+            disabilities = COALESCE($8, disabilities)
+        WHERE id = $9
+        RETURNING
+            email,
+            first_name,
+            last_name,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        "#,
+        payload.email.clone(),
+        payload.first_name.clone(),
+        payload.last_name.clone(),
+        hashed_password,
+        payload.budget_preference.clone() as Option<BudgetBucket>,
+        payload.risk_preference.clone() as Option<RiskTolerence>,
+        payload.food_allergies.clone(),
+        payload.disabilities.clone(),
+        user_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| {
+        error!(
+            "ERROR ->> /api/account/update 'api_update' REASON: DB update error: {:?}",
+            e
+        );
+        AppError::from(e)
+    })?;
+
+    // Build typed response
+    let resp = UpdateResponse {
+        id: user_id,
+        email: rec.email,
+        first_name: rec.first_name,
+        last_name: rec.last_name,
+        budget_preference: rec.budget_preference,
+        risk_preference: rec.risk_preference,
+        food_allergies: rec.food_allergies,
+        disabilities: rec.disabilities,
+    };
+
+    Ok(Json(resp))
 }
 
 pub fn account_routes() -> Router {
     Router::new()
+        .route("/update", post(api_update))
+        .route("/current", get(api_current))
         .route("/validate", post(api_validate))
-        .route_layer(axum::middleware::from_fn(auth_middleware))
+        .route_layer(axum::middleware::from_fn(middleware_auth))
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))
 }
