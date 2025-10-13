@@ -60,11 +60,11 @@ jobs:
 
           EMBEDS_OVERDUE="[]"
           EMBEDS_SOON="[]"
-          echo "$ISSUES" | jq -c '.' | while read -r row; do
-            DUE=$(echo "$issue" | jq -r .dueDate)
-            TITLE=$(echo "$issue" | jq -r .title)
-            URL=$(echo "$issue" | jq -r .url)
-            ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+          while read -r row; do
+            DUE=$(echo "$row" | jq -r '.dueDate')
+            TITLE=$(echo "$issue" | jq -r '.title')
+            URL=$(echo "$row" | jq -r '.url')
+            ASSIGNEES=$(echo "$row" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
 
             # Parse due date as UTC
             if [ -z "$DUE" ] || [ "$DUE" = "null" ]; then
@@ -107,7 +107,7 @@ jobs:
             else
               echo "Skipping future issue: $TITLE ($DUE)"
             fi
-          done
+          done < <(jq -c '.' <<< "$ISSUES")
 
           send_embeds_chunked() {
             local embeds=$1
