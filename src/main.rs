@@ -68,29 +68,25 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             http::header::HeaderName::from_static("x-requested-with"),
         ]);
 
-    // Import routes (attach shared state and cookies)
     // Use an encryption/signing key for private cookies
     let cookie_key = Key::generate();
-    let account_routes = controllers::account::account_routes()
-        .layer(Extension(pool.clone()))
-        .layer(Extension(cookie_key.clone()))
-        .layer(CookieManagerLayer::new());
-    // TODO: Add More...
-
-    // TODO: Intialize cookies
 
     // API routes with CORS middleware
     let api_routes = Router::new()
-    	.nest("/account", account_routes)
-     	// TODO: nest other routes (like itinerary and stuff)
-        .layer(cors);
+    	.nest("/account", controllers::account::account_routes())
+        .nest("/itinerary", controllers::itinerary::itinerary_routes());
+     	// TODO: nest other routes...
 
     // Build the main router
     let app = Router::new()
         .nest("/api", api_routes)
         // Static files served from /dist.
         // Fallback must be index.html since react handles routing on front end
-        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))));
+        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))))
+        .layer(Extension(pool.clone()))
+        .layer(Extension(cookie_key.clone()))
+        .layer(CookieManagerLayer::new())
+        .layer(cors);
 
     /*
     / Bind the router to a specific port

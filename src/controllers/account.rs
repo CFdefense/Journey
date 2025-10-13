@@ -12,7 +12,7 @@
  *   api_me             - POST /api/account/me     -> returns current user (protected by middleware)
  */
 
-use axum::{Extension, Json, Router, http::StatusCode, routing::post};
+use axum::{Extension, Json, Router, http::StatusCode, routing::{get, post}};
 
 use argon2::{
     Argon2,
@@ -25,10 +25,10 @@ use tower_cookies::{
 
 use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
-use tracing::{error, info};
+use tracing::info;
 
-use crate::error::{ApiResult, AppError, PrivateError, PublicError};
-use crate::middleware::{AuthUser, auth_middleware};
+use crate::error::{ApiResult, AppError};
+use crate::middleware::{AuthUser, middleware_auth};
 use crate::models::account::*;
 
 /// Create a new user.
@@ -71,11 +71,7 @@ pub async fn api_signup(
 
     // Validate input
     if let Err(validation_error) = payload.validate() {
-        error!(
-            "ERROR ->> /api/account/signup 'api_signup' REASON: Validation failed: {}",
-            validation_error
-        );
-        return Err(PublicError::Validation(validation_error).into());
+        return Err(AppError::Validation(validation_error));
     }
 
     // Check if user already exists
@@ -86,18 +82,10 @@ pub async fn api_signup(
 
     match existing_user_result {
         Ok(Some(_)) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Email already exists: {}",
-                payload.email
-            );
-            return Err(PublicError::Conflict("email already exists".to_string()).into());
+            return Err(AppError::Conflict("email already exists".to_string()));
         }
         Err(e) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Database query error: {:?}",
-                e
-            );
-            return Err(AppError::from(PrivateError::Db(e)));
+            return Err(AppError::from(e));
         }
         Ok(None) => {
             // User doesn't exist, proceed with signup
@@ -109,13 +97,7 @@ pub async fn api_signup(
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(payload.password.as_bytes(), &salt)
-        .map_err(|e| {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Failed to hash password: {:?}",
-                e
-            );
-            AppError::from(PrivateError::PasswordHash(e))
-        })?
+        .map_err(|e| AppError::from(e))?
         .to_string();
 
     // Insert new user into database
@@ -147,11 +129,7 @@ pub async fn api_signup(
             ))
         }
         Err(e) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: Database insert error: {:?}",
-                e
-            );
-            Err(AppError::from(PrivateError::Db(e)))
+            Err(AppError::from(e))
         }
     }
 }
@@ -195,11 +173,23 @@ pub async fn api_login(
         payload
     );
 
-    // Get user from database
-    let user_result = sqlx::query!(
-        "SELECT id, email, password
-         FROM accounts
-         WHERE email = $1;",
+    // Get user from database as Account
+    let user_result = sqlx::query_as!(
+        Account,
+        r#"
+        SELECT 
+            id,
+            email,
+            password,
+            first_name,
+            last_name,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        FROM accounts
+        WHERE email = $1
+        "#,
         payload.email
     )
     .fetch_one(&pool)
@@ -209,13 +199,13 @@ pub async fn api_login(
         Ok(result) => {
             // Verify password
             let parsed_hash = PasswordHash::new(&result.password)
-                .map_err(|e| AppError::from(PrivateError::PasswordHash(e)))?;
+                .map_err(|e| AppError::from(e))?;
 
             // Attempt to match the password hashes
             if let Err(_) =
                 Argon2::default().verify_password(payload.password.as_bytes(), &parsed_hash)
             {
-                return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
+                return Err(AppError::BadRequest("invalid credentials".to_string()));
             }
 
             // Create token and set cookie as before
@@ -256,12 +246,8 @@ pub async fn api_login(
                 token: token_value,
             }));
         }
-        Err(_) => {
-            error!(
-                "ERROR ->> /api/account/signup 'api_signup' REASON: No account for Email: {}",
-                payload.email
-            );
-            return Err(PublicError::BadRequest("invalid credentials".to_string()).into());
+        Err(e) => {
+            return Err(AppError::from(e));
         }
     }
 }
@@ -280,13 +266,134 @@ pub async fn api_login(
 /// - `200 OK` - `{ "id": i32 }` for the authenticated user
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<Json<ValidateResponse>> {
+    info!(
+        "HANDLER ->> /api/account/validate 'api_validate' - User ID: {}",
+        user.id
+    );
     Ok(Json(ValidateResponse { id: user.id }))
 }
 
+pub async fn api_current(
+    Extension(pool): Extension<PgPool>,
+    Extension(user): Extension<AuthUser>,
+) -> ApiResult<Json<Account>> {
+    info!(
+        "HANDLER ->> /api/account/current 'api_current' - User ID: {}",
+        user.id
+    );
+    // Load current user's full account row
+    let account = sqlx::query_as!(
+        Account,
+        r#"
+        SELECT
+            id,
+            email,
+            first_name,
+            last_name,
+            password,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        FROM accounts
+        WHERE id = $1
+        "#,
+        user.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| AppError::from(e))?;
+
+    Ok(Json(account))
+}
+
+pub async fn api_update(
+    Extension(pool): Extension<PgPool>,
+    Extension(user): Extension<AuthUser>, 
+    Json(payload): Json<UpdatePayload>
+) -> ApiResult<Json<Account>> {
+    info!(
+        "HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",
+        user.id, payload
+    );
+
+    // If password provided, hash it before update
+    let hashed_password: Option<String> = if let Some(pw) = &payload.password {
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        Some(
+            argon2
+                .hash_password(pw.as_bytes(), &salt)
+                .map_err(|e| AppError::from(e))?
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    let account = sqlx::query_as!(
+        Account,
+        r#"
+        UPDATE accounts SET
+            email = COALESCE($1, email),
+            first_name = COALESCE($2, first_name),
+            last_name = COALESCE($3, last_name),
+            password = COALESCE($4, password),
+            budget_preference = COALESCE($5, budget_preference),
+            risk_preference = COALESCE($6, risk_preference),
+            food_allergies = COALESCE($7, food_allergies),
+            disabilities = COALESCE($8, disabilities)
+        WHERE id = $9
+        RETURNING
+            id,
+            email,
+            password,
+            first_name,
+            last_name,
+            budget_preference as "budget_preference: BudgetBucket",
+            risk_preference as "risk_preference: RiskTolerence",
+            food_allergies,
+            disabilities
+        "#,
+        payload.email,
+        payload.first_name,
+        payload.last_name,
+        hashed_password,
+        payload.budget_preference as Option<BudgetBucket>,
+        payload.risk_preference as Option<RiskTolerence>,
+        payload.food_allergies,
+        payload.disabilities,
+        user.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| AppError::from(e))?;
+
+    Ok(Json(account))
+}
+
+/// Create the account routes with authentication middleware.
+///
+/// # Routes
+/// ## Protected Routes (require authentication)
+/// - `POST /update` - Update user account information
+/// - `GET /current` - Get current user's account details
+/// - `POST /validate` - Validate authentication token
+///
+/// ## Public Routes (no authentication required)
+/// - `POST /signup` - Create a new user account
+/// - `POST /login` - Authenticate user and set auth cookie
+///
+/// # Middleware
+/// Protected routes are secured by `middleware_auth` which validates the `auth-token` cookie.
+/// Public routes (signup/login) are accessible without authentication.
+///
 pub fn account_routes() -> Router {
     Router::new()
+        .route("/update", post(api_update))
+        .route("/current", get(api_current))
         .route("/validate", post(api_validate))
-        .route_layer(axum::middleware::from_fn(auth_middleware))
+        .route_layer(axum::middleware::from_fn(middleware_auth))
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))
 }

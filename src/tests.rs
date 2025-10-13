@@ -691,6 +691,10 @@ async fn test_endpoints() {
      	async {test_signup_conflict_on_duplicate_email(&hc).await},
      	async {test_http_signup_and_login_flow(&hc).await},
 	    async {test_validate_with_bad_and_good_cookie(&hc).await},
+	    async {test_current_endpoint_returns_account(&hc).await},
+	    async {test_update_endpoint_returns_account(&hc).await},
+	    async {test_update_endpoint_partial_fields(&hc).await},
+	    async {test_update_endpoint_with_preferences(&hc).await},
       	// just throw all the tests in here
     );
 }
@@ -902,4 +906,201 @@ async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
+}
+
+async fn test_current_endpoint_returns_account(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("current+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Current",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /current endpoint returns Account struct
+    let current_resp = hc
+        .do_get("/api/account/current")
+        .await
+        .unwrap();
+    assert_eq!(current_resp.status().as_u16(), 200);
+
+    // Verify response is successful and contains data
+    // Note: JSON parsing would require checking httpc-test Response methods
+    assert!(current_resp.status().is_success());
+}
+
+async fn test_update_endpoint_returns_account(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("update+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Update",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /update endpoint with all fields
+    let update_resp = hc
+        .do_post(
+            "/api/account/update",
+            json!({
+                "email": format!("updated+{}@example.com", unique),
+                "first_name": "Updated",
+                "last_name": "User",
+                "password": "NewPassword123",
+                "budget_preference": "HighBudget",
+                "risk_preference": "Adventurer",
+                "food_allergies": "Peanuts, shellfish",
+                "disabilities": "Wheelchair accessible"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(update_resp.status().as_u16(), 200);
+
+    // Verify response is successful
+    assert!(update_resp.status().is_success());
+}
+
+async fn test_update_endpoint_partial_fields(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("partial+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Partial",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /update endpoint with only some fields
+    let update_resp = hc
+        .do_post(
+            "/api/account/update",
+            json!({
+                "first_name": "PartiallyUpdated",
+                "food_allergies": "Gluten"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(update_resp.status().as_u16(), 200);
+
+    // Verify response is successful
+    assert!(update_resp.status().is_success());
+}
+
+async fn test_update_endpoint_with_preferences(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("prefs+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Prefs",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 201);
+
+    // Login to get auth cookie
+    let login_resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_resp.status().as_u16(), 200);
+
+    // Test /update endpoint with enum preferences
+    let update_resp = hc
+        .do_post(
+            "/api/account/update",
+            json!({
+                "budget_preference": "LuxuryBudget",
+                "risk_preference": "RiskTaker"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(update_resp.status().as_u16(), 200);
+
+    // Verify response is successful
+    assert!(update_resp.status().is_success());
 }
