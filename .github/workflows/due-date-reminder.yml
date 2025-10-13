@@ -55,7 +55,7 @@ jobs:
             title: .title,
             url: .url,
             assignees: [.assignees.nodes[].login],
-            dueDate: .projectItems.nodes[].fieldValueByName.date // "null"
+            dueDate: (.projectItems.nodes[].fieldValueByName.date // "null")
           }')
 
           echo "Issues with due date:"
