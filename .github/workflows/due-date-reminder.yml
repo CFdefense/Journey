@@ -49,6 +49,7 @@ jobs:
               }
             }
           }')
+          echo "$ISSUES_RAW"
           ISSUES=$(echo $"ISSUES_RAW" | jq '
             .data.repository.issues.nodes[] |
             {
@@ -59,8 +60,6 @@ jobs:
             }
           ')
 
-          echo "Issues with due date:"
-          echo "$ISSUES_RAW"
           echo "$ISSUES"
 
           mapfile -t ISSUE_ARRAY < <(echo "$ISSUES" | jq -c '.[]')
