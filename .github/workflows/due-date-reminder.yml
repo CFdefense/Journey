@@ -40,7 +40,7 @@ jobs:
                   assignees(first:5) { nodes { login } }
                   projectItems(first:1) {
                     nodes {
-                      fieldValueByName("Due") {
+                      fieldValueByName(name:"Due") {
                         ... on ProjectV2ItemFieldDateValue { date }
                       }
                     }
