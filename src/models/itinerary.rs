@@ -15,6 +15,12 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
+/// Row model for the `itineraries` table.
+/// - Columns:
+///   - `id`: Primary key
+///   - `account_id`: Owner account id (FK)
+///   - `is_public`: Visibility flag
+///   - `date`: Event date/time (UTC naive)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Itinerary {
     pub id: i32,
@@ -23,6 +29,8 @@ pub struct Itinerary {
     pub date: NaiveDateTime,
 }
 
+/// API route response for GET `/api/itinerary/saved`.
+/// - Contains a list of saved itineraries for the authenticated user.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SavedResponse {
     pub itineraries: Vec<Itinerary>,
