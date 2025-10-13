@@ -40,44 +40,31 @@ jobs:
                   assignees(first:5) { nodes { login } }
                   projectItems(first:1) {
                     nodes {
-                      fieldValues(first:10) {
-                        nodes {
-                          ... on ProjectV2ItemFieldDateValue {
-                            date
-                            field { ... on ProjectV2Field { name } }
-                          }
-                        }
+                      fieldValueByName(name:"Due") {
+                        ... on ProjectV2ItemFieldDateValue { date }
                       }
                     }
                   }
                 }
               }
             }
-          }' --jq '
+          }' | jq '
             .data.repository.issues.nodes[] |
             {
               title: .title,
               url: .url,
               assignees: [.assignees.nodes[].login],
-              dueDate: (
-                .projectItems.nodes[].fieldValues.nodes[]
-                | select(.field.name=="Due")
-                | .date
-              )
+              dueDate: (.projectItems.nodes[].fieldValueByName.date // "null")
             }
-          ' | jq -s '.')
+          ')
 
-          echo "Issues with due date:"
-          echo "$ISSUES" | jq
-
-          mapfile -t ISSUE_ARRAY < <(echo "$ISSUES" | jq -c '.[]')
           EMBEDS_OVERDUE="[]"
           EMBEDS_SOON="[]"
-          for issue in "${ISSUE_ARRAY[@]}"; do
-            DUE=$(echo "$issue" | jq -r .dueDate)
-            TITLE=$(echo "$issue" | jq -r .title)
-            URL=$(echo "$issue" | jq -r .url)
-            ASSIGNEES=$(echo "$issue" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+          while read -r row; do
+            DUE=$(echo "$row" | jq -r '.dueDate')
+            TITLE=$(echo "$issue" | jq -r '.title')
+            URL=$(echo "$row" | jq -r '.url')
+            ASSIGNEES=$(echo "$row" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
 
             # Parse due date as UTC
             if [ -z "$DUE" ] || [ "$DUE" = "null" ]; then
@@ -120,7 +107,7 @@ jobs:
             else
               echo "Skipping future issue: $TITLE ($DUE)"
             fi
-          done
+          done < <(jq -c '.' <<< "$ISSUES")
 
           send_embeds_chunked() {
             local embeds=$1
