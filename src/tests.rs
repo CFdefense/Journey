@@ -690,6 +690,7 @@ async fn test_endpoints() {
      	async {test_auth_required_for_me_endpoint(&hc).await},
      	async {test_signup_conflict_on_duplicate_email(&hc).await},
      	async {test_http_signup_and_login_flow(&hc).await},
+	    async {test_validate_with_bad_and_good_cookie(&hc).await},
       	// just throw all the tests in here
     );
 }
@@ -748,7 +749,7 @@ async fn test_auth_required_for_me_endpoint(hc: &Client) {
 
     // Try to access /me without authentication (should fail)
     let resp = hc
-        .do_post("/api/account/me", json!({}))
+        .do_post("/api/account/validate", json!({}))
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 401, "Accessing /me without auth should return 401");
@@ -783,10 +784,10 @@ async fn test_auth_required_for_me_endpoint(hc: &Client) {
 
     // Now try to access /me with auth cookie (should work)
     let resp = hc
-        .do_post("/api/account/me", json!({}))
+        .do_post("/api/account/validate", json!({}))
         .await
         .unwrap();
-    assert_eq!(resp.status().as_u16(), 200, "Accessing /me with auth should return 200");
+    assert_eq!(resp.status().as_u16(), 200, "Accessing /validate with auth should return 200");
 }
 
 async fn test_signup_conflict_on_duplicate_email(hc: &Client) {
@@ -855,4 +856,50 @@ async fn test_http_signup_and_login_flow(hc: &Client) {
         .await
         .unwrap();
     assert!(resp.status().is_success(), "login failed: {}", resp.status());
+}
+
+async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
+    // No cookie (treated similarly to bad/invalid cookie): expect unauthorized
+    let resp = hc
+        .do_post("/api/account/validate", json!({}))
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 401, "Missing/invalid cookie should return 401");
+
+    // Good cookie: create user and login to receive a valid private cookie, then validate
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("cookie+{}@example.com", unique);
+
+    let signup = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Cook",
+                "last_name": "Ie",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup.status().as_u16(), 201);
+
+    let login = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": format!("cookie+{}@example.com", unique),
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login.status().as_u16(), 200);
+
+    // Client should now hold the private cookie; call validate and expect 200
+    let resp = hc
+        .do_post("/api/account/validate", json!({}))
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
 }

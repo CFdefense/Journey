@@ -30,7 +30,6 @@ use tracing::{error, info};
 use crate::error::{ApiResult, AppError, PrivateError, PublicError};
 use crate::middleware::{AuthUser, auth_middleware};
 use crate::models::account::*;
-use serde::Serialize;
 
 /// Create a new user.
 ///
@@ -267,16 +266,11 @@ pub async fn api_login(
     }
 }
 
-#[derive(Serialize)]
-pub struct MeResponse {
-    id: i32,
-}
-
-/// TEMPORARY ROUTE FOR TESTING
-/// Return the current authenticated user.
+/// Return the current authenticated user's ID.
+/// Hit this route to validate the `auth-token` private cookie.
 ///
 /// # Method
-/// `POST /api/account/me`
+/// `POST /api/account/validate`
 ///
 /// # Auth
 /// Protected by `auth_middleware` which validates the `auth-token` private cookie,
@@ -285,13 +279,13 @@ pub struct MeResponse {
 /// # Responses
 /// - `200 OK` - `{ "id": i32 }` for the authenticated user
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
-pub async fn api_me(Extension(user): Extension<AuthUser>) -> ApiResult<Json<MeResponse>> {
-    Ok(Json(MeResponse { id: user.id }))
+pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<Json<ValidateResponse>> {
+    Ok(Json(ValidateResponse { id: user.id }))
 }
 
 pub fn account_routes() -> Router {
     Router::new()
-        .route("/me", post(api_me))
+        .route("/validate", post(api_validate))
         .route_layer(axum::middleware::from_fn(auth_middleware))
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))
