@@ -372,6 +372,22 @@ pub async fn api_update(
     Ok(Json(account))
 }
 
+/// Create the account routes with authentication middleware.
+///
+/// # Routes
+/// ## Protected Routes (require authentication)
+/// - `POST /update` - Update user account information
+/// - `GET /current` - Get current user's account details
+/// - `POST /validate` - Validate authentication token
+///
+/// ## Public Routes (no authentication required)
+/// - `POST /signup` - Create a new user account
+/// - `POST /login` - Authenticate user and set auth cookie
+///
+/// # Middleware
+/// Protected routes are secured by `middleware_auth` which validates the `auth-token` cookie.
+/// Public routes (signup/login) are accessible without authentication.
+///
 pub fn account_routes() -> Router {
     Router::new()
         .route("/update", post(api_update))
