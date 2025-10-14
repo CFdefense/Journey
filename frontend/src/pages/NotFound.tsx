@@ -12,7 +12,7 @@ export default function NotFoundPage() {
           <h1 className="lost-tourist-title">Uh-oh… You’ve wandered off the map!</h1>
 
           <p className="lost-tourist-description">
-            Looks like this page isn’t on our itinerary. Don’t worry—you’re still on the map!
+            Looks like this page isn’t on our itinerary.
           </p>
 
           <div className="lost-tourist-buttons">
