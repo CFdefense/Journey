@@ -1,4 +1,5 @@
 import Itinerary from '../components/Itinerary.tsx';
+import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
   return (
