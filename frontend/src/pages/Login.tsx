@@ -19,7 +19,7 @@ export default function Login() {
         console.log("Login successful: " + result);
         setError("");
         localStorage.setItem(AUTH_TOKEN_LOCAL, result.token);
-        navigate("/create");
+        navigate("/home");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setError(err.message || "Login failed.");
