@@ -1,3 +1,29 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: var(--gold);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /*constants*/
+  --blue: #006bbb;
+  --light-blue: #30a0e0;
+  --salmon: #fa8072;
+  --gold: #ffc872;
+  --pale-yellow: #ffe3b3;
+}
+
+* {
+	border-radius: 10px;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
