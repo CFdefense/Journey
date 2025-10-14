@@ -11,8 +11,9 @@
  */
 
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct EventList {
     pub id: i32,
     pub itinerary_id: i32,

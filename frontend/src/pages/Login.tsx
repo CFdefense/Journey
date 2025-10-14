@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate , Link} from "react-router-dom";
-import "../styles/Login.css";
+import "../styles/LoginSignup.css";
 import { apiLogin } from "../api/account";
 import { AUTH_TOKEN_LOCAL } from "../helpers/globals";
 import { isUserLoggedIn } from "../helpers/account";
@@ -28,7 +28,8 @@ export default function Login() {
         console.log("Login successful: " + result);
         setError("");
         localStorage.setItem(AUTH_TOKEN_LOCAL, result.token);
-        navigate("/create");
+        navigate("/home");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setError(err.message || "Login failed.");
       }
@@ -37,7 +38,7 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h1>Login Page</h1>
+        <h1>Login</h1>
         <form onSubmit={handleSubmit}>
           <label>
             Email:

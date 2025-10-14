@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { useNavigate , Link} from "react-router-dom"; 
-import "../styles/Signup.css";
+import { useNavigate , Link} from "react-router-dom";
+import "../styles/LoginSignup.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
 
 export default function Login() {
- const [firstName, setFirstName] = useState(""); 
- const [lastName, setLastName] = useState(""); 
- const [email, setEmail] = useState(""); 
+ const [firstName, setFirstName] = useState("");
+ const [lastName, setLastName] = useState("");
+ const [email, setEmail] = useState("");
  const [password, setPassword] = useState("");
  const [confirmPassword, setConfirmPassword] = useState("");
- const [error, setError] = useState(""); 
+ const [error, setError] = useState("");
  const navigate = useNavigate();
 
  const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault(); // stops the page from refreshing 
+      e.preventDefault(); // stops the page from refreshing
       console.log(email, password, firstName, lastName);
 
       // sanitize user input
@@ -52,15 +52,16 @@ export default function Login() {
 
         console.log("Account creation successful:", result);
         setError("");
-        navigate("/create");
+        navigate("/home");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setError(err.message || "Sign Up failed.");
       }
   };
-      
+
   return (
-    <div className="signup-container">
-      <div className="signup-box">
+    <div className="login-container">
+      <div className="login-box">
         <h1>Create Account</h1>
         <form onSubmit={handleSubmit}>
           <label>
@@ -115,12 +116,12 @@ export default function Login() {
         </form>
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <div className="signup-actions">
+        <div className="login-actions">
         <Link to="/login" className="back-to-login-button">
             Already Have An Account?
         </Link>
       </div>
-      
+
       </div>
     </div>
   );

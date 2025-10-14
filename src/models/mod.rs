@@ -1,4 +1,4 @@
 pub mod account;
 pub mod event;
 pub mod event_list;
-pub mod intinerary;
+pub mod itinerary;
