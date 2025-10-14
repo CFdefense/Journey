@@ -5,6 +5,7 @@ import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
+import NotFound from "./pages/NotFound";
 import "./App.css";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/account" element={<Account />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

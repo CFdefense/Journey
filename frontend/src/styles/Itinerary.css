@@ -16,7 +16,6 @@
   width: 90%;
   background-color: transparent;
   border: 2px solid #ccc;
-  border-radius: 10px;
   padding: 20px;
   margin-bottom: 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -38,11 +37,10 @@
 .itinerary-section {
   width: 90%;
   background-color: transparent;
-  border-radius: 12px;
   border: 2px solid #ccc;
   padding: 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  color:rgb(45, 172, 226)
+  color: var(--light-blue)
 }
 
 .itinerary-section h3 {
@@ -61,7 +59,6 @@
 .time-block {
   background: #fdfdfd;
   border: 1px solid #bbb;
-  border-radius: 10px;
   padding: 20px;
   min-height: 150px;
   transition: background 0.2s ease;
@@ -91,7 +88,6 @@
 /* Event cards */
 .event-card {
   background-color: #e0e0e0;
-  border-radius: 8px;
   padding: 12px 20px;
   font-size: 1rem;
   cursor: grab;

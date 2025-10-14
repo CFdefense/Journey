@@ -1,64 +1,61 @@
-/* Container to center the signup box */
-.signup-container {
+.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 80vh;
-  background: #FFE3B3; /* light cream background for the whole page */
 }
 
 /* The box that holds the form */
-.signup-box {
-  background: #ffffff; /* white card */
+.login-box {
+  background: #ffffff;
   padding: 2.5rem;
-  border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   width: 380px;
   text-align: left;
-  border-top: 6px solid #30A0E0; /* lighter blue stripe for signup */
+  border-top: 6px solid var(--light-blue);
 }
 
 /* Heading */
-.signup-box h1 {
+.login-box h1 {
   text-align: center;
   margin-bottom: 2rem;
-  color: #30A0E0;
+  color: var(--light-blue);
   font-size: 2rem;
   font-weight: bold;
 }
 
 /* Labels */
-.signup-box label {
+.login-box label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
   font-weight: 500;
-  color: #006BBB;
+  color: var(--blue);
 }
 
 /* Input fields */
-.signup-box input {
+.login-box input {
   width: 100%;
   padding: 0.6rem;
-  margin-bottom: 1.5rem;
-  border: 2px solid #30A0E0; /* sky blue border */
-  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  border: 2px solid var(--light-blue);
   font-size: 1rem;
   transition: border-color 0.3s, box-shadow 0.3s;
+  background-color: var(--pale-yellow);
+  color: black
 }
 
-.signup-box input:focus {
-  border-color: #006BBB;
+.login-box input:focus {
+  border-color: var(--blue);
   outline: none;
-  box-shadow: 0 0 8px #30A0E0;
+  box-shadow: 0 0 8px var(--light-blue);
 }
 
 /* Submit button */
-.signup-box button {
+.login-box button {
   width: 100%;
   padding: 0.8rem;
-  background: linear-gradient(90deg, #00C897, #30A0E0); /* teal → sky blue gradient */
+  background: linear-gradient(90deg, #00C897, var(--light-blue));
   border: none;
-  border-radius: 8px;
   color: white;
   font-weight: bold;
   font-size: 1rem;
@@ -66,43 +63,41 @@
   transition: background 0.3s, transform 0.2s;
 }
 
-.signup-box button:hover {
-  background: linear-gradient(90deg, #30A0E0, #00C897);
+.login-box button:hover {
+  background: linear-gradient(90deg, var(--light-blue), #00C897);
   transform: translateY(-2px);
 }
 
 /* Error message */
-.signup-box p {
+.login-box p {
   text-align: center;
   margin-top: 10px;
-  color: red;
+  color: #d00;
   font-weight: 500;
 }
 
 /* Extra actions (e.g., link to login page) */
-.signup-actions {
+.login-actions {
   margin-top: 10px;
   display: flex;
   gap: 10px;
   justify-content: center;
 }
 
-
 /* Back to login button */
 .back-to-login-button {
   display: inline-block;
   padding: 0.6rem 1.2rem;
   background: #ffffff;
-  border: 2px solid #30A0E0;
-  border-radius: 8px;
-  color: #30A0E0;
+  border: 2px solid var(--light-blue);
+  color: var(--light-blue);
   font-weight: 600;
   text-decoration: none;
   transition: background 0.3s, color 0.3s, transform 0.2s;
 }
 
 .back-to-login-button:hover {
-  background: #30A0E0;
+  background: var(--light-blue);
   color: #ffffff;
   transform: translateY(-2px);
 }

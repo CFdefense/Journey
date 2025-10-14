@@ -2,6 +2,7 @@ import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
 
+import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
   const unassignedEvents: Event[] = [

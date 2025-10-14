@@ -1,0 +1,85 @@
+/* Wrapper: full screen gradient background */
+.lost-tourist-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  background: linear-gradient(135deg, var(--light-blue) 0%, var(--blue) 100%);
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Card container */
+.lost-tourist-card {
+  background-color: var(--pale-yellow);
+  padding: 3rem 2rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  transform: translateY(0);
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Tourist image */
+.tourist-image {
+  width: 200px;
+  height: auto;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+/* Title */
+.lost-tourist-title {
+  font-size: 1.8rem;
+  color: var(--blue);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+/* Description */
+.lost-tourist-description {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+/* Buttons */
+.lost-tourist-buttons button {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  cursor: pointer;
+  margin: 0 0.5rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Home button */
+.btn-home {
+  background-color: var(--salmon);
+  color: white;
+}
+
+.btn-home:hover {
+  background-color: var(--salmon);
+  transform: translateY(-3px);
+}
+
+/* Journey button */
+.btn-journey {
+  background-color: var(--gold);
+  color: var(--blue);
+}
+
+.btn-journey:hover {
+  background-color: var(--gold);
+  transform: translateY(-3px);
+}
