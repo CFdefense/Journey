@@ -5,14 +5,11 @@
  *
  * Purpose:
  *   Serve Event Related API Requests
- *
- * Include:
- *   api_get_event  - GET /api/event/{id} -> returns individual event details
  */
 
 use axum::{extract::Path, Extension, Json, Router, routing::{get, put}};
 use sqlx::PgPool;
-use tracing::info;
+use tracing::debug;
 
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
@@ -27,13 +24,13 @@ use crate::models::event::{Event, UpdateEventPayload, EventType};
 /// Requires authentication
 ///
 /// # Responses
-/// - `200 OK` - JSON body `Event` containing event details
+/// - `200 OK` - JSON body [Event] containing event details
 /// - `404 NOT_FOUND` - When event doesn't exist
 /// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
 ///
 /// # Examples
 /// ```bash
-/// curl -X GET http://localhost:3000/api/event/123
+/// curl -X GET http://localhost:3001/api/event/123
 /// ```
 ///
 pub async fn api_get_event(
@@ -41,7 +38,7 @@ pub async fn api_get_event(
     Path(event_id): Path<i32>,
     Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<Event>> {
-    info!(
+    debug!(
         "HANDLER ->> /api/event/{} 'api_get_event' - User ID: {}",
         event_id, user.id
     );
@@ -49,7 +46,18 @@ pub async fn api_get_event(
     // Fetch the event
     let event: Event = sqlx::query_as!(
         Event,
-        r#"SELECT id, street_address, postal_code, city, event_type as "event_type: EventType", event_description, event_name FROM events WHERE id = $1"#,
+        r#"
+        SELECT
+        	id,
+         	street_address,
+          	postal_code,
+           	city,
+            event_type as "event_type: EventType",
+            event_description,
+            event_name
+        FROM events
+        WHERE id = $1
+        "#,
         event_id
     )
     .fetch_optional(&pool)
@@ -75,7 +83,7 @@ pub async fn api_get_event(
 ///
 /// # Examples
 /// ```bash
-/// curl -X PUT http://localhost:3000/api/event/123 \
+/// curl -X PUT http://localhost:3001/api/event/123 \
 ///   -H "Content-Type: application/json" \
 ///   -d '{"event_name": "Updated Event Name"}'
 /// ```
@@ -86,7 +94,7 @@ pub async fn api_update_event(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<UpdateEventPayload>,
 ) -> ApiResult<Json<Event>> {
-    info!(
+    debug!(
         "HANDLER ->> /api/event/{} 'api_update_event' - User ID: {}",
         event_id, user.id
     );
@@ -94,14 +102,14 @@ pub async fn api_update_event(
     // Execute the update query with coalesced values
     let updated_event: Event = sqlx::query_as!(
         Event,
-        r#"UPDATE events SET 
-            street_address = COALESCE($1, street_address), 
-            postal_code = COALESCE($2, postal_code), 
-            city = COALESCE($3, city), 
-            event_type = COALESCE($4, event_type), 
-            event_description = COALESCE($5, event_description), 
-            event_name = COALESCE($6, event_name) 
-        WHERE id = $7 
+        r#"UPDATE events SET
+            street_address = COALESCE($1, street_address),
+            postal_code = COALESCE($2, postal_code),
+            city = COALESCE($3, city),
+            event_type = COALESCE($4, event_type),
+            event_description = COALESCE($5, event_description),
+            event_name = COALESCE($6, event_name)
+        WHERE id = $7
         RETURNING id, street_address, postal_code, city, event_type as "event_type: EventType", event_description, event_name"#,
         payload.street_address,
         payload.postal_code,

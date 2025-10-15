@@ -1,4 +1,4 @@
-use std::{fs, io::Write, net::TcpListener, path::Path, time::Duration};
+use std::{fs, io::Write, net::TcpListener, path::Path, time::{Duration, SystemTime}};
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
@@ -14,7 +14,7 @@ use tower_cookies::{
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, log, models::account::{LoginResponse, SignupPayload, SignupResponse}
+	controllers, db, global::*, log, models::account::SignupPayload
 };
 
 // UNIT TESTS
@@ -196,30 +196,6 @@ fn test_signup_hash_irreversibility() {
 
     // Hash should be significantly longer than input
     assert!(password_hash.len() > password.len() * 2);
-}
-
-/// Test signup response structure
-#[test]
-fn test_signup_response_structure() {
-    let response = SignupResponse {
-        id: 123,
-        email: "test@example.com".to_string(),
-    };
-
-    assert_eq!(response.id, 123);
-    assert_eq!(response.email, "test@example.com");
-}
-
-/// Test login response structure
-#[test]
-fn test_login_response_structure() {
-    let response = LoginResponse {
-        id: 456,
-        token: "user-456.exp.sign".to_string(),
-    };
-
-    assert_eq!(response.id, 456);
-    assert_eq!(response.token, "user-456.exp.sign");
 }
 
 /// Test that any password can be hashed (even if it wouldn't pass validation)
@@ -706,6 +682,7 @@ async fn test_endpoints() {
 	    async {test_itinerary_endpoints_require_auth(&hc).await},
 	    async {test_event_endpoints_require_auth(&hc).await},
 	    async {test_get_event_endpoint(&hc).await},
+	    async {test_login_then_logout(&hc).await},
         // just throw all the tests in here
     );
 }
@@ -727,7 +704,7 @@ async fn test_signup_and_login_happy_path(hc: &Client, key: &Key) {
         )
         .await
         .unwrap();
-    assert_eq!(resp.status().as_u16(), 201);
+    assert_eq!(resp.status().as_u16(), 200);
 
     // Login
     let resp = hc
@@ -782,7 +759,7 @@ async fn test_auth_required_for_me_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(resp.status().as_u16(), 201, "Signup should work without authentication");
+    assert_eq!(resp.status().as_u16(), 200, "Signup should work without authentication");
 
     // Login to get auth cookie
     let resp = hc
@@ -822,7 +799,7 @@ async fn test_signup_conflict_on_duplicate_email(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(resp1.status().as_u16(), 201);
+    assert_eq!(resp1.status().as_u16(), 200);
 
     // Second signup with same email should 409
     let resp2 = hc
@@ -897,7 +874,7 @@ async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup.status().as_u16(), 201);
+    assert_eq!(signup.status().as_u16(), 200);
 
     let login = hc
         .do_post(
@@ -936,7 +913,7 @@ async fn test_current_endpoint_returns_account(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -980,7 +957,7 @@ async fn test_update_endpoint_returns_account(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1035,7 +1012,7 @@ async fn test_update_endpoint_partial_fields(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1084,7 +1061,7 @@ async fn test_update_endpoint_with_preferences(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1133,7 +1110,7 @@ async fn test_saved_itineraries_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1176,7 +1153,7 @@ async fn test_get_itinerary_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1223,7 +1200,7 @@ async fn test_get_itinerary_events_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1300,7 +1277,7 @@ async fn test_get_event_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Login to get auth cookie
     let login_resp = hc
@@ -1328,4 +1305,37 @@ async fn test_get_event_endpoint(hc: &Client) {
         .await
         .unwrap();
     assert_eq!(invalid_resp.status().as_u16(), 400);
+}
+
+async fn test_login_then_logout(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("login_then_logout+{}@example.com", unique);
+
+    // Signup user
+    let signup_resp = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": email,
+                "first_name": "Get",
+                "last_name": "Event",
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_resp.status().as_u16(), 200);
+
+    let cookie = signup_resp.res_cookie("auth-token").unwrap();
+    assert!(cookie.expires.unwrap() > SystemTime::now());
+
+    // Logout
+    let logout_resp = hc
+        .do_get("/api/account/logout")
+        .await
+        .unwrap();
+    assert_eq!(logout_resp.status().as_u16(), 200);
+
+    let cookie = logout_resp.res_cookie("auth-token").unwrap();
+    assert!(cookie.expires.unwrap() < SystemTime::now());
 }

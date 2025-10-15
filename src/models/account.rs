@@ -16,7 +16,7 @@
  *   UpdatePayload        - Request payload for POST /api/account/update
  *   LoginResponse        - API route response for POST /api/account/login
  *   SignupResponse       - API route response for POST /api/account/signup
- *   ValidateResponse     - API route response for POST /api/account/validate
+ *   ValidateResponse     - API route response for GET /api/account/validate
  *   UpdateResponse       - API route response for POST /api/account/update
  *   CurrentResponse      - API route response for GET  /api/account/current
  */
@@ -45,7 +45,7 @@ pub struct Account {
     pub password: String,
     pub first_name: String,
     pub last_name: String,
-    pub budget_preference: Option<BudgetBucket>, 
+    pub budget_preference: Option<BudgetBucket>,
     pub risk_preference: Option<RiskTolerence>,
     pub food_allergies: Option<String>,
     pub disabilities: Option<String>,
@@ -56,7 +56,7 @@ pub struct Account {
 /// Used in account preferences and returned by account APIs.
 /// - Fields:
 ///   - Enum variants representing budget bands
-#[derive(Debug, Serialize, Deserialize, Clone, Type)] 
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
 #[sqlx(type_name = "budget_bucket")]
 pub enum BudgetBucket {
     VeryLowBudget,
@@ -128,32 +128,8 @@ pub struct UpdatePayload {
 // TODO: More Payloads...
 
 
-/// API route response for POST `/api/account/login`.
-/// - Fields:
-///   - `id`: Authenticated user id
-///   - `token`: Generated token embedded in `auth-token` cookie
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LoginResponse {
-    pub id: i32,
-    pub token: String,
-}
 
-/// API route response for POST `/api/account/signup`.
-/// - Fields:
-///   - `id`: New user id
-///   - `email`: New user email
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SignupResponse {
-    pub id: i32,
-    pub email: String,
-}
 
-/// API route response for POST `/api/account/validate`.
-/// - Fields: `id` of the authenticated user
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ValidateResponse {
-    pub id: i32,
-}
 
 /// API route response for POST `/api/account/update`.
 /// - Contains full updated account profile for convenience.
@@ -182,7 +158,6 @@ pub struct UpdateResponse {
 /// API route response for GET `/api/account/current`.
 /// - Full, safe-to-return account profile for current user
 /// - Fields:
-///   - `id`: User id
 ///   - `email`: Email
 ///   - `first_name`: First name
 ///   - `last_name`: Last name
@@ -190,16 +165,15 @@ pub struct UpdateResponse {
 ///   - `risk_preference`: Optional risk enum
 ///   - `food_allergies`: Optional notes
 ///   - `disabilities`: Optional notes
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, FromRow)]
 pub struct CurrentResponse {
-    pub id: i32,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
     pub budget_preference: Option<BudgetBucket>,
     pub risk_preference: Option<RiskTolerence>,
     pub food_allergies: Option<String>,
-    pub disabilities: Option<String>,
+    pub disabilities: Option<String>
 }
 
 // TODO: More Responses...

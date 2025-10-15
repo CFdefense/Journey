@@ -16,15 +16,20 @@
   max-width: 500px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
   transform: translateY(0);
   animation: float 3s ease-in-out infinite;
 }
 
 /* Floating animation */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 /* Tourist image */
@@ -32,7 +37,7 @@
   width: 200px;
   height: auto;
   margin-bottom: 1.5rem;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Title */
@@ -59,7 +64,7 @@
   cursor: pointer;
   margin: 0 0.5rem;
   transition: all 0.2s ease-in-out;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Home button */

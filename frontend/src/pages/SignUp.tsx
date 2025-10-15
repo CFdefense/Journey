@@ -1,66 +1,70 @@
-import { useState } from 'react';
-import { useNavigate , Link} from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles/LoginSignup.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
 
 export default function Login() {
- const [firstName, setFirstName] = useState("");
- const [lastName, setLastName] = useState("");
- const [email, setEmail] = useState("");
- const [password, setPassword] = useState("");
- const [confirmPassword, setConfirmPassword] = useState("");
- const [error, setError] = useState("");
- const navigate = useNavigate();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
- const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault(); // stops the page from refreshing
-      console.log(email, password, firstName, lastName);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // stops the page from refreshing
+    console.log(email, password, firstName, lastName);
 
-      // sanitize user input
-      const emailError = logic.checkIfValidEmail(email);
-        if (emailError) {
-          setError(emailError);
-          return;
-        }
+    // sanitize user input
+    const emailError = logic.checkIfValidEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
 
-        const nameError = logic.checkIfValidName(firstName, lastName);
-        if (nameError) {
-          setError(nameError);
-          return;
-        }
+    const nameError = logic.checkIfValidName(firstName, lastName);
+    if (nameError) {
+      setError(nameError);
+      return;
+    }
 
-        const passwordError = logic.checkIfValidPassword(password);
-        if (passwordError) {
-          setError(passwordError);
-          return;
-        }
+    const passwordError = logic.checkIfValidPassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
-        const matchError = logic.checkIfPasswordsMatch(password, confirmPassword);
-        if (matchError) {
-          setError(matchError);
-          return;
-        }
+    const matchError = logic.checkIfPasswordsMatch(password, confirmPassword);
+    if (matchError) {
+      setError(matchError);
+      return;
+    }
 
-      try {
-      const result = await apiSignUp({
+    try {
+      await apiSignUp({
         email,
         first_name: firstName, // rust backend expects snake case as json variable
         last_name: lastName,
-        password,
+        password
       });
 
-        console.log("Account creation successful:", result);
-        setError("");
-        navigate("/home");
+      console.log("Account creation successful");
+      setError("");
+      navigate("/home");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        setError(err.message || "Sign Up failed.");
-      }
+    } catch (err: any) {
+      setError(err.message || "Sign Up failed.");
+    }
   };
 
   return (
     <div className="login-container">
+      {/* Navigation */}
+      <nav>
+        <Link to="/">Index</Link>
+      </nav>
       <div className="login-box">
         <h1>Create Account</h1>
         <form onSubmit={handleSubmit}>
@@ -117,14 +121,11 @@ export default function Login() {
         {error && <p style={{ color: "red" }}>{error}</p>}
 
         <div className="login-actions">
-        <Link to="/login" className="back-to-login-button">
+          <Link to="/login" className="back-to-login-button">
             Already Have An Account?
-        </Link>
-      </div>
-
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
-
-

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import IndexPage from "./pages/IndexPage";
 import Home from "./pages/Home";
 import ViewItinerary from "./pages/ViewItinerary";
@@ -7,29 +7,49 @@ import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import "./App.css";
+import { InverseProtectedRoute, ProtectedRoute } from "./components/ProtectedRoute";
 
-function App() {
+export default function App() {
   return (
     <Router>
-      {/* Navigation */}
-      <nav>
-        <Link to="/">Index</Link> | <Link to="/home">Home</Link> |{" "}
-        <Link to="/view">View</Link> | <Link to="/account">Account</Link> |{" "}
-        <Link to="/login">Login</Link> | <Link to="/signup">Signup</Link>
-      </nav>
-
       {/* Routes */}
       <Routes>
         <Route path="/" element={<IndexPage />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/view" element={<ViewItinerary />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/view"
+          element={
+            <ProtectedRoute>
+              <ViewItinerary />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <Account />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <InverseProtectedRoute>
+              <Login />
+            </InverseProtectedRoute>
+          }
+        />
         <Route path="/signup" element={<Signup />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
 }
-
-export default App;

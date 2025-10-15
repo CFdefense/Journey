@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { useNavigate , Link} from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles/LoginSignup.css";
 import { apiLogin } from "../api/account";
-import { AUTH_TOKEN_LOCAL } from "../helpers/globals";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
@@ -12,22 +11,25 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // stops the page from refreshing
-    console.log("email: " + email + " password: " + password);
 
-      try {
-        const result = await apiLogin({email, password});
-        console.log("Login successful: " + result);
-        setError("");
-        localStorage.setItem(AUTH_TOKEN_LOCAL, result.token);
-        navigate("/home");
+    try {
+      await apiLogin({ email, password });
+      console.log("Login successful");
+      setError("");
+      navigate("/home");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        setError(err.message || "Login failed.");
-      }
- };
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Login failed.");
+    }
+  };
 
   return (
     <div className="login-container">
+      {/* Navigation */}
+      <nav>
+        <Link to="/">Index</Link>
+      </nav>
       <div className="login-box">
         <h1>Login</h1>
         <form onSubmit={handleSubmit}>

@@ -5,14 +5,11 @@
  *
  * Purpose:
  *   Serve Itinerary Related API Requests
- *
- * Include:
- *   api_saved_itineraries  - GET /api/itinerary/saved -> returns user's saved itineraries
  */
 
 use axum::{extract::Path, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
-use tracing::info;
+use tracing::debug;
 
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
@@ -35,7 +32,7 @@ use crate::models::event::Event;
 ///
 /// # Examples
 /// ```bash
-/// curl -X GET http://localhost:3000/api/itinerary/saved
+/// curl -X GET http://localhost:3001/api/itinerary/saved
 ///   -H "Cookie: auth-token=..."
 /// ```
 ///
@@ -43,7 +40,7 @@ pub async fn api_saved_itineraries(
     Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<SavedResponse>> {
-    info!(
+    debug!(
         "HANDLER ->> /api/itinerary/saved 'api_saved_itineraries' - User ID: {}",
         user.id
     );
@@ -78,7 +75,7 @@ pub async fn api_saved_itineraries(
 ///
 /// # Examples
 /// ```bash
-/// curl -X GET http://localhost:3000/api/itinerary/123
+/// curl -X GET http://localhost:3001/api/itinerary/123
 ///   -H "Cookie: auth-token=..."
 /// ```
 ///
@@ -87,7 +84,7 @@ pub async fn api_get_itinerary(
     Path(itinerary_id): Path<i32>,
     Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<ItineraryResponse>> {
-    info!(
+    debug!(
         "HANDLER ->> /api/itinerary/{} 'api_get_itinerary' - User ID: {}",
         itinerary_id, user.id
     );
@@ -124,7 +121,7 @@ pub async fn api_get_itinerary(
 ///
 /// # Examples
 /// ```bash
-/// curl -X GET http://localhost:3000/api/itinerary/123/events
+/// curl -X GET http://localhost:3001/api/itinerary/123/events
 ///   -H "Cookie: auth-token=..."
 /// ```
 ///
@@ -133,7 +130,7 @@ pub async fn api_get_itinerary_events(
     Path(itinerary_id): Path<i32>,
     Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<Vec<Event>>> {
-    info!(
+    debug!(
         "HANDLER ->> /api/itinerary/{}/events 'api_get_itinerary_events' - User ID: {}",
         itinerary_id, user.id
     );
@@ -152,9 +149,9 @@ pub async fn api_get_itinerary_events(
 
     // Fetch events for this itinerary by joining event_list with events
     let events: Vec<Event> = sqlx::query_as::<_, Event>(
-        r#"SELECT e.id, e.street_address, e.postal_code, e.city, e.event_type, e.event_description, e.event_name 
-           FROM events e 
-           INNER JOIN event_list el ON e.id = el.event_id 
+        r#"SELECT e.id, e.street_address, e.postal_code, e.city, e.event_type, e.event_description, e.event_name
+           FROM events e
+           INNER JOIN event_list el ON e.id = el.event_id
            WHERE el.itinerary_id = $1"#,
     )
     .bind(itinerary_id)
