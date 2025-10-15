@@ -7,7 +7,10 @@ import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import "./App.css";
-import { InverseProtectedRoute, ProtectedRoute } from "./components/ProtectedRoute";
+import {
+  InverseProtectedRoute,
+  ProtectedRoute
+} from "./components/ProtectedRoute";
 
 export default function App() {
   return (
