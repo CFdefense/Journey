@@ -52,8 +52,3 @@ export function checkIfPasswordsMatch(password: string, confirmPassword: string)
 	}
 	return null;
 }
-
-export function isUserLoggedIn(): boolean {
-	const token = localStorage.getItem(AUTH_TOKEN_LOCAL);
-  	return token !== null && token.trim() !== "";
-}	

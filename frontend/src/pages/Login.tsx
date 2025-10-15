@@ -3,21 +3,12 @@ import { useNavigate , Link} from "react-router-dom";
 import "../styles/LoginSignup.css";
 import { apiLogin } from "../api/account";
 import { AUTH_TOKEN_LOCAL } from "../helpers/globals";
-import { isUserLoggedIn } from "../helpers/account";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""); // for showing error messages
   const navigate = useNavigate();
-
-  // use useEffect when your component logic will rely on something from outside of the component. This case it relies on if there is a cookie or not in local storage
-  // https://react.dev/reference/react/useEffect
-  useEffect(() => {
-    if (isUserLoggedIn()) {
-      navigate("/account"); // on each render attempt of login, it will naviagte to account if the cookie is present
-    }
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // stops the page from refreshing
