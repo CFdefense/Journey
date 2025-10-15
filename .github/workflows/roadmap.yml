@@ -114,8 +114,8 @@ jobs:
               fi
 
               if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
-                if [ "$DAYS" != "null" ] && [ -n "$DAYS" ]; then
-                  DUE_DATE=$(date -d "$TODAY + $DAYS day" +%Y-%m-%d)
+                if [ "$DAYS" != "null" ] && [ -n "$DAYS" ] && [ "$STARTED" != "null" ] && [ -n "$STARTED" ]; then
+                  DUE_DATE=$(date -d "$STARTED + $DAYS day" +%Y-%m-%d)
                   gh api graphql -f query='
                   mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
                     updateProjectV2ItemFieldValue(input:{

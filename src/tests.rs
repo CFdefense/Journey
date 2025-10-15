@@ -671,6 +671,7 @@ async fn test_endpoints() {
      	async {test_auth_required_for_me_endpoint(&hc).await},
      	async {test_signup_conflict_on_duplicate_email(&hc).await},
      	async {test_http_signup_and_login_flow(&hc).await},
+        async {test_http_login_invalid_credentials(&hc).await},
 	    async {test_validate_with_bad_and_good_cookie(&hc).await},
 	    async {test_current_endpoint_returns_account(&hc).await},
 	    async {test_update_endpoint_returns_account(&hc).await},
@@ -848,6 +849,53 @@ async fn test_http_signup_and_login_flow(hc: &Client) {
         .await
         .unwrap();
     assert!(resp.status().is_success(), "login failed: {}", resp.status());
+}
+
+async fn test_http_login_invalid_credentials(hc: &Client) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let bad_email = format!("badEmail+{}@example.com", unique);
+
+    // Email not present in db
+    let resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": bad_email,
+                "password": "Password123"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 400, "expected 400 for email not in DB but got {}", resp.status());
+
+    //first need to sign in as an account
+    let good_email = format!("goodEmail+{}@example.com", unique);
+    let signup_res = hc
+        .do_post(
+            "/api/account/signup",
+            json!({
+                "email": good_email,
+                "first_name": "Alice",
+                "last_name": "Tester",
+                "password": "Password123"
+            }),
+        )
+        .awaitfor email not in DB but
+        .unwrap();
+    assert_eq!(signup_res.status().as_u16(), 200, "expected 200; got {}", resp.status());
+
+    // login with a correct email, but the wrong password
+    let resp = hc
+        .do_post(
+            "/api/account/login",
+            json!({
+                "email": good_email,
+                "password": "ChickenNugget1234"
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status().as_u16(), 400, "expected 400 for valid email but invalid password, but got {}", resp.status());
 }
 
 async fn test_validate_with_bad_and_good_cookie(hc: &Client) {

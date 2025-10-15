@@ -184,7 +184,6 @@ pub async fn api_signup(
 /// # Responses
 /// - `200 OK` - Login successful with private cookie set
 /// - `400 BAD_REQUEST` - Invalid credentials (public error)
-/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
 ///
 /// # Examples
 /// ```bash
@@ -250,8 +249,8 @@ pub async fn api_login(
 
             return Ok(());
         }
-        Err(e) => {
-            return Err(AppError::from(e));
+        Err(_) => {
+            return Err(AppError::BadRequest("invalid credentials".to_string()));
         }
     }
 }
