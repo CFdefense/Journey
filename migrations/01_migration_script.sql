@@ -7,22 +7,10 @@ DROP TABLE IF EXISTS event_list CASCADE;
 DROP TABLE IF EXISTS itineraries CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
 DROP TABLE IF EXISTS accounts CASCADE;
-DROP TYPE IF EXISTS event_type CASCADE;
 DROP TYPE IF EXISTS risk_tolerence CASCADE;
 DROP TYPE IF EXISTS budget_bucket CASCADE;
 
 CREATE EXTENSION IF NOT EXISTS vector; -- Use PGVECTOR (kept for future use)
-
--- Enum for event types
-CREATE TYPE event_type AS ENUM (
-    'Concert',
-    'Museum',
-    'Restaurant',
-    'Hike',
-    'Festival',
-    'Sports',
-    'Other'
-);
 
 CREATE TYPE risk_tolerence AS ENUM (
     'ChillVibes',
@@ -37,6 +25,13 @@ CREATE TYPE budget_bucket AS ENUM (
     'MediumBudget',
     'HighBudget',
     'LuxuryBudget'
+);
+
+CREATE TYPE time_of_day AS ENUM (
+    'Morning',
+    'Noon',
+    'Afternoon',
+    'Evening'
 );
 
 -- Accounts table
@@ -56,7 +51,7 @@ CREATE TABLE events (
     street_address VARCHAR(255) NOT NULL,
     postal_code INTEGER NOT NULL,
     city VARCHAR(255) NOT NULL,
-    event_type event_type NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
     event_description TEXT NOT NULL,
     event_name VARCHAR(255) NOT NULL
 );
@@ -74,7 +69,7 @@ CREATE TABLE event_list (
     id SERIAL PRIMARY KEY,
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    time_of_day VARCHAR(64) NOT NULL
+    time_of_day time_of_day NOT NULL
 );
 
 ------- Dummy data to test ---------
@@ -82,7 +77,7 @@ CREATE TABLE event_list (
 -- CF: Password is "whatisrust"
 INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (1, 'ellieknapp@gmail.com', 'ihateHR', 'ellie', 'knapp', 'VeryLowBudget', 'Adventurer', 'Vegan', 'Blind,Deaf');
 INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (2, 'nicklongo@gmail.com', 'iwannabeHR', 'nick', 'longo', 'LowBudget', 'RiskTaker', 'Gluten Free,Hates Cheese', '');
-INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'MediumBudget', 'ChillVibes', 'Tree Nuts,Peanuts', 'Mobility Impaired - Wheelchair'); 
+INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (3, 'christianfarrell@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$boV4nNLYxj5VTn0yRZaQZg$dRSI/RHmPlgxGnKr/Q/bkBt1XRFjWx21FDVjbHKWJZs', 'christian', 'farrell', 'MediumBudget', 'ChillVibes', 'Tree Nuts,Peanuts', 'Mobility Impaired - Wheelchair');
 INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (4, 'ethanmorton@gmail.com', 'fakingmyankle', 'ethan', 'morton', 'HighBudget', 'LightFun', 'Dairy,Eggs,Quinoa', 'Bad Ankle');
 INSERT INTO accounts (id, email, password, first_name, last_name, budget_preference, risk_preference, food_allergies, disabilities) VALUES (5, 'peterarvanitis@gmail.com', 'ihateHR', 'peter', 'arvanitis', 'LuxuryBudget', 'ChillVibes','Dairy,Pine nuts,Kiwi','Lazy');
 
@@ -121,7 +116,7 @@ SELECT setval(
     GREATEST((SELECT COALESCE(MAX(id), 0) FROM itineraries), 1)
 );
 
--- Event List 
+-- Event List
 -- Itinerary 1 (Nick to NYC + Poopsie)
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (1, 2, 3, 'Morning'); -- MoMA
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (2, 2, 2, 'Evening'); -- Cosimos
@@ -134,11 +129,11 @@ INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (4, 3, 5
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (5, 3, 4, 'Evening'); -- Jazz
 
 -- Itinerary 4 (Ethan at Lollapalooza)
-INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (6, 4, 6, 'All Day'); --Lolla
+INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (6, 4, 6, 'Noon'); --Lolla
 
 --Itinerary 5 (peter in paris)
 INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (7, 5, 7, 'Morning'); --Eiffel Tower
-INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (8, 5, 8, 'Afternoon'); --Lourve 
+INSERT INTO event_list (id, itinerary_id, event_id, time_of_day) VALUES (8, 5, 8, 'Afternoon'); --Lourve
 
 -- Ensure the event_list id sequence matches the max(id)
 SELECT setval(

@@ -14,7 +14,7 @@ use tower_cookies::{
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, log, models::account::SignupPayload
+	controllers, db, global::*, log, http_models::account::SignupPayload
 };
 
 // UNIT TESTS

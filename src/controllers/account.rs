@@ -20,9 +20,9 @@ use tower_cookies::{
 use sqlx::PgPool;
 use tracing::debug;
 
-use crate::error::{ApiResult, AppError};
+use crate::{error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}};
 use crate::middleware::{AuthUser, middleware_auth};
-use crate::models::account::*;
+use crate::http_models::account::*;
 
 /// Creates and sets the cookie containing the hashed account id, expiration time, and other data.
 ///
@@ -104,7 +104,7 @@ pub async fn api_signup(
 	cookies: Cookies,
     Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
-    Json(payload): Json<SignupPayload>,
+    Json(payload): Json<SignupRequest>,
 ) -> ApiResult<()> {
     debug!(
         "HANDLER ->> /api/account/signup 'api_signup' - Payload: {:?}",
@@ -203,7 +203,7 @@ pub async fn api_login(
     cookies: Cookies,
     Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
-    Json(payload): Json<LoginPayload>,
+    Json(payload): Json<LoginRequest>,
 ) -> ApiResult<()> {
     debug!(
         "HANDLER ->> /api/account/login 'api_login' - Payload: {:?}",
@@ -212,7 +212,7 @@ pub async fn api_login(
 
     // Get user from database as Account
     let user_result = sqlx::query_as!(
-        Account,
+        AccountRow,
         r#"
         SELECT
             id,
@@ -361,7 +361,7 @@ pub async fn api_current(
 pub async fn api_update(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>,
-    Json(payload): Json<UpdatePayload>
+    Json(payload): Json<UpdateRequest>
 ) -> ApiResult<Json<UpdateResponse>> {
     debug!(
         "HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",

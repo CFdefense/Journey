@@ -11,9 +11,9 @@ use axum::{extract::Path, Extension, Json, Router, routing::{get, put}};
 use sqlx::PgPool;
 use tracing::debug;
 
-use crate::error::{ApiResult, AppError};
+use crate::{error::{ApiResult, AppError}, http_models::event::Event, sql_models::event::EventRow};
 use crate::middleware::{AuthUser, middleware_auth};
-use crate::models::event::{Event, UpdateEventPayload, EventType};
+use crate::http_models::event::{UpdateEventRequest};
 
 /// Get a single event by ID.
 ///
@@ -44,15 +44,15 @@ pub async fn api_get_event(
     );
 
     // Fetch the event
-    let event: Event = sqlx::query_as!(
-        Event,
+    let event: EventRow = sqlx::query_as!(
+        EventRow,
         r#"
         SELECT
         	id,
          	street_address,
           	postal_code,
            	city,
-            event_type as "event_type: EventType",
+            event_type,
             event_description,
             event_name
         FROM events
@@ -92,7 +92,7 @@ pub async fn api_update_event(
     Extension(user): Extension<AuthUser>,
     Path(event_id): Path<i32>,
     Extension(pool): Extension<PgPool>,
-    Json(payload): Json<UpdateEventPayload>,
+    Json(payload): Json<UpdateEventRequest>,
 ) -> ApiResult<Json<Event>> {
     debug!(
         "HANDLER ->> /api/event/{} 'api_update_event' - User ID: {}",
@@ -100,8 +100,8 @@ pub async fn api_update_event(
     );
 
     // Execute the update query with coalesced values
-    let updated_event: Event = sqlx::query_as!(
-        Event,
+    let updated_event: EventRow = sqlx::query_as!(
+        EventRow,
         r#"UPDATE events SET
             street_address = COALESCE($1, street_address),
             postal_code = COALESCE($2, postal_code),
@@ -110,11 +110,11 @@ pub async fn api_update_event(
             event_description = COALESCE($5, event_description),
             event_name = COALESCE($6, event_name)
         WHERE id = $7
-        RETURNING id, street_address, postal_code, city, event_type as "event_type: EventType", event_description, event_name"#,
+        RETURNING id, street_address, postal_code, city, event_type, event_description, event_name"#,
         payload.street_address,
         payload.postal_code,
         payload.city,
-        payload.event_type as Option<EventType>,
+        payload.event_type as Option<String>,
         payload.event_description,
         payload.event_name,
         event_id

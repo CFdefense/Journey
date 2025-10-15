@@ -5,7 +5,8 @@ mod db;
 mod global;
 mod log;
 mod middleware;
-mod models;
+mod http_models;
+mod sql_models;
 mod error;
 
 #[cfg(test)]
