@@ -741,7 +741,7 @@ async fn test_auth_required_for_me_endpoint(hc: &Client) {
 
     // Try to access /me without authentication (should fail)
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 401, "Accessing /me without auth should return 401");
@@ -776,7 +776,7 @@ async fn test_auth_required_for_me_endpoint(hc: &Client) {
 
     // Now try to access /me with auth cookie (should work)
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200, "Accessing /validate with auth should return 200");
@@ -853,7 +853,7 @@ async fn test_http_signup_and_login_flow(hc: &Client) {
 async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
     // No cookie (treated similarly to bad/invalid cookie): expect unauthorized
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 401, "Missing/invalid cookie should return 401");
@@ -890,7 +890,7 @@ async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
 
     // Client should now hold the private cookie; call validate and expect 200
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
