@@ -19,4 +19,4 @@
 /frontend/dist
 /frontend/dist-ssr
 /frontend/*.local
-#/frontend/src/helpers/config.ts
+/frontend/src/helpers/config.ts
