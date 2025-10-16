@@ -47,9 +47,9 @@ pub async fn api_send_message(
 ///
 pub fn chat_routes() -> Router {
     Router::new()
-        // .route("/chats", get(api_chats))
-        // .route("/messagePage", get(api_message_page))
-        // .route("/updateMessage", post(api_update_message))
-        // .route("/sendMessage", get(api_send_message))
+        .route("/chats", get(api_chats))
+        .route("/messagePage", get(api_message_page))
+        .route("/updateMessage", post(api_update_message))
+        .route("/sendMessage", get(api_send_message))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

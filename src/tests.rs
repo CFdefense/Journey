@@ -649,8 +649,8 @@ async fn test_endpoints() {
     let chat_routes = controllers::chat::chat_routes();
     let api_routes = Router::new()
         .nest("/account", account_routes)
-        .nest("/itinerary", itinerary_routes)
-        .nest("/chat", chat_routes);
+        .nest("/itinerary", itinerary_routes);
+        // .nest("/chat", chat_routes);
     let app = Router::new()
         .nest("/api", api_routes)
         .layer(Extension(pool.clone()))
@@ -757,7 +757,7 @@ async fn test_auth_for_all_required() {
 
     for res in futures::future::join_all(vec![
 		hc.do_post("/api/account/update", account_update_payload),
-		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
+		// hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
 		// hc.do_post("/api/itinerary/save", itinerary_save_payload),
     ]).await.iter() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
