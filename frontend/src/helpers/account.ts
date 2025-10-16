@@ -1,5 +1,3 @@
-import { AUTH_TOKEN_LOCAL } from "../helpers/globals";
-
 export function checkIfValidEmail(email: string): string | null {
 	const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 	if (!emailRegex.test(email)) {
@@ -8,7 +6,10 @@ export function checkIfValidEmail(email: string): string | null {
 	return null;
 }
 
-export function checkIfValidName(firstName: string, lastName: string): string | null {
+export function checkIfValidName(
+	firstName: string,
+	lastName: string
+): string | null {
 	if (firstName.length === 0 || lastName.length === 0) {
 		return "First and last name are required.";
 	}
@@ -27,6 +28,7 @@ export function checkIfValidPassword(password: string): string | null {
 		return "Password must be 128 characters or fewer.";
 	}
 
+	// eslint-disable-next-line no-control-regex
 	if (!/^[\x00-\x7F]+$/.test(password)) {
 		return "Password must contain only ASCII characters.";
 	}
@@ -46,7 +48,10 @@ export function checkIfValidPassword(password: string): string | null {
 	return null;
 }
 
-export function checkIfPasswordsMatch(password: string, confirmPassword: string): string | null {
+export function checkIfPasswordsMatch(
+	password: string,
+	confirmPassword: string
+): string | null {
 	if (password !== confirmPassword) {
 		return "Passwords do not match.";
 	}

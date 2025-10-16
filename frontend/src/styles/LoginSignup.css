@@ -39,9 +39,11 @@
   margin-bottom: 0.5rem;
   border: 2px solid var(--light-blue);
   font-size: 1rem;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
   background-color: var(--pale-yellow);
-  color: black
+  color: black;
 }
 
 .login-box input:focus {
@@ -54,17 +56,19 @@
 .login-box button {
   width: 100%;
   padding: 0.8rem;
-  background: linear-gradient(90deg, #00C897, var(--light-blue));
+  background: linear-gradient(90deg, #00c897, var(--light-blue));
   border: none;
   color: white;
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
+  transition:
+    background 0.3s,
+    transform 0.2s;
 }
 
 .login-box button:hover {
-  background: linear-gradient(90deg, var(--light-blue), #00C897);
+  background: linear-gradient(90deg, var(--light-blue), #00c897);
   transform: translateY(-2px);
 }
 
@@ -93,7 +97,10 @@
   color: var(--light-blue);
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.3s, color 0.3s, transform 0.2s;
+  transition:
+    background 0.3s,
+    color 0.3s,
+    transform 0.2s;
 }
 
 .back-to-login-button:hover {

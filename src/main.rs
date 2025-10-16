@@ -5,7 +5,8 @@ mod db;
 mod global;
 mod log;
 mod middleware;
-mod models;
+mod http_models;
+mod sql_models;
 mod error;
 
 #[cfg(test)]
@@ -74,8 +75,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // API routes with CORS middleware
     let api_routes = Router::new()
     	.nest("/account", controllers::account::account_routes())
-        .nest("/itinerary", controllers::itinerary::itinerary_routes())
-        .nest("/event", controllers::event::event_routes());
+        .nest("/itinerary", controllers::itinerary::itinerary_routes());
+        // .nest("/chat", controllers::chat::chat_routes());
      	// TODO: nest other routes...
 
     // Build the main router

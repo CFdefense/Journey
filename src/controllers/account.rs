@@ -5,31 +5,71 @@
  *
  * Purpose:
  *   Serve Account Related API Requests
- *
- * Include:
- *   api_signup         - POST /api/account/signup -> creates an account
- *   api_login          - POST /api/account/login  -> authenticates and sets auth cookie
- *   api_me             - POST /api/account/me     -> returns current user (protected by middleware)
  */
 
-use axum::{Extension, Json, Router, http::StatusCode, routing::{get, post}};
+use axum::{Extension, Json, Router, routing::{get, post}};
 
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use tower_cookies::{
-    Cookie, Cookies,
-    cookie::{Key, SameSite, time::Duration},
+    cookie::{time::{Duration, OffsetDateTime}, Key, SameSite}, Cookie, Cookies
 };
 
-use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
-use tracing::info;
+use tracing::debug;
 
-use crate::error::{ApiResult, AppError};
+use crate::{error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}};
 use crate::middleware::{AuthUser, middleware_auth};
-use crate::models::account::*;
+use crate::http_models::account::*;
+
+/// Creates and sets the cookie containing the hashed account id, expiration time, and other data.
+///
+/// Notes:
+/// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
+/// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
+fn set_cookie(account_id: i32, expired: bool, cookies: &Cookies, key: &Key) {
+    // Create token and set cookie as before
+    let domain = option_env!("DOMAIN").unwrap_or("localhost");
+    let app_env = option_env!("APP_ENV").unwrap_or("development");
+    let on_production = app_env == "production";
+
+    // Create a token value (in a real app, this would be a JWT or similar)
+    // Embed expiration epoch seconds inside the token for server-side validation
+    let (expires, max_age) = if expired {
+  		(OffsetDateTime::UNIX_EPOCH, Duration::days(0))
+    } else {
+    	let age = Duration::days(3);
+    	(OffsetDateTime::now_utc() + age, age)
+    };
+    let token_value = format!("user-{}.{}.sign", account_id, expires.unix_timestamp());
+
+    debug!(
+        "INFO ->> Generated token: {}. Production is: {}",
+        token_value,
+        on_production
+    );
+
+    // Build the cookie with enhanced security
+    // Store encrypted (private) cookie so value is confidential and authenticated
+    let cookie = Cookie::build("auth-token", token_value.clone())
+        .domain(domain.to_string())
+        .path("/")
+        .secure(on_production)
+        .http_only(true)
+        .same_site(if on_production {
+            SameSite::None
+        } else {
+            SameSite::Lax
+        })
+        .expires(Some(expires))
+        .max_age(max_age)
+        .finish();
+
+    // encrypt/sign cookie (private cookie via CookieManagerLayer key)
+    cookies.private(key).add(cookie);
+}
 
 /// Create a new user.
 ///
@@ -43,14 +83,14 @@ use crate::models::account::*;
 /// - 'password': The user's password (string, required).
 ///
 /// # Responses
-/// - `201 CREATED` - Signup successful with JSON body `{ "id": i32, "email": string }`
+/// - `200 OK` - Signup successful
 /// - `400 BAD_REQUEST` - Validation failure (public error)
 /// - `409 CONFLICT` - Email already exists (public error)
 /// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/api/account/signup
+/// curl -X POST http://localhost:3001/api/account/signup
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -61,10 +101,12 @@ use crate::models::account::*;
 /// ```
 ///
 pub async fn api_signup(
+	cookies: Cookies,
+    Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
-    Json(payload): Json<SignupPayload>,
-) -> ApiResult<(StatusCode, Json<SignupResponse>)> {
-    info!(
+    Json(payload): Json<SignupRequest>,
+) -> ApiResult<()> {
+    debug!(
         "HANDLER ->> /api/account/signup 'api_signup' - Payload: {:?}",
         payload
     );
@@ -115,18 +157,14 @@ pub async fn api_signup(
 
     match insert_result {
         Ok(record) => {
-            info!(
-                "INFO ->> /api/account/signup 'api_signup' - Created user with ID: {}",
+            debug!(
+                "INFO ->> /api/account/signup 'api_signup' - Created user with id: {}",
                 record.id
             );
 
-            Ok((
-                StatusCode::CREATED,
-                Json(SignupResponse {
-                    id: record.id,
-                    email: payload.email,
-                }),
-            ))
+            set_cookie(record.id, false, &cookies, &key);
+
+            Ok(())
         }
         Err(e) => {
             Err(AppError::from(e))
@@ -144,12 +182,12 @@ pub async fn api_signup(
 /// - 'password': The user's password (string, required).
 ///
 /// # Responses
-/// - `200 OK` - Login successful with JSON body `{ "id": i32, "token": string }` and `auth-token` private cookie set
+/// - `200 OK` - Login successful with private cookie set
 /// - `400 BAD_REQUEST` - Invalid credentials (public error)
 ///
 /// # Examples
 /// ```bash
-/// curl -X POST http://localhost:3000/api/account/login
+/// curl -X POST http://localhost:3001/api/account/login
 ///   -H "Content-Type: application/json"
 ///   -d '{
 ///        "email": "alice@example.com",
@@ -165,27 +203,21 @@ pub async fn api_login(
     cookies: Cookies,
     Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
-    Json(payload): Json<LoginPayload>,
-) -> ApiResult<Json<LoginResponse>> {
-    info!(
+    Json(payload): Json<LoginRequest>,
+) -> ApiResult<()> {
+    debug!(
         "HANDLER ->> /api/account/login 'api_login' - Payload: {:?}",
         payload
     );
 
     // Get user from database as Account
     let user_result = sqlx::query_as!(
-        Account,
+        AccountRow,
         r#"
-        SELECT 
+        SELECT
             id,
             email,
-            password,
-            first_name,
-            last_name,
-            budget_preference as "budget_preference: BudgetBucket",
-            risk_preference as "risk_preference: RiskTolerence",
-            food_allergies,
-            disabilities
+            password
         FROM accounts
         WHERE email = $1
         "#,
@@ -207,89 +239,68 @@ pub async fn api_login(
                 return Err(AppError::BadRequest("invalid credentials".to_string()));
             }
 
-            // Create token and set cookie as before
-            let domain = option_env!("DOMAIN").unwrap_or("localhost");
-            let app_env = option_env!("APP_ENV").unwrap_or("development");
-            let on_production = app_env == "production";
+            set_cookie(result.id, false, &cookies, &key);
 
-            // Create a token value (in a real app, this would be a JWT or similar)
-            // Embed expiration epoch seconds inside the token for server-side validation
-            let exp_epoch = (Utc::now() + ChronoDuration::days(3)).timestamp();
-            let token_value = format!("user-{}.{}.sign", result.id, exp_epoch);
-
-            info!(
-                "INFO ->> /api/account/login 'api_login' - Generated token value: {}. Production is: {}",
-                token_value, on_production
-            );
-
-            // Build the cookie with enhanced security
-            // Store encrypted (private) cookie so value is confidential and authenticated
-            let cookie = Cookie::build("auth-token", token_value.clone())
-                .domain(domain.to_string())
-                .path("/")
-                .secure(on_production)
-                .http_only(true)
-                .same_site(if on_production {
-                    SameSite::None
-                } else {
-                    SameSite::Lax
-                })
-                .max_age(Duration::days(3))
-                .finish();
-
-            // encrypt/sign cookie (private cookie via CookieManagerLayer key)
-            cookies.private(&key).add(cookie.clone());
-
-            return Ok(Json(LoginResponse {
-                id: result.id,
-                token: token_value,
-            }));
+            return Ok(());
         }
-        Err(e) => {
+        Err(_) => {
             return Err(AppError::BadRequest("invalid credentials".to_string()));
         }
     }
 }
 
-/// Return the current authenticated user's ID.
+/// Returns whether the user has a valid auth token.
 /// Hit this route to validate the `auth-token` private cookie.
 ///
 /// # Method
-/// `POST /api/account/validate`
+/// `GET /api/account/validate`
 ///
 /// # Auth
 /// Protected by `auth_middleware` which validates the `auth-token` private cookie,
 /// checks expiration, and injects `Extension<AuthUser>`.
 ///
 /// # Responses
-/// - `200 OK` - `{ "id": i32 }` for the authenticated user
+/// - `200 OK` - user has a valid auth token
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
-pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<Json<ValidateResponse>> {
-    info!(
+pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()> {
+    debug!(
         "HANDLER ->> /api/account/validate 'api_validate' - User ID: {}",
         user.id
     );
-    Ok(Json(ValidateResponse { id: user.id }))
+    Ok(())
 }
 
+/// Get information about the user
+///
+/// # Method
+/// `GET /api/account/current`
+///
+/// # Responses
+/// - `200 OK` - with body: [CurrentResponse]
+/// - `401 UNAUTHORIZED` - Invalid credentials (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X GET http://localhost:3001/api/account/current
+///   -H "Content-Type: application/json"
+/// ```
 pub async fn api_current(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>,
-) -> ApiResult<Json<Account>> {
-    info!(
+) -> ApiResult<Json<CurrentResponse>> {
+    debug!(
         "HANDLER ->> /api/account/current 'api_current' - User ID: {}",
         user.id
     );
     // Load current user's full account row
     let account = sqlx::query_as!(
-        Account,
+        CurrentResponse,
         r#"
         SELECT
-            id,
             email,
             first_name,
             last_name,
-            password,
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             food_allergies,
@@ -306,12 +317,47 @@ pub async fn api_current(
     Ok(Json(account))
 }
 
+/// Update information about the user
+///
+/// # Method
+/// `POST /api/account/update`
+///
+/// # Request Body
+/// - `email`: A valid email address (string).
+/// - 'first_name': The user's first name (string).
+/// - 'last_name': The user's last name (string).
+/// - 'password': The user's password (string).
+/// - 'budget_preference': The user's budget preference (string).
+/// - 'risk_preference': The user's risk preference (string).
+/// - 'food_allergies': The user's allergies (string).
+/// - 'disabilities': The user's disabilities (string).
+///
+/// # Responses
+/// - `200 OK` - with body: [UpdateResponse]
+/// - `401 UNAUTHORIZED` - Invalid credentials (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/account/update
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "email": "",
+///         "first_name": "",
+///         "last_name": "",
+///         "password": "",
+///         "budget_preference": "",
+///         "risk_preference": "",
+///         "food_allergies": "",
+///         "disabilities": ""
+///       }'
+/// ```
 pub async fn api_update(
     Extension(pool): Extension<PgPool>,
-    Extension(user): Extension<AuthUser>, 
-    Json(payload): Json<UpdatePayload>
-) -> ApiResult<Json<Account>> {
-    info!(
+    Extension(user): Extension<AuthUser>,
+    Json(payload): Json<UpdateRequest>
+) -> ApiResult<Json<UpdateResponse>> {
+    debug!(
         "HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",
         user.id, payload
     );
@@ -331,7 +377,7 @@ pub async fn api_update(
     };
 
     let account = sqlx::query_as!(
-        Account,
+        UpdateResponse,
         r#"
         UPDATE accounts SET
             email = COALESCE($1, email),
@@ -346,7 +392,6 @@ pub async fn api_update(
         RETURNING
             id,
             email,
-            password,
             first_name,
             last_name,
             budget_preference as "budget_preference: BudgetBucket",
@@ -371,6 +416,34 @@ pub async fn api_update(
     Ok(Json(account))
 }
 
+/// Logout by setting cookie to expired.
+///
+/// # Method
+/// `GET /api/account/logout`
+///
+/// # Responses
+/// - `200 OK` - with body: [UpdateResponse]
+/// - `401 UNAUTHORIZED` - Invalid credentials (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X GET http://localhost:3001/api/account/logout
+///   -H "Content-Type: application/json"
+/// ```
+async fn api_logout(
+	cookies: Cookies,
+    Extension(key): Extension<Key>,
+    Extension(user): Extension<AuthUser>
+) -> ApiResult<()> {
+	debug!(
+        "HANDLER ->> /api/account/logout 'api_logout' - User ID: {}",
+        user.id
+    );
+	set_cookie(user.id, true, &cookies, &key);
+	Ok(())
+}
+
 /// Create the account routes with authentication middleware.
 ///
 /// # Routes
@@ -378,6 +451,7 @@ pub async fn api_update(
 /// - `POST /update` - Update user account information
 /// - `GET /current` - Get current user's account details
 /// - `POST /validate` - Validate authentication token
+/// - `GET /logout` - Logout by making cookie expired
 ///
 /// ## Public Routes (no authentication required)
 /// - `POST /signup` - Create a new user account
@@ -391,7 +465,8 @@ pub fn account_routes() -> Router {
     Router::new()
         .route("/update", post(api_update))
         .route("/current", get(api_current))
-        .route("/validate", post(api_validate))
+        .route("/validate", get(api_validate))
+        .route("/logout", get(api_logout))
         .route_layer(axum::middleware::from_fn(middleware_auth))
         .route("/signup", post(api_signup))
         .route("/login", post(api_login))

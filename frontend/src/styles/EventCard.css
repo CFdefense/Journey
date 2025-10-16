@@ -4,7 +4,9 @@
   font-size: 1rem;
   cursor: grab;
   user-select: none;
-  transition: transform 0.1s ease, background 0.2s ease;
+  transition:
+    transform 0.1s ease,
+    background 0.2s ease;
   max-width: 90%;
 }
 
