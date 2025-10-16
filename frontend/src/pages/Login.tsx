@@ -1,24 +1,29 @@
-import { useState } from "react";
+import { useContext, useState, type Context } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/LoginSignup.css";
 import { apiLogin } from "../api/account";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "../components/GlobalProvider";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // react hook to make sure that variable stays changed after React re-renders (gives components memory). https://react.dev/reference/react/useState
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""); // for showing error messages
   const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // stops the page from refreshing
 
     try {
       await apiLogin({ email, password });
+      setAuthorized(true);
       console.log("Login successful");
       setError("");
       navigate("/home");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      setAuthorized(false);
       console.error(err);
       setError(err.message || "Login failed.");
     }

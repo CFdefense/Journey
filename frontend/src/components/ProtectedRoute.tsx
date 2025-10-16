@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState, type Context } from "react";
 import { apiValidate } from "../api/account";
 import { Navigate } from "react-router-dom";
 import { Loading } from "./Loading";
-import { bypassProtection } from "../helpers/global";
+import { bypassProtection, GlobalContext } from "../helpers/global";
+import type { GlobalState } from "./GlobalProvider";
 
 /// Only allows access to the child elements if authenticated.
 /// Displays a loading screen while verifying.
@@ -10,10 +11,14 @@ import { bypassProtection } from "../helpers/global";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ProtectedRoute({ children }: any) {
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const { authorized, setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   useEffect(() => {
     if (!bypassProtection()) {
+      if (authorized !== null) {
+        setLoading(false);
+        return;
+      }
       apiValidate()
         .then((valid: boolean) => {
           setAuthorized(valid);
@@ -27,7 +32,7 @@ export function ProtectedRoute({ children }: any) {
           setLoading(false);
         });
     }
-  }, []);
+  }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
     console.log("loading: ", loading);
@@ -45,10 +50,14 @@ export function ProtectedRoute({ children }: any) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function InverseProtectedRoute({ children }: any) {
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const { authorized, setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   useEffect(() => {
     if (!bypassProtection()) {
+      if (authorized !== null) {
+        setLoading(false);
+        return;
+      }
       apiValidate()
         .then((valid: boolean) => {
           setAuthorized(valid);
@@ -62,7 +71,7 @@ export function InverseProtectedRoute({ children }: any) {
           setLoading(false);
         });
     }
-  }, []);
+  }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
     if (loading) return <Loading />;

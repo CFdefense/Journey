@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useContext, useState, type Context } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/LoginSignup.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "../components/GlobalProvider";
 
 export default function Login() {
   const [firstName, setFirstName] = useState("");
@@ -12,6 +14,7 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // stops the page from refreshing
@@ -49,12 +52,13 @@ export default function Login() {
         last_name: lastName,
         password
       });
-
+      setAuthorized(true);
       console.log("Account creation successful");
       setError("");
       navigate("/home");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      setAuthorized(false);
       setError(err.message || "Sign Up failed.");
     }
   };

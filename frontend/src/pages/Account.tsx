@@ -1,21 +1,21 @@
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { apiLogout } from "../api/account";
+import { useContext, type Context } from "react";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "../components/GlobalProvider";
 
 export default function Account() {
-  const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   const onLogout = async () => {
     console.log("Logging out");
     try {
-      // Wait for the backend to actually delete the cookie
       await apiLogout();
-
-      // Optionally force a full reload to clear client state and re-check cookie
-      window.location.href = "/"; // safer than navigate() for auth resets
     } catch (e) {
       console.error("Logout error:", e);
-      // Still go home, but log error for debugging
-      window.location.href = "/";
+    } finally {
+      window.location.href = "/"; //workaround since navigate doesn't work properly
+      setAuthorized(false);
     }
   };
 
