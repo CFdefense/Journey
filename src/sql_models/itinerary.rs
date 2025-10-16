@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ItineraryJoinedRow {
     pub id: i32,
-    pub account_id: i32,
-    pub date: NaiveDateTime
+    pub account_id: Option<i32>,
+    pub date: NaiveDateTime,
+    pub chat_session_id: Option<i32>
 }

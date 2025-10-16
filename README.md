@@ -30,15 +30,15 @@ Make a `.env` in the /frontend directory with these variables
 VITE_API_BASE_URL="http://localhost:3001"
 ```
 ### Database
-You need an active connection to the database to compile. This brings the db container up.
+Install docker. You need an active connection to the database to compile. This brings the db container up.
 ```sh
 # Windows
 docker-compose up -d
 
-# Unix (make sure docker.service and docker.socket are active and running)
+# Linux (make sure docker.service and docker.socket are active and running)
 sudo docker compose up -d
 ```
-Login to database
+Install Postgres SQL CLI and login to database
 ```sh
 psql -h localhost -p 5431 -U postgres -d travelagent
 ```
@@ -51,7 +51,7 @@ Kill database (after you're done)
 # Windows
 # TODO
 
-# Unix
+# Linux
 sudo docker compose down db
 ```
 ### Rust

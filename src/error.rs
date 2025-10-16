@@ -4,6 +4,7 @@ use std::fmt;
 use tracing::error;
 
 // Unified API result type
+#[cfg(not(tarpaulin_include))]
 pub type ApiResult<T> = std::result::Result<T, AppError>;
 
 // Single unified error for the API
@@ -18,8 +19,8 @@ pub enum AppError {
     Internal(String),
 }
 
+#[cfg(not(tarpaulin_include))]
 impl AppError {
-    #[cfg(not(tarpaulin_include))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             AppError::Validation(_) => StatusCode::BAD_REQUEST,
@@ -31,7 +32,6 @@ impl AppError {
         }
     }
 
-    #[cfg(not(tarpaulin_include))]
     pub fn log(&self) {
         match self {
             AppError::Validation(m) => error!(target: "api_error", prefix = "ERROR ->>", kind = "validation", message = %m),
@@ -62,9 +62,13 @@ impl fmt::Display for AppError {
 impl std::error::Error for AppError {}
 
 // Convert common error types into unified Internal errors
+#[cfg(not(tarpaulin_include))]
 impl From<sqlx::Error> for AppError { fn from(e: sqlx::Error) -> Self { AppError::Internal(format!("db error: {e:?}")) } }
+#[cfg(not(tarpaulin_include))]
 impl From<argon2::password_hash::Error> for AppError { fn from(e: argon2::password_hash::Error) -> Self { AppError::Internal(format!("password hash error: {e:?}")) } }
+#[cfg(not(tarpaulin_include))]
 impl From<serde_json::Error> for AppError { fn from(e: serde_json::Error) -> Self { AppError::Internal(format!("json error: {e:?}")) } }
+#[cfg(not(tarpaulin_include))]
 impl From<std::env::VarError> for AppError { fn from(e: std::env::VarError) -> Self { AppError::Internal(format!("env error: {e:?}")) } }
 
 #[cfg(not(tarpaulin_include))]

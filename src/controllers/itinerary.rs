@@ -7,6 +7,7 @@
  *   Serve Itinerary Related API Requests
  */
 
+use axum::routing::post;
 use axum::{extract::Path, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
 use tracing::debug;
@@ -19,12 +20,13 @@ use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryJoinedRow;
 use crate::sql_models::TimeOfDay;
 
+/// Returns the [EventListJoinRow]s associated with this itinerary
 async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<EventListJoinRow>> {
 	sqlx::query_as!(
 		EventListJoinRow,
 		r#"
 		SELECT
-			el.time_of_day,
+			el.time_of_day as "time_of_day: TimeOfDay",
 			e.street_address,
 			e.postal_code,
 			e.city,
@@ -37,21 +39,20 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 		"#,
 		itinerary_id
 	)
-	.fetch_all(&pool)
+	.fetch_all(pool)
 	.await
 	.map_err(|e| AppError::from(e))
 }
 
+/// Filter-maps the slice of [EventListJoinRow]s to a Vec of [Event]s
 fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<Event> {
-	el.iter()
-  		.filter_map(|e| {
-      		if e.time_of_day == tod {
-         		Some(e.into())
-      		} else {
-				None
-			}
- 		})
-		.collect()
+	let mut events = Vec::with_capacity(el.len());
+	for e in el.iter() {
+		if e.time_of_day == tod {
+			events.push(e.into());
+		}
+	}
+	events
 }
 
 /// Get all saved itineraries for the authenticated user.
@@ -86,14 +87,14 @@ pub async fn api_saved_itineraries(
     // Fetch all itineraries for the user
     let itineraries: Vec<ItineraryJoinedRow> = sqlx::query_as!(
         ItineraryJoinedRow,
-        r#"SELECT id, account_id, date FROM itineraries WHERE account_id = $1"#,
+        r#"SELECT id, account_id, date, chat_session_id FROM itineraries WHERE account_id = $1"#,
         user.id
     )
     .fetch_all(&pool)
     .await
     .map_err(|e| AppError::from(e))?;
 
-    let res = Vec::with_capacity(itineraries.len());
+    let mut res = Vec::with_capacity(itineraries.len());
 
     for itinerary in itineraries.iter() {
     	let event_list = itinerary_events(itinerary.id, &pool).await?;
@@ -144,7 +145,7 @@ pub async fn api_get_itinerary(
     // Fetch the itinerary for the user
     let itinerary: ItineraryJoinedRow = sqlx::query_as!(
         ItineraryJoinedRow,
-        r#"SELECT id, account_id, date FROM itineraries WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id, account_id, date, chat_session_id FROM itineraries WHERE id = $1 AND account_id = $2"#,
         itinerary_id,
         user.id
     )
@@ -157,7 +158,7 @@ pub async fn api_get_itinerary(
         EventListJoinRow,
         r#"
 		SELECT
-		    el.time_of_day,
+		    el.time_of_day as "time_of_day: TimeOfDay",
 		    e.street_address,
 		    e.postal_code,
 		    e.city,
@@ -183,12 +184,20 @@ pub async fn api_get_itinerary(
 	}))
 }
 
+pub async fn api_save(
+	Extension(user): Extension<AuthUser>,
+    Extension(pool): Extension<PgPool>,
+    Json(itinerary): Json<Itinerary>
+) -> ApiResult<()> {
+	todo!()
+}
+
 /// Create the itinerary routes with authentication middleware.
 ///
 /// # Routes
 /// - `GET /saved` - Get user's saved itineraries (protected)
+/// - `POST /save` - Inserts into or updates the user's itinerary in the db (protected)
 /// - `GET /{id}` - Get single itinerary metadata (protected)
-/// - `GET /{id}/events` - Get events for itinerary (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -196,6 +205,7 @@ pub async fn api_get_itinerary(
 pub fn itinerary_routes() -> Router {
     Router::new()
         .route("/saved", get(api_saved_itineraries))
+        // .route("/save", post(api_save))
         .route("/:id", get(api_get_itinerary))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

@@ -217,13 +217,7 @@ pub async fn api_login(
         SELECT
             id,
             email,
-            password,
-            first_name,
-            last_name,
-            budget_preference as "budget_preference: BudgetBucket",
-            risk_preference as "risk_preference: RiskTolerence",
-            food_allergies,
-            disabilities
+            password
         FROM accounts
         WHERE email = $1
         "#,

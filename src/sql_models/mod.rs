@@ -5,6 +5,7 @@ pub mod account;
 pub mod event;
 pub mod event_list;
 pub mod itinerary;
+pub mod message;
 
 /// Budget preference enum mapped to Postgres `budget_bucket`.
 /// Used in account preferences and returned by account APIs.

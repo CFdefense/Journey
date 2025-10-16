@@ -25,7 +25,22 @@ pub struct Event {
     pub event_name: String
 }
 
+impl From<EventRow> for Event {
+	#[cfg(not(tarpaulin_include))]
+	fn from(value: EventRow) -> Self {
+	    Self {
+	        street_address: value.street_address,
+	        postal_code: value.postal_code,
+	        city: value.city,
+	        event_type: value.event_type,
+	        event_description: value.event_description,
+	        event_name: value.event_name
+	    }
+	}
+}
+
 impl From<&EventListJoinRow> for Event {
+	#[cfg(not(tarpaulin_include))]
 	fn from(value: &EventListJoinRow) -> Self {
 		Self {
 			street_address: value.street_address.clone(),
@@ -37,15 +52,3 @@ impl From<&EventListJoinRow> for Event {
 		}
 	}
 }
-
-#[derive(Deserialize)]
-pub struct UpdateEventRequest {
-    pub street_address: Option<String>,
-    pub postal_code: Option<i32>,
-    pub city: Option<String>,
-    pub event_type: Option<String>,
-    pub event_description: Option<String>,
-    pub event_name: Option<String>,
-}
-
-// TODO: More Payloads...
