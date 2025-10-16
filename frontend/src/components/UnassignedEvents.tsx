@@ -1,6 +1,7 @@
 // src/components/UnassignedEvents.tsx
 import React from "react";
 import EventCard from "./EventCard";
+import "../styles/Itinerary.css";
 
 export interface Event {
   id: string;
