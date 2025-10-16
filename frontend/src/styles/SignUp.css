@@ -134,6 +134,7 @@
   color: #0b1220;
   max-width: 520px;
   justify-self: end;
+  align-self: start;
 }
 
 .signup-page-content {
