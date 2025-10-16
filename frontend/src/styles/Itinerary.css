@@ -40,7 +40,7 @@
   border: 2px solid #ccc;
   padding: 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  color: var(--light-blue)
+  color: var(--light-blue);
 }
 
 .itinerary-section h3 {
@@ -92,7 +92,9 @@
   font-size: 1rem;
   cursor: grab;
   user-select: none;
-  transition: transform 0.1s ease, background 0.2s ease;
+  transition:
+    transform 0.1s ease,
+    background 0.2s ease;
   display: flex;
   flex-direction: column;
 }

@@ -12,10 +12,11 @@
 /frontend/pnpm-debug.log*
 /frontend/lerna-debug.log*
 
+/logs
+/src/logs
+
 /frontend/node_modules
 /frontend/dist
 /frontend/dist-ssr
 /frontend/*.local
-
-/logs
-/src/logs
+/frontend/src/helpers/config.ts

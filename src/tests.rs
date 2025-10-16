@@ -1,11 +1,10 @@
-use std::{fs, io::Write, net::TcpListener, path::Path, time::Duration};
+use std::{fs, io::Write, net::TcpListener, path::Path, time::{Duration, SystemTime}};
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use axum::{Extension, Router};
 use chrono::Utc;
-use httpc_test::Client;
 use serde_json::json;
 use serial_test::serial;
 use sqlx::migrate;
@@ -14,7 +13,7 @@ use tower_cookies::{
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, log, models::account::{LoginResponse, SignupPayload, SignupResponse}
+	controllers, db, global::*, http_models::account::SignupRequest, log
 };
 
 // UNIT TESTS
@@ -198,30 +197,6 @@ fn test_signup_hash_irreversibility() {
     assert!(password_hash.len() > password.len() * 2);
 }
 
-/// Test signup response structure
-#[test]
-fn test_signup_response_structure() {
-    let response = SignupResponse {
-        id: 123,
-        email: "test@example.com".to_string(),
-    };
-
-    assert_eq!(response.id, 123);
-    assert_eq!(response.email, "test@example.com");
-}
-
-/// Test login response structure
-#[test]
-fn test_login_response_structure() {
-    let response = LoginResponse {
-        id: 456,
-        token: "user-456.exp.sign".to_string(),
-    };
-
-    assert_eq!(response.id, 456);
-    assert_eq!(response.token, "user-456.exp.sign");
-}
-
 /// Test that any password can be hashed (even if it wouldn't pass validation)
 #[test]
 fn test_password_hashing_mechanism() {
@@ -309,36 +284,36 @@ fn test_signup_max_password_length() {
 
 #[test]
 fn test_validate_email_valid() {
-    assert!(SignupPayload::validate_email("user@example.com"));
-    assert!(SignupPayload::validate_email("test.user@domain.co.uk"));
-    assert!(SignupPayload::validate_email("name+tag@company.org"));
-    assert!(SignupPayload::validate_email("user123@test-domain.com"));
+    assert!(SignupRequest::validate_email("user@example.com"));
+    assert!(SignupRequest::validate_email("test.user@domain.co.uk"));
+    assert!(SignupRequest::validate_email("name+tag@company.org"));
+    assert!(SignupRequest::validate_email("user123@test-domain.com"));
 }
 
 #[test]
 fn test_validate_email_invalid() {
-    assert!(!SignupPayload::validate_email(""));
-    assert!(!SignupPayload::validate_email("notanemail"));
-    assert!(!SignupPayload::validate_email("@example.com"));
-    assert!(!SignupPayload::validate_email("user@"));
-    assert!(!SignupPayload::validate_email("user@.com"));
-    assert!(!SignupPayload::validate_email("user @example.com"));
-    assert!(!SignupPayload::validate_email("user@exam ple.com"));
+    assert!(!SignupRequest::validate_email(""));
+    assert!(!SignupRequest::validate_email("notanemail"));
+    assert!(!SignupRequest::validate_email("@example.com"));
+    assert!(!SignupRequest::validate_email("user@"));
+    assert!(!SignupRequest::validate_email("user@.com"));
+    assert!(!SignupRequest::validate_email("user @example.com"));
+    assert!(!SignupRequest::validate_email("user@exam ple.com"));
 }
 
 // ===== Password Validation Tests =====
 
 #[test]
 fn test_validate_password_valid() {
-    assert!(SignupPayload::validate_password("Password1").is_ok());
-    assert!(SignupPayload::validate_password("MySecure123").is_ok());
-    assert!(SignupPayload::validate_password("Passw0rd!@#").is_ok());
-    assert!(SignupPayload::validate_password("LongerPassword123").is_ok());
+    assert!(SignupRequest::validate_password("Password1").is_ok());
+    assert!(SignupRequest::validate_password("MySecure123").is_ok());
+    assert!(SignupRequest::validate_password("Passw0rd!@#").is_ok());
+    assert!(SignupRequest::validate_password("LongerPassword123").is_ok());
 }
 
 #[test]
 fn test_validate_password_too_short() {
-    let result = SignupPayload::validate_password("Pass1");
+    let result = SignupRequest::validate_password("Pass1");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -348,7 +323,7 @@ fn test_validate_password_too_short() {
 
 #[test]
 fn test_validate_password_no_uppercase() {
-    let result = SignupPayload::validate_password("password123");
+    let result = SignupRequest::validate_password("password123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -358,7 +333,7 @@ fn test_validate_password_no_uppercase() {
 
 #[test]
 fn test_validate_password_no_lowercase() {
-    let result = SignupPayload::validate_password("PASSWORD123");
+    let result = SignupRequest::validate_password("PASSWORD123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -368,7 +343,7 @@ fn test_validate_password_no_lowercase() {
 
 #[test]
 fn test_validate_password_no_number() {
-    let result = SignupPayload::validate_password("PasswordOnly");
+    let result = SignupRequest::validate_password("PasswordOnly");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -379,7 +354,7 @@ fn test_validate_password_no_number() {
 #[test]
 fn test_validate_password_too_long() {
     let password = "A".repeat(129) + "1a";
-    let result = SignupPayload::validate_password(&password);
+    let result = SignupRequest::validate_password(&password);
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -389,7 +364,7 @@ fn test_validate_password_too_long() {
 
 #[test]
 fn test_validate_password_non_ascii() {
-    let result = SignupPayload::validate_password("Password1パスワード");
+    let result = SignupRequest::validate_password("Password1パスワード");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -399,7 +374,7 @@ fn test_validate_password_non_ascii() {
 
 #[test]
 fn test_validate_password_emoji() {
-    let result = SignupPayload::validate_password("Password1🔒");
+    let result = SignupRequest::validate_password("Password1🔒");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
@@ -412,14 +387,14 @@ fn test_validate_password_max_length_allowed() {
     // Test that exactly 128 characters is okay (with required chars)
     let password = "A".to_string() + &"a".repeat(126) + "1";
     assert_eq!(password.len(), 128);
-    assert!(SignupPayload::validate_password(&password).is_ok());
+    assert!(SignupRequest::validate_password(&password).is_ok());
 }
 
 // ===== Signup Payload Validation Tests =====
 
 #[test]
 fn test_validate_signup_payload_valid() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
@@ -430,7 +405,7 @@ fn test_validate_signup_payload_valid() {
 
 #[test]
 fn test_validate_signup_payload_empty_email() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
@@ -443,7 +418,7 @@ fn test_validate_signup_payload_empty_email() {
 
 #[test]
 fn test_validate_signup_payload_invalid_email() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "not-an-email".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
@@ -456,7 +431,7 @@ fn test_validate_signup_payload_invalid_email() {
 
 #[test]
 fn test_validate_signup_payload_empty_first_name() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "".to_string(),
         last_name: "Doe".to_string(),
@@ -469,7 +444,7 @@ fn test_validate_signup_payload_empty_first_name() {
 
 #[test]
 fn test_validate_signup_payload_empty_last_name() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "".to_string(),
@@ -482,7 +457,7 @@ fn test_validate_signup_payload_empty_last_name() {
 
 #[test]
 fn test_validate_signup_payload_first_name_too_long() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "a".repeat(51),
         last_name: "Doe".to_string(),
@@ -498,7 +473,7 @@ fn test_validate_signup_payload_first_name_too_long() {
 
 #[test]
 fn test_validate_signup_payload_last_name_too_long() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "a".repeat(51),
@@ -514,7 +489,7 @@ fn test_validate_signup_payload_last_name_too_long() {
 
 #[test]
 fn test_validate_signup_payload_weak_password() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
@@ -527,7 +502,7 @@ fn test_validate_signup_payload_weak_password() {
 
 #[test]
 fn test_validate_signup_payload_whitespace_trimming() {
-    let payload = SignupPayload {
+    let payload = SignupRequest {
         email: "  test@example.com  ".to_string(),
         first_name: "  John  ".to_string(),
         last_name: "  Doe  ".to_string(),
@@ -630,6 +605,8 @@ fn test_panic_handler() {
 
 // INTEGRATION TESTS
 
+static mut PORT: u16 = 0;
+
 #[tokio::test]
 #[serial]
 async fn test_endpoints() {
@@ -656,7 +633,7 @@ async fn test_endpoints() {
     }
 
     let pool = db::create_pool().await;
-    match migrate!("./migrations").run(&pool).await {
+    match migrate!().run(&pool).await {
         Ok(_) => (),
         Err(sqlx::migrate::MigrateError::VersionMismatch(_)) => {
             eprintln!("migrations version mismatch; assuming DB already prepared. Skipping.");
@@ -669,11 +646,11 @@ async fn test_endpoints() {
     let cookie_key = Key::generate();
     let account_routes = controllers::account::account_routes();
     let itinerary_routes = controllers::itinerary::itinerary_routes();
-    let event_routes = controllers::event::event_routes();
+    let chat_routes = controllers::chat::chat_routes();
     let api_routes = Router::new()
         .nest("/account", account_routes)
-        .nest("/itinerary", itinerary_routes)
-        .nest("/event", event_routes);
+        .nest("/itinerary", itinerary_routes);
+        // .nest("/chat", chat_routes);
     let app = Router::new()
         .nest("/api", api_routes)
         .layer(Extension(pool.clone()))
@@ -682,36 +659,33 @@ async fn test_endpoints() {
 
     // Bind to ephemeral port and spawn server
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
-    let addr = listener.local_addr().unwrap();
+    unsafe {PORT = listener.local_addr().unwrap().port()};
     let server = axum::Server::from_tcp(listener)
         .unwrap()
         .serve(app.into_make_service());
     tokio::spawn(server);
 
-    let hc = httpc_test::new_client(format!("http://localhost:{}", addr.port())).unwrap();
-
     tokio::join!(
-    	async {test_signup_and_login_happy_path(&hc, &cookie_key).await},
-     	async {test_auth_required_for_me_endpoint(&hc).await},
-     	async {test_signup_conflict_on_duplicate_email(&hc).await},
-     	async {test_http_signup_and_login_flow(&hc).await},
-        async {test_http_login_invalid_credentials(&hc).await},
-	    async {test_validate_with_bad_and_good_cookie(&hc).await},
-	    async {test_current_endpoint_returns_account(&hc).await},
-	    async {test_update_endpoint_returns_account(&hc).await},
-	    async {test_update_endpoint_partial_fields(&hc).await},
-	    async {test_update_endpoint_with_preferences(&hc).await},
-	    async {test_saved_itineraries_endpoint(&hc).await},
-	    async {test_get_itinerary_endpoint(&hc).await},
-	    async {test_get_itinerary_events_endpoint(&hc).await},
-	    async {test_itinerary_endpoints_require_auth(&hc).await},
-	    async {test_event_endpoints_require_auth(&hc).await},
-	    async {test_get_event_endpoint(&hc).await},
+    	test_signup_and_login_happy_path(&cookie_key),
+     	test_auth_for_all_required(),
+     	test_signup_conflict_on_duplicate_email(),
+     	test_http_signup_and_login_flow(),
+        test_http_login_invalid_credentials(),
+	    test_validate_with_bad_and_good_cookie(),
+	    test_current_endpoint_returns_account(),
+	    test_update_endpoint_returns_account(),
+	    test_update_endpoint_partial_fields(),
+	    test_update_endpoint_with_preferences(),
+	    test_saved_itineraries_endpoint(),
+	    test_get_itinerary_endpoint(),
+	    test_signup_logout(),
+		test_invalid_signup_email(),
         // just throw all the tests in here
     );
 }
 
-async fn test_signup_and_login_happy_path(hc: &Client, key: &Key) {
+async fn test_signup_and_login_happy_path(key: &Key) {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("user+{}@example.com", unique);
 
@@ -728,7 +702,7 @@ async fn test_signup_and_login_happy_path(hc: &Client, key: &Key) {
         )
         .await
         .unwrap();
-    assert_eq!(resp.status().as_u16(), 201);
+    assert_eq!(resp.status().as_u16(), 200);
 
     // Login
     let resp = hc
@@ -759,54 +733,39 @@ async fn test_signup_and_login_happy_path(hc: &Client, key: &Key) {
     assert!(exp > now);
 }
 
-async fn test_auth_required_for_me_endpoint(hc: &Client) {
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("auth_test+{}@example.com", unique);
+async fn test_auth_for_all_required() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
 
-    // Try to access /me without authentication (should fail)
-    let resp = hc
-        .do_post("/api/account/validate", json!({}))
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 401, "Accessing /me without auth should return 401");
+    let account_update_payload = json!({});
+    let chat_update_message_payload = json!({
+    	"message_id": 0,
+    	"new_text": ""
+    });
 
-    // First, signup a user (should work without auth)
-    let resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Auth",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 201, "Signup should work without authentication");
+    for res in futures::future::join_all(vec![
+		hc.do_get("/api/account/current"),
+		hc.do_get("/api/account/validate"),
+		hc.do_get("/api/account/logout"),
+		// hc.do_get("/api/chat/chats"),
+		// hc.do_get("/api/chat/messagePage"),
+		// hc.do_get("/api/chat/sendMessage"),
+		hc.do_get("/api/itinerary/saved"),
+		hc.do_get("/api/itinerary/:id"),
+    ]).await.iter() {
+    	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
+    }
 
-    // Login to get auth cookie
-    let resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 200, "Login should succeed");
-
-    // Now try to access /me with auth cookie (should work)
-    let resp = hc
-        .do_post("/api/account/validate", json!({}))
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 200, "Accessing /validate with auth should return 200");
+    for res in futures::future::join_all(vec![
+		hc.do_post("/api/account/update", account_update_payload),
+		// hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
+		// hc.do_post("/api/itinerary/save", itinerary_save_payload),
+    ]).await.iter() {
+    	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
+    }
 }
 
-async fn test_signup_conflict_on_duplicate_email(hc: &Client) {
+async fn test_signup_conflict_on_duplicate_email() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
 	let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("dupe+{}@example.com", unique);
 
@@ -823,7 +782,7 @@ async fn test_signup_conflict_on_duplicate_email(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(resp1.status().as_u16(), 201);
+    assert_eq!(resp1.status().as_u16(), 200);
 
     // Second signup with same email should 409
     let resp2 = hc
@@ -841,7 +800,8 @@ async fn test_signup_conflict_on_duplicate_email(hc: &Client) {
     assert_eq!(resp2.status().as_u16(), 409);
 }
 
-async fn test_http_signup_and_login_flow(hc: &Client) {
+async fn test_http_signup_and_login_flow() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
 	let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("user+{}@example.com", unique);
 
@@ -874,7 +834,8 @@ async fn test_http_signup_and_login_flow(hc: &Client) {
     assert!(resp.status().is_success(), "login failed: {}", resp.status());
 }
 
-async fn test_http_login_invalid_credentials(hc: &Client) {
+async fn test_http_login_invalid_credentials() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let bad_email = format!("badEmail+{}@example.com", unique);
 
@@ -893,7 +854,7 @@ async fn test_http_login_invalid_credentials(hc: &Client) {
 
     //first need to sign in as an account
     let good_email = format!("goodEmail+{}@example.com", unique);
-    let signup_stuff = hc 
+    let signup_res = hc
         .do_post(
             "/api/account/signup",
             json!({
@@ -905,7 +866,8 @@ async fn test_http_login_invalid_credentials(hc: &Client) {
         )
         .await
         .unwrap();
-    
+    assert_eq!(signup_res.status().as_u16(), 200, "expected 200; got {}", resp.status());
+
     // login with a correct email, but the wrong password
     let resp = hc
         .do_post(
@@ -920,10 +882,11 @@ async fn test_http_login_invalid_credentials(hc: &Client) {
     assert_eq!(resp.status().as_u16(), 400, "expected 400 for valid email but invalid password, but got {}", resp.status());
 }
 
-async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
+async fn test_validate_with_bad_and_good_cookie() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     // No cookie (treated similarly to bad/invalid cookie): expect unauthorized
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 401, "Missing/invalid cookie should return 401");
@@ -944,7 +907,7 @@ async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup.status().as_u16(), 201);
+    assert_eq!(signup.status().as_u16(), 200);
 
     let login = hc
         .do_post(
@@ -960,14 +923,14 @@ async fn test_validate_with_bad_and_good_cookie(hc: &Client) {
 
     // Client should now hold the private cookie; call validate and expect 200
     let resp = hc
-        .do_post("/api/account/validate", json!({}))
+        .do_get("/api/account/validate")
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
 }
 
-
-async fn test_current_endpoint_returns_account(hc: &Client) {
+async fn test_current_endpoint_returns_account() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("current+{}@example.com", unique);
 
@@ -984,20 +947,7 @@ async fn test_current_endpoint_returns_account(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /current endpoint returns Account struct
     let current_resp = hc
@@ -1011,7 +961,8 @@ async fn test_current_endpoint_returns_account(hc: &Client) {
     assert!(current_resp.status().is_success());
 }
 
-async fn test_update_endpoint_returns_account(hc: &Client) {
+async fn test_update_endpoint_returns_account() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("update+{}@example.com", unique);
 
@@ -1028,20 +979,7 @@ async fn test_update_endpoint_returns_account(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /update endpoint with all fields
     let update_resp = hc
@@ -1066,7 +1004,8 @@ async fn test_update_endpoint_returns_account(hc: &Client) {
     assert!(update_resp.status().is_success());
 }
 
-async fn test_update_endpoint_partial_fields(hc: &Client) {
+async fn test_update_endpoint_partial_fields() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("partial+{}@example.com", unique);
 
@@ -1083,20 +1022,7 @@ async fn test_update_endpoint_partial_fields(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /update endpoint with only some fields
     let update_resp = hc
@@ -1115,7 +1041,8 @@ async fn test_update_endpoint_partial_fields(hc: &Client) {
     assert!(update_resp.status().is_success());
 }
 
-async fn test_update_endpoint_with_preferences(hc: &Client) {
+async fn test_update_endpoint_with_preferences() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("prefs+{}@example.com", unique);
 
@@ -1132,20 +1059,7 @@ async fn test_update_endpoint_with_preferences(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /update endpoint with enum preferences
     let update_resp = hc
@@ -1164,7 +1078,8 @@ async fn test_update_endpoint_with_preferences(hc: &Client) {
     assert!(update_resp.status().is_success());
 }
 
-async fn test_saved_itineraries_endpoint(hc: &Client) {
+async fn test_saved_itineraries_endpoint() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("saved_itineraries+{}@example.com", unique);
 
@@ -1181,20 +1096,7 @@ async fn test_saved_itineraries_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /saved endpoint returns user's itineraries
     let saved_resp = hc
@@ -1207,7 +1109,8 @@ async fn test_saved_itineraries_endpoint(hc: &Client) {
     assert!(saved_resp.status().is_success());
 }
 
-async fn test_get_itinerary_endpoint(hc: &Client) {
+async fn test_get_itinerary_endpoint() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("get_itinerary+{}@example.com", unique);
 
@@ -1224,20 +1127,7 @@ async fn test_get_itinerary_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
     // Test /{id} endpoint with non-existent itinerary (should return 404)
     let get_resp = hc
@@ -1254,86 +1144,10 @@ async fn test_get_itinerary_endpoint(hc: &Client) {
     assert_eq!(invalid_resp.status().as_u16(), 400);
 }
 
-async fn test_get_itinerary_events_endpoint(hc: &Client) {
+async fn test_signup_logout() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("itinerary_events+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Itinerary",
-                "last_name": "Events",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
-
-    // Login to get auth cookie
-    let login_resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
-
-    // Test /{id}/events endpoint with non-existent itinerary (should return 404)
-    let events_resp = hc
-        .do_get("/api/itinerary/999999/events")
-        .await
-        .unwrap();
-    assert_eq!(events_resp.status().as_u16(), 404);
-
-    // Test with invalid ID format (should return 400)
-    let invalid_resp = hc
-        .do_get("/api/itinerary/invalid/events")
-        .await
-        .unwrap();
-    assert_eq!(invalid_resp.status().as_u16(), 400);
-}
-
-async fn test_itinerary_endpoints_require_auth(hc: &Client) {
-    // Test that itinerary endpoints require authentication
-    let saved_resp = hc
-        .do_get("/api/itinerary/saved")
-        .await
-        .unwrap();
-    assert_eq!(saved_resp.status().as_u16(), 401, "Saved itineraries should require auth");
-
-    let get_resp = hc
-        .do_get("/api/itinerary/1")
-        .await
-        .unwrap();
-    assert_eq!(get_resp.status().as_u16(), 401, "Get itinerary should require auth");
-
-    let events_resp = hc
-        .do_get("/api/itinerary/1/events")
-        .await
-        .unwrap();
-    assert_eq!(events_resp.status().as_u16(), 401, "Get itinerary events should require auth");
-}
-
-async fn test_event_endpoints_require_auth(hc: &Client) {
-    // Test that event endpoints require authentication
-    let get_resp = hc
-        .do_get("/api/event/1")
-        .await
-        .unwrap();
-    assert_eq!(get_resp.status().as_u16(), 401, "Event endpoint should require auth");
-}
-
-async fn test_get_event_endpoint(hc: &Client) {
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("get_event+{}@example.com", unique);
+    let email = format!("login_then_logout+{}@example.com", unique);
 
     // Signup user
     let signup_resp = hc
@@ -1348,32 +1162,46 @@ async fn test_get_event_endpoint(hc: &Client) {
         )
         .await
         .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 201);
+    assert_eq!(signup_resp.status().as_u16(), 200);
 
-    // Login to get auth cookie
-    let login_resp = hc
+    let cookie = signup_resp.res_cookie("auth-token").unwrap();
+    assert!(cookie.expires.unwrap() > SystemTime::now());
+
+    // Logout
+    let logout_resp = hc
+        .do_get("/api/account/logout")
+        .await
+        .unwrap();
+    assert_eq!(logout_resp.status().as_u16(), 200);
+
+    let cookie = logout_resp.res_cookie("auth-token").unwrap();
+    assert!(cookie.expires.unwrap() < SystemTime::now());
+
+    // Hit any protected route
+    let validate_res = hc
+        .do_get("/api/account/validate")
+        .await
+        .unwrap();
+    assert_eq!(validate_res.status().as_u16(), 401, "Missing/invalid cookie should return 401");
+}
+
+async fn test_invalid_signup_email() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("invalid_email_{}", unique);
+
+    // Signup user
+    let signup_resp = hc
         .do_post(
-            "/api/account/login",
+            "/api/account/signup",
             json!({
                 "email": email,
+                "first_name": "Get",
+                "last_name": "Event",
                 "password": "Password123"
             }),
         )
         .await
         .unwrap();
-    assert_eq!(login_resp.status().as_u16(), 200);
-
-    // Test /{id} endpoint with non-existent event (should return 404)
-    let get_resp = hc
-        .do_get("/api/event/999999")
-        .await
-        .unwrap();
-    assert_eq!(get_resp.status().as_u16(), 404);
-
-    // Test with invalid ID format (should return 400)
-    let invalid_resp = hc
-        .do_get("/api/event/invalid")
-        .await
-        .unwrap();
-    assert_eq!(invalid_resp.status().as_u16(), 400);
+    assert_eq!(signup_resp.status().as_u16(), 400);
 }

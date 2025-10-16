@@ -16,75 +16,21 @@
  *   UpdatePayload        - Request payload for POST /api/account/update
  *   LoginResponse        - API route response for POST /api/account/login
  *   SignupResponse       - API route response for POST /api/account/signup
- *   ValidateResponse     - API route response for POST /api/account/validate
+ *   ValidateResponse     - API route response for GET /api/account/validate
  *   UpdateResponse       - API route response for POST /api/account/update
  *   CurrentResponse      - API route response for GET  /api/account/current
  */
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-use sqlx::Type;
-
-/// Row model for the `accounts` table.
-/// - Represents a persisted user.
-/// - Fields:
-///   - `id`: Primary key
-///   - `email`: Unique email address
-///   - `password`: Argon2 hashed password
-///   - `first_name`: User first name
-///   - `last_name`: User last name
-///   - `budget_preference`: Optional budget preference enum
-///   - `risk_preference`: Optional risk tolerance enum
-///   - `food_allergies`: Optional text notes
-///   - `disabilities`: Optional text notes
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct Account {
-    pub id: i32,
-    pub email: String,
-    pub password: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub budget_preference: Option<BudgetBucket>, 
-    pub risk_preference: Option<RiskTolerence>,
-    pub food_allergies: Option<String>,
-    pub disabilities: Option<String>,
-    // TODO: More Preferences...
-}
-
-/// Budget preference enum mapped to Postgres `budget_bucket`.
-/// Used in account preferences and returned by account APIs.
-/// - Fields:
-///   - Enum variants representing budget bands
-#[derive(Debug, Serialize, Deserialize, Clone, Type)] 
-#[sqlx(type_name = "budget_bucket")]
-pub enum BudgetBucket {
-    VeryLowBudget,
-    LowBudget,
-    MediumBudget,
-    HighBudget,
-    LuxuryBudget,
-}
-
-/// Risk tolerance enum mapped to Postgres `risk_tolerence`.
-/// Used in account preferences and returned by account APIs.
-/// - Fields:
-///   - Enum variants representing risk appetite
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[sqlx(type_name = "risk_tolerence")]
-pub enum RiskTolerence {
-    ChillVibes,
-    LightFun,
-    Adventurer,
-    RiskTaker,
-}
+use crate::sql_models::{BudgetBucket, RiskTolerence};
 
 /// Request payload for POST `/api/account/login`.
 /// - Fields:
 ///   - `email`: Account email
 ///   - `password`: Plaintext password submitted by the user
 #[derive(Debug, Deserialize)]
-pub struct LoginPayload {
+pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
@@ -94,7 +40,7 @@ pub struct LoginPayload {
 /// - Fields:
 ///   - `email`, `first_name`, `last_name`, `password`
 #[derive(Debug, Deserialize)]
-pub struct SignupPayload {
+pub struct SignupRequest {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
@@ -114,7 +60,7 @@ pub struct SignupPayload {
 ///   - `food_allergies`: Optional new notes
 ///   - `disabilities`: Optional new notes
 #[derive(Debug, Deserialize)]
-pub struct UpdatePayload {
+pub struct UpdateRequest {
     pub email: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -123,36 +69,6 @@ pub struct UpdatePayload {
     pub risk_preference: Option<RiskTolerence>,
     pub food_allergies: Option<String>,
     pub disabilities: Option<String>,
-}
-
-// TODO: More Payloads...
-
-
-/// API route response for POST `/api/account/login`.
-/// - Fields:
-///   - `id`: Authenticated user id
-///   - `token`: Generated token embedded in `auth-token` cookie
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LoginResponse {
-    pub id: i32,
-    pub token: String,
-}
-
-/// API route response for POST `/api/account/signup`.
-/// - Fields:
-///   - `id`: New user id
-///   - `email`: New user email
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SignupResponse {
-    pub id: i32,
-    pub email: String,
-}
-
-/// API route response for POST `/api/account/validate`.
-/// - Fields: `id` of the authenticated user
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ValidateResponse {
-    pub id: i32,
 }
 
 /// API route response for POST `/api/account/update`.
@@ -167,7 +83,7 @@ pub struct ValidateResponse {
 ///   - `risk_preference`: Optional risk enum
 ///   - `food_allergies`: Optional notes
 ///   - `disabilities`: Optional notes
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct UpdateResponse {
     pub id: i32,
     pub email: String,
@@ -182,7 +98,6 @@ pub struct UpdateResponse {
 /// API route response for GET `/api/account/current`.
 /// - Full, safe-to-return account profile for current user
 /// - Fields:
-///   - `id`: User id
 ///   - `email`: Email
 ///   - `first_name`: First name
 ///   - `last_name`: Last name
@@ -190,22 +105,18 @@ pub struct UpdateResponse {
 ///   - `risk_preference`: Optional risk enum
 ///   - `food_allergies`: Optional notes
 ///   - `disabilities`: Optional notes
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CurrentResponse {
-    pub id: i32,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
     pub budget_preference: Option<BudgetBucket>,
     pub risk_preference: Option<RiskTolerence>,
     pub food_allergies: Option<String>,
-    pub disabilities: Option<String>,
+    pub disabilities: Option<String>
 }
 
-// TODO: More Responses...
-
-
-impl SignupPayload {
+impl SignupRequest {
     /// Validate email format using regex.
     /// Validate email format using regex
     pub fn validate_email(email: &str) -> bool {

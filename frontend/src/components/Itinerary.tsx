@@ -27,12 +27,12 @@ const Itinerary: React.FC = () => {
     { id: "4", title: "Work on itinerary", desc: "Grind time" }
   ]);
 
-  const onDragStart = (e: React.DragEvent, event: Event) => { 
+  const onDragStart = (e: React.DragEvent, event: Event) => {
     e.dataTransfer.setData("eventId", event.id); //grabs the event block (and its data based on id)
   };
 
   const onDrop = (e: React.DragEvent, timeIndex: number) => {
-    const eventId = e.dataTransfer.getData("eventId"); 
+    const eventId = e.dataTransfer.getData("eventId");
     const draggedEvent =
       unassignedEvents.find((ev) => ev.id === eventId) || //checks the unassigned events or timeblocks for the event id
       timeBlocks.flatMap((tb) => tb.events).find((ev) => ev.id === eventId);
@@ -48,8 +48,8 @@ const Itinerary: React.FC = () => {
               ...tb,
               events: [
                 ...tb.events.filter((ev) => ev.id !== eventId),
-                draggedEvent,
-              ],
+                draggedEvent
+              ]
             }
           : { ...tb, events: tb.events.filter((ev) => ev.id !== eventId) }
       )
