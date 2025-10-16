@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import "../styles/LoginSignup.css";
+import { useNavigate } from "react-router-dom";
+import "../styles/SignUp.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
 
-export default function Login() {
+export default function Signup() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,8 +14,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // stops the page from refreshing
-    console.log(email, password, firstName, lastName);
+    e.preventDefault();
 
     // sanitize user input
     const emailError = logic.checkIfValidEmail(email);
@@ -49,81 +48,102 @@ export default function Login() {
         last_name: lastName,
         password
       });
-
-      console.log("Account creation successful");
+      
       setError("");
       navigate("/home");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.message || "Sign Up failed.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Sign Up failed.";
+      setError(message);
     }
   };
 
   return (
-    <div className="login-container">
-      {/* Navigation */}
-      <nav>
-        <Link to="/">Index</Link>
-      </nav>
-      <div className="login-box">
-        <h1>Create Account</h1>
-        <form onSubmit={handleSubmit}>
-          <label>
-            Email:
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            First Name:
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Last Name:
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Password:
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Re-Enter Password:
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </label>
-
-          <button type="submit">Create Account</button>
-        </form>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        <div className="login-actions">
-          <Link to="/login" className="back-to-login-button">
-            Already Have An Account?
-          </Link>
+    <div className="auth-content">
+      <div className="login-container">
+        <div className="signup-page-content">
+          <section className="signup-marketing">
+            <div className="signup-brand">Journey</div>
+            
+            <p className="signup-sub">
+              Create your account to start planning with smart itineraries and
+              collaborative chat.
+            </p>
+            <div className="signup-bullets">
+              <div className="bullet-item">
+                <div className="bullet-content">
+                  <div className="bullet-title">Personalized AI Planning</div>
+                  <div className="bullet-desc">Get personalized trip recommendations.</div>
+                  <div className="bullet-desc">Fast, accurate, and tailored to your needs.</div>
+                </div>
+              </div>
+              <div className="bullet-item">
+                <div className="bullet-content">
+                  <div className="bullet-title">Tailor itineraries together with collaborative chat</div>
+                  <div className="bullet-desc">Work with AI to refine and customize your travel plans</div>
+                  <div className="bullet-desc">Agents will grow with you and your preferences.</div>
+                </div>
+              </div>
+              <div className="bullet-item">
+                <div className="bullet-content">
+                  <div className="bullet-title">Save and share your itineraries</div>
+                  <div className="bullet-desc">Save and edit your plans with ease.</div>
+                  <div className="bullet-desc">Share your itineraries with friends and family.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <div className="login-box signup-form-panel">
+            <h1>Create your account</h1>
+            <form onSubmit={handleSubmit}>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                First Name
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Last Name
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Re-Enter Password
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit">Get Started</button>
+            </form>
+            {error && <p>{error}</p>}
+          </div>
         </div>
       </div>
     </div>
