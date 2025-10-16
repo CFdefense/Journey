@@ -38,7 +38,7 @@ export function ProtectedRoute({ children }: any) {
     console.log("loading: ", loading);
     console.log("authorized: ", authorized);
     if (loading) return <Loading />;
-    if (!authorized) return <Navigate to="/login" replace />;
+    if (authorized === false) return <Navigate to="/login" replace />;
   }
 
   return children;
@@ -75,7 +75,7 @@ export function InverseProtectedRoute({ children }: any) {
 
   if (!bypassProtection()) {
     if (loading) return <Loading />;
-    if (authorized) return <Navigate to="/home" replace />;
+    if (authorized === true) return <Navigate to="/home" replace />;
   }
 
   return children;

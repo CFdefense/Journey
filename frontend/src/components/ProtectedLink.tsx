@@ -47,7 +47,7 @@ export function ProtectedLink({ authTo, authChildren, unauthTo, unauthChildren }
     console.log("loading: ", loading);
     console.log("authorized: ", authorized);
     if (loading) return <Loading />;
-    if (authorized) {
+    if (authorized === true) {
       return <Link to={authTo} replace>{authChildren}</Link>;
     } else {
       return <Link to={unauthTo} replace>{unauthChildren}</Link>;
