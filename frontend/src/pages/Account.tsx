@@ -7,21 +7,26 @@ export default function Account() {
   const onLogout = async () => {
     console.log("Logging out");
     try {
-      apiLogout();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      console.error(e);
+      // Wait for the backend to actually delete the cookie
+      await apiLogout();
+
+      // Optionally force a full reload to clear client state and re-check cookie
+      window.location.href = "/"; // safer than navigate() for auth resets
+    } catch (e) {
+      console.error("Logout error:", e);
+      // Still go home, but log error for debugging
+      window.location.href = "/";
     }
-    navigate("/");
   };
 
   return (
     <div>
       {/* Navigation */}
       <nav>
-        <Link to="/">Index</Link>| <Link to="/home">Home</Link>|{" "}
+        <Link to="/">Index</Link> | <Link to="/home">Home</Link> |{" "}
         <Link to="/view">View</Link>
       </nav>
+
       <h1>Account Page</h1>
       <button onClick={onLogout}>Logout</button>
     </div>
