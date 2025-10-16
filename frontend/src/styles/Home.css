@@ -1,0 +1,31 @@
+/* src/styles/Home.css */
+
+.home-page {
+  padding: 2rem;
+}
+
+.home-layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 80vh; /* adjust as needed */
+}
+
+/* Sidebar styling */
+.home-layout > .sidebar {
+  flex: 1;      /* takes less space */
+  min-width: 200px;
+}
+
+/* Chat window styling */
+.home-layout > .chat-container {
+  flex: 2;      /* larger column */
+  min-width: 300px;
+}
+
+/* Itinerary styling */
+.home-layout > .itinerary-section {
+  flex: 2;      /* similar width to chat window */
+  min-width: 300px;
+}

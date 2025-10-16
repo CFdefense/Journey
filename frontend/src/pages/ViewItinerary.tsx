@@ -1,15 +1,24 @@
-import { Link } from "react-router-dom";
-import Itinerary from "../components/Itinerary.tsx";
+import Itinerary from "../components/Itinerary";
+import UnassignedEvents from "../components/UnassignedEvents";
+import type { Event } from "../components/UnassignedEvents";
+
 import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
+  const unassignedEvents: Event[] = [
+    { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
+    { id: "2", title: "Meeting", desc: "Capping discussion" },
+  ];
+
+  const onDragStart = (e: React.DragEvent, event: Event) => {
+    e.dataTransfer.setData("eventId", event.id);
+    e.dataTransfer.setData("eventTitle", event.title);
+    e.dataTransfer.setData("eventDesc", event.desc || "");
+  };
+
   return (
     <div className="view-page">
-      {/* Navigation */}
-      <nav>
-        <Link to="/">Index</Link>| <Link to="/home">Home</Link>|{" "}
-        <Link to="/account">Account</Link>
-      </nav>
+      <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} />
       <Itinerary />
       <button>Edit with AI</button>
     </div>

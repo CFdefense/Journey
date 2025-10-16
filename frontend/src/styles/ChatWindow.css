@@ -1,0 +1,107 @@
+/* Chat container */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 80vh;
+  width: 400px;
+  margin: auto;
+  background: #FFE3B3; /* light cream background */
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-top: 6px solid #30A0E0;
+}
+
+/* Scrollable message area */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Base message style */
+.chat-message {
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Sent messages (user) */
+.chat-message.user {
+  align-self: flex-end;
+  background: linear-gradient(90deg, #00C897, #30A0E0);
+  color: #ffffff;
+  border-top-right-radius: 0;
+}
+
+/* Received messages (bot) */
+.chat-message.bot {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 2px solid #30A0E0;
+  color: #006BBB;
+  border-top-left-radius: 0;
+}
+
+/* Input area */
+.message-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-top: 2px solid #30A0E0;
+  background: #ffffff; /* unified background for both input and button */
+  border-radius: 8px;
+}
+
+/* Input box */
+.message-box {
+  flex: 1;
+  border: 2px solid #30A0E0;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  background: #f8fcff; /* soft blue-tinted background for readability */
+  color: #003b60; /* dark text for contrast */
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+
+.message-box::placeholder {
+  color: #8bbad9;
+  transition: color 0.3s;
+}
+
+.message-box:focus::placeholder {
+  color: transparent; /* disappears when typing */
+}
+
+.message-box:focus {
+  border-color: #006BBB;
+  outline: none;
+  background: #ffffff;
+  box-shadow: 0 0 8px #30A0E0;
+}
+
+/* Send button */
+.send-button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #00C897, #30A0E0);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.send-button:hover {
+  background: linear-gradient(90deg, #30A0E0, #00C897);
+  transform: translateY(-2px);
+}
