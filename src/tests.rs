@@ -1176,6 +1176,13 @@ async fn test_signup_logout() {
 
     let cookie = logout_resp.res_cookie("auth-token").unwrap();
     assert!(cookie.expires.unwrap() < SystemTime::now());
+
+    // Hit any protected route
+    let validate_res = hc
+        .do_get("/api/account/validate")
+        .await
+        .unwrap();
+    assert_eq!(validate_res.status().as_u16(), 401, "Missing/invalid cookie should return 401");
 }
 
 async fn test_invalid_signup_email() {
