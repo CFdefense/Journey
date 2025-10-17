@@ -147,3 +147,51 @@ export async function apiValidate(): Promise<boolean> {
 		throw error;
 	}
 }
+
+/// Calls current
+///
+/// # Method
+/// Sends a `GET /api/account/current` request set cookie as expired.
+///
+/// # Returns whether current user has filled out preferences or not.
+/// # Throws Error with message.
+export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
+	console.log("Calling validate API");
+
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/account/current`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: "include" // needed param for dealing with cookies
+		});
+
+
+		// Read the response body as JSON if possible
+		const data = await response.json().catch(() => null);
+		console.log("Response body:", data);
+		
+		// check if any preferences were not yet filled out 
+		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {
+			return false;
+		}
+
+		// handle all errors from backend
+		if (!response.ok) {
+			if (response.status === 401) {
+				throw new Error("Invalid Credentials.")
+			} else if (response.status === 500) {
+				throw new Error("Server error.");
+			} else {
+				throw new Error(`Unexpected error: ${response.status}`);
+			}
+		}
+		
+		return true;
+	
+	} catch (error) {
+		console.error("Current API error: ", error);
+		throw error;
+	}
+}

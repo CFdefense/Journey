@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import Itinerary from "../components/Itinerary";
 import "../styles/Home.css";
+import { FinishAccountPopup } from "../components/FinishAccountPopup";
+import { apiCheckIfPreferencesPopulated } from "../api/account";
 
 interface Message {
   id: number;
@@ -22,6 +24,23 @@ export default function Home() {
   // current chat in window 
   //TODO use this to determine which itinerary to show
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
+
+  const [showFinishPopup, setShowFinishPopup] = useState(false);
+
+    useEffect(() => {
+      async function fetchPreferences() {
+        try {
+          const preferencesFilled = await apiCheckIfPreferencesPopulated();
+          console.log("Preferences filled:", preferencesFilled);
+          setShowFinishPopup(!preferencesFilled); // show only if false
+        } catch (err) {
+          console.error("Error calling apiCheckIfPreferencesPopulated:", err);
+          setShowFinishPopup(true); // any auth error just show the popup 
+        }
+      }
+
+      fetchPreferences();
+    }, []);
 
   // Create a new blank chat
   const handleNewChat = () => {
@@ -97,6 +116,7 @@ const handleSendMessage = (text: string) => {
     <div className="home-page">
     <h1>Where do you plan to explore?</h1>
     <div className="home-layout">
+      {showFinishPopup && <FinishAccountPopup />}
       <PrevChatSideBar
         chats={chats}
         activeChatId={activeChatId}
