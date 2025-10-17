@@ -12,7 +12,7 @@ export default function Navbar({ page }: NavbarProps) {
           <div className="auth-cta">
             <span>Don't have an account?</span>
             <Link to="/signup" className="auth-cta-link">
-              Sign up
+              Sign up →
             </Link>
           </div>
         );
