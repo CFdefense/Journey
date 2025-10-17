@@ -171,7 +171,7 @@
   background: #f3f6fb;
   border: none;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
   transition: border-color 0.2s, background-color 0.2s;
   border-radius: 12px;
 }
@@ -187,9 +187,11 @@
 }
 
 .field input {
-  height: 28px;
+  height: auto;
+  min-height: 28px;
   width: 100%;
-  padding: 0 14px 0 10px;
+  max-width: 100%;
+  padding: 10px 14px 10px 10px;
   font-size: 1rem;
   color: #0b1220;
   background: transparent;
@@ -197,6 +199,10 @@
   appearance: none;
   -webkit-appearance: none;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .field input:-webkit-autofill {
