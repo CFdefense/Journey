@@ -13,9 +13,9 @@ use sqlx::PgPool;
 use tracing::debug;
 
 use crate::error::{ApiResult, AppError};
-use crate::http_models::event::Event;
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
+use crate::sql_models::event::EventRow;
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryJoinedRow;
 use crate::sql_models::TimeOfDay;
@@ -26,6 +26,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 		EventListJoinRow,
 		r#"
 		SELECT
+			e.id,
 			el.time_of_day as "time_of_day: TimeOfDay",
 			e.street_address,
 			e.postal_code,
@@ -45,7 +46,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 }
 
 /// Filter-maps the slice of [EventListJoinRow]s to a Vec of [Event]s
-fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<Event> {
+fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<EventRow> {
 	let mut events = Vec::with_capacity(el.len());
 	for e in el.iter() {
 		if e.time_of_day == tod {
@@ -100,6 +101,7 @@ pub async fn api_saved_itineraries(
     	let event_list = itinerary_events(itinerary.id, &pool).await?;
 
 		res.push(Itinerary {
+			id: itinerary.id,
 		    date: itinerary.date,
 		    morning_events: as_events(event_list.as_slice(), TimeOfDay::Morning),
 		    noon_events: as_events(event_list.as_slice(), TimeOfDay::Noon),
@@ -158,6 +160,7 @@ pub async fn api_get_itinerary(
         EventListJoinRow,
         r#"
 		SELECT
+			e.id,
 		    el.time_of_day as "time_of_day: TimeOfDay",
 		    e.street_address,
 		    e.postal_code,
@@ -176,6 +179,7 @@ pub async fn api_get_itinerary(
     .map_err(|e| AppError::from(e))?;
 
     Ok(Json(Itinerary {
+    	id: itinerary.id,
 	    date: itinerary.date,
 	    morning_events: as_events(event_list.as_slice(), TimeOfDay::Morning),
 	    noon_events: as_events(event_list.as_slice(), TimeOfDay::Noon),
@@ -189,7 +193,8 @@ pub async fn api_save(
     Extension(pool): Extension<PgPool>,
     Json(itinerary): Json<Itinerary>
 ) -> ApiResult<()> {
-	todo!()
+	// TODO: delete temporary data and actually implement controller
+	Ok(())
 }
 
 /// Create the itinerary routes with authentication middleware.
@@ -201,11 +206,18 @@ pub async fn api_save(
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
-///
+#[cfg(test)]
 pub fn itinerary_routes() -> Router {
     Router::new()
         .route("/saved", get(api_saved_itineraries))
-        // .route("/save", post(api_save))
+        .route("/:id", get(api_get_itinerary))
+        .route_layer(axum::middleware::from_fn(middleware_auth))
+}
+#[cfg(not(test))]
+pub fn itinerary_routes() -> Router {
+    Router::new()
+        .route("/saved", get(api_saved_itineraries))
+        .route("/save", post(api_save))
         .route("/:id", get(api_get_itinerary))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }
