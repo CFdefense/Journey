@@ -11,6 +11,10 @@ export type SavedResponse = {
     itineraries: [Itinerary]
 }
 
+export type SaveResponse = {
+	id: number
+}
+
 export type EventRow = {
 	id: number,
 	street_address: string,

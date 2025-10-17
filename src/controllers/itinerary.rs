@@ -192,9 +192,9 @@ pub async fn api_save(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
     Json(itinerary): Json<Itinerary>
-) -> ApiResult<()> {
+) -> ApiResult<SaveResponse> {
 	// TODO: delete temporary data and actually implement controller
-	Ok(())
+	Ok(SaveResponse {id: 1})
 }
 
 /// Create the itinerary routes with authentication middleware.
