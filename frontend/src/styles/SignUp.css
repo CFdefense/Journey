@@ -45,12 +45,29 @@
   justify-content: flex-end;
 }
 
+.auth-brand {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
+
 .auth-page--signup .auth-brand {
   color: #000000;
 }
 
+.auth-cta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .auth-page--signup .auth-cta {
   color: rgba(0, 0, 0, 0.7);
+}
+
+.auth-cta-link {
+  text-decoration: none;
+  font-weight: 700;
 }
 
 .auth-page--signup .auth-cta-link {
@@ -67,24 +84,26 @@
   width: 100%;
 }
 
-.login-box {
+.signup-box {
   width: 420px;
+  max-width: 100%;
   text-align: left;
   padding: 2.5rem;
   background: transparent;
   border: none;
   box-shadow: none;
+  box-sizing: border-box;
 }
 
-.login-box h1 {
+.signup-box h1 {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.0rem;
   color: #0b1220;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 500;
 }
 
-.login-box h1::after {
+.signup-box h1::after {
   content: "";
   display: block;
   width: 180px;
@@ -95,73 +114,107 @@
 }
 
 
-.login-box label {
+.signup-box label {
   display: block;
   margin-bottom: 0.2rem;
   font-weight: 500;
   color: #203247;
 }
 
-.login-box input {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.signup-box .field {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
   width: 100%;
-  padding: 0.75rem 0.9rem;
-  margin-bottom: 0.85rem;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-  background-color: #ffffff;
-  color: #0b1220;
-}
-
-.login-box input:-webkit-autofill,
-.login-box input:-webkit-autofill:hover,
-.login-box input:-webkit-autofill:focus,
-.login-box input:-webkit-autofill:active {
-  -webkit-text-fill-color: #0b1220;
-  box-shadow: 0 0 0px 1000px #ffffff inset !important;
-  border: 1px solid rgba(0, 0, 0, 0.15) !important;
-  transition: background-color 5000s ease-in-out 0s;
-  caret-color: #0b1220;
-}
-
-.login-box input:focus:-webkit-autofill {
-  border-color: rgba(48, 160, 224, 0.7) !important;
-  box-shadow: 0 0 0 3px rgba(48, 160, 224, 0.25), 0 0 0px 1000px #ffffff inset !important;
-}
-
-.login-box input:-moz-autofill {
-  box-shadow: 0 0 0px 1000px #ffffff inset;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-}
-
-.login-box input:focus {
-  border-color: rgba(48, 160, 224, 0.7);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(48, 160, 224, 0.25);
-  background-color: #ffffff;
-}
-
-.login-box button {
-  display: block;
-  width: clamp(260px, 70%, 520px);
-  max-width: 100%;
-  margin: 0.85rem auto 0;
-  padding: 0.85rem;
-  background: linear-gradient(90deg, var(--blue), var(--light-blue));
+  margin-bottom: 1.75rem;
+  background: #f3f6fb;
   border: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 0.2s, background-color 0.2s;
+  border-radius: 12px;
+}
+
+.signup-box .field__icon {
+  height: 48px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(11, 18, 32, 0.65);
+  background: inherit;
+}
+
+.signup-box .field input {
+  height: 28px;
+  width: 100%;
+  padding: 0 14px 0 10px;
+  font-size: 1rem;
+  color: #0b1220;
+  background: transparent;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  line-height: 1.2;
+  margin-bottom: 0;
+  border: none;
+}
+
+.signup-box .field input:focus,
+.signup-box .field input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.signup-box .field input::placeholder {
+  color: rgba(11, 18, 32, 0.6);
+}
+
+.signup-box .field:focus-within {
+  background: #eef3f9;
+  box-shadow: none;
+}
+
+.signup-box .field:focus-within .field__icon {
+  color: #2a90cb;
+  background: inherit;
+}
+
+.signup-box button {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 1.25rem auto 0;
+  padding: 1rem;
+  background: #000000;
+  border: none;
+  border-radius: 12px;
   color: #ffffff;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.05rem;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
+  box-sizing: border-box;
 }
 
-.login-box button:hover {
-  background: linear-gradient(90deg, var(--light-blue), var(--blue));
+.signup-box button:hover {
+  background: #1a1a1a;
   transform: translateY(-1px);
 }
 
-.login-box p {
+.signup-box p {
   text-align: center;
   margin-top: 10px;
   color: #ff4d3f;
@@ -239,7 +292,7 @@
 }
 
 @media (min-width: 980px) {
-  .login-box h1::after { width: 240px; }
+  .signup-box h1::after { width: 240px; }
 
   .signup-page-content {
     max-width: 100vw;
