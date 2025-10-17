@@ -11,9 +11,8 @@
 
 .auth-page--login {
   background:
-    radial-gradient(1200px 600px at 0% 0%, rgba(250, 128, 114, 0.35), transparent 60%),
-    radial-gradient(1200px 600px at 100% 0%, rgba(255, 200, 114, 0.35), transparent 60%),
-    linear-gradient(180deg, #FA8072 0%, #FFE3B3 40%, #ffffff 100%);
+    radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+      linear-gradient(180deg, #d87f75 0%, #E8C89F 30%, #ffffff 100%);
 }
 
 .auth-content {
@@ -172,7 +171,7 @@
   background: #f3f6fb;
   border: none;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   transition: border-color 0.2s, background-color 0.2s;
   border-radius: 12px;
 }
@@ -199,6 +198,12 @@
   -webkit-appearance: none;
   line-height: 1.2;
 }
+
+.field input:-webkit-autofill {
+  -webkit-text-fill-color: #0b1220 !important;
+  -webkit-box-shadow: 0 0 0 1000px #f3f6fb inset !important;
+}
+
 .field input:focus,
 .field input:focus-visible {
   outline: none;
@@ -225,8 +230,7 @@
 @media (max-width: 1100px) {
   .auth-page--login {
     background:
-      radial-gradient(900px 480px at 0% 0%, rgba(250, 128, 114, 0.35), transparent 60%),
-      radial-gradient(900px 480px at 100% 0%, rgba(255, 200, 114, 0.35), transparent 60%),
-      linear-gradient(180deg, #FA8072 0%, #FFE3B3 40%, #ffffff 100%);
+      radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+      linear-gradient(180deg, #e67d71 0%, #E8C89F 30%, #ffffff 100%);
   }
 }

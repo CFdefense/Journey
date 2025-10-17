@@ -11,9 +11,9 @@
 
 .auth-page--signup {
   background:
-    linear-gradient(to right, transparent 0%, transparent 50%, #ffffff 50%, #ffffff 100%),
-    radial-gradient(ellipse at 100% 0%, #FFC872 0%, #FA8072 50%, transparent 70%),
-    linear-gradient(180deg, #FA8072 0%, #FFE3B3 20%, #ffffff 100%);
+    linear-gradient(to right, transparent 0%, transparent 50%, #ffffff 0%, #ffffff 90%),
+    radial-gradient(ellipse at 100% 0%, #FFC872 20%, #FA8072 25%, transparent 90%),
+    linear-gradient(180deg, #FA8072 0%, #FFE3B3 0%, #ffffff 150%);
 }
 
 .auth-content {
@@ -142,7 +142,7 @@
   background: #f3f6fb;
   border: none;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   transition: border-color 0.2s, background-color 0.2s;
   border-radius: 12px;
 }
@@ -170,6 +170,11 @@
   line-height: 1.2;
   margin-bottom: 0;
   border: none;
+}
+
+.signup-box .field input:-webkit-autofill {
+  -webkit-text-fill-color: #0b1220 !important;
+  -webkit-box-shadow: 0 0 0 1000px #f3f6fb inset !important;
 }
 
 .signup-box .field input:focus,
