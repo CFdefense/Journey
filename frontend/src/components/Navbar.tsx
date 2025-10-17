@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
 
-type AuthNavbarProps = {
-  variant: "login" | "signup";
+type NavbarProps = {
+  page: "login" | "signup";
 };
 
-export default function AuthNavbar({ variant }: AuthNavbarProps) {
+export default function Navbar({ page }: NavbarProps) {
   return (
     <header className="auth-navbar">
       <div className="auth-navbar-content">
         <Link to="/" className="auth-brand">Journey</Link>
 
-        {variant === "login" ? (
+        {page === "login" ? (
           <div className="auth-cta">
             <span>Don't have an account?</span>
             <Link to="/signup" className="auth-cta-link">
@@ -24,5 +24,4 @@ export default function AuthNavbar({ variant }: AuthNavbarProps) {
     </header>
   );
 }
-
 

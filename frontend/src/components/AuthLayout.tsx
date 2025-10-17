@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import AuthNavbar from "./AuthNavbar";
+import Navbar from "./Navbar";
 
 type AuthLayoutProps = PropsWithChildren<{
   variant: "login" | "signup";
@@ -8,7 +8,7 @@ type AuthLayoutProps = PropsWithChildren<{
 export default function AuthLayout({ variant, children }: AuthLayoutProps) {
   return (
     <div className={`auth-page auth-page--${variant}`}>
-      <AuthNavbar variant={variant} />
+      <Navbar page={variant} />
       {children}
     </div>
   );
