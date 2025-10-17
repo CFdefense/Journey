@@ -35,7 +35,7 @@ pub struct SavedResponse {
     pub itineraries: Vec<Itinerary>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct SaveResponse {
 	pub id: i32
 }
