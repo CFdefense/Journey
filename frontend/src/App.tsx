@@ -11,11 +11,11 @@ import {
   InverseProtectedRoute,
   ProtectedRoute
 } from "./components/ProtectedRoute";
+import AuthLayout from "./components/AuthLayout";
 
 export default function App() {
   return (
     <Router>
-      {/* Routes */}
       <Routes>
         <Route path="/" element={<IndexPage />} />
         <Route
@@ -46,11 +46,20 @@ export default function App() {
           path="/login"
           element={
             <InverseProtectedRoute>
-              <Login />
+              <AuthLayout variant="login">
+                <Login />
+              </AuthLayout>
             </InverseProtectedRoute>
           }
         />
-        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/signup"
+          element={
+            <AuthLayout variant="signup">
+              <Signup />
+            </AuthLayout>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
