@@ -1,52 +1,180 @@
-a {
-  font-weight: 500;
-  color: var(--blue);
-  text-decoration: inherit;
-}
-a:hover {
-  color: var(--light-blue);
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+.index-page {
+  position: fixed;
+  inset: 0;
   min-height: 100vh;
+  width: 100%;
+  background: #000000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.index-page .auth-navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background: transparent;
+  padding: 16px 24px;
+  z-index: 3;
 }
 
-button {
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: var(--light-blue);
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.index-page .auth-navbar .auth-navbar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.index-page .auth-brand,
+.index-page .auth-cta,
+.index-page .auth-cta-link {
+  color: #ffffff;
+}
+
+.index-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  padding: 2rem;
+  padding-top: clamp(0px, 1vh, 8px);
+  margin-top: clamp(-48px, -6vh, -16px);
+}
+
+.hero-title {
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: -1rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+.hero-tagline {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  max-width: 600px;
+  margin-bottom: 2.0rem;
+  z-index: 10;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(90deg, #006BBB, #30A0E0);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 10;
+}
+
+.cta-button:hover {
+  transform: translateY(-3px);
+}
+
+.earth-container {
+  position: absolute;
+  top: 72%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(400px, 60vw, 700px);
+  aspect-ratio: 1 / 1;
+  z-index: 1;
+  pointer-events: none;
+
+  overflow: visible;
+}
+
+.earth {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  animation: spin 60s linear infinite;
+  filter: drop-shadow(0 0 80px rgba(48, 160, 224, 0.4));
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  a:hover {
-    color: var(--light-blue);
+  to {
+    transform: rotate(360deg);
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+.plane-orbit {
+  position: absolute;
+  inset: 0;
+}
+
+.plane {
+  position: absolute;
+  width: clamp(70px, 12vw, 130px);
+  height: auto;
+  z-index: 2;
+  top: 8%;
+  left: 50%;
+  transform: translate(-50%, 0) rotate(10deg);
+  animation: hover 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45));
+}
+
+@keyframes hover {
+  0%, 100% {
+    transform: translate(-50%, 0) rotate(10deg);
+  }
+  50% {
+    transform: translate(-50%, -4px) rotate(10deg);
+  }
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(2px 2px at 90% 60%, white, transparent),
+    radial-gradient(1px 1px at 33% 80%, white, transparent),
+    radial-gradient(1px 1px at 15% 90%, white, transparent);
+  background-size: 200% 200%;
+  animation: twinkle 5s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 768px) {
+  .index-content {
+    margin-top: clamp(-32px, -4vh, -12px);
+  }
+  .hero-tagline {
+    margin-bottom: 1.75rem;
+  }
+  .earth-container {
+    top: 80%;
+  }
+  
+  .hero-title {
+    margin-top: 0;
   }
 }
