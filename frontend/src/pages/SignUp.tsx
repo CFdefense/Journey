@@ -65,8 +65,7 @@ export default function Signup() {
             <div className="signup-brand">Journey</div>
             
             <p className="signup-sub">
-              Create your account to start planning with smart itineraries and
-              collaborative chat.
+              Create your account to start planning your next journey with the help of our team of intelligent AI agents.
             </p>
             <div className="signup-bullets">
               <div className="bullet-item">
