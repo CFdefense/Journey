@@ -4,7 +4,7 @@ use sqlx::FromRow;
 use crate::sql_models::event_list::EventListJoinRow;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct EventRow {
+pub struct Event {
     pub id: i32,
     pub street_address: String,
     pub postal_code: i32,
@@ -14,7 +14,7 @@ pub struct EventRow {
     pub event_name: String,
 }
 
-impl From<&EventListJoinRow> for EventRow {
+impl From<&EventListJoinRow> for Event {
 	#[cfg(not(tarpaulin_include))]
 	fn from(value: &EventListJoinRow) -> Self {
 		Self {

@@ -10,6 +10,12 @@ pub struct Message {
 	pub itinerary_id: Option<i32>
 }
 
+#[derive(Deserialize)]
+pub struct MessagePageRequest {
+	pub chat_session_id: i32,
+	pub message_id: Option<i32>
+}
+
 #[derive(Serialize)]
 pub struct MessagePageResponse {
 	pub message_page: Vec<Message>,
@@ -20,6 +26,12 @@ pub struct MessagePageResponse {
 pub struct UpdateMessageRequest {
 	pub message_id: i32,
 	pub new_text: String
+}
+
+#[derive(Deserialize)]
+pub struct SendMessageRequest {
+	pub chat_session_id: i32,
+	pub text: String
 }
 
 #[derive(Serialize)]

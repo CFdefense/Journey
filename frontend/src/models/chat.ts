@@ -1,10 +1,5 @@
-export type ChatSession = {
-    id: number,
-    account_id: number
-}
-
 export type ChatsResponse = {
-    chat_sessions: [ChatSession]
+    chat_sessions: [number]
 }
 
 export type Message = {
@@ -14,6 +9,11 @@ export type Message = {
 	timestamp: string,
 	text: string,
 	itinerary_id: number | null
+}
+
+export type MessagePageRequest = {
+	chat_session_id: number,
+	message_id: number | null
 }
 
 export type MessagePageResponse = {

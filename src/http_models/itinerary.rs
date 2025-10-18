@@ -15,17 +15,17 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::sql_models::event::EventRow;
+use crate::http_models::event::Event;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Itinerary {
 	pub id: i32,
     pub start_date: NaiveDateTime,
     pub end_date: NaiveDateTime,
-    pub morning_events: Vec<EventRow>,
-    pub noon_events: Vec<EventRow>,
-    pub afternoon_events: Vec<EventRow>,
-    pub evening_events: Vec<EventRow>,
+    pub morning_events: Vec<Event>,
+    pub noon_events: Vec<Event>,
+    pub afternoon_events: Vec<Event>,
+    pub evening_events: Vec<Event>,
     pub chat_session_id: Option<i32>
 }
 

@@ -89,7 +89,7 @@ CREATE TABLE messages (
 	itinerary_id INTEGER REFERENCES itineraries(id) ON DELETE SET NULL,
 	is_user BOOLEAN NOT NULL,
 	timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-	text TEXT
+	text TEXT NOT NULL
 );
 
 ------- Dummy data to test ---------

@@ -2,10 +2,10 @@ export type Itinerary = {
 	id: number,
     start_date: string,
     end_date: string,
-    morning_events: [EventRow],
-    noon_events: [EventRow],
-    afternoon_events: [EventRow],
-    evening_events: [EventRow]
+    morning_events: [Event],
+    noon_events: [Event],
+    afternoon_events: [Event],
+    evening_events: [Event]
 }
 
 export type SavedResponse = {
@@ -16,7 +16,7 @@ export type SaveResponse = {
 	id: number
 }
 
-export type EventRow = {
+export type Event = {
 	id: number,
 	street_address: string,
     postal_code: number,

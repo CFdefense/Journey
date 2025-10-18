@@ -10,13 +10,12 @@
 use axum::routing::post;
 use axum::{extract::Path, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
-use tower_cookies::cookie::time::Time;
 use tracing::debug;
 
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
-use crate::sql_models::event::EventRow;
+use crate::http_models::event::Event;
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryJoinedRow;
 use crate::sql_models::TimeOfDay;
@@ -47,7 +46,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 }
 
 /// Filter-maps the slice of [EventListJoinRow]s to a Vec of [Event]s
-fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<EventRow> {
+fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<Event> {
 	let mut events = Vec::with_capacity(el.len());
 	for e in el.iter() {
 		if e.time_of_day == tod {
@@ -200,7 +199,7 @@ pub async fn api_save(
 ) -> ApiResult<Json<SaveResponse>> {
 	// check if itinerary id already exists for this user
 	let id_opt = sqlx::query!(
-        r#"SELECT id FROM itineraries WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id FROM itineraries WHERE id=$1 AND account_id=$2"#,
         itinerary.id,
         user.id
     )
@@ -243,48 +242,41 @@ pub async fn api_save(
 	.await
 	.map_err(|e| AppError::from(e))?;
 
-	// need a dynamic query at runtime to map event Vecs to a single query
-	let mut query = String::from(r#"
-		INSERT INTO event_list (itinerary_id, event_id, time_of_day)
-		VALUES
-	"#);
+	let morning_len = itinerary.morning_events.len();
+	let noon_len = itinerary.noon_events.len();
+	let afternoon_len = itinerary.afternoon_events.len();
+	let evening_len = itinerary.evening_events.len();
 
-	// prepare args
-	let mut args = Vec::with_capacity(
-		itinerary.morning_events.len()
-		+ itinerary.noon_events.len()
-		+ itinerary.afternoon_events.len()
-		+ itinerary.evening_events.len()
-	);
-	for event in itinerary.morning_events.into_iter() {
-		args.push((event.id, TimeOfDay::Morning));
-	}
-	for event in itinerary.noon_events.into_iter() {
-		args.push((event.id, TimeOfDay::Noon));
-	}
-	for event in itinerary.afternoon_events.into_iter() {
-		args.push((event.id, TimeOfDay::Afternoon));
-	}
-	for event in itinerary.evening_events.into_iter() {
-		args.push((event.id, TimeOfDay::Evening));
-	}
-	let mut params = Vec::with_capacity(args.len());
-	let mut i = 1; // start at 1 because we bind itinerary.id first
-	while i < args.len() * 2 + 1 {
-		params.push(format!("($1, ${}, ${})", i, i+1));
-		i += 2;
-	}
-	query += (params.join(",\n") + ";").as_str();
-	let mut query_builder = sqlx::query(query.as_str())
-		.bind(itinerary.id); //start with itinerary id
-	for arg in args.into_iter() {
-		query_builder = query_builder.bind(arg.0);
-		query_builder = query_builder.bind(arg.1);
-	}
-	query_builder
-    	.execute(&pool)
-	    .await
-	    .map_err(|e| AppError::from(e))?;
+	let cap = morning_len
+		+ noon_len
+		+ afternoon_len
+		+ evening_len;
+
+	let mut events = Vec::with_capacity(cap);
+	events.extend(itinerary.morning_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.noon_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.afternoon_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.evening_events.into_iter().map(|event| event.id));
+
+	let mut times = Vec::with_capacity(cap);
+	times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Noon, noon_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
+
+	sqlx::query!(
+		r#"
+		INSERT INTO event_list (itinerary_id, event_id, time_of_day)
+		SELECT $1, events, times
+		FROM UNNEST($2::int4[], $3::time_of_day[]) as u(events, times);
+		"#,
+		itinerary.id,
+		events.as_slice(),
+		times.as_slice() as &[TimeOfDay]
+	)
+   	.execute(&pool)
+    .await
+    .map_err(|e| AppError::from(e))?;
 
 	Ok(Json(SaveResponse {id}))
 }
@@ -298,14 +290,6 @@ pub async fn api_save(
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
-#[cfg(test)]
-pub fn itinerary_routes() -> Router {
-    Router::new()
-        .route("/saved", get(api_saved_itineraries))
-        .route("/:id", get(api_get_itinerary))
-        .route_layer(axum::middleware::from_fn(middleware_auth))
-}
-#[cfg(not(test))]
 pub fn itinerary_routes() -> Router {
     Router::new()
         .route("/saved", get(api_saved_itineraries))
