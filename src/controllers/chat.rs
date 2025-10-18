@@ -88,6 +88,8 @@ pub async fn api_update_message(
     Extension(pool): Extension<PgPool>,
     Json(UpdateMessageRequest {message_id, new_text}): Json<UpdateMessageRequest>
 ) -> ApiResult<Json<Message>> {
+	if new_text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
+
 	// verify the message id belongs to this user
 	sqlx::query!(
 		r#"
@@ -138,6 +140,8 @@ pub async fn api_send_message(
     Extension(pool): Extension<PgPool>,
     Json(SendMessageRequest {chat_session_id, text}): Json<SendMessageRequest>
 ) -> ApiResult<Json<SendMessageResponse>> {
+	if text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
+
 	// verify the given chat session belongs to this user
 	sqlx::query!(
 		r#"
@@ -214,8 +218,8 @@ pub async fn api_send_message(
 pub fn chat_routes() -> Router {
     Router::new()
         .route("/chats", get(api_chats))
-        .route("/messagePage", get(api_message_page))
+        .route("/messagePage", post(api_message_page))
         .route("/updateMessage", post(api_update_message))
-        .route("/sendMessage", get(api_send_message))
+        .route("/sendMessage", post(api_send_message))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

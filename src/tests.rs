@@ -649,8 +649,8 @@ async fn test_endpoints() {
     let chat_routes = controllers::chat::chat_routes();
     let api_routes = Router::new()
         .nest("/account", account_routes)
-        .nest("/itinerary", itinerary_routes);
-        // .nest("/chat", chat_routes);
+        .nest("/itinerary", itinerary_routes)
+        .nest("/chat", chat_routes);
     let app = Router::new()
         .nest("/api", api_routes)
         .layer(Extension(pool.clone()))
@@ -737,18 +737,33 @@ async fn test_auth_for_all_required() {
 	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
 
     let account_update_payload = json!({});
+    let chat_message_page_payload = json!({
+		"chat_session_id": 1,
+		"message_id": 1
+    });
     let chat_update_message_payload = json!({
-    	"message_id": 0,
+    	"message_id": 1,
     	"new_text": ""
+    });
+    let chat_send_message_payload = json!({
+		"chat_session_id": 1,
+		"text": ""
+    });
+    let itinerary_save_payload = json!({
+		"id": 1,
+		"start_date": "2025-11-05 00:00:00",
+		"end_date": "2025-11-10 00:00:00",
+		"morning_events": [],
+		"noon_events": [],
+		"afternoon_events": [],
+		"evening_events": []
     });
 
     for res in futures::future::join_all(vec![
 		hc.do_get("/api/account/current"),
 		hc.do_get("/api/account/validate"),
 		hc.do_get("/api/account/logout"),
-		// hc.do_get("/api/chat/chats"),
-		// hc.do_get("/api/chat/messagePage"),
-		// hc.do_get("/api/chat/sendMessage"),
+		hc.do_get("/api/chat/chats"),
 		hc.do_get("/api/itinerary/saved"),
 		hc.do_get("/api/itinerary/:id"),
     ]).await.iter() {
@@ -757,8 +772,10 @@ async fn test_auth_for_all_required() {
 
     for res in futures::future::join_all(vec![
 		hc.do_post("/api/account/update", account_update_payload),
-		// hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
-		// hc.do_post("/api/itinerary/save", itinerary_save_payload),
+		hc.do_post("/api/chat/messagePage", chat_message_page_payload),
+		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
+		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
+		hc.do_post("/api/itinerary/save", itinerary_save_payload),
     ]).await.iter() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
     }
