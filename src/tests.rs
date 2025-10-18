@@ -6,7 +6,7 @@ use argon2::{
 use axum::{Extension, Router};
 use chrono::Utc;
 use serde_json::json;
-use serial_test::serial;
+use serial_test::{parallel, serial};
 use sqlx::migrate;
 use tower_cookies::{
     cookie::{time, CookieJar, SameSite}, Cookie, CookieManagerLayer, Key
@@ -514,7 +514,7 @@ fn test_validate_signup_payload_whitespace_trimming() {
 
 /// Verifies that `db::create_pool` panics when `DATABASE_URL` is not set.
 #[test]
-#[serial]
+#[serial(db)]
 fn test_db_pool_panics_without_env() {
 	// Save and clear DATABASE_URL
 	let prev = std::env::var("DATABASE_URL").ok();
@@ -541,7 +541,7 @@ fn test_db_pool_panics_without_env() {
 /// Run with: `cargo test -- --ignored`
 #[tokio::test]
 #[ignore]
-#[serial]
+#[parallel]
 async fn test_db_pool_connects_and_selects() {
 	let database_url = match std::env::var("DATABASE_URL") {
 		Ok(v) => v,
@@ -567,7 +567,7 @@ async fn test_db_pool_connects_and_selects() {
 
 /// Verifies that `logs/latest.log` is created and written to from log events.
 #[test]
-#[serial]
+#[serial(log)]
 fn test_logger() {
 	//dotenv doesn't work in github actions bc .env is ignored
 	unsafe {
@@ -593,7 +593,7 @@ fn test_logger() {
 
 /// Verifies that `logs/crash.log` is created and written to on a panic.
 #[test]
-#[serial]
+#[serial(panic_log)]
 fn test_panic_handler() {
 	log::init_panic_handler();
 	std::panic::catch_unwind(||{
@@ -608,7 +608,7 @@ fn test_panic_handler() {
 static mut PORT: u16 = 0;
 
 #[tokio::test]
-#[serial]
+#[serial(db, log, panic_log)]
 async fn test_endpoints() {
 	// Only use dotenvy for local testing
 	// CI testing should use GitHub environment variables
@@ -665,6 +665,8 @@ async fn test_endpoints() {
         .serve(app.into_make_service());
     tokio::spawn(server);
 
+    // Any unit tests that test cookies or middleware, or any integration tests should go here.
+    // Any other unit test should not go here. Instead, run it as a separate unit test and just invoke the controller directly.
     tokio::join!(
     	test_signup_and_login_happy_path(&cookie_key),
      	test_auth_for_all_required(),

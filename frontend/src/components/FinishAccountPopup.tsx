@@ -1,11 +1,11 @@
 import "../styles/FinishAccountPopup.css";
-import { useState , useEffect} from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 
 export function FinishAccountPopup() {
   const [visible, setVisible] = useState(true);
-  
+
   if (!visible) return null; // Hide the button when closed
 
   return (
