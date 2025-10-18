@@ -88,7 +88,7 @@ pub async fn api_saved_itineraries(
     // Fetch all itineraries for the user
     let itineraries: Vec<ItineraryJoinedRow> = sqlx::query_as!(
         ItineraryJoinedRow,
-        r#"SELECT id, account_id, start_date, end_date, chat_session_id FROM itineraries WHERE account_id = $1"#,
+        r#"SELECT id, account_id, start_date, end_date, chat_session_id FROM itineraries WHERE account_id=$1 AND saved=TRUE"#,
         user.id
     )
     .fetch_all(&pool)
@@ -214,8 +214,8 @@ pub async fn api_save(
 		None => {
 			sqlx::query!(
 				r#"
-				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id)
-				VALUES ($1, FALSE, $2, $3, $4)
+				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
+				VALUES ($1, FALSE, $2, $3, $4, TRUE)
 				RETURNING id;
 				"#,
 				user.id,

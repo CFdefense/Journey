@@ -8,14 +8,6 @@ export type Itinerary = {
     evening_events: [Event]
 }
 
-export type SavedResponse = {
-    itineraries: [Itinerary]
-}
-
-export type SaveResponse = {
-	id: number
-}
-
 export type Event = {
 	id: number,
 	street_address: string,
@@ -24,4 +16,12 @@ export type Event = {
     event_type: string,
     event_description: string,
     event_name: string
+}
+
+export type SavedResponse = {
+    itineraries: [Itinerary]
+}
+
+export type SaveResponse = {
+	id: number
 }

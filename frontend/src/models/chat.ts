@@ -1,7 +1,3 @@
-export type ChatsResponse = {
-    chat_sessions: [number]
-}
-
 export type Message = {
 	id: number,
 	/// Whether this message was sent by the user or the LLM
@@ -9,6 +5,10 @@ export type Message = {
 	timestamp: string,
 	text: string,
 	itinerary_id: number | null
+}
+
+export type ChatsResponse = {
+    chat_sessions: [number]
 }
 
 export type MessagePageRequest = {
@@ -26,6 +26,11 @@ export type UpdateMessageRequest = {
 	/// The id of the user's message you want to update
 	message_id: number,
 	new_text: string
+}
+
+export type SendMessageRequest = {
+	chat_session_id: number,
+	text: string
 }
 
 export type SendMessageResponse = {
