@@ -1,6 +1,7 @@
 import { useContext, useState, type Context } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import "../styles/LoginSignup.css";
+import "../styles/Login.css";
+import "../styles/Signup.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
 import { GlobalContext } from "../helpers/global";
