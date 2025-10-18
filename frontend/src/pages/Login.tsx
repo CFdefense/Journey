@@ -1,23 +1,30 @@
-import { useState } from "react";
+import { useContext, useState, type Context } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 import { apiLogin } from "../api/account";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "../components/GlobalProvider";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await apiLogin({ email, password });
+      setAuthorized(true);
+      console.log("Login successful");
       setError("");
       navigate("/home");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Login failed.";
-      setError(message);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setAuthorized(false);
+      console.error(err);
+      setError(err.message || "Login failed.");
     }
   };
 

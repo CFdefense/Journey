@@ -6,13 +6,13 @@ export default function IndexPage() {
     <div>
       {/* Navigation */}
       <nav>
-        <Link to="/">Index</Link>
+        <Link to="/">Index</Link>{" "}
         | <ProtectedLink
             authTo="/home"
             authChildren={<div>Home</div>}
             unauthTo="/login"
             unauthChildren={<div>Login</div>}
-          />
+          />{" "}
         | <ProtectedLink
             authTo="/Account"
             authChildren={<div>Account</div>}
