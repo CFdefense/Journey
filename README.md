@@ -54,10 +54,28 @@ Kill database (after you're done)
 # Linux
 sudo docker compose down db
 ```
+### TypeScript
+Install node and npm, then install the dependencies. All npm commands should be done from `./frontend`.
+```sh
+cd ./frontend
+npm ci
+```
+Launch frontend with hot reloading (requires running server and active db connection)
+```sh
+npm run dev
+```
+Run tests
+```sh
+npm run test
+```
+Run code coverage
+```sh
+npm run codecov
+```
 ### Rust
 Install Rust using your package manager (likely called `rustup`) or from their [website](https://rust-lang.org/tools/install/).
 
-Run the server
+Run the server (requires active db connection)
 ```sh
 cargo run
 ```
