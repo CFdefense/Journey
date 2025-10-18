@@ -16,7 +16,7 @@ export async function apiLogin(payload: LoginRequest): Promise<void> {
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: "include", // needed param for dealing with cookies
+			credentials: import.meta.env.DEV? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
 
@@ -51,7 +51,7 @@ export async function apiSignUp(payload: SignUpRequest): Promise<void> {
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: "include", // needed param for dealing with cookies
+			credentials: import.meta.env.DEV? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
 
@@ -92,7 +92,7 @@ export async function apiLogout(): Promise<void> {
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: "include" // needed param for dealing with cookies
+			credentials: import.meta.env.DEV? "include" : "same-origin",
 		});
 
 		// handle all errors from backend
@@ -128,7 +128,7 @@ export async function apiValidate(): Promise<boolean> {
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: "include" // needed param for dealing with cookies
+			credentials: import.meta.env.DEV? "include" : "same-origin",
 		});
 
 		// handle all errors from backend
@@ -164,15 +164,15 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: "include" // needed param for dealing with cookies
+			credentials: import.meta.env.DEV? "include" : "same-origin",
 		});
 
 
 		// Read the response body as JSON if possible
 		const data = await response.json().catch(() => null);
 		console.log("Response body:", data);
-		
-		// check if any preferences were not yet filled out 
+
+		// check if any preferences were not yet filled out
 		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {
 			return false;
 		}
@@ -187,9 +187,9 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 				throw new Error(`Unexpected error: ${response.status}`);
 			}
 		}
-		
+
 		return true;
-	
+
 	} catch (error) {
 		console.error("Current API error: ", error);
 		throw error;
