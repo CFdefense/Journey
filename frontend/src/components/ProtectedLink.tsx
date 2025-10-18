@@ -1,9 +1,10 @@
 import { Link, type To } from "react-router-dom";
 import "../styles/Index.css";
-import { useEffect, useState } from "react";
-import { bypassProtection } from "../helpers/global";
+import { useContext, useEffect, useState, type Context } from "react";
+import { bypassProtection, GlobalContext } from "../helpers/global";
 import { apiValidate } from "../api/account";
 import { Loading } from "../components/Loading";
+import type { GlobalState } from "./GlobalProvider";
 
 interface ProtectedLinkParams {
   authTo: To,
@@ -19,10 +20,14 @@ interface ProtectedLinkParams {
 // If not authenticated, it will href unauthTo and display unauthChildren.
 export function ProtectedLink({ authTo, authChildren, unauthTo, unauthChildren }: ProtectedLinkParams) {
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const { authorized, setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
 
   useEffect(() => {
     if (!bypassProtection()) {
+      if (authorized !== null) {
+        setLoading(false);
+        return;
+      }
       apiValidate()
         .then((valid: boolean) => {
           setAuthorized(valid);
@@ -36,18 +41,18 @@ export function ProtectedLink({ authTo, authChildren, unauthTo, unauthChildren }
           setLoading(false);
         });
     }
-  }, []);
+  }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
     console.log("loading: ", loading);
     console.log("authorized: ", authorized);
     if (loading) return <Loading />;
-    if (authorized) {
-      return <Link to={authTo}>{authChildren}</Link>;
+    if (authorized === true) {
+      return <Link to={authTo} replace>{authChildren}</Link>;
     } else {
-      return <Link to={unauthTo}>{unauthChildren}</Link>;
+      return <Link to={unauthTo} replace>{unauthChildren}</Link>;
     }
   } else {
-    return <Link to={authTo}>{authChildren}</Link>;
+    return <Link to={authTo} replace>{authChildren}</Link>;
   }
 }
