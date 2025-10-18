@@ -10,6 +10,7 @@
 use axum::routing::post;
 use axum::{extract::Path, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
+use tower_cookies::cookie::time::Time;
 use tracing::debug;
 
 use crate::error::{ApiResult, AppError};
@@ -88,7 +89,7 @@ pub async fn api_saved_itineraries(
     // Fetch all itineraries for the user
     let itineraries: Vec<ItineraryJoinedRow> = sqlx::query_as!(
         ItineraryJoinedRow,
-        r#"SELECT id, account_id, date, chat_session_id FROM itineraries WHERE account_id = $1"#,
+        r#"SELECT id, account_id, start_date, end_date, chat_session_id FROM itineraries WHERE account_id = $1"#,
         user.id
     )
     .fetch_all(&pool)
@@ -102,11 +103,13 @@ pub async fn api_saved_itineraries(
 
 		res.push(Itinerary {
 			id: itinerary.id,
-		    date: itinerary.date,
+		    start_date: itinerary.start_date,
+		    end_date: itinerary.end_date,
 		    morning_events: as_events(event_list.as_slice(), TimeOfDay::Morning),
 		    noon_events: as_events(event_list.as_slice(), TimeOfDay::Noon),
 		    afternoon_events: as_events(event_list.as_slice(), TimeOfDay::Afternoon),
-		    evening_events: as_events(event_list.as_slice(), TimeOfDay::Evening)
+		    evening_events: as_events(event_list.as_slice(), TimeOfDay::Evening),
+			chat_session_id: itinerary.chat_session_id
 		});
     }
 
@@ -147,7 +150,7 @@ pub async fn api_get_itinerary(
     // Fetch the itinerary for the user
     let itinerary: ItineraryJoinedRow = sqlx::query_as!(
         ItineraryJoinedRow,
-        r#"SELECT id, account_id, date, chat_session_id FROM itineraries WHERE id = $1 AND account_id = $2"#,
+        r#"SELECT id, account_id, start_date, end_date, chat_session_id FROM itineraries WHERE id = $1 AND account_id = $2"#,
         itinerary_id,
         user.id
     )
@@ -180,11 +183,13 @@ pub async fn api_get_itinerary(
 
     Ok(Json(Itinerary {
     	id: itinerary.id,
-	    date: itinerary.date,
+	    start_date: itinerary.start_date,
+	    end_date: itinerary.end_date,
 	    morning_events: as_events(event_list.as_slice(), TimeOfDay::Morning),
 	    noon_events: as_events(event_list.as_slice(), TimeOfDay::Noon),
 	    afternoon_events: as_events(event_list.as_slice(), TimeOfDay::Afternoon),
-	    evening_events: as_events(event_list.as_slice(), TimeOfDay::Evening)
+	    evening_events: as_events(event_list.as_slice(), TimeOfDay::Evening),
+		chat_session_id: itinerary.chat_session_id
 	}))
 }
 
@@ -193,8 +198,95 @@ pub async fn api_save(
     Extension(pool): Extension<PgPool>,
     Json(itinerary): Json<Itinerary>
 ) -> ApiResult<Json<SaveResponse>> {
-	// TODO: delete temporary data and actually implement controller
-	Ok(Json(SaveResponse {id: 1}))
+	// check if itinerary id already exists for this user
+	let id_opt = sqlx::query!(
+        r#"SELECT id FROM itineraries WHERE id = $1 AND account_id = $2"#,
+        itinerary.id,
+        user.id
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| AppError::from(e))?
+    .map(|record| record.id);
+
+	// if it doesn't exist, insert a new one
+	let id = match id_opt {
+		Some(id) => id,
+		None => {
+			sqlx::query!(
+				r#"
+				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id)
+				VALUES ($1, FALSE, $2, $3, $4)
+				RETURNING id;
+				"#,
+				user.id,
+				itinerary.start_date,
+				itinerary.end_date,
+				itinerary.chat_session_id
+			)
+			.fetch_one(&pool)
+			.await
+			.map_err(|e| AppError::from(e))?
+			.id
+		}
+	};
+
+	// delete event_list for this itinerary and make a new one
+	sqlx::query!(
+		r#"
+		DELETE FROM event_list
+		WHERE itinerary_id=$1;
+		"#,
+		id
+	)
+	.execute(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	// need a dynamic query at runtime to map event Vecs to a single query
+	let mut query = String::from(r#"
+		INSERT INTO event_list (itinerary_id, event_id, time_of_day)
+		VALUES
+	"#);
+
+	// prepare args
+	let mut args = Vec::with_capacity(
+		itinerary.morning_events.len()
+		+ itinerary.noon_events.len()
+		+ itinerary.afternoon_events.len()
+		+ itinerary.evening_events.len()
+	);
+	for event in itinerary.morning_events.into_iter() {
+		args.push((event.id, TimeOfDay::Morning));
+	}
+	for event in itinerary.noon_events.into_iter() {
+		args.push((event.id, TimeOfDay::Noon));
+	}
+	for event in itinerary.afternoon_events.into_iter() {
+		args.push((event.id, TimeOfDay::Afternoon));
+	}
+	for event in itinerary.evening_events.into_iter() {
+		args.push((event.id, TimeOfDay::Evening));
+	}
+	let mut params = Vec::with_capacity(args.len());
+	let mut i = 1; // start at 1 because we bind itinerary.id first
+	while i < args.len() * 2 + 1 {
+		params.push(format!("($1, ${}, ${})", i, i+1));
+		i += 2;
+	}
+	query += (params.join(",\n") + ";").as_str();
+	let mut query_builder = sqlx::query(query.as_str())
+		.bind(itinerary.id); //start with itinerary id
+	for arg in args.into_iter() {
+		query_builder = query_builder.bind(arg.0);
+		query_builder = query_builder.bind(arg.1);
+	}
+	query_builder
+    	.execute(&pool)
+	    .await
+	    .map_err(|e| AppError::from(e))?;
+
+	Ok(Json(SaveResponse {id}))
 }
 
 /// Create the itinerary routes with authentication middleware.

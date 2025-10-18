@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct ItineraryJoinedRow {
     pub id: i32,
     pub account_id: Option<i32>,
-    pub date: NaiveDateTime,
+    pub start_date: NaiveDateTime,
+    pub end_date: NaiveDateTime,
     pub chat_session_id: Option<i32>
 }

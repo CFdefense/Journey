@@ -70,7 +70,8 @@ CREATE TABLE itineraries (
     id SERIAL PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
-    date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    start_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL
 );
 
@@ -139,12 +140,12 @@ SELECT setval(
 );
 
 -- Itineraries
-INSERT INTO itineraries (id, account_id, is_public, date, chat_session_id)
-VALUES (1, 1, FALSE, '2025-11-05 00:00:00', 1), -- Ellie
-(2, 2, TRUE, '2025-10-12 00:00:00', 2), -- Nick
-(3, 3, TRUE, '2025-12-01 00:00:00', 3), --Christian
-(4, 4, FALSE, '2025-07-15 00:00:00', 4), -- Ethan
-(5, 5, FALSE, '2025-08-15 00:00:00', 5); -- Peter
+INSERT INTO itineraries (id, account_id, is_public, start_date, end_date, chat_session_id)
+VALUES (1, 1, FALSE, '2025-11-05 00:00:00', '2025-11-10 00:00:00', 1), -- Ellie
+(2, 2, TRUE, '2025-10-12 00:00:00', '2025-10-14 00:00:00', 2), -- Nick
+(3, 3, TRUE, '2025-12-01 00:00:00', '2025-12-08 00:00:00', 3), --Christian
+(4, 4, FALSE, '2025-07-15 00:00:00', '2025-07-17 00:00:00', 4), -- Ethan
+(5, 5, FALSE, '2025-08-15 00:00:00', '2025-08-28 00:00:00', 5); -- Peter
 
 -- Ensure the itineraries id sequence matches the max(id)
 SELECT setval(

@@ -1,6 +1,7 @@
 export type Itinerary = {
 	id: number,
-    date: string,
+    start_date: string,
+    end_date: string,
     morning_events: [EventRow],
     noon_events: [EventRow],
     afternoon_events: [EventRow],
