@@ -5,7 +5,8 @@ export type Itinerary = {
     /// %Y-%m-%d
     end_date: string,
     event_days: EventDay[],
-    chat_session_id: number | null
+    chat_session_id: number | null,
+    title: string
 }
 
 export type EventDay = {

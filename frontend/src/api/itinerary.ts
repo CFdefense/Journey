@@ -1,6 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-import type { Itinerary, Event} from "../models/itinerary";
-
+import type { Itinerary, EventDay, Event } from "../models/itinerary";
 
 export async function apiItineraryDetails(itinerary_id: number): Promise<Itinerary> {
   try {
@@ -14,7 +13,8 @@ export async function apiItineraryDetails(itinerary_id: number): Promise<Itinera
 
     if (response.ok) {
       const data = await response.json();
-      return data ?? placeholderItinerary(itinerary_id); 
+      // The backend returns { itinerary: Itinerary }
+      return data ?? placeholderItinerary(itinerary_id);
     }
 
     switch (response.status) {
@@ -42,14 +42,21 @@ export async function apiItineraryDetails(itinerary_id: number): Promise<Itinera
 // default itinerary for dealing with errors or when a placeholder is needed
 function placeholderItinerary(itinerary_id: number): Itinerary {
   const emptyEvents: Event[] = [];
-  return {
-    id: itinerary_id,
-    start_date: new Date().toISOString().split("T")[0], // today's date
-    end_date: new Date().toISOString().split("T")[0],   // same as start
+
+  const emptyDay: EventDay = {
+    date: new Date().toISOString().split("T")[0],
     morning_events: emptyEvents,
     noon_events: emptyEvents,
     afternoon_events: emptyEvents,
     evening_events: emptyEvents,
+  };
+
+  return {
+    id: itinerary_id,
+    start_date: emptyDay.date,
+    end_date: emptyDay.date,
+    event_days: [emptyDay],
     chat_session_id: -1,
+    title: "Untitled Itinerary",
   };
 }
