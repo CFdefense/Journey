@@ -12,7 +12,7 @@
  *   SavedResponse    - API route response for GET /api/itinerary/saved
  */
 
-use chrono::NaiveDateTime;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::http_models::event::Event;
@@ -20,13 +20,20 @@ use crate::http_models::event::Event;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Itinerary {
 	pub id: i32,
-    pub start_date: NaiveDateTime,
-    pub end_date: NaiveDateTime,
-    pub morning_events: Vec<Event>,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub event_days: Vec<EventDay>,
+    pub chat_session_id: Option<i32>,
+    pub title: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EventDay {
+	pub morning_events: Vec<Event>,
     pub noon_events: Vec<Event>,
     pub afternoon_events: Vec<Event>,
     pub evening_events: Vec<Event>,
-    pub chat_session_id: Option<i32>
+    pub date: NaiveDate
 }
 
 /// API route response for GET `/api/itinerary/saved`
@@ -34,7 +41,7 @@ pub struct Itinerary {
 ///   - `itineraries`: List of saved itinerary summaries for the authenticated user.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SavedResponse {
-    pub itineraries: Vec<Itinerary>,
+    pub itineraries: Vec<Itinerary>
 }
 
 #[derive(Serialize)]
