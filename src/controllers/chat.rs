@@ -13,7 +13,7 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	// It should generate an itinerary, insert it into the db, and give some text.
 	// Fow now we just make a temporary message.
 	let ai_text = "Bot reply";
-	let ai_itinerary = Itinerary {
+	let mut ai_itinerary = Itinerary {
 	    id: 0,
 	    start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 	    end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
@@ -102,7 +102,7 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	};
 
 	// insert generated itinerary into db
-	let itinerary_id = Some(sqlx::query!(
+	let itinerary_id = sqlx::query!(
 		r#"
 		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
 		VALUES ($1, FALSE, $2, $3, $4, TRUE)
@@ -116,8 +116,9 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	.fetch_one(pool)
 	.await
 	.map_err(|e| AppError::from(e))?
-	.id);
+	.id;
 
+	ai_itinerary.id = itinerary_id;
 	insert_event_list(ai_itinerary, pool).await?;
 
 	// insert bot message into db
@@ -142,7 +143,7 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 		is_user: false,
 		timestamp,
 		text: String::from(ai_text),
-		itinerary_id,
+		itinerary_id: Some(itinerary_id),
 	})
 }
 
