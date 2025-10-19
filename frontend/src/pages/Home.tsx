@@ -7,6 +7,8 @@ import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import { apiCheckIfPreferencesPopulated } from "../api/account";
 import { apiChats, apiMessages, apiSendMessage } from "../api/home";
 import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
+import { apiItineraryDetails } from "../api/itinerary"; 
+
 
 
 interface Message {
@@ -29,7 +31,7 @@ export default function Home() {
   // the finish account creation 
   const [showFinishPopup, setShowFinishPopup] = useState(false);
   // which itinerary is shown in chat
-  const [displayedItinerary, setDisplayedItinerary] = useState(-1);
+  const [displayedItinerary, setDisplayedItinerary] = useState(3); // testing a known itinerary
 
     // check if preferences are filled out for a user
     useEffect(() => {
@@ -96,6 +98,22 @@ export default function Home() {
 
   fetchChatsAndMessages();
 }, []);
+
+useEffect(() => {
+  if (displayedItinerary === -1) return;
+  async function fetchItinerary() {
+    try {
+      const itinerary = await apiItineraryDetails(displayedItinerary);
+      console.log("Fetched itinerary:", itinerary);
+    } catch (err) {
+      console.error("Error fetching itinerary:", err);
+    }
+  }
+
+  fetchItinerary();
+}, [displayedItinerary]);
+
+
 
   // Create a new blank chat
   const handleNewChat = () => {
@@ -192,6 +210,8 @@ export default function Home() {
       text: response.bot_message.text,
       sender: response.bot_message.is_user ? "user" : "bot",
     };
+
+    console.log(response.bot_message.itinerary_id);
 
     // Append the bot message after API returns
     setChats((prevChats) =>

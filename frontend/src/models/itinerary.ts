@@ -2,10 +2,11 @@ export type Itinerary = {
 	id: number,
     start_date: string,
     end_date: string,
-    morning_events: [Event],
-    noon_events: [Event],
-    afternoon_events: [Event],
-    evening_events: [Event]
+    morning_events: Event[],
+    noon_events: Event[],
+    afternoon_events: Event[],
+    evening_events: Event[],
+    chat_session_id: number
 }
 
 export type Event = {
@@ -19,7 +20,7 @@ export type Event = {
 }
 
 export type SavedResponse = {
-    itineraries: [Itinerary]
+    itineraries: Itinerary[]
 }
 
 export type SaveResponse = {
