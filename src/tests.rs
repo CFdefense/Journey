@@ -6,14 +6,14 @@ use argon2::{
 use axum::{Extension, Json, Router};
 use chrono::Utc;
 use serde_json::json;
-use serial_test::{parallel, serial};
+use serial_test::serial;
 use sqlx::{migrate, PgPool};
 use tower_cookies::{
     cookie::{time, CookieJar, SameSite}, Cookie, CookieManagerLayer, Key
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, http_models::account::{LoginRequest, SignupRequest}, log, middleware::AuthUser
+	controllers, db, global::*, http_models::account::{LoginRequest, SignupRequest, UpdateRequest}, log, middleware::AuthUser, sql_models::{BudgetBucket, RiskTolerence}
 };
 
 // UNIT TESTS
@@ -566,7 +566,7 @@ fn test_panic_handler() {
 	assert!(content.len() > 0);
 }
 
-/// It's easier to have all these in 1 test to share a db pool
+/// It's easier to have all these in 1 test to share a db pool, and we don't have to spin up a server
 #[tokio::test]
 #[serial(db)]
 async fn test_controllers() {
@@ -579,6 +579,12 @@ async fn test_controllers() {
 		test_signup_conflict_on_duplicate_email(cookies.clone(), key.clone(), pool.clone()),
 		test_http_login_invalid_credentials(cookies.clone(), key.clone(), pool.clone()),
 		test_current_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_partial_fields(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_with_preferences(cookies.clone(), key.clone(), pool.clone()),
+		test_get_itinerary_id_not_found(cookies.clone(), key.clone(), pool.clone()),
+		test_invalid_signup_email(cookies.clone(), key.clone(), pool.clone()),
+		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
 
@@ -666,6 +672,192 @@ async fn test_current_endpoint_returns_account(mut cookies: CookieJar, key: Exte
         .unwrap();
 }
 
+async fn test_update_endpoint_returns_account(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("update+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Update"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with all fields
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: Some(format!("updated+{}@example.com", unique)),
+        first_name: Some(String::from("Updated")),
+        last_name: Some(String::from("User")),
+        password: Some(String::from("NewPassword123")),
+        budget_preference: Some(BudgetBucket::HighBudget),
+        risk_preference: Some(RiskTolerence::Adventurer),
+        food_allergies: Some(String::from("Peanuts, shellfish")),
+        disabilities: Some(String::from("Wheelchair accessible")),
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_update_endpoint_partial_fields(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("partial+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Partial"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with only some fields
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: None,
+        first_name: Some(String::from("PartiallyUpdated")),
+        last_name: None,
+        password: None,
+        budget_preference: None,
+        risk_preference: None,
+        food_allergies: Some(String::from("Gluten")),
+        disabilities: None,
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_update_endpoint_with_preferences(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("prefs+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Prefs"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with enum preferences
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: None,
+        first_name: None,
+        last_name: None,
+        password: None,
+        budget_preference: Some(BudgetBucket::LuxuryBudget),
+        risk_preference: Some(RiskTolerence::RiskTaker),
+        food_allergies: None,
+        disabilities: None,
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_get_itinerary_id_not_found(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("get_itinerary+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Get"),
+        last_name: String::from("Itinerary"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /{id} endpoint with non-existent itinerary (should return 404)
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    assert_eq!(controllers::itinerary::api_get_itinerary(user, axum::extract::Path(999999), pool.clone())
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 404);
+}
+
+async fn test_invalid_signup_email(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("invalid_email_{}", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Get"),
+        last_name: String::from("Event"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    assert_eq!(controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+}
+
+async fn test_saved_itineraries_endpoint(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /saved endpoint returns user's itineraries
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    _ = controllers::itinerary::api_saved_itineraries(user, pool)
+        .await
+        .unwrap();
+}
+
+async fn test_save_itinerary_new() {}
+async fn test_save_itinerary_update() {}
+async fn test_get_chats() {}
+async fn test_latest_message_page() {}
+async fn test_specific_message_page() {}
+async fn test_invalid_message_page() {}
+async fn test_update_message() {}
+async fn test_update_invalid_message() {}
+async fn test_send_message() {}
+async fn test_new_chat_existing() {}
+async fn test_new_chat_new() {}
+
 // INTEGRATION TESTS
 
 static mut PORT: u16 = 0;
@@ -723,18 +915,10 @@ async fn test_endpoints() {
     tokio::join!(
     	test_signup_and_login_happy_path(&cookie_key),
      	test_auth_for_all_required(),
-     	// test_signup_conflict_on_duplicate_email(),
      	test_http_signup_and_login_flow(),
-        // test_http_login_invalid_credentials(),
 	    test_validate_with_bad_and_good_cookie(),
-	    // test_current_endpoint_returns_account(),
-	    test_update_endpoint_returns_account(),
-	    test_update_endpoint_partial_fields(),
-	    test_update_endpoint_with_preferences(),
-	    test_saved_itineraries_endpoint(),
-	    test_get_itinerary_endpoint(),
-	    test_signup_logout(),
-		test_invalid_signup_email(),
+	    test_get_itinerary_invalid_format(),
+		test_signup_logout(),
         // just throw all the tests in here
     );
 }
@@ -918,155 +1102,7 @@ async fn test_validate_with_bad_and_good_cookie() {
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
 }
 
-async fn test_update_endpoint_returns_account() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("update+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Update",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with all fields
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "email": format!("updated+{}@example.com", unique),
-                "first_name": "Updated",
-                "last_name": "User",
-                "password": "NewPassword123",
-                "budget_preference": "HighBudget",
-                "risk_preference": "Adventurer",
-                "food_allergies": "Peanuts, shellfish",
-                "disabilities": "Wheelchair accessible"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_update_endpoint_partial_fields() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("partial+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Partial",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with only some fields
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "first_name": "PartiallyUpdated",
-                "food_allergies": "Gluten"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_update_endpoint_with_preferences() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("prefs+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Prefs",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with enum preferences
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "budget_preference": "LuxuryBudget",
-                "risk_preference": "RiskTaker"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_saved_itineraries_endpoint() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("saved_itineraries+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Saved",
-                "last_name": "Itineraries",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /saved endpoint returns user's itineraries
-    let saved_resp = hc
-        .do_get("/api/itinerary/saved")
-        .await
-        .unwrap();
-    assert_eq!(saved_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(saved_resp.status().is_success());
-}
-
-async fn test_get_itinerary_endpoint() {
+async fn test_get_itinerary_invalid_format() {
 	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("get_itinerary+{}@example.com", unique);
@@ -1085,13 +1121,6 @@ async fn test_get_itinerary_endpoint() {
         .await
         .unwrap();
     assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /{id} endpoint with non-existent itinerary (should return 404)
-    let get_resp = hc
-        .do_get("/api/itinerary/999999")
-        .await
-        .unwrap();
-    assert_eq!(get_resp.status().as_u16(), 404);
 
     // Test with invalid ID format (should return 400)
     let invalid_resp = hc
@@ -1140,25 +1169,4 @@ async fn test_signup_logout() {
         .await
         .unwrap();
     assert_eq!(validate_res.status().as_u16(), 401, "Missing/invalid cookie should return 401");
-}
-
-async fn test_invalid_signup_email() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("invalid_email_{}", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Get",
-                "last_name": "Event",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 400);
 }

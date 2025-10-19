@@ -56,6 +56,46 @@ fn as_events(el: &[EventListJoinRow], tod: TimeOfDay) -> Vec<Event> {
 	events
 }
 
+pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult<()> {
+	let morning_len = itinerary.morning_events.len();
+	let noon_len = itinerary.noon_events.len();
+	let afternoon_len = itinerary.afternoon_events.len();
+	let evening_len = itinerary.evening_events.len();
+
+	let cap = morning_len
+		+ noon_len
+		+ afternoon_len
+		+ evening_len;
+
+	let mut events = Vec::with_capacity(cap);
+	events.extend(itinerary.morning_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.noon_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.afternoon_events.into_iter().map(|event| event.id));
+	events.extend(itinerary.evening_events.into_iter().map(|event| event.id));
+
+	let mut times = Vec::with_capacity(cap);
+	times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Noon, noon_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
+	times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
+
+	sqlx::query!(
+		r#"
+		INSERT INTO event_list (itinerary_id, event_id, time_of_day)
+		SELECT $1, events, times
+		FROM UNNEST($2::int4[], $3::time_of_day[]) as u(events, times);
+		"#,
+		itinerary.id,
+		events.as_slice(),
+		times.as_slice() as &[TimeOfDay]
+	)
+   	.execute(pool)
+    .await
+    .map_err(|e| AppError::from(e))?;
+
+	Ok(())
+}
+
 /// Get all saved itineraries for the authenticated user.
 ///
 /// # Method
@@ -242,41 +282,7 @@ pub async fn api_save(
 	.await
 	.map_err(|e| AppError::from(e))?;
 
-	let morning_len = itinerary.morning_events.len();
-	let noon_len = itinerary.noon_events.len();
-	let afternoon_len = itinerary.afternoon_events.len();
-	let evening_len = itinerary.evening_events.len();
-
-	let cap = morning_len
-		+ noon_len
-		+ afternoon_len
-		+ evening_len;
-
-	let mut events = Vec::with_capacity(cap);
-	events.extend(itinerary.morning_events.into_iter().map(|event| event.id));
-	events.extend(itinerary.noon_events.into_iter().map(|event| event.id));
-	events.extend(itinerary.afternoon_events.into_iter().map(|event| event.id));
-	events.extend(itinerary.evening_events.into_iter().map(|event| event.id));
-
-	let mut times = Vec::with_capacity(cap);
-	times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
-	times.extend(std::iter::repeat_n(TimeOfDay::Noon, noon_len));
-	times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
-	times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
-
-	sqlx::query!(
-		r#"
-		INSERT INTO event_list (itinerary_id, event_id, time_of_day)
-		SELECT $1, events, times
-		FROM UNNEST($2::int4[], $3::time_of_day[]) as u(events, times);
-		"#,
-		itinerary.id,
-		events.as_slice(),
-		times.as_slice() as &[TimeOfDay]
-	)
-   	.execute(&pool)
-    .await
-    .map_err(|e| AppError::from(e))?;
+	insert_event_list(itinerary, &pool).await?;
 
 	Ok(Json(SaveResponse {id}))
 }

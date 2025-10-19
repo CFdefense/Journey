@@ -14,8 +14,10 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use tower_cookies::{
-    cookie::{time::{Duration, OffsetDateTime}, CookieJar, Key, SameSite}, Cookie, Cookies
+    cookie::{time::{Duration, OffsetDateTime}, Key, SameSite}, Cookie, Cookies
 };
+#[cfg(test)]
+use tower_cookies::cookie::CookieJar;
 
 use sqlx::PgPool;
 use tracing::debug;
@@ -444,7 +446,7 @@ pub async fn api_update(
 /// curl -X GET http://localhost:3001/api/account/logout
 ///   -H "Content-Type: application/json"
 /// ```
-async fn api_logout<C: CookieStore>(
+pub async fn api_logout<C: CookieStore>(
 	cookies: &mut C,
     Extension(key): Extension<Key>,
     Extension(user): Extension<AuthUser>
