@@ -1,6 +1,73 @@
 use axum::{routing::{get, post}, Extension, Json, Router};
+use chrono::NaiveDateTime;
 use sqlx::PgPool;
-use crate::{error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::ChatsResponse, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, itinerary::Itinerary, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+
+/// Sends message and latest itinerary in chat session to llm, and waits for response.
+///
+/// When the bot replies, it's message and itinerary are inserted into the db.
+/// # Warning!
+/// Assumes the user's message has already been inserted into the db.
+pub async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, pool: &PgPool) -> ApiResult<Message> {
+	// TODO: this is where the LLM call will be.
+	// It should generate an itinerary, insert it into the db, and give some text.
+	// Fow now we just make a temporary message.
+	let ai_text = "Bot reply";
+	let ai_itinerary = Itinerary {
+	    id: 0,
+	    start_date: NaiveDateTime::parse_from_str("2025-11-05 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+	    end_date: NaiveDateTime::parse_from_str("2025-11-15 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+	    morning_events: vec![],//TODO populate mock with events
+	    noon_events: vec![],
+	    afternoon_events: vec![],
+	    evening_events: vec![],
+	    chat_session_id: None,
+	};
+
+	// insert generated itinerary into db
+	let itinerary_id = Some(sqlx::query!(
+		r#"
+		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
+		VALUES ($1, FALSE, $2, $3, $4, TRUE)
+		RETURNING id;
+		"#,
+		account_id,
+		ai_itinerary.start_date,
+		ai_itinerary.end_date,
+		chat_session_id
+	)
+	.fetch_one(pool)
+	.await
+	.map_err(|e| AppError::from(e))?
+	.id);
+
+	insert_event_list(ai_itinerary, pool).await?;
+
+	// insert bot message into db
+	let record = sqlx::query!(
+		r#"
+		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+		VALUES ($1, $2, FALSE, NOW(), $3)
+		RETURNING id, timestamp;
+		"#,
+		chat_session_id,
+		itinerary_id,
+		ai_text
+	)
+	.fetch_one(pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	let (bot_message_id, timestamp) = (record.id, record.timestamp);
+
+	Ok(Message {
+		id: bot_message_id,
+		is_user: false,
+		timestamp,
+		text: String::from(ai_text),
+		itinerary_id,
+	})
+}
 
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
@@ -97,7 +164,7 @@ pub async fn api_update_message(
 		FROM messages m
 		INNER JOIN chat_sessions c
 		ON m.chat_session_id=c.id
-		WHERE m.id=$1 AND c.account_id=$2;
+		WHERE m.id=$1 AND c.account_id=$2 AND m.is_user=TRUE;
 		"#,
 		message_id,
 		user.id
@@ -107,32 +174,42 @@ pub async fn api_update_message(
 	.map_err(|e| AppError::from(e))?
 	.ok_or(AppError::NotFound)?;
 
-	let Some(timestamp) = sqlx::query!(
+	// delete future messages
+	sqlx::query!(
+		r#"
+		DELETE FROM messages
+		WHERE timestamp > (
+			SELECT timestamp
+			FROM messages
+			WHERE id=$1
+		);
+		"#,
+		message_id
+	)
+	.execute(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	// update user message
+	let chat_session_id = sqlx::query!(
 		r#"
 		UPDATE messages
 		SET text=$1, timestamp=NOW()
 		WHERE is_user=TRUE AND id=$2
-		RETURNING timestamp;
+		RETURNING chat_session_id;
 		"#,
 		new_text,
 		message_id
 	)
-	.fetch_optional(&pool)
+	.fetch_one(&pool)
 	.await
 	.map_err(|e| AppError::from(e))?
-	.map(|record| record.timestamp) else {
-		// We could first check to see if the message exists, and give a 404 if not, then do 400 if is_user is false,
-		// but this is easier for now.
-		return Err(AppError::BadRequest(String::from("Invalid message id")))
-	};
-	// TODO: delete temporary data and actually implement controller
-	Ok(Json(Message {
-		id: message_id,
-		is_user: true,
-		timestamp,
-		text: new_text,
-		itinerary_id: None
-	}))
+	.chat_session_id;
+
+	// call llm and insert bot response into db
+	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, &pool).await?;
+
+	Ok(Json(bot_message))
 }
 
 pub async fn api_send_message(
@@ -156,6 +233,7 @@ pub async fn api_send_message(
 	.map_err(|e| AppError::from(e))?
 	.ok_or(AppError::NotFound)?;
 
+	// insert user message into db
 	let user_message_id = sqlx::query!(
 		r#"
 		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
@@ -170,38 +248,58 @@ pub async fn api_send_message(
 	.map_err(|e| AppError::from(e))?
 	.id;
 
-	// TODO: this is where the LLM call will be.
-	// It should generate an itinerary, insert it into the db, and give some text.
-	// Fow now we just make a temporary message.
-	let ai_text = "Bot reply";
-	let itinerary_id: Option<i32> = None;
-
-	let record = sqlx::query!(
-		r#"
-		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
-		VALUES ($1, $2, FALSE, NOW(), $3)
-		RETURNING id, timestamp;
-		"#,
-		chat_session_id,
-		itinerary_id,
-		ai_text
-	)
-	.fetch_one(&pool)
-	.await
-	.map_err(|e| AppError::from(e))?;
-
-	let (bot_message_id, timestamp) = (record.id, record.timestamp);
+	// call llm and insert bot response into db
+	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, &pool).await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,
-		bot_message: Message {
-			id: bot_message_id,
-			is_user: false,
-			timestamp: timestamp,
-			text: String::from(ai_text),
-			itinerary_id
-		}
+		bot_message
 	}))
+}
+
+pub async fn api_new_chat(
+	Extension(user): Extension<AuthUser>,
+    Extension(pool): Extension<PgPool>
+) -> ApiResult<Json<NewChatResponse>> {
+	// check to see if there's already an empty chat session before making a new one
+	let chat_sessions = sqlx::query!(
+		r#"
+		SELECT c.id
+		FROM chat_sessions c
+		WHERE
+			c.account_id=$1
+			AND NOT EXISTS (
+				SELECT 1
+				FROM messages m
+				WHERE m.chat_session_id=c.id
+			);
+		"#,
+		user.id
+	)
+	.fetch_all(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	let chat_session_id = match chat_sessions.first() {
+		Some(record) => record.id,
+		None => {
+			// make a new chat session
+			sqlx::query!(
+				r#"
+				INSERT INTO chat_sessions (account_id)
+				VALUES ($1)
+				RETURNING id
+				"#,
+				user.id
+			)
+			.fetch_one(&pool)
+			.await
+			.map_err(|e| AppError::from(e))?
+			.id
+		}
+	};
+
+	Ok(Json(NewChatResponse { chat_session_id }))
 }
 
 /// Create the chat routes with authentication middleware.
@@ -221,5 +319,6 @@ pub fn chat_routes() -> Router {
         .route("/messagePage", post(api_message_page))
         .route("/updateMessage", post(api_update_message))
         .route("/sendMessage", post(api_send_message))
+        .route("/newChat", get(api_new_chat))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }
