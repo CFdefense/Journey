@@ -225,8 +225,8 @@ pub async fn api_send_message(
 		SELECT id from chat_sessions
 		WHERE id=$1 AND account_id=$2;
 		"#,
+		chat_session_id,
 		user.id,
-		chat_session_id
 	)
 	.fetch_optional(&pool)
 	.await

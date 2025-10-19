@@ -1,20 +1,17 @@
 import type { ChatSession, Message } from "../models/home";
 import type { SendMessageRequest, SendMessageResponse } from "../models/chat";
-import { apiSendMessage } from "../api/home";
+import { apiSendMessage, apiNewChatId } from "../api/home";
 
 /**
  * Handles sending a message in an existing chat session.
- * Freezes chatId so messages always go to the correct chat.
  */
 export async function handleMessageSendExistingChat(
   text: string,
-  chatId: number, // explicitly pass the chat ID
+  chatId: number,
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>
 ) {
-  const targetChatId = chatId; // freeze chat ID
-
   const userMessage: Message = {
-    id: Date.now(),
+    id: Date.now(), // temporary client-side ID
     text,
     sender: "user",
   };
@@ -22,7 +19,7 @@ export async function handleMessageSendExistingChat(
   // Optimistically add the user message
   setChats((prevChats) =>
     prevChats.map((chat) =>
-      chat.id === targetChatId
+      chat.id === chatId
         ? { ...chat, messages: [...chat.messages, userMessage] }
         : chat
     )
@@ -30,7 +27,7 @@ export async function handleMessageSendExistingChat(
 
   try {
     const payload: SendMessageRequest = {
-      chat_session_id: targetChatId,
+      chat_session_id: chatId,
       text,
     };
 
@@ -45,7 +42,7 @@ export async function handleMessageSendExistingChat(
     // Append bot message to the correct chat
     setChats((prevChats) =>
       prevChats.map((chat) =>
-        chat.id === targetChatId
+        chat.id === chatId
           ? { ...chat, messages: [...chat.messages, botMessage] }
           : chat
       )
@@ -57,7 +54,6 @@ export async function handleMessageSendExistingChat(
 
 /**
  * Handles sending the very first message when the user has no chats yet.
- * Freezes the new chat ID so messages don't leak between chats.
  */
 export async function handleMessageSendNewChat(
   text: string,
@@ -65,28 +61,35 @@ export async function handleMessageSendNewChat(
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
   setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>
 ) {
-  const newChatId = Date.now();
-  const targetChatId = newChatId; // freeze ID for API call
+  // ✅ Wait for new chat session from backend
+  const newChatId = await apiNewChatId();
+  console.log(newChatId)
+
+  if (newChatId === -1) {
+    console.error("Failed to create new chat session");
+    return;
+  }
 
   const userMessage: Message = {
-    id: targetChatId,
+    id: Date.now(), // temporary client-side ID
     text,
     sender: "user",
   };
 
-  // Create new chat locally
+  // Create a new chat locally
   const newChat: ChatSession = {
-    id: targetChatId,
+    id: newChatId,
     title: `Chat ${chats.length + 1 || 1}`,
     messages: [userMessage],
   };
 
-  setChats([newChat]);
-  setActiveChatId(targetChatId);
+  // Add to chat list and make it active
+  setChats((prev) => [...prev, newChat]);
+  setActiveChatId(newChatId);
 
   try {
     const payload: SendMessageRequest = {
-      chat_session_id: targetChatId,
+      chat_session_id: newChatId,
       text,
     };
 
@@ -98,10 +101,10 @@ export async function handleMessageSendNewChat(
       sender: response.bot_message.is_user ? "user" : "bot",
     };
 
-    // Update the new chat with bot message
+    // Update the same chat with the bot response
     setChats((prevChats) =>
       prevChats.map((chat) =>
-        chat.id === targetChatId
+        chat.id === newChatId
           ? { ...chat, messages: [...chat.messages, botMessage] }
           : chat
       )

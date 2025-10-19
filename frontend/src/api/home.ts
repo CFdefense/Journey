@@ -124,7 +124,31 @@ export async function apiSendMessage(payload: SendMessageRequest): Promise<SendM
 }
 
 
+export async function apiNewChatId(): Promise<number> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat/newChat`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: import.meta.env.DEV ? "include" : "same-origin",
+    });
 
+    // TODO add the specific error handling when documentation on backend is updated
+    if (!response.ok) {
+      console.warn("Non-OK response from /api/chat/newChat:", response.status);
+      return -1; // -1 if there is an error
+    }
+
+    const data = await response.json();
+    
+    return data.chat_session_id ?? -1;
+    
+  } catch (error) {
+    console.error("apiChats error:", error);
+    return -1; 
+  }
+}
 
 
 

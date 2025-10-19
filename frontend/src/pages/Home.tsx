@@ -5,7 +5,7 @@ import Itinerary from "../components/Itinerary";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import { apiCheckIfPreferencesPopulated } from "../api/account";
-import { apiChats, apiMessages, apiSendMessage } from "../api/home";
+import { apiChats, apiMessages, apiNewChatId } from "../api/home";
 import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
 import { apiItineraryDetails } from "../api/itinerary"; 
 import { handleMessageSendExistingChat, handleMessageSendNewChat, } from "../helpers/home";
@@ -104,30 +104,45 @@ useEffect(() => {
 
 
 
-  // Create a new blank chat
-  const handleNewChat = () => {
+// Create a new blank chat from the button and make it have a chatSessionId on the backend too
+const createNewChatFromButton = async () => {
+  try {
+    const newChatId = await apiNewChatId();
+
+    console.log(apiChats()); 
+
+    if (newChatId === -1) {
+      console.error("Failed to create new chat session");
+      return;
+    }
+
     const newChat: ChatSession = {
-      id: Date.now(),
-      title: `Chat ${chats.length + 1}`,
+      id: newChatId,
+      title: `Chat ${chats.length + 1 || 1}`,
       messages: [],
     };
+
     setChats((prev) => [...prev, newChat]);
-    setActiveChatId(newChat.id);
-  };
+    setActiveChatId(newChatId);
+  } catch (err) {
+    console.error("Error creating new chat:", err);
+  }
+};
 
   // this logic is handled in /helpers/home.ts
   const handleSendMessage = async (text: string) => {
-  if (!text.trim()) return;
+    if (!text.trim()) return;
 
-  // Determine which chat we are sending to
-  // If no chats exist, or no chat is selected, create a new chat
-  const isNewChat = chats.length === 0 || activeChatId === null;
-
-  if (isNewChat) {
-    await handleMessageSendNewChat(text, chats, setChats, setActiveChatId);
-  } else {
-    await handleMessageSendExistingChat(text, activeChatId, setChats);
-  }
+    // Determine which chat we are sending to
+    // If no chats exist, or no chat is selected, create a new chat
+    const isNewChat = chats.length === 0 || activeChatId === null;
+    console.log(isNewChat)
+    
+    if (isNewChat) {
+      await handleMessageSendNewChat(text, chats, setChats, setActiveChatId);
+    } else {
+      await handleMessageSendExistingChat(text, activeChatId, setChats);
+    }
 };
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
@@ -141,7 +156,7 @@ useEffect(() => {
         chats={chats}
         activeChatId={activeChatId}
         onSelectChat={setActiveChatId}
-        onNewChat={handleNewChat}
+        onNewChat={createNewChatFromButton}
       />
       <ChatWindow messages={activeChat?.messages || []} onSend={handleSendMessage} />
       <Itinerary />
