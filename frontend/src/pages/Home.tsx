@@ -5,6 +5,11 @@ import Itinerary from "../components/Itinerary";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import { apiCheckIfPreferencesPopulated } from "../api/account";
+import { apiChats } from "../api/home";
+import { apiMessages } from "../api/home";
+import type { MessagePageRequest } from "../models/chat";
+
+ 
 
 interface Message {
   id: number;
@@ -41,6 +46,36 @@ export default function Home() {
 
       fetchPreferences();
     }, []);
+
+    useEffect(() => {
+      async function fetchChatsAndMessages() {
+      try {
+        const chatData = await apiChats();
+        console.log("Fetched chats:", chatData);
+
+        // get the chat id, set a title, and initialize empty array for messages later
+        const initialChats: ChatSession[] = chatData.chat_sessions.map((id, i) => ({
+          id,
+          title: `Chat ${i + 1}`,
+          messages: [],
+        }));
+
+        for (let i = 0; i < initialChats.length; i++) {
+          const payload: MessagePageRequest = {
+            chat_session_id: initialChats[i].id,
+            message_id: null, // for now this will be blank, we want all of the messages
+          };
+          const messagePageForSingleChat = await apiMessages(payload);
+          
+        }
+
+      } catch (err) {
+        console.error("Error fetching chats:", err);
+      }
+    }
+
+  fetchChatsAndMessages();
+}, []);
 
   // Create a new blank chat
   const handleNewChat = () => {
