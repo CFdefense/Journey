@@ -5,13 +5,9 @@ import Itinerary from "../components/Itinerary";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import { apiCheckIfPreferencesPopulated } from "../api/account";
-import { apiChats } from "../api/home";
-import { apiMessages } from "../api/home";
-import type { MessagePageRequest } from "../models/chat";
-import type { MessagePageResponse } from "../models/chat";
+import { apiChats, apiMessages, apiSendMessage } from "../api/home";
+import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
 
-
- 
 
 interface Message {
   id: number;
@@ -29,10 +25,11 @@ export default function Home() {
   //array of chat sessions. each chat session has an id, title, and list of messages
   const [chats, setChats] = useState<ChatSession[]>([]);
   // current chat in window 
-  //TODO use this to determine which itinerary to show
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
-
+  // the finish account creation 
   const [showFinishPopup, setShowFinishPopup] = useState(false);
+  // which itinerary is shown in chat
+  const [displayedItinerary, setDisplayedItinerary] = useState(-1);
 
     // check if preferences are filled out for a user
     useEffect(() => {
@@ -112,60 +109,102 @@ export default function Home() {
   };
 
   // Handle sending a message
-const handleSendMessage = (text: string) => {
-  if (!text.trim()) return;
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim()) return;
 
-  // If there are no chats yet, create a new chat including this first message
-  // When the user makes a chat for the first time, they do not have to click, new chat, they just have to start chatting
-  if (chats.length === 0) {
-    const userMessage: Message = {
-      id: Date.now(),
-      text,
-      sender: "user",
-    };
-
-    const botMessage: Message = {
-      id: Date.now() + 1,
-      text: "bot reply",
-      sender: "bot",
-    };
-
-    const newChat: ChatSession = {
-      id: Date.now(),
-      title: `Chat 1`,
-      messages: [userMessage, botMessage], // include the first message
-    };
-
-    setChats([newChat]);
-    setActiveChatId(newChat.id);
-    return; // message already added, exit
-  }
-
-  // There are existing chats, add to the active chat
-  if (activeChatId === null) return;
-
-  setChats((prevChats) =>
-    prevChats.map((chat) => {
-      if (chat.id !== activeChatId) return chat;
+    // If there are no chats yet, create a new chat first
+    if (chats.length === 0) {
+      const newChatId = Date.now(); // temporary ID for new chat
 
       const userMessage: Message = {
-        id: Date.now(),
+        id: newChatId,
         text,
         sender: "user",
       };
 
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        text: "bot reply",
-        sender: "bot",
+      // Add the new chat locally first
+      const newChat: ChatSession = {
+        id: newChatId,
+        title: `Chat 1`,
+        messages: [userMessage], // only the user message for now
       };
+      setChats([newChat]);
+      setActiveChatId(newChatId);
 
-      return {
-        ...chat,
-        messages: [...chat.messages, userMessage, botMessage],
-      };
-    })
+      try {
+        const payload: SendMessageRequest = {
+          chat_session_id: newChatId,
+          text,
+        };
+        
+      
+        const response: SendMessageResponse = await apiSendMessage(payload);
+
+        // Convert backend bot message to frontend format
+        const botMessage: Message = {
+          id: response.bot_message.id,
+          text: response.bot_message.text,
+          sender: response.bot_message.is_user ? "user" : "bot",
+        };
+
+        // Update chat to include bot message
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === newChatId
+              ? { ...chat, messages: [...chat.messages, botMessage] }
+              : chat
+          )
+        );
+      } catch (err) {
+        console.error("Error sending message:", err);
+      }
+
+      return;
+    }
+
+  // If chat exists, append messages to active chat
+  if (activeChatId === null) return;
+
+  const userMessage: Message = {
+    id: Date.now(),
+    text,
+    sender: "user",
+  };
+
+  // Optimistically add the user message. Avoids waiting for it to load from back end, it will never be different. 
+  setChats((prevChats) =>
+    prevChats.map((chat) =>
+      chat.id === activeChatId
+        ? { ...chat, messages: [...chat.messages, userMessage] }
+        : chat
+    )
   );
+
+  try {
+    const payload: SendMessageRequest = {
+      chat_session_id: activeChatId,
+      text,
+    };
+    const response: SendMessageResponse = await apiSendMessage(payload);
+
+    const botMessage: Message = {
+      id: response.bot_message.id,
+      text: response.bot_message.text,
+      sender: response.bot_message.is_user ? "user" : "bot",
+    };
+
+    // Append the bot message after API returns
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === activeChatId
+          ? { ...chat, messages: [...chat.messages, botMessage] }
+          : chat
+      )
+    );
+
+  } catch (err) {
+    console.error("Error sending message:", err);
+  }
 };
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;

@@ -1,7 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ChatsResponse } from "../models/chat";
-import type { MessagePageRequest } from "../models/chat";
-import type { MessagePageResponse } from "../models/chat";
+import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
 
 
 
@@ -67,6 +66,66 @@ export async function apiMessages(payload: MessagePageRequest): Promise<MessageP
     };
   }
 }
+
+
+export async function apiSendMessage(payload: SendMessageRequest): Promise<SendMessageResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: import.meta.env.DEV ? "include" : "same-origin",
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.warn("Non-OK response from /api/chat/sendMessage:", response.status);
+      // Return placeholder fallback on server error
+      return {
+        user_message_id: -1, // no ids in the db will be negative
+        bot_message: {
+          id: -1,
+          is_user: false,
+          timestamp: new Date().toISOString(),
+          text: "Error: could not send message",
+          itinerary_id: null,
+        },
+      };
+    }
+
+    const data = await response.json();
+
+    // Convert backend response to SendMessageResponse shape
+    return {
+      user_message_id: data.user_message_id ?? -1,
+      bot_message: {
+        id: data.bot_message?.id ?? -1,
+        is_user: data.bot_message?.is_user ?? false,
+        timestamp: data.bot_message?.timestamp ?? new Date().toISOString(),
+        text: data.bot_message?.text ?? "",
+        itinerary_id: data.bot_message?.itinerary_id ?? null,
+      },
+    };
+  } catch (error) {
+    console.error("apiSendMessage error:", error);
+    // Return placeholder fallback on network or parsing error
+    return {
+      user_message_id: -1,
+      bot_message: {
+        id: -1,
+        is_user: false,
+        timestamp: new Date().toISOString(),
+        text: "Error: network or parsing failure",
+        itinerary_id: null,
+      },
+    };
+  }
+}
+
+
+
+
 
 
 
