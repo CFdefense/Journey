@@ -53,7 +53,6 @@ export async function apiMessages(payload: MessagePageRequest): Promise<MessageP
     }
 
     const data = await response.json();
-    console.log("Fetched message page:", data);
 
     return {
       message_page: data.message_page ?? [],

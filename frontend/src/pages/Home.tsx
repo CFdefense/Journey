@@ -8,6 +8,8 @@ import { apiCheckIfPreferencesPopulated } from "../api/account";
 import { apiChats } from "../api/home";
 import { apiMessages } from "../api/home";
 import type { MessagePageRequest } from "../models/chat";
+import type { MessagePageResponse } from "../models/chat";
+
 
  
 
@@ -32,6 +34,7 @@ export default function Home() {
 
   const [showFinishPopup, setShowFinishPopup] = useState(false);
 
+    // check if preferences are filled out for a user
     useEffect(() => {
       async function fetchPreferences() {
         try {
@@ -60,14 +63,34 @@ export default function Home() {
           messages: [],
         }));
 
-        for (let i = 0; i < initialChats.length; i++) {
+        // fetch all of the chats in parallel
+        const chatsWithMessages = await Promise.all(
+        initialChats.map(async (chat) => {
           const payload: MessagePageRequest = {
-            chat_session_id: initialChats[i].id,
-            message_id: null, // for now this will be blank, we want all of the messages
+            chat_session_id: chat.id,
+            message_id: null, 
           };
-          const messagePageForSingleChat = await apiMessages(payload);
-          
-        }
+
+          const messagePage: MessagePageResponse = await apiMessages(payload);
+
+          console.log("Message page for chat ID", chat.id, ":", messagePage); // log message page and chatId for debugging for now
+
+
+          // convert the backend message into the format the front end is expecting
+          const messages: Message[] = messagePage.message_page.map((msg) => ({
+            id: msg.id,
+            text: msg.text,
+            sender: msg.is_user ? "user" : "bot",
+          }));
+
+          return {
+            ...chat, // call all properties of chat into a new object (id, text, sender)
+            messages, // adds the messages to the previously blank section of initialChats
+          };
+        })
+      );
+
+      setChats(chatsWithMessages);
 
       } catch (err) {
         console.error("Error fetching chats:", err);
