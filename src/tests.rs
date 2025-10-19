@@ -575,7 +575,7 @@ async fn test_controllers() {
 	let key = Extension(Key::derive_from(&[0u8; 32]));
 	let pool = Extension(db::create_pool().await);
 
-	tokio::join!(
+	_ = tokio::join!(
 		test_signup_conflict_on_duplicate_email(cookies.clone(), key.clone(), pool.clone()),
 		test_http_login_invalid_credentials(cookies.clone(), key.clone(), pool.clone()),
 		test_current_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
@@ -585,6 +585,18 @@ async fn test_controllers() {
 		test_get_itinerary_id_not_found(cookies.clone(), key.clone(), pool.clone()),
 		test_invalid_signup_email(cookies.clone(), key.clone(), pool.clone()),
 		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
+		test_save_itinerary_existing(cookies.clone(), key.clone(), pool.clone()),
+		test_save_itinerary_new(cookies.clone(), key.clone(), pool.clone()),
+		test_get_chats(cookies.clone(), key.clone(), pool.clone()),
+		test_latest_message_page(cookies.clone(), key.clone(), pool.clone()),
+		test_specific_message_page(cookies.clone(), key.clone(), pool.clone()),
+		test_invalid_message_page(cookies.clone(), key.clone(), pool.clone()),
+		test_update_message(cookies.clone(), key.clone(), pool.clone()),
+		test_update_invalid_message(cookies.clone(), key.clone(), pool.clone()),
+		test_send_message(cookies.clone(), key.clone(), pool.clone()),
+		test_send_message_invalid_chat_session(cookies.clone(), key.clone(), pool.clone()),
+		test_new_chat_existing(cookies.clone(), key.clone(), pool.clone()),
+		test_new_chat_new(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
 
@@ -846,17 +858,54 @@ async fn test_saved_itineraries_endpoint(mut cookies: CookieJar, key: Extension<
         .unwrap();
 }
 
-async fn test_save_itinerary_new() {}
-async fn test_save_itinerary_update() {}
-async fn test_get_chats() {}
-async fn test_latest_message_page() {}
-async fn test_specific_message_page() {}
-async fn test_invalid_message_page() {}
-async fn test_update_message() {}
-async fn test_update_invalid_message() {}
-async fn test_send_message() {}
-async fn test_new_chat_existing() {}
-async fn test_new_chat_new() {}
+async fn test_save_itinerary_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	// TODO save itinerary with a matching id already in db
+}
+
+async fn test_save_itinerary_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	// TODO save itinerary with id not in db
+}
+
+async fn test_get_chats(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	// TODO controller works
+}
+
+async fn test_latest_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO get latest messages and make sure messages are in chronological order
+}
+
+async fn test_specific_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO get specific messages and make sure messages are in chronological order
+}
+
+async fn test_invalid_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO get page with invalid message id
+	//TODO get page with invalid chat session id
+}
+
+async fn test_update_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO controller works (uses mock llm)
+}
+
+async fn test_update_invalid_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO update message with invalid message id
+}
+
+async fn test_send_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO controller works (uses mock llm)
+}
+
+async fn test_send_message_invalid_chat_session(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO send message with invalid chat session
+}
+
+async fn test_new_chat_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO create new chat with matching id in db
+}
+
+async fn test_new_chat_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	//TODO create new chat with id not in db
+}
 
 // INTEGRATION TESTS
 
@@ -998,7 +1047,7 @@ async fn test_auth_for_all_required() {
 		"evening_events": []
     });
 
-    for res in futures::future::join_all(vec![
+    for res in futures::future::join_all([
 		hc.do_get("/api/account/current"),
 		hc.do_get("/api/account/validate"),
 		hc.do_get("/api/account/logout"),
@@ -1010,7 +1059,7 @@ async fn test_auth_for_all_required() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
     }
 
-    for res in futures::future::join_all(vec![
+    for res in futures::future::join_all([
 		hc.do_post("/api/account/update", account_update_payload),
 		hc.do_post("/api/chat/messagePage", chat_message_page_payload),
 		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),

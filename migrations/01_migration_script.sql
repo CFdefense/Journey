@@ -70,10 +70,11 @@ CREATE TABLE itineraries (
     id SERIAL PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
-    start_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    end_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL,
-    saved BOOLEAN NOT NULL
+    saved BOOLEAN NOT NULL,
+    title VARCHAR(255) NOT NULL
 );
 
 -- Event list table
@@ -81,7 +82,8 @@ CREATE TABLE event_list (
     id SERIAL PRIMARY KEY,
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    time_of_day time_of_day NOT NULL
+    time_of_day time_of_day NOT NULL,
+    date DATE NOT NULL
 );
 
 CREATE TABLE messages (
@@ -141,12 +143,12 @@ SELECT setval(
 );
 
 -- Itineraries
-INSERT INTO itineraries (id, account_id, is_public, start_date, end_date, chat_session_id, saved)
-VALUES (1, 1, FALSE, '2025-11-05 00:00:00', '2025-11-10 00:00:00', 1, TRUE), -- Ellie
-(2, 2, TRUE, '2025-10-12 00:00:00', '2025-10-14 00:00:00', 2, TRUE), -- Nick
-(3, 3, TRUE, '2025-12-01 00:00:00', '2025-12-08 00:00:00', 3, TRUE), --Christian
-(4, 4, FALSE, '2025-07-15 00:00:00', '2025-07-17 00:00:00', 4, TRUE), -- Ethan
-(5, 5, FALSE, '2025-08-15 00:00:00', '2025-08-28 00:00:00', 5, TRUE); -- Peter
+INSERT INTO itineraries (id, account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+VALUES (1, 1, FALSE, '2025-11-05', '2025-11-10', 1, TRUE, 'NYC 11/5-10 2025'), -- Ellie
+(2, 2, TRUE, '2025-10-12', '2025-10-14', 2, TRUE, 'Poughkeepsie 10/12-14 2025'), -- Nick
+(3, 3, TRUE, '2025-12-01', '2025-12-08', 3, TRUE, 'Philly 12/1-8 2025'), --Christian
+(4, 4, FALSE, '2025-07-15', '2025-07-17', 4, TRUE, 'Lollapalooza 7/15-17 2025'), -- Ethan
+(5, 5, FALSE, '2025-08-15', '2025-08-28', 5, TRUE, 'Paris 8/15-28 2025'); -- Peter
 
 -- Ensure the itineraries id sequence matches the max(id)
 SELECT setval(
@@ -155,20 +157,20 @@ SELECT setval(
 );
 
 -- Event List
-INSERT INTO event_list (id, itinerary_id, event_id, time_of_day)
+INSERT INTO event_list (id, itinerary_id, event_id, time_of_day, date)
 -- Itinerary 1 (Nick to NYC + Poopsie)
-VALUES (1, 2, 3, 'Morning'), -- MoMA
-(2, 2, 2, 'Evening'), -- Cosimos
+VALUES (1, 2, 3, 'Morning', '2025-11-05'), -- MoMA
+(2, 2, 2, 'Evening', '2025-10-12'), -- Cosimos
 -- Itinerary 2 (Ellies Weekend in Carlisle)
-(3, 1, 1, 'Afternoon'), -- Hike in Carlisle
+(3, 1, 1, 'Afternoon', '2025-11-05'), -- Hike in Carlisle
 -- Itinerary 3 (Christian exploring Philly)
-(4, 3, 5, 'Afternoon'), -- Phillies Game
-(5, 3, 4, 'Evening'), -- Jazz
+(4, 3, 5, 'Afternoon', '2025-12-01'), -- Phillies Game
+(5, 3, 4, 'Evening', '2025-12-01'), -- Jazz
 -- Itinerary 4 (Ethan at Lollapalooza)
-(6, 4, 6, 'Noon'), --Lolla
+(6, 4, 6, 'Noon', '2025-07-15'), --Lolla
 --Itinerary 5 (peter in paris)
-(7, 5, 7, 'Morning'), --Eiffel Tower
-(8, 5, 8, 'Afternoon'); --Lourve
+(7, 5, 7, 'Morning', '2025-08-15'), --Eiffel Tower
+(8, 5, 8, 'Afternoon', '2025-08-15'); --Lourve
 
 -- Ensure the event_list id sequence matches the max(id)
 SELECT setval(

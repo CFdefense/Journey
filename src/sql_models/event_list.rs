@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::sql_models::TimeOfDay;
@@ -6,6 +7,7 @@ use crate::sql_models::TimeOfDay;
 pub struct EventListJoinRow {
 	pub id: i32,
     pub time_of_day: TimeOfDay,
+    pub date: NaiveDate,
     pub street_address: String,
     pub postal_code: i32,
     pub city: String,

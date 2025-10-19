@@ -1,27 +1,33 @@
 use axum::{routing::{get, post}, Extension, Json, Router};
-use chrono::NaiveDateTime;
+use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, itinerary::Itinerary, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
 
 /// Sends message and latest itinerary in chat session to llm, and waits for response.
 ///
 /// When the bot replies, it's message and itinerary are inserted into the db.
 /// # Warning!
 /// Assumes the user's message has already been inserted into the db.
-pub async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, pool: &PgPool) -> ApiResult<Message> {
+async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, pool: &PgPool) -> ApiResult<Message> {
 	// TODO: this is where the LLM call will be.
 	// It should generate an itinerary, insert it into the db, and give some text.
 	// Fow now we just make a temporary message.
 	let ai_text = "Bot reply";
 	let ai_itinerary = Itinerary {
 	    id: 0,
-	    start_date: NaiveDateTime::parse_from_str("2025-11-05 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
-	    end_date: NaiveDateTime::parse_from_str("2025-11-15 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
-	    morning_events: vec![],//TODO populate mock with events
-	    noon_events: vec![],
-	    afternoon_events: vec![],
-	    evening_events: vec![],
+	    start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+	    end_date: NaiveDate::parse_from_str("2025-11-15", "%Y-%m-%d").unwrap(),
+	    event_days: vec![
+			EventDay {
+				morning_events: vec![],//TODO: fill events
+				noon_events: vec![],
+				afternoon_events: vec![],
+				evening_events: vec![],
+				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap()
+			}
+		],
 	    chat_session_id: None,
+		title: String::from("Mock 11/5-15 2025")
 	};
 
 	// insert generated itinerary into db
@@ -225,8 +231,8 @@ pub async fn api_send_message(
 		SELECT id from chat_sessions
 		WHERE id=$1 AND account_id=$2;
 		"#,
-		user.id,
-		chat_session_id
+		chat_session_id,
+		user.id
 	)
 	.fetch_optional(&pool)
 	.await
