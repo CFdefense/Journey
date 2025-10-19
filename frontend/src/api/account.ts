@@ -170,7 +170,6 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 
 		// Read the response body as JSON if possible
 		const data = await response.json().catch(() => null);
-		console.log("Response body:", data);
 
 		// check if any preferences were not yet filled out
 		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {

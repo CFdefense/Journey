@@ -1,19 +1,21 @@
 import MessageInput from "./MessageInput";
 import "../styles/ChatWindow.css";
+import { Link } from "react-router-dom";
 
 interface Message {
   id: number;
   text: string;
   sender: "user" | "bot";
+  itinerary_id?: number | null; 
 }
 
-// messages is the array of messages from the active chat
 interface ChatWindowProps {
   messages: Message[];
   onSend: (text: string) => void;
+  itineraryTitles: Record<number, string>; 
 }
 
-export default function ChatWindow({ messages, onSend }: ChatWindowProps) {
+export default function ChatWindow({ messages, onSend, itineraryTitles }: ChatWindowProps) {
   return (
     <div className="chat-container">
       <div className="chat-messages">
@@ -25,11 +27,20 @@ export default function ChatWindow({ messages, onSend }: ChatWindowProps) {
               key={msg.id}
               className={`chat-message ${msg.sender === "user" ? "user" : "bot"}`}
             >
-              {msg.text}
+              <p>{msg.text}</p>
+              
+              {msg.sender === "bot" && msg.itinerary_id && (
+                <div className="itinerary-info">
+                  <Link to={`/itinerary/${msg.itinerary_id}`} className="itinerary-link">
+                    Itinerary: {itineraryTitles[msg.itinerary_id] || "No Itinerary (change later)"}
+                  </Link>
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
+
       <MessageInput onSend={onSend} />
     </div>
   );

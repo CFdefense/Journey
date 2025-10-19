@@ -11,9 +11,10 @@ export async function handleMessageSendExistingChat(
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>
 ) {
   const userMessage: Message = {
-    id: Date.now(), // temporary client-side ID
+    id: Date.now(), 
     text,
     sender: "user",
+    itinerary_id: null, 
   };
 
   // Optimistically add the user message
@@ -32,11 +33,13 @@ export async function handleMessageSendExistingChat(
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
+    console.log(response.bot_message.itinerary_id)
 
     const botMessage: Message = {
       id: response.bot_message.id,
       text: response.bot_message.text,
       sender: response.bot_message.is_user ? "user" : "bot",
+      itinerary_id: response.bot_message.itinerary_id ?? null, 
     };
 
     // Append bot message to the correct chat
@@ -61,9 +64,9 @@ export async function handleMessageSendNewChat(
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
   setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>
 ) {
-  // ✅ Wait for new chat session from backend
+  // get the chat session id from the backend
   const newChatId = await apiNewChatId();
-  console.log(newChatId)
+  console.log("New chat session ID:", newChatId);
 
   if (newChatId === -1) {
     console.error("Failed to create new chat session");
@@ -71,9 +74,10 @@ export async function handleMessageSendNewChat(
   }
 
   const userMessage: Message = {
-    id: Date.now(), // temporary client-side ID
+    id: Date.now(),
     text,
     sender: "user",
+    itinerary_id: null, 
   };
 
   // Create a new chat locally
@@ -94,11 +98,13 @@ export async function handleMessageSendNewChat(
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
+    console.log(response.bot_message.itinerary_id)
 
     const botMessage: Message = {
       id: response.bot_message.id,
       text: response.bot_message.text,
       sender: response.bot_message.is_user ? "user" : "bot",
+      itinerary_id: response.bot_message.itinerary_id ?? null, 
     };
 
     // Update the same chat with the bot response
