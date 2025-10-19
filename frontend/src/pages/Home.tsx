@@ -8,20 +8,9 @@ import { apiCheckIfPreferencesPopulated } from "../api/account";
 import { apiChats, apiMessages, apiSendMessage } from "../api/home";
 import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
 import { apiItineraryDetails } from "../api/itinerary"; 
+import { handleMessageSendExistingChat, handleMessageSendNewChat, } from "../helpers/home";
+import type { Message, ChatSession } from "../models/home";
 
-
-
-interface Message {
-  id: number;
-  text: string;
-  sender: "user" | "bot";
-}
-
-interface ChatSession {
-  id: number;
-  title: string;
-  messages: Message[];
-}
 
 export default function Home() {
   //array of chat sessions. each chat session has an id, title, and list of messages
@@ -126,104 +115,18 @@ useEffect(() => {
     setActiveChatId(newChat.id);
   };
 
-  // Handle sending a message
+  // this logic is handled in /helpers/home.ts
   const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return;
+  if (!text.trim()) return;
 
-    // If there are no chats yet, create a new chat first
-    if (chats.length === 0) {
-      const newChatId = Date.now(); // temporary ID for new chat
+  // Determine which chat we are sending to
+  // If no chats exist, or no chat is selected, create a new chat
+  const isNewChat = chats.length === 0 || activeChatId === null;
 
-      const userMessage: Message = {
-        id: newChatId,
-        text,
-        sender: "user",
-      };
-
-      // Add the new chat locally first
-      const newChat: ChatSession = {
-        id: newChatId,
-        title: `Chat 1`,
-        messages: [userMessage], // only the user message for now
-      };
-      setChats([newChat]);
-      setActiveChatId(newChatId);
-
-      try {
-        const payload: SendMessageRequest = {
-          chat_session_id: newChatId,
-          text,
-        };
-        
-      
-        const response: SendMessageResponse = await apiSendMessage(payload);
-
-        // Convert backend bot message to frontend format
-        const botMessage: Message = {
-          id: response.bot_message.id,
-          text: response.bot_message.text,
-          sender: response.bot_message.is_user ? "user" : "bot",
-        };
-
-        // Update chat to include bot message
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat.id === newChatId
-              ? { ...chat, messages: [...chat.messages, botMessage] }
-              : chat
-          )
-        );
-      } catch (err) {
-        console.error("Error sending message:", err);
-      }
-
-      return;
-    }
-
-  // If chat exists, append messages to active chat
-  if (activeChatId === null) return;
-
-  const userMessage: Message = {
-    id: Date.now(),
-    text,
-    sender: "user",
-  };
-
-  // Optimistically add the user message. Avoids waiting for it to load from back end, it will never be different. 
-  setChats((prevChats) =>
-    prevChats.map((chat) =>
-      chat.id === activeChatId
-        ? { ...chat, messages: [...chat.messages, userMessage] }
-        : chat
-    )
-  );
-
-  try {
-    const payload: SendMessageRequest = {
-      chat_session_id: activeChatId,
-      text,
-    };
-    const response: SendMessageResponse = await apiSendMessage(payload);
-
-    const botMessage: Message = {
-      id: response.bot_message.id,
-      text: response.bot_message.text,
-      sender: response.bot_message.is_user ? "user" : "bot",
-    };
-
-    console.log(response.bot_message.itinerary_id);
-
-    // Append the bot message after API returns
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === activeChatId
-          ? { ...chat, messages: [...chat.messages, botMessage] }
-          : chat
-      )
-    );
-
-  } catch (err) {
-    console.error("Error sending message:", err);
+  if (isNewChat) {
+    await handleMessageSendNewChat(text, chats, setChats, setActiveChatId);
+  } else {
+    await handleMessageSendExistingChat(text, activeChatId, setChats);
   }
 };
 
