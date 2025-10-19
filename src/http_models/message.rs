@@ -25,13 +25,15 @@ pub struct MessagePageResponse {
 #[derive(Deserialize)]
 pub struct UpdateMessageRequest {
 	pub message_id: i32,
-	pub new_text: String
+	pub new_text: String,
+	pub itinerary_id: Option<i32>
 }
 
 #[derive(Deserialize)]
 pub struct SendMessageRequest {
 	pub chat_session_id: i32,
-	pub text: String
+	pub text: String,
+	pub itinerary_id: Option<i32>
 }
 
 #[derive(Serialize)]

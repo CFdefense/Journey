@@ -26,12 +26,14 @@ export type MessagePageResponse = {
 export type UpdateMessageRequest = {
 	/// The id of the user's message you want to update
 	message_id: number,
-	new_text: string
+	new_text: string,
+	itinerary_id: number | null
 }
 
 export type SendMessageRequest = {
 	chat_session_id: number,
-	text: string
+	text: string,
+	itinerary_id: number | null
 }
 
 export type SendMessageResponse = {

@@ -8,7 +8,48 @@ use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppErr
 /// When the bot replies, it's message and itinerary are inserted into the db.
 /// # Warning!
 /// Assumes the user's message has already been inserted into the db.
-async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, pool: &PgPool) -> ApiResult<Message> {
+async fn send_message_to_llm(
+	text: &str,
+	account_id: i32,
+	chat_session_id: i32,
+	itinerary_id: Option<i32>,
+	pool: &PgPool
+) -> ApiResult<Message> {
+	// Give the LLM an itinerary for context
+	let itinerary_id = match itinerary_id {
+		Some(id) => Some(id), //use the provided itinerary
+		None => { //use the latest itinerary from the chat session
+			sqlx::query!(
+				r#"
+				SELECT m.itinerary_id
+				FROM messages m
+				INNER JOIN chat_sessions c
+				ON m.chat_session_id=c.id
+				WHERE
+					c.account_id=$1 AND
+					c.id=$2 AND
+					m.itinerary_id IS NOT NULL
+				ORDER BY m.timestamp DESC
+				LIMIT 1;
+				"#,
+				account_id,
+				chat_session_id
+			)
+			.fetch_optional(pool)
+			.await
+			.map_err(|e| AppError::from(e))?
+			.map(|record| record.itinerary_id.unwrap())
+		}
+	};
+	let context_itinerary = match itinerary_id {
+		Some(id) => Some(crate::controllers::itinerary::api_get_itinerary(
+			Extension(AuthUser { id: account_id }),
+			axum::extract::Path(id),
+			Extension(pool.clone())
+		).await?),
+		None => None
+	};
+
 	// TODO: this is where the LLM call will be.
 	// It should generate an itinerary, insert it into the db, and give some text.
 	// Fow now we just make a temporary message.
@@ -104,14 +145,15 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	// insert generated itinerary into db
 	let itinerary_id = sqlx::query!(
 		r#"
-		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
-		VALUES ($1, FALSE, $2, $3, $4, TRUE)
+		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+		VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
 		RETURNING id;
 		"#,
 		account_id,
 		ai_itinerary.start_date,
 		ai_itinerary.end_date,
-		chat_session_id
+		chat_session_id,
+		ai_itinerary.title
 	)
 	.fetch_one(pool)
 	.await
@@ -231,7 +273,7 @@ pub async fn api_message_page(
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
-    Json(UpdateMessageRequest {message_id, new_text}): Json<UpdateMessageRequest>
+    Json(UpdateMessageRequest {message_id, new_text, itinerary_id}): Json<UpdateMessageRequest>
 ) -> ApiResult<Json<Message>> {
 	if new_text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
 
@@ -285,7 +327,7 @@ pub async fn api_update_message(
 	.chat_session_id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, &pool).await?;
+	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
 
 	Ok(Json(bot_message))
 }
@@ -293,7 +335,7 @@ pub async fn api_update_message(
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
-    Json(SendMessageRequest {chat_session_id, text}): Json<SendMessageRequest>
+    Json(SendMessageRequest {chat_session_id, text, itinerary_id}): Json<SendMessageRequest>
 ) -> ApiResult<Json<SendMessageResponse>> {
 	if text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
 
@@ -327,7 +369,7 @@ pub async fn api_send_message(
 	.id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, &pool).await?;
+	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,

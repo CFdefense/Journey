@@ -267,14 +267,15 @@ pub async fn api_save(
 		None => {
 			sqlx::query!(
 				r#"
-				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
-				VALUES ($1, FALSE, $2, $3, $4, TRUE)
+				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+				VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
 				RETURNING id;
 				"#,
 				user.id,
 				itinerary.start_date,
 				itinerary.end_date,
-				itinerary.chat_session_id
+				itinerary.chat_session_id,
+				itinerary.title
 			)
 			.fetch_one(&pool)
 			.await
