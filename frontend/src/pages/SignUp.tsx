@@ -1,5 +1,5 @@
 import { useContext, useState, type Context } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles/SignUp.css";
 import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
@@ -67,8 +67,7 @@ export default function Signup() {
       <div className="login-container">
         <div className="signup-page-content">
           <section className="signup-marketing">
-            <div className="signup-brand">Journey</div>
-
+            <Link to="/home" className="signup-brand">Journey</Link>
             <p className="signup-sub">
               Create your account to start planning your next journey with the help of our team of intelligent AI agents.
             </p>
