@@ -104,30 +104,34 @@ useEffect(() => {
 
 
 
-// Create a new blank chat from the button and make it have a chatSessionId on the backend too
+// clicking the button causes a blank chat window to appear. however, a chat is not created until a user sends a message
 const createNewChatFromButton = async () => {
+  
+  // Request new (or reused) empty chat session from backend
   try {
     const newChatId = await apiNewChatId();
 
-    console.log(apiChats()); 
-
     if (newChatId === -1) {
-      console.error("Failed to create new chat session");
+      console.error("Failed to create or fetch new chat session");
       return;
     }
 
-    const newChat: ChatSession = {
+    // Create blank chat locally (not shown in sidebar yet)
+    const blankChat: ChatSession = {
       id: newChatId,
-      title: `Chat ${chats.length + 1 || 1}`,
+      title: `Chat ${chats.length + 1}`,
       messages: [],
     };
 
-    setChats((prev) => [...prev, newChat]);
+    setChats((prev) => [...prev, blankChat]);
     setActiveChatId(newChatId);
+
+    console.log("Opened blank chat window:", blankChat);
   } catch (err) {
-    console.error("Error creating new chat:", err);
+    console.error("Error creating or reusing chat:", err);
   }
 };
+
 
   // this logic is handled in /helpers/home.ts
   const handleSendMessage = async (text: string) => {
