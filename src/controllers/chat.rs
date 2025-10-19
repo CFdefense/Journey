@@ -1,7 +1,7 @@
 use axum::{routing::{get, post}, Extension, Json, Router};
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
 
 /// Sends message and latest itinerary in chat session to llm, and waits for response.
 ///
@@ -13,25 +13,96 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	// It should generate an itinerary, insert it into the db, and give some text.
 	// Fow now we just make a temporary message.
 	let ai_text = "Bot reply";
-	let ai_itinerary = Itinerary {
+	let mut ai_itinerary = Itinerary {
 	    id: 0,
 	    start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-	    end_date: NaiveDate::parse_from_str("2025-11-15", "%Y-%m-%d").unwrap(),
+	    end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 	    event_days: vec![
 			EventDay {
-				morning_events: vec![],//TODO: fill events
-				noon_events: vec![],
-				afternoon_events: vec![],
-				evening_events: vec![],
+				morning_events: vec![Event {
+					id: 1,
+					street_address: String::from("1114 Shannon Ln"),
+					postal_code: 17013,
+					city: String::from("Carlisle"),
+					event_type: String::from("Hike"),
+					event_description: String::from("A beautiful stroll along a river in this cute small town."),
+					event_name: String::from("Family Walking Path")
+				}],
+				noon_events: vec![Event {
+					id: 2,
+					street_address: String::from("35 Campus Court"),
+					postal_code: 12601,
+					city: String::from("Poughkeepsie"),
+					event_type: String::from("Restaurant"),
+					event_description: String::from("Local Italian restaurant known for its authentic pasta and upscale dining."),
+					event_name: String::from("Cosimos")
+				}],
+				afternoon_events: vec![Event {
+					id: 3,
+					street_address: String::from("200 E 42nd St"),
+					postal_code: 10017,
+					city: String::from("New York"),
+					event_type: String::from("Museum"),
+					event_description: String::from("World famous art museum with a focus on modern works, including Starry Starry Night by VanGough."),
+					event_name: String::from("Museum of Modern Art- MoMA")
+				}],
+				evening_events: vec![Event {
+					id: 4,
+					street_address: String::from("1 S Broad St"),
+					postal_code: 19107,
+					city: String::from("Philadelphia"),
+					event_type: String::from("Concert"),
+					event_description: String::from("Music center which hosts local and national bands."),
+					event_name: String::from("Jazz night at Broad Street")
+				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap()
+			},
+			EventDay {
+				morning_events: vec![Event {
+					id: 5,
+					street_address: String::from("1 Citizens Bank Way"),
+					postal_code: 19148,
+					city: String::from("Philadelphia"),
+					event_type: String::from("Sports"),
+					event_description: String::from("A Phillies baseball game is a must-do for locals and visitors alike."),
+					event_name: String::from("Phillies Baseball Game")
+				}],
+				noon_events: vec![Event {
+					id: 6,
+					street_address: String::from("5250 S Park Dr"),
+					postal_code: 60615,
+					city: String::from("Chicago"),
+					event_type: String::from("Festival"),
+					event_description: String::from("Annual music festival with the biggest names in pop and indie scenes."),
+					event_name: String::from("LollaPalooza")
+				}],
+				afternoon_events: vec![Event {
+					id: 7,
+					street_address: String::from("1 Rue de la Seine"),
+					postal_code: 0,
+					city: String::from("Paris"),
+					event_type: String::from("Museum"),
+					event_description: String::from("Explore the beautiful landmark of Paris."),
+					event_name: String::from("Eiffel Tower")
+				}],
+				evening_events: vec![Event {
+					id: 8,
+					street_address: String::from("3 Rue de la Museu"),
+					postal_code: 0,
+					city: String::from("Paris"),
+					event_type: String::from("Museum"),
+					event_description: String::from("Wander the halls of the world famous art museum."),
+					event_name: String::from("le Louvre")
+				}],
+				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap()
 			}
 		],
 	    chat_session_id: None,
-		title: String::from("Mock 11/5-15 2025")
+		title: String::from("World Tour 11/5-15 2025")
 	};
 
 	// insert generated itinerary into db
-	let itinerary_id = Some(sqlx::query!(
+	let itinerary_id = sqlx::query!(
 		r#"
 		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
 		VALUES ($1, FALSE, $2, $3, $4, TRUE)
@@ -45,8 +116,9 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	.fetch_one(pool)
 	.await
 	.map_err(|e| AppError::from(e))?
-	.id);
+	.id;
 
+	ai_itinerary.id = itinerary_id;
 	insert_event_list(ai_itinerary, pool).await?;
 
 	// insert bot message into db
@@ -71,7 +143,7 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 		is_user: false,
 		timestamp,
 		text: String::from(ai_text),
-		itinerary_id,
+		itinerary_id: Some(itinerary_id),
 	})
 }
 
@@ -228,7 +300,7 @@ pub async fn api_send_message(
 	// verify the given chat session belongs to this user
 	sqlx::query!(
 		r#"
-		SELECT id from chat_sessions
+		SELECT id FROM chat_sessions
 		WHERE id=$1 AND account_id=$2;
 		"#,
 		chat_session_id,
