@@ -3,17 +3,17 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use axum::{Extension, Router};
+use axum::{Extension, Json, Router};
 use chrono::Utc;
 use serde_json::json;
 use serial_test::{parallel, serial};
-use sqlx::migrate;
+use sqlx::{migrate, PgPool};
 use tower_cookies::{
     cookie::{time, CookieJar, SameSite}, Cookie, CookieManagerLayer, Key
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, http_models::account::SignupRequest, log
+	controllers, db, global::*, http_models::account::{LoginRequest, SignupRequest}, log, middleware::AuthUser
 };
 
 // UNIT TESTS
@@ -70,7 +70,7 @@ fn test_cookie_security_development() {
         .secure(on_production)
         .http_only(true)
         .same_site(if on_production {
-            SameSite::None
+            SameSite::Strict
         } else {
             SameSite::Lax
         })
@@ -98,7 +98,7 @@ fn test_cookie_security_production() {
         .secure(on_production)
         .http_only(true)
         .same_site(if on_production {
-            SameSite::None
+            SameSite::Strict
         } else {
             SameSite::Lax
         })
@@ -108,7 +108,7 @@ fn test_cookie_security_production() {
     assert_eq!(cookie.name(), "auth-token");
     assert_eq!(cookie.value(), token_value);
     assert_eq!(cookie.http_only(), Some(true));
-    assert_eq!(cookie.same_site(), Some(SameSite::None));
+    assert_eq!(cookie.same_site(), Some(SameSite::Strict));
     assert!(cookie.secure().unwrap_or(false));
 }
 
@@ -280,18 +280,15 @@ fn test_signup_max_password_length() {
     );
 }
 
-// ===== Email Validation Tests =====
-
 #[test]
-fn test_validate_email_valid() {
+fn test_validate_email() {
+	// valid
     assert!(SignupRequest::validate_email("user@example.com"));
     assert!(SignupRequest::validate_email("test.user@domain.co.uk"));
     assert!(SignupRequest::validate_email("name+tag@company.org"));
     assert!(SignupRequest::validate_email("user123@test-domain.com"));
-}
 
-#[test]
-fn test_validate_email_invalid() {
+    // invalid
     assert!(!SignupRequest::validate_email(""));
     assert!(!SignupRequest::validate_email("notanemail"));
     assert!(!SignupRequest::validate_email("@example.com"));
@@ -301,58 +298,47 @@ fn test_validate_email_invalid() {
     assert!(!SignupRequest::validate_email("user@exam ple.com"));
 }
 
-// ===== Password Validation Tests =====
-
 #[test]
-fn test_validate_password_valid() {
+fn test_validate_password() {
+	// valid
     assert!(SignupRequest::validate_password("Password1").is_ok());
     assert!(SignupRequest::validate_password("MySecure123").is_ok());
     assert!(SignupRequest::validate_password("Passw0rd!@#").is_ok());
     assert!(SignupRequest::validate_password("LongerPassword123").is_ok());
-}
 
-#[test]
-fn test_validate_password_too_short() {
+    // too short
     let result = SignupRequest::validate_password("Pass1");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must be at least 8 characters long"
     );
-}
 
-#[test]
-fn test_validate_password_no_uppercase() {
+    // no uppercase
     let result = SignupRequest::validate_password("password123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one uppercase letter"
     );
-}
 
-#[test]
-fn test_validate_password_no_lowercase() {
+    // no lowercase
     let result = SignupRequest::validate_password("PASSWORD123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one lowercase letter"
     );
-}
 
-#[test]
-fn test_validate_password_no_number() {
+    // no number
     let result = SignupRequest::validate_password("PasswordOnly");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one number"
     );
-}
 
-#[test]
-fn test_validate_password_too_long() {
+    // too long
     let password = "A".repeat(129) + "1a";
     let result = SignupRequest::validate_password(&password);
     assert!(result.is_err());
@@ -360,40 +346,33 @@ fn test_validate_password_too_long() {
         result.unwrap_err(),
         "Password must be 128 characters or less"
     );
-}
 
-#[test]
-fn test_validate_password_non_ascii() {
+    // non ascii
     let result = SignupRequest::validate_password("Password1パスワード");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain only ASCII characters"
     );
-}
 
-#[test]
-fn test_validate_password_emoji() {
+    // emoji
     let result = SignupRequest::validate_password("Password1🔒");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain only ASCII characters"
     );
-}
 
-#[test]
-fn test_validate_password_max_length_allowed() {
+    // max length allowed
     // Test that exactly 128 characters is okay (with required chars)
     let password = "A".to_string() + &"a".repeat(126) + "1";
     assert_eq!(password.len(), 128);
     assert!(SignupRequest::validate_password(&password).is_ok());
 }
 
-// ===== Signup Payload Validation Tests =====
-
 #[test]
-fn test_validate_signup_payload_valid() {
+fn test_validate_signup_payload() {
+	// valid
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -401,10 +380,8 @@ fn test_validate_signup_payload_valid() {
         password: "Password123".to_string(),
     };
     assert!(payload.validate().is_ok());
-}
 
-#[test]
-fn test_validate_signup_payload_empty_email() {
+    // empty email
     let payload = SignupRequest {
         email: "".to_string(),
         first_name: "John".to_string(),
@@ -414,10 +391,8 @@ fn test_validate_signup_payload_empty_email() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Email is required");
-}
 
-#[test]
-fn test_validate_signup_payload_invalid_email() {
+    // invalid email
     let payload = SignupRequest {
         email: "not-an-email".to_string(),
         first_name: "John".to_string(),
@@ -427,10 +402,8 @@ fn test_validate_signup_payload_invalid_email() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Invalid email format");
-}
 
-#[test]
-fn test_validate_signup_payload_empty_first_name() {
+    // empty first name
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "".to_string(),
@@ -440,10 +413,8 @@ fn test_validate_signup_payload_empty_first_name() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "First name is required");
-}
 
-#[test]
-fn test_validate_signup_payload_empty_last_name() {
+    // empty last name
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -453,10 +424,8 @@ fn test_validate_signup_payload_empty_last_name() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Last name is required");
-}
 
-#[test]
-fn test_validate_signup_payload_first_name_too_long() {
+    // first name too long
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "a".repeat(51),
@@ -469,10 +438,8 @@ fn test_validate_signup_payload_first_name_too_long() {
         result.unwrap_err(),
         "First name must be 50 characters or less"
     );
-}
 
-#[test]
-fn test_validate_signup_payload_last_name_too_long() {
+    // last name too long
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -485,10 +452,8 @@ fn test_validate_signup_payload_last_name_too_long() {
         result.unwrap_err(),
         "Last name must be 50 characters or less"
     );
-}
 
-#[test]
-fn test_validate_signup_payload_weak_password() {
+    // weak password
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -498,10 +463,8 @@ fn test_validate_signup_payload_weak_password() {
     let result = payload.validate();
     assert!(result.is_err());
     assert!(result.unwrap_err().contains("Password"));
-}
 
-#[test]
-fn test_validate_signup_payload_whitespace_trimming() {
+    // whitespace trimming
     let payload = SignupRequest {
         email: "  test@example.com  ".to_string(),
         first_name: "  John  ".to_string(),
@@ -541,7 +504,7 @@ fn test_db_pool_panics_without_env() {
 /// Run with: `cargo test -- --ignored`
 #[tokio::test]
 #[ignore]
-#[parallel]
+#[serial(db)]
 async fn test_db_pool_connects_and_selects() {
 	let database_url = match std::env::var("DATABASE_URL") {
 		Ok(v) => v,
@@ -603,6 +566,106 @@ fn test_panic_handler() {
 	assert!(content.len() > 0);
 }
 
+/// It's easier to have all these in 1 test to share a db pool
+#[tokio::test]
+#[serial(db)]
+async fn test_controllers() {
+	_ = dotenvy::dotenv();
+	let cookies = CookieJar::new();
+	let key = Extension(Key::derive_from(&[0u8; 32]));
+	let pool = Extension(db::create_pool().await);
+
+	tokio::join!(
+		test_signup_conflict_on_duplicate_email(cookies.clone(), key.clone(), pool.clone()),
+		test_http_login_invalid_credentials(cookies.clone(), key.clone(), pool.clone()),
+		test_current_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
+	);
+}
+
+async fn test_signup_conflict_on_duplicate_email(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("dupe+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Bob"),
+		last_name: String::from("Dupe"),
+		password: String::from("Password123")
+	});
+	// First signup should succeed
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json.clone())
+		.await
+		.unwrap();
+	// Second signup with same email should 409
+	assert_eq!(controllers::account::api_signup(&mut cookies, key, pool, json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 409);
+}
+
+async fn test_http_login_invalid_credentials(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("badEmail+{}@example.com", unique);
+    let json = Json(LoginRequest {
+		email,
+		password: String::from("Password123")
+	});
+    // attempt to login with nonexistant email
+    assert_eq!(controllers::account::api_login(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+
+    let email = format!("goodEmail+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email: email.clone(),
+        first_name: String::from("Alice"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // signup
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    let json = Json(LoginRequest {
+		email,
+		password: String::from("ChickenNugget1234")
+	});
+    // attempt to login with a correct email, but the wrong password
+    assert_eq!(controllers::account::api_login(&mut cookies, key, pool, json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+}
+
+async fn test_current_endpoint_returns_account(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("current+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Current"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    // Test /current endpoint returns Account struct
+    _ = controllers::account::api_current(pool.clone(), user)
+        .await
+        .unwrap();
+}
+
 // INTEGRATION TESTS
 
 static mut PORT: u16 = 0;
@@ -621,16 +684,6 @@ async fn test_endpoints() {
 	}
     log::init_panic_handler();
     log::init_logger();
-
-    // Ensure env and database
-    if std::env::var("DATABASE_URL").is_err() {
-        unsafe {
-            std::env::set_var(
-                "DATABASE_URL",
-                "postgres://postgres:password@localhost:5432/capping2025",
-            );
-        }
-    }
 
     let pool = db::create_pool().await;
     match migrate!().run(&pool).await {
@@ -670,11 +723,11 @@ async fn test_endpoints() {
     tokio::join!(
     	test_signup_and_login_happy_path(&cookie_key),
      	test_auth_for_all_required(),
-     	test_signup_conflict_on_duplicate_email(),
+     	// test_signup_conflict_on_duplicate_email(),
      	test_http_signup_and_login_flow(),
-        test_http_login_invalid_credentials(),
+        // test_http_login_invalid_credentials(),
 	    test_validate_with_bad_and_good_cookie(),
-	    test_current_endpoint_returns_account(),
+	    // test_current_endpoint_returns_account(),
 	    test_update_endpoint_returns_account(),
 	    test_update_endpoint_partial_fields(),
 	    test_update_endpoint_with_preferences(),
@@ -745,11 +798,11 @@ async fn test_auth_for_all_required() {
     });
     let chat_update_message_payload = json!({
     	"message_id": 1,
-    	"new_text": ""
+    	"new_text": "test"
     });
     let chat_send_message_payload = json!({
 		"chat_session_id": 1,
-		"text": ""
+		"text": "test"
     });
     let itinerary_save_payload = json!({
 		"id": 1,
@@ -766,6 +819,7 @@ async fn test_auth_for_all_required() {
 		hc.do_get("/api/account/validate"),
 		hc.do_get("/api/account/logout"),
 		hc.do_get("/api/chat/chats"),
+		hc.do_get("/api/chat/newChat"),
 		hc.do_get("/api/itinerary/saved"),
 		hc.do_get("/api/itinerary/:id"),
     ]).await.iter() {
@@ -781,42 +835,6 @@ async fn test_auth_for_all_required() {
     ]).await.iter() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
     }
-}
-
-async fn test_signup_conflict_on_duplicate_email() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-	let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("dupe+{}@example.com", unique);
-
-    // First signup should succeed
-    let resp1 = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Bob",
-                "last_name": "Dupe",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp1.status().as_u16(), 200);
-
-    // Second signup with same email should 409
-    let resp2 = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": format!("dupe+{}@example.com", unique),
-                "first_name": "Bob",
-                "last_name": "Dupe",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp2.status().as_u16(), 409);
 }
 
 async fn test_http_signup_and_login_flow() {
@@ -851,54 +869,6 @@ async fn test_http_signup_and_login_flow() {
         .await
         .unwrap();
     assert!(resp.status().is_success(), "login failed: {}", resp.status());
-}
-
-async fn test_http_login_invalid_credentials() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let bad_email = format!("badEmail+{}@example.com", unique);
-
-    // Email not present in db
-    let resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": bad_email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 400, "expected 400 for email not in DB but got {}", resp.status());
-
-    //first need to sign in as an account
-    let good_email = format!("goodEmail+{}@example.com", unique);
-    let signup_res = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": good_email,
-                "first_name": "Alice",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_res.status().as_u16(), 200, "expected 200; got {}", resp.status());
-
-    // login with a correct email, but the wrong password
-    let resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": good_email,
-                "password": "ChickenNugget1234"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 400, "expected 400 for valid email but invalid password, but got {}", resp.status());
 }
 
 async fn test_validate_with_bad_and_good_cookie() {
@@ -946,38 +916,6 @@ async fn test_validate_with_bad_and_good_cookie() {
         .await
         .unwrap();
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
-}
-
-async fn test_current_endpoint_returns_account() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("current+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Current",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /current endpoint returns Account struct
-    let current_resp = hc
-        .do_get("/api/account/current")
-        .await
-        .unwrap();
-    assert_eq!(current_resp.status().as_u16(), 200);
-
-    // Verify response is successful and contains data
-    // Note: JSON parsing would require checking httpc-test Response methods
-    assert!(current_resp.status().is_success());
 }
 
 async fn test_update_endpoint_returns_account() {

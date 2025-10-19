@@ -1,6 +1,6 @@
 use axum::{routing::{get, post}, Extension, Json, Router};
 use sqlx::PgPool;
-use crate::{error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::ChatsResponse, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+use crate::{error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
 
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
@@ -204,6 +204,50 @@ pub async fn api_send_message(
 	}))
 }
 
+pub async fn api_new_chat(
+	Extension(user): Extension<AuthUser>,
+    Extension(pool): Extension<PgPool>
+) -> ApiResult<Json<NewChatResponse>> {
+	// check to see if there's already an empty chat session before making a new one
+	let chat_sessions = sqlx::query!(
+		r#"
+		SELECT c.id
+		FROM chat_sessions c
+		WHERE
+			c.account_id=$1
+			AND NOT EXISTS (
+				SELECT 1
+				FROM messages m
+				WHERE m.chat_session_id=c.id
+			);
+		"#,
+		user.id
+	)
+	.fetch_all(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	let chat_session_id = match chat_sessions.first() {
+		Some(record) => record.id,
+		None => {
+			sqlx::query!(
+				r#"
+				INSERT INTO chat_sessions (account_id)
+				VALUES ($1)
+				RETURNING id
+				"#,
+				user.id
+			)
+			.fetch_one(&pool)
+			.await
+			.map_err(|e| AppError::from(e))?
+			.id
+		}
+	};
+
+	Ok(Json(NewChatResponse { chat_session_id }))
+}
+
 /// Create the chat routes with authentication middleware.
 ///
 /// # Routes
@@ -221,5 +265,6 @@ pub fn chat_routes() -> Router {
         .route("/messagePage", post(api_message_page))
         .route("/updateMessage", post(api_update_message))
         .route("/sendMessage", post(api_send_message))
+        .route("/newChat", get(api_new_chat))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

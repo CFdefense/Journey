@@ -14,7 +14,7 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use tower_cookies::{
-    cookie::{time::{Duration, OffsetDateTime}, Key, SameSite}, Cookie, Cookies
+    cookie::{time::{Duration, OffsetDateTime}, CookieJar, Key, SameSite}, Cookie, Cookies
 };
 
 use sqlx::PgPool;
@@ -24,12 +24,25 @@ use crate::{error::{ApiResult, AppError}, sql_models::{account::AccountRow, Budg
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::account::*;
 
+pub trait CookieStore {
+	fn private_add(&mut self, key: &Key, cookie: Cookie<'static>);
+}
+impl CookieStore for Cookies {
+	#[inline(always)]
+	fn private_add(&mut self, key: &Key, cookie: Cookie<'static>) { self.private(key).add(cookie) }
+}
+#[cfg(test)]
+impl CookieStore for CookieJar {
+	#[inline(always)]
+	fn private_add(&mut self, _key: &Key, cookie: Cookie<'static>) { self.add(cookie) }
+}
+
 /// Creates and sets the cookie containing the hashed account id, expiration time, and other data.
 ///
 /// Notes:
 /// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
 /// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
-fn set_cookie(account_id: i32, expired: bool, cookies: &Cookies, key: &Key) {
+fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, key: &Key) {
     // Create token and set cookie as before
     let domain = option_env!("DOMAIN").unwrap_or("localhost");
     let app_env = option_env!("APP_ENV").unwrap_or("development");
@@ -59,7 +72,7 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &Cookies, key: &Key) {
         .secure(on_production)
         .http_only(true)
         .same_site(if on_production {
-            SameSite::None
+            SameSite::Strict
         } else {
             SameSite::Lax
         })
@@ -68,7 +81,7 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &Cookies, key: &Key) {
         .finish();
 
     // encrypt/sign cookie (private cookie via CookieManagerLayer key)
-    cookies.private(key).add(cookie);
+    cookies.private_add(key, cookie);
 }
 
 /// Create a new user.
@@ -100,8 +113,8 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &Cookies, key: &Key) {
 ///       }'
 /// ```
 ///
-pub async fn api_signup(
-	cookies: Cookies,
+pub async fn api_signup<C: CookieStore>(
+	cookies: &mut C,
     Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignupRequest>,
@@ -162,7 +175,7 @@ pub async fn api_signup(
                 record.id
             );
 
-            set_cookie(record.id, false, &cookies, &key);
+            set_cookie(record.id, false, cookies, &key);
 
             Ok(())
         }
@@ -199,8 +212,8 @@ pub async fn api_signup(
 /// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
 /// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
 ///
-pub async fn api_login(
-    cookies: Cookies,
+pub async fn api_login<C: CookieStore>(
+    cookies: &mut C,
     Extension(key): Extension<Key>,
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<LoginRequest>,
@@ -239,7 +252,7 @@ pub async fn api_login(
                 return Err(AppError::BadRequest("invalid credentials".to_string()));
             }
 
-            set_cookie(result.id, false, &cookies, &key);
+            set_cookie(result.id, false, cookies, &key);
 
             return Ok(());
         }
@@ -431,8 +444,8 @@ pub async fn api_update(
 /// curl -X GET http://localhost:3001/api/account/logout
 ///   -H "Content-Type: application/json"
 /// ```
-async fn api_logout(
-	cookies: Cookies,
+async fn api_logout<C: CookieStore>(
+	cookies: &mut C,
     Extension(key): Extension<Key>,
     Extension(user): Extension<AuthUser>
 ) -> ApiResult<()> {
@@ -440,7 +453,7 @@ async fn api_logout(
         "HANDLER ->> /api/account/logout 'api_logout' - User ID: {}",
         user.id
     );
-	set_cookie(user.id, true, &cookies, &key);
+	set_cookie(user.id, true, cookies, &key);
 	Ok(())
 }
 
@@ -466,8 +479,8 @@ pub fn account_routes() -> Router {
         .route("/update", post(api_update))
         .route("/current", get(api_current))
         .route("/validate", get(api_validate))
-        .route("/logout", get(api_logout))
+        .route("/logout", get(|mut c,k,u| async move {api_logout::<Cookies>(&mut c,k,u).await}))
         .route_layer(axum::middleware::from_fn(middleware_auth))
-        .route("/signup", post(api_signup))
-        .route("/login", post(api_login))
+        .route("/signup", post(|mut c,k,p,b| async move {api_signup::<Cookies>(&mut c,k,p,b).await}))
+        .route("/login", post(|mut c,k,p,b| async move {api_login::<Cookies>(&mut c,k,p,b).await}))
 }

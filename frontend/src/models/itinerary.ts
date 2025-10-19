@@ -5,7 +5,8 @@ export type Itinerary = {
     morning_events: [Event],
     noon_events: [Event],
     afternoon_events: [Event],
-    evening_events: [Event]
+    evening_events: [Event],
+    chat_session_id: number | null
 }
 
 export type Event = {
