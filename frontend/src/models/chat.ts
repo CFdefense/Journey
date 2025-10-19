@@ -9,7 +9,7 @@ export type Message = {
 }
 
 export type ChatsResponse = {
-    chat_sessions: [number]
+    chat_sessions: number[]
 }
 
 export type MessagePageRequest = {
@@ -18,7 +18,7 @@ export type MessagePageRequest = {
 }
 
 export type MessagePageResponse = {
-	message_page: [Message],
+	message_page: Message[],
 	/// The id of the message that comes right before the first message in this.message_page
 	prev_message_id: number | null
 }

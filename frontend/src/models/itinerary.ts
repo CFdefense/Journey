@@ -4,15 +4,15 @@ export type Itinerary = {
     start_date: string,
     /// %Y-%m-%d
     end_date: string,
-    event_days: [EventDay],
+    event_days: EventDay[],
     chat_session_id: number | null
 }
 
 export type EventDay = {
-	morning_events: [Event],
-    noon_events: [Event],
-    afternoon_events: [Event],
-    evening_events: [Event],
+	morning_events: Event[],
+    noon_events: Event[],
+    afternoon_events: Event[],
+    evening_events: Event[],
     /// %Y-%m-%d
     date: string
 }
@@ -28,7 +28,7 @@ export type Event = {
 }
 
 export type SavedResponse = {
-    itineraries: [Itinerary]
+    itineraries: Itinerary[]
 }
 
 export type SaveResponse = {
