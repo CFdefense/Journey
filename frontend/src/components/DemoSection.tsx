@@ -10,10 +10,7 @@ export default function DemoSection() {
         </p>
         <div className="demo-container">
           <div className="demo-media reveal">
-            <img
-              src="https://placehold.co/1200x675/30A0E0/FFFFFF?text=Product+Demo"
-              alt="Product demo placeholder"
-            />
+            <div className="demo-media-placeholder">Product Demo</div>
           </div>
           <div className="demo-text reveal delay-1">
             <p>

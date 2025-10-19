@@ -8,7 +8,7 @@ export default function HeroSection() {
         Let our intelligent AI agents plan your next adventure
       </p>
       <Link to="/signup" className="cta-button reveal delay-2">
-        Start Your Journey
+        Start Your Journey →
       </Link>
       <div className="earth-container">
         <img src="/earth.png" alt="Earth" className="earth" />

@@ -7,6 +7,7 @@ import ReviewsSection from "../components/ReviewsSection";
 import DemoSection from "../components/DemoSection";
 import TeamSection from "../components/TeamSection";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import "../styles/Index.css";
 
 export default function Index() {
@@ -47,6 +48,53 @@ export default function Index() {
     elements.forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, []);
+
+  // Theme gradient based on scroll position
+  useEffect(() => {
+    const colorStops = [
+      "#000000", // black
+      "#006BBB", // blue
+      "#FA8072", // salmon / coral
+      "#FFC872", // light orange / gold
+    ];
+
+    let ticking = false;
+    const updateTheme = () => {
+      const doc = document.documentElement;
+      const maxScroll = doc.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+
+      const segments = colorStops.length - 1;
+      const position = progress * segments;
+      const i = Math.min(segments - 1, Math.floor(position));
+      const t = position - i;
+
+      const root = document.querySelector<HTMLElement>(".index-page");
+      if (root) {
+        root.style.setProperty('--from', colorStops[i]);
+        root.style.setProperty('--to', colorStops[i + 1]);
+        root.style.setProperty('--t', `${t * 100}%`);
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateTheme();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    updateTheme();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
   return (
     <div className="index-page">
       <Navbar page="index" />
@@ -72,6 +120,7 @@ export default function Index() {
 
         <TeamSection />
       </div>
+      <Footer />
     </div>
   );
 }
