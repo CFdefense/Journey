@@ -235,8 +235,9 @@
 .signup-marketing {
   color: #0b1220;
   max-width: 520px;
-  justify-self: end;
+  justify-self: start;
   align-self: start;
+  text-align: left;
 }
 
 .signup-page-content {
@@ -306,11 +307,12 @@
   .signup-box h1::after { width: 240px; }
 
   .signup-page-content {
-    max-width: 100vw;
-    padding: 0 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
     grid-template-columns: 1fr 1fr;
     align-items: center;
-    gap: 80px;
+    gap: 64px;
   }
 
   .signup-bullets { margin-top: 48px; }
@@ -321,8 +323,19 @@
   font-size: 28px;
   font-weight: 800;
   letter-spacing: 0.2px;
-  margin-bottom: 24px;
+  margin: 0 0 24px 0;
   text-align: left;
+  color: #0b1220;
+  text-decoration: none;
+  display: block;
+}
+
+.signup-brand:link,
+.signup-brand:visited,
+.signup-brand:hover,
+.signup-brand:active {
+  color: #0b1220;
+  text-decoration: none;
 }
 
 .signup-sub {

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 type NavbarProps = {
-  page: "login" | "signup";
+  page: "login" | "signup" | "index";
 };
 
 export default function Navbar({ page }: NavbarProps) {
@@ -23,6 +23,13 @@ export default function Navbar({ page }: NavbarProps) {
             <Link to="/login" className="auth-cta-link">
               Log in →
             </Link>
+          </div>
+        );
+      case "index":
+        return (
+          <div className="auth-cta">
+            <Link to="/signup" className="auth-cta-link">Sign up</Link>
+            <Link to="/login" className="auth-cta-link">Log in</Link>
           </div>
         );
       default:
