@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Message {
 	pub id: i32,
 	pub is_user: bool,
@@ -36,7 +36,7 @@ pub struct SendMessageRequest {
 	pub itinerary_id: Option<i32>
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SendMessageResponse {
 	pub user_message_id: i32,
 	pub bot_message: Message
