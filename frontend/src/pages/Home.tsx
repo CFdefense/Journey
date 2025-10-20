@@ -107,10 +107,11 @@ export default function Home() {
     if (!text.trim()) return;
     const isNewChat = chats.length === 0 || activeChatId === null;
     if (isNewChat) {
-      await handleMessageSendNewChat(text, chats, setChats, setActiveChatId);
+      await handleMessageSendNewChat(text, chats, setChats, setActiveChatId, setItineraryTitles);
     } else {
-      await handleMessageSendExistingChat(text, activeChatId, setChats);
+      await handleMessageSendExistingChat(text, activeChatId, setChats, setItineraryTitles);
     }
+
   };
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
