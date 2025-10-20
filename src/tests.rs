@@ -859,51 +859,195 @@ async fn test_saved_itineraries_endpoint(mut cookies: CookieJar, key: Extension<
 }
 
 async fn test_save_itinerary_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	// TODO save itinerary with a matching id already in db
 }
 
 async fn test_save_itinerary_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	// TODO save itinerary with id not in db
 }
 
 async fn test_get_chats(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	// TODO controller works
 }
 
 async fn test_latest_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO get latest messages and make sure messages are in chronological order
 }
 
 async fn test_specific_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO get specific messages and make sure messages are in chronological order
 }
 
 async fn test_invalid_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO get page with invalid message id
 	//TODO get page with invalid chat session id
 }
 
 async fn test_update_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO controller works (uses mock llm)
 }
 
 async fn test_update_invalid_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO update message with invalid message id
 }
 
 async fn test_send_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO controller works (uses mock llm)
 }
 
 async fn test_send_message_invalid_chat_session(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO send message with invalid chat session
 }
 
 async fn test_new_chat_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO create new chat with matching id in db
 }
 
 async fn test_new_chat_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 	//TODO create new chat with id not in db
 }
 
