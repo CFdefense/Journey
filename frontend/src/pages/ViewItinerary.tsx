@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
@@ -7,7 +7,6 @@ import "../styles/Itinerary.css";
 import { apiItineraryDetails } from "../api/itinerary";
 
 export default function ViewItineraryPage() {
-  const [itineraryData, setItineraryData] = useState<any>(null);
 
   const unassignedEvents: Event[] = [
     { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
