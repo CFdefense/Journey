@@ -20,14 +20,19 @@ export default function ViewItineraryPage() {
     e.dataTransfer.setData("eventDesc", event.desc || "");
   };
 
+  //properly gets JSON
   useEffect(() => {
-    const testId = 3;
-    apiItineraryDetails(testId)
-    .then((data) => {
-      console.log("Fetched itinerary:", data);
-      setItineraryData(data);
-    })
-    .catch((err) => console.error("Error fetching itinerary", err));
+    async function fetchItinerary() {
+      try {
+        const testId = 3;
+        const itinerary = await apiItineraryDetails(testId);
+        console.log(itinerary)
+        console.log("meow")
+      } catch {
+          console.log("Error")
+      }
+    }
+    fetchItinerary();
   }, []);
 
   return (
