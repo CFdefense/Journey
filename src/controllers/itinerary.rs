@@ -70,6 +70,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			});
 		}
 	}
+	event_days.sort_by(|a,b| a.date.cmp(&b.date));
 
 	Ok(event_days)
 }

@@ -4,6 +4,8 @@ export type Itinerary = {
     start_date: string,
     /// %Y-%m-%d
     end_date: string,
+    /// List of days containing events for that day
+    /// * Days are guaranteed to be sorted in chronological order
     event_days: EventDay[],
     chat_session_id: number | null,
     title: string

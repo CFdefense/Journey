@@ -23,6 +23,7 @@ pub struct Itinerary {
 	/// UTC date that the last event may take place (%Y-%m-%d)
     pub end_date: NaiveDate,
     /// List of days containing events for that day
+    /// * Days are guaranteed to be sorted in chronological order
     pub event_days: Vec<EventDay>,
     /// Possible associated chat session for easy editing on frontend
     pub chat_session_id: Option<i32>,
