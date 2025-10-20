@@ -34,6 +34,7 @@ export async function handleMessageSendExistingChat(
     const payload: SendMessageRequest = {
       chat_session_id: chatId,
       text,
+      itinerary_id: null,
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
@@ -110,6 +111,7 @@ export async function handleMessageSendNewChat(
     const payload: SendMessageRequest = {
       chat_session_id: newChatId,
       text,
+      itinerary_id: null,
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
