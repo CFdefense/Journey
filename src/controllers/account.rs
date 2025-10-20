@@ -114,7 +114,6 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 ///        "password": "password123."
 ///       }'
 /// ```
-///
 pub async fn api_signup<C: CookieStore>(
 	cookies: &mut C,
     Extension(key): Extension<Key>,
@@ -213,7 +212,6 @@ pub async fn api_signup<C: CookieStore>(
 /// Notes:
 /// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
 /// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
-///
 pub async fn api_login<C: CookieStore>(
     cookies: &mut C,
     Extension(key): Extension<Key>,

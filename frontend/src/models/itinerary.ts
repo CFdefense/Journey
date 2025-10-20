@@ -29,9 +29,12 @@ export type Event = {
 }
 
 export type SavedResponse = {
+	/// List of saved itineraries for the user.
     itineraries: Itinerary[]
 }
 
 export type SaveResponse = {
+	/// ID of the itinerary that was just saved
+	/// * May be the same as the itinerary id passed in the request
 	id: number
 }

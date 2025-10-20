@@ -189,6 +189,21 @@ async fn send_message_to_llm(
 	})
 }
 
+/// Fetch all the chat session ids belonging to the user to made the request
+///
+/// # Method
+/// `GET /api/chat/chats`
+///
+/// # Responses
+/// - `200 OK` - [ChatsResponse] - list of chat session ids
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X GET http://localhost:3001/api/chat/chats
+///   -H "Content-Type: application/json"
+/// ```
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>
@@ -210,6 +225,38 @@ pub async fn api_chats(
 	}))
 }
 
+/// Get a page of messages from this chat session belonging to the user who made the request
+///
+/// # Method
+/// `POST /api/chat/messagePage`
+///
+/// # Request Body
+/// - [MessagePageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [MessagePageResponse]
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// Fetch latest massages
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/messagePage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 3
+///       }'
+/// ```
+/// Fetch messages ending with specific message
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/messagePage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 3,
+///         "message_id": 6
+///       }'
+/// ```
 pub async fn api_message_page(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -270,6 +317,31 @@ pub async fn api_message_page(
 	}))
 }
 
+/// Update an existing message with new text, and get a message back from the LLM
+///
+/// # Method
+/// `POST /api/chat/updateMessage`
+///
+/// # Request Body
+/// - [UpdateMessageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [Message] - message from LLM
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided message id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/updateMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "message_id": 3,
+///         "new_text": "Updated message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -332,6 +404,31 @@ pub async fn api_update_message(
 	Ok(Json(bot_message))
 }
 
+/// Send a new message, and get a message back from the LLM
+///
+/// # Method
+/// `POST /api/chat/sendMessage`
+///
+/// # Request Body
+/// - [SendMessageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [SendMessageResponse] - contains message from LLM
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided chat session id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/sendMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 6,
+///         "text": "New message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -377,6 +474,27 @@ pub async fn api_send_message(
 	}))
 }
 
+/// Get an empty chat session id belonging to this user, or create one if one doesn't exist
+///
+/// # Method
+/// `GET /api/chat/newChat`
+///
+/// # Responses
+/// - `200 OK` - with body: [NewChatResponse]
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/sendMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 6,
+///         "text": "New message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_new_chat(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>
@@ -426,9 +544,10 @@ pub async fn api_new_chat(
 ///
 /// # Routes
 /// - `GET /chats` - Get metadata for all the user's chat sessions (protected)
-/// - `GET /messagePage/{chat_session_id}?message_id=[Option<i32>]` - Gets a page of messages in the session, ending with message_id or the latest message (protected)
+/// - `POST /messagePage` - Gets a page of messages in the session, ending with message_id or the latest message (protected)
 /// - `POST /updateMessage` - Updates a user's message and waits for a bot reply (protected)
-/// - `GET /sendMessage?text=[String]` - Sends a user's message and waits for a bot reply (protected)
+/// - `POST /sendMessage` - Sends a user's message and waits for a bot reply (protected)
+/// - `GET /newChat` - Gets a chat session id for an empty chat (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
