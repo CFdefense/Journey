@@ -4,7 +4,7 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use axum::{Extension, Json, Router};
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use serde_json::json;
 use serial_test::serial;
 use sqlx::{migrate, PgPool};
@@ -13,7 +13,7 @@ use tower_cookies::{
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, http_models::account::{LoginRequest, SignupRequest, UpdateRequest}, log, middleware::AuthUser, sql_models::{BudgetBucket, RiskTolerence}
+	controllers, db, global::*, http_models::{account::{LoginRequest, SignupRequest, UpdateRequest}, itinerary::Itinerary, message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest}}, log, middleware::AuthUser, sql_models::{BudgetBucket, RiskTolerence}
 };
 
 // UNIT TESTS
@@ -585,18 +585,8 @@ async fn test_controllers() {
 		test_get_itinerary_id_not_found(cookies.clone(), key.clone(), pool.clone()),
 		test_invalid_signup_email(cookies.clone(), key.clone(), pool.clone()),
 		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
-		test_save_itinerary_existing(cookies.clone(), key.clone(), pool.clone()),
-		test_save_itinerary_new(cookies.clone(), key.clone(), pool.clone()),
-		test_get_chats(cookies.clone(), key.clone(), pool.clone()),
-		test_latest_message_page(cookies.clone(), key.clone(), pool.clone()),
-		test_specific_message_page(cookies.clone(), key.clone(), pool.clone()),
-		test_invalid_message_page(cookies.clone(), key.clone(), pool.clone()),
-		test_update_message(cookies.clone(), key.clone(), pool.clone()),
-		test_update_invalid_message(cookies.clone(), key.clone(), pool.clone()),
-		test_send_message(cookies.clone(), key.clone(), pool.clone()),
-		test_send_message_invalid_chat_session(cookies.clone(), key.clone(), pool.clone()),
-		test_new_chat_existing(cookies.clone(), key.clone(), pool.clone()),
-		test_new_chat_new(cookies.clone(), key.clone(), pool.clone()),
+		test_save_itineraries(cookies.clone(), key.clone(), pool.clone()),
+		test_chat_flow(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
 
@@ -858,53 +848,210 @@ async fn test_saved_itineraries_endpoint(mut cookies: CookieJar, key: Extension<
         .unwrap();
 }
 
-async fn test_save_itinerary_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	// TODO save itinerary with a matching id already in db
+async fn test_save_itineraries(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("test_save_itinerary_new+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+	// save itinerary with id not in db
+	let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(Itinerary {
+        id: 0,
+        start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+        end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
+        event_days: vec![],
+        chat_session_id: None,
+        title: String::from("Updated Title")
+    });
+    let itinerary_id = controllers::itinerary::api_save(user, pool.clone(), json)
+        .await
+        .unwrap()
+        .id;
+    assert_ne!(itinerary_id, 0);
+
+    // save itinerary with a matching id already in db
+    let json = Json(Itinerary {
+        id: itinerary_id,
+        start_date: NaiveDate::parse_from_str("2026-01-01", "%Y-%m-%d").unwrap(),
+        end_date: NaiveDate::parse_from_str("2026-12-31", "%Y-%m-%d").unwrap(),
+        event_days: vec![],
+        chat_session_id: None,
+        title: String::from("2nd Updated Title")
+    });
+    assert_eq!(controllers::itinerary::api_save(user, pool, json)
+        .await
+        .unwrap()
+        .id, itinerary_id);
 }
 
-async fn test_save_itinerary_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	// TODO save itinerary with id not in db
-}
+async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("test_latest_message_page+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
 
-async fn test_get_chats(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	// TODO controller works
-}
+    // create new chat
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+   		id: parts[1].parse().unwrap()
+    });
+    let first_chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+        .await
+        .unwrap()
+        .chat_session_id;
+    assert_ne!(first_chat_session_id, 0);
 
-async fn test_latest_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO get latest messages and make sure messages are in chronological order
-}
+    // create chat session - reusing first one because it's empty
+    let chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+        .await
+        .unwrap()
+        .chat_session_id;
+    assert_eq!(first_chat_session_id, chat_session_id);
 
-async fn test_specific_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO get specific messages and make sure messages are in chronological order
-}
+    // send a bunch of messages
+    let mut message_ids = [0; MESSAGE_PAGE_LEN as usize + 5];
+    for i in 0..MESSAGE_PAGE_LEN as usize + 5 {
+	    let json = Json(SendMessageRequest {
+	        chat_session_id,
+	        text: format!("Test msg {}", i),
+	        itinerary_id: None
+	    });
+	    message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), json)
+			.await
+			.unwrap()
+			.user_message_id;
+		assert_ne!(message_ids[i], 0);
+    }
 
-async fn test_invalid_message_page(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO get page with invalid message id
-	//TODO get page with invalid chat session id
-}
+    // send empty message
+    let json = Json(SendMessageRequest {
+        chat_session_id,
+        text: String::new(),
+        itinerary_id: None
+    });
+    assert_eq!(controllers::chat::api_send_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 400);
 
-async fn test_update_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO controller works (uses mock llm)
-}
+    // send message invalid chat session
+    let json = Json(SendMessageRequest {
+        chat_session_id: 0,
+        text: String::from("Test msg invalid chat session id"),
+        itinerary_id: None
+    });
+    assert_eq!(controllers::chat::api_send_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 404);
 
-async fn test_update_invalid_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO update message with invalid message id
-}
+	// get latest messages and make sure messages are in chronological order
+    let chat_session_id = *controllers::chat::api_chats(user, pool.clone())
+		.await
+		.unwrap()
+		.0
+		.chat_sessions
+		.first()
+		.unwrap();
+    let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(latest_page.0.message_page.is_sorted_by(|a,b| a.timestamp < b.timestamp));
 
-async fn test_send_message(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO controller works (uses mock llm)
-}
+	// get specific messages and make sure messages are in chronological order
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: Some(latest_page.message_page[0].id)
+    });
+	let next_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(next_page.0.message_page.is_sorted_by(|a,b| a.timestamp < b.timestamp));
+	assert_eq!(latest_page.message_page[0].id, next_page.message_page.last().unwrap().id);
 
-async fn test_send_message_invalid_chat_session(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO send message with invalid chat session
-}
+	// get page with invalid message id
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: Some(0)
+    });
+	let empty_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert_eq!(empty_page.message_page.len(), 0);
+	assert_eq!(empty_page.prev_message_id, None);
 
-async fn test_new_chat_existing(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO create new chat with matching id in db
-}
+	// get page with invalid chat session id
 
-async fn test_new_chat_new(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
-	//TODO create new chat with id not in db
+	// update message with empty text
+	let json = Json(UpdateMessageRequest {
+	    message_id: message_ids[0],
+	    new_text: String::new(),
+	    itinerary_id: None,
+	});
+	assert_eq!(controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 400);
+
+	// update message with invalid message id
+	let json = Json(UpdateMessageRequest {
+	    message_id: 0,
+	    new_text: String::from("Updated message"),
+	    itinerary_id: None,
+	});
+	assert_eq!(controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 404);
+
+	// update message
+	let json = Json(UpdateMessageRequest {
+	    message_id: message_ids[0],
+	    new_text: String::from("Updated message"),
+	    itinerary_id: None,
+	});
+	_ = controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap();
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool, json)
+		.await
+		.unwrap();
+	assert_eq!(latest_page.prev_message_id, None);
+	assert_eq!(latest_page.message_page.len(), 2);
 }
 
 // INTEGRATION TESTS

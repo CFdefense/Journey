@@ -33,6 +33,7 @@ pub enum RiskTolerence {
     RiskTaker,
 }
 
+/// The time of day the event will take place in the itinerary
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq)]
 #[sqlx(type_name = "time_of_day")]
 pub enum TimeOfDay {

@@ -16,7 +16,7 @@ use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
 use crate::sql_models::event_list::EventListJoinRow;
-use crate::sql_models::itinerary::ItineraryJoinedRow;
+use crate::sql_models::itinerary::ItineraryRow;
 use crate::sql_models::TimeOfDay;
 
 /// Returns the [EventDay]s associated with this itinerary
@@ -74,6 +74,8 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 	Ok(event_days)
 }
 
+/// Inserts the events associated with this itinerary into the `event_list` table.
+/// Assumes the itinerary was already inserted into `itineraries` table.
 pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult<()> {
 	let mut cap = 0;
 	for day in itinerary.event_days.iter() {
@@ -154,8 +156,8 @@ pub async fn api_saved_itineraries(
     );
 
     // Fetch all itineraries for the user
-    let itineraries: Vec<ItineraryJoinedRow> = sqlx::query_as!(
-        ItineraryJoinedRow,
+    let itineraries: Vec<ItineraryRow> = sqlx::query_as!(
+        ItineraryRow,
         r#"SELECT
         	id,
          	account_id,
@@ -205,7 +207,6 @@ pub async fn api_saved_itineraries(
 /// curl -X GET http://localhost:3001/api/itinerary/123
 ///   -H "Cookie: auth-token=..."
 /// ```
-///
 pub async fn api_get_itinerary(
     Extension(user): Extension<AuthUser>,
     Path(itinerary_id): Path<i32>,
@@ -217,8 +218,8 @@ pub async fn api_get_itinerary(
     );
 
     // Fetch the itinerary for the user
-    let itinerary: ItineraryJoinedRow = sqlx::query_as!(
-        ItineraryJoinedRow,
+    let itinerary: ItineraryRow = sqlx::query_as!(
+        ItineraryRow,
         r#"SELECT
         	id,
          	account_id,
@@ -245,6 +246,51 @@ pub async fn api_get_itinerary(
 	}))
 }
 
+/// Update an existing or save a new itinerary for the user
+///
+/// # Method
+/// `POST /api/itinerary/save`
+///
+/// # Request Body
+/// - [Itinerary]
+///
+/// # Responses
+/// - `200 OK` - with body: [SaveResponse]
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/itinerary/save
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "id": 3,
+///         "start_date": "2025-07-15",
+///         "end_date": "2025-07-21",
+///         "event_days": [
+///           {
+///             "morning_events": [],
+///             "noon_events": [
+///               {
+///                 "id": 4,
+///                 "street_address": "3399 North Rd",
+///                 "postal_code": 12601,
+///                 "city": "Poughkeepsie",
+///                 "event_type": "Park",
+///                 "event_description": "Take a tour of Marist University",
+///                 "event_name": "Marist University"
+///               }
+///             ],
+///             "afternoon_events": [],
+///             "evening_events": [],
+///             "date": "2025-07-21"
+///           }
+///         ],
+///         "chat_session_id": 4,
+///         "title": "Poughkeepsie 7/15-21 2025"
+///       }'
+/// ```
 pub async fn api_save(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -267,14 +313,15 @@ pub async fn api_save(
 		None => {
 			sqlx::query!(
 				r#"
-				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved)
-				VALUES ($1, FALSE, $2, $3, $4, TRUE)
+				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+				VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
 				RETURNING id;
 				"#,
 				user.id,
 				itinerary.start_date,
 				itinerary.end_date,
-				itinerary.chat_session_id
+				itinerary.chat_session_id,
+				itinerary.title
 			)
 			.fetch_one(&pool)
 			.await
