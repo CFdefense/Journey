@@ -64,6 +64,10 @@ Launch frontend with hot reloading (requires running server and active db connec
 ```sh
 npm run dev
 ```
+Build frontend for server to serve static files
+```sh
+npm run build
+```
 Run tests
 ```sh
 npm run test

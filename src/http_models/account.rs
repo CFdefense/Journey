@@ -4,21 +4,7 @@
  * File for Account table models and related payload/response types
  *
  * Purpose:
- *   Strongly-typed models for the `accounts` table, enums for preferences,
- *   request payloads, and response DTOs used by account routes.
- *
- * Include:
- *   Account              - Row model for the accounts table
- *   BudgetBucket         - Enum mapped to DB type budget_bucket
- *   RiskTolerence        - Enum mapped to DB type risk_tolerence
- *   LoginPayload         - Request payload for POST /api/account/login
- *   SignupPayload        - Request payload for POST /api/account/signup
- *   UpdatePayload        - Request payload for POST /api/account/update
- *   LoginResponse        - API route response for POST /api/account/login
- *   SignupResponse       - API route response for POST /api/account/signup
- *   ValidateResponse     - API route response for GET /api/account/validate
- *   UpdateResponse       - API route response for POST /api/account/update
- *   CurrentResponse      - API route response for GET  /api/account/current
+ *   Strongly-typed models for the `accounts` table
  */
 
 use regex::Regex;
@@ -26,93 +12,91 @@ use serde::{Deserialize, Serialize};
 use crate::sql_models::{BudgetBucket, RiskTolerence};
 
 /// Request payload for POST `/api/account/login`.
-/// - Fields:
-///   - `email`: Account email
-///   - `password`: Plaintext password submitted by the user
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
+	/// Account email
     pub email: String,
+	/// Plaintext password submitted by the user
     pub password: String,
 }
 
 /// Request payload for POST `/api/account/signup`.
 /// Validated server-side before insert.
-/// - Fields:
-///   - `email`, `first_name`, `last_name`, `password`
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SignupRequest {
+	/// Account email
     pub email: String,
     pub first_name: String,
     pub last_name: String,
+    /// Plaintext password submitted by the user
     pub password: String,
 }
 
 /// Request payload for POST `/api/account/update`.
-/// - Only non-None fields are updated.
-/// - `password`, when provided, is re-hashed before store.
-/// - Fields:
-///   - `email`: Optional new email
-///   - `first_name`: Optional new first name
-///   - `last_name`: Optional new last name
-///   - `password`: Optional new password
-///   - `budget_preference`: Optional new budget enum
-///   - `risk_preference`: Optional new risk enum
-///   - `food_allergies`: Optional new notes
-///   - `disabilities`: Optional new notes
+/// - Only `Some` fields are updated.
 #[derive(Debug, Deserialize)]
 pub struct UpdateRequest {
+	/// Optional new email
     pub email: Option<String>,
+	/// Optional new first name
     pub first_name: Option<String>,
+	/// Optional new last name
     pub last_name: Option<String>,
+	/// Optional new plaintext password
     pub password: Option<String>,
+	/// Optional new budget enum
     pub budget_preference: Option<BudgetBucket>,
+	/// Optional new risk enum
     pub risk_preference: Option<RiskTolerence>,
+	/// Optional new food and allergies preferences
+	/// * String is a comma-separated list of preferences
     pub food_allergies: Option<String>,
+	/// Optional new disabilites
+	/// * String is a comma-separated list of preferences
     pub disabilities: Option<String>,
 }
 
 /// API route response for POST `/api/account/update`.
 /// - Contains full updated account profile for convenience.
-/// - Preference fields may be `None` if unset.
-/// - Fields:
-///   - `id`: User id
-///   - `email`: Current email
-///   - `first_name`: Current first name
-///   - `last_name`: Current last name
-///   - `budget_preference`: Optional budget enum
-///   - `risk_preference`: Optional risk enum
-///   - `food_allergies`: Optional notes
-///   - `disabilities`: Optional notes
 #[derive(Serialize)]
 pub struct UpdateResponse {
+	/// User id
     pub id: i32,
+	/// Current email
     pub email: String,
+	/// Current first name
     pub first_name: String,
+	/// Current last name
     pub last_name: String,
+	/// Optional budget enum
     pub budget_preference: Option<BudgetBucket>,
+	/// Optional risk enum
     pub risk_preference: Option<RiskTolerence>,
+	/// Optional food and allergies preferences
+	/// * String is a comma-separated list of preferences
     pub food_allergies: Option<String>,
+	/// Optional disabilites
+	/// * String is a comma-separated list of preferences
     pub disabilities: Option<String>,
 }
 
 /// API route response for GET `/api/account/current`.
-/// - Full, safe-to-return account profile for current user
-/// - Fields:
-///   - `email`: Email
-///   - `first_name`: First name
-///   - `last_name`: Last name
-///   - `budget_preference`: Optional budget enum
-///   - `risk_preference`: Optional risk enum
-///   - `food_allergies`: Optional notes
-///   - `disabilities`: Optional notes
+/// - Safe-to-return account profile for current user
 #[derive(Serialize)]
 pub struct CurrentResponse {
+	/// Email
     pub email: String,
+	/// First name
     pub first_name: String,
+	/// Last name
     pub last_name: String,
+	/// Optional budget enum
     pub budget_preference: Option<BudgetBucket>,
+	/// Optional risk enum
     pub risk_preference: Option<RiskTolerence>,
+	/// Optional food and allergies preferences
     pub food_allergies: Option<String>,
+	/// Optional food and allergies preferences
     pub disabilities: Option<String>
 }
 

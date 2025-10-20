@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::Type;
 
 pub mod account;
-pub mod event;
 pub mod event_list;
 pub mod itinerary;
 pub mod message;
@@ -34,6 +33,7 @@ pub enum RiskTolerence {
     RiskTaker,
 }
 
+/// The time of day the event will take place in the itinerary
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq)]
 #[sqlx(type_name = "time_of_day")]
 pub enum TimeOfDay {

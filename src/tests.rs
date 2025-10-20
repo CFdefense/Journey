@@ -3,17 +3,17 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use axum::{Extension, Router};
-use chrono::Utc;
+use axum::{Extension, Json, Router};
+use chrono::{NaiveDate, Utc};
 use serde_json::json;
 use serial_test::serial;
-use sqlx::migrate;
+use sqlx::{migrate, PgPool};
 use tower_cookies::{
     cookie::{time, CookieJar, SameSite}, Cookie, CookieManagerLayer, Key
 };
 use tracing::{info, error, trace};
 use crate::{
-	controllers, db, global::*, http_models::account::SignupRequest, log
+	controllers, db, global::*, http_models::{account::{LoginRequest, SignupRequest, UpdateRequest}, itinerary::Itinerary, message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest}}, log, middleware::AuthUser, sql_models::{BudgetBucket, RiskTolerence}
 };
 
 // UNIT TESTS
@@ -70,7 +70,7 @@ fn test_cookie_security_development() {
         .secure(on_production)
         .http_only(true)
         .same_site(if on_production {
-            SameSite::None
+            SameSite::Strict
         } else {
             SameSite::Lax
         })
@@ -98,7 +98,7 @@ fn test_cookie_security_production() {
         .secure(on_production)
         .http_only(true)
         .same_site(if on_production {
-            SameSite::None
+            SameSite::Strict
         } else {
             SameSite::Lax
         })
@@ -108,7 +108,7 @@ fn test_cookie_security_production() {
     assert_eq!(cookie.name(), "auth-token");
     assert_eq!(cookie.value(), token_value);
     assert_eq!(cookie.http_only(), Some(true));
-    assert_eq!(cookie.same_site(), Some(SameSite::None));
+    assert_eq!(cookie.same_site(), Some(SameSite::Strict));
     assert!(cookie.secure().unwrap_or(false));
 }
 
@@ -280,18 +280,15 @@ fn test_signup_max_password_length() {
     );
 }
 
-// ===== Email Validation Tests =====
-
 #[test]
-fn test_validate_email_valid() {
+fn test_validate_email() {
+	// valid
     assert!(SignupRequest::validate_email("user@example.com"));
     assert!(SignupRequest::validate_email("test.user@domain.co.uk"));
     assert!(SignupRequest::validate_email("name+tag@company.org"));
     assert!(SignupRequest::validate_email("user123@test-domain.com"));
-}
 
-#[test]
-fn test_validate_email_invalid() {
+    // invalid
     assert!(!SignupRequest::validate_email(""));
     assert!(!SignupRequest::validate_email("notanemail"));
     assert!(!SignupRequest::validate_email("@example.com"));
@@ -301,58 +298,47 @@ fn test_validate_email_invalid() {
     assert!(!SignupRequest::validate_email("user@exam ple.com"));
 }
 
-// ===== Password Validation Tests =====
-
 #[test]
-fn test_validate_password_valid() {
+fn test_validate_password() {
+	// valid
     assert!(SignupRequest::validate_password("Password1").is_ok());
     assert!(SignupRequest::validate_password("MySecure123").is_ok());
     assert!(SignupRequest::validate_password("Passw0rd!@#").is_ok());
     assert!(SignupRequest::validate_password("LongerPassword123").is_ok());
-}
 
-#[test]
-fn test_validate_password_too_short() {
+    // too short
     let result = SignupRequest::validate_password("Pass1");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must be at least 8 characters long"
     );
-}
 
-#[test]
-fn test_validate_password_no_uppercase() {
+    // no uppercase
     let result = SignupRequest::validate_password("password123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one uppercase letter"
     );
-}
 
-#[test]
-fn test_validate_password_no_lowercase() {
+    // no lowercase
     let result = SignupRequest::validate_password("PASSWORD123");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one lowercase letter"
     );
-}
 
-#[test]
-fn test_validate_password_no_number() {
+    // no number
     let result = SignupRequest::validate_password("PasswordOnly");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain at least one number"
     );
-}
 
-#[test]
-fn test_validate_password_too_long() {
+    // too long
     let password = "A".repeat(129) + "1a";
     let result = SignupRequest::validate_password(&password);
     assert!(result.is_err());
@@ -360,40 +346,33 @@ fn test_validate_password_too_long() {
         result.unwrap_err(),
         "Password must be 128 characters or less"
     );
-}
 
-#[test]
-fn test_validate_password_non_ascii() {
+    // non ascii
     let result = SignupRequest::validate_password("Password1パスワード");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain only ASCII characters"
     );
-}
 
-#[test]
-fn test_validate_password_emoji() {
+    // emoji
     let result = SignupRequest::validate_password("Password1🔒");
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
         "Password must contain only ASCII characters"
     );
-}
 
-#[test]
-fn test_validate_password_max_length_allowed() {
+    // max length allowed
     // Test that exactly 128 characters is okay (with required chars)
     let password = "A".to_string() + &"a".repeat(126) + "1";
     assert_eq!(password.len(), 128);
     assert!(SignupRequest::validate_password(&password).is_ok());
 }
 
-// ===== Signup Payload Validation Tests =====
-
 #[test]
-fn test_validate_signup_payload_valid() {
+fn test_validate_signup_payload() {
+	// valid
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -401,10 +380,8 @@ fn test_validate_signup_payload_valid() {
         password: "Password123".to_string(),
     };
     assert!(payload.validate().is_ok());
-}
 
-#[test]
-fn test_validate_signup_payload_empty_email() {
+    // empty email
     let payload = SignupRequest {
         email: "".to_string(),
         first_name: "John".to_string(),
@@ -414,10 +391,8 @@ fn test_validate_signup_payload_empty_email() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Email is required");
-}
 
-#[test]
-fn test_validate_signup_payload_invalid_email() {
+    // invalid email
     let payload = SignupRequest {
         email: "not-an-email".to_string(),
         first_name: "John".to_string(),
@@ -427,10 +402,8 @@ fn test_validate_signup_payload_invalid_email() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Invalid email format");
-}
 
-#[test]
-fn test_validate_signup_payload_empty_first_name() {
+    // empty first name
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "".to_string(),
@@ -440,10 +413,8 @@ fn test_validate_signup_payload_empty_first_name() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "First name is required");
-}
 
-#[test]
-fn test_validate_signup_payload_empty_last_name() {
+    // empty last name
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -453,10 +424,8 @@ fn test_validate_signup_payload_empty_last_name() {
     let result = payload.validate();
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Last name is required");
-}
 
-#[test]
-fn test_validate_signup_payload_first_name_too_long() {
+    // first name too long
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "a".repeat(51),
@@ -469,10 +438,8 @@ fn test_validate_signup_payload_first_name_too_long() {
         result.unwrap_err(),
         "First name must be 50 characters or less"
     );
-}
 
-#[test]
-fn test_validate_signup_payload_last_name_too_long() {
+    // last name too long
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -485,10 +452,8 @@ fn test_validate_signup_payload_last_name_too_long() {
         result.unwrap_err(),
         "Last name must be 50 characters or less"
     );
-}
 
-#[test]
-fn test_validate_signup_payload_weak_password() {
+    // weak password
     let payload = SignupRequest {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
@@ -498,10 +463,8 @@ fn test_validate_signup_payload_weak_password() {
     let result = payload.validate();
     assert!(result.is_err());
     assert!(result.unwrap_err().contains("Password"));
-}
 
-#[test]
-fn test_validate_signup_payload_whitespace_trimming() {
+    // whitespace trimming
     let payload = SignupRequest {
         email: "  test@example.com  ".to_string(),
         first_name: "  John  ".to_string(),
@@ -514,7 +477,7 @@ fn test_validate_signup_payload_whitespace_trimming() {
 
 /// Verifies that `db::create_pool` panics when `DATABASE_URL` is not set.
 #[test]
-#[serial]
+#[serial(db)]
 fn test_db_pool_panics_without_env() {
 	// Save and clear DATABASE_URL
 	let prev = std::env::var("DATABASE_URL").ok();
@@ -541,7 +504,7 @@ fn test_db_pool_panics_without_env() {
 /// Run with: `cargo test -- --ignored`
 #[tokio::test]
 #[ignore]
-#[serial]
+#[serial(db)]
 async fn test_db_pool_connects_and_selects() {
 	let database_url = match std::env::var("DATABASE_URL") {
 		Ok(v) => v,
@@ -567,7 +530,7 @@ async fn test_db_pool_connects_and_selects() {
 
 /// Verifies that `logs/latest.log` is created and written to from log events.
 #[test]
-#[serial]
+#[serial(log)]
 fn test_logger() {
 	//dotenv doesn't work in github actions bc .env is ignored
 	unsafe {
@@ -593,7 +556,7 @@ fn test_logger() {
 
 /// Verifies that `logs/crash.log` is created and written to on a panic.
 #[test]
-#[serial]
+#[serial(panic_log)]
 fn test_panic_handler() {
 	log::init_panic_handler();
 	std::panic::catch_unwind(||{
@@ -603,12 +566,500 @@ fn test_panic_handler() {
 	assert!(content.len() > 0);
 }
 
+/// It's easier to have all these in 1 test to share a db pool, and we don't have to spin up a server
+#[tokio::test]
+#[serial(db)]
+async fn test_controllers() {
+	_ = dotenvy::dotenv();
+	let cookies = CookieJar::new();
+	let key = Extension(Key::derive_from(&[0u8; 32]));
+	let pool = Extension(db::create_pool().await);
+
+	_ = tokio::join!(
+		test_signup_conflict_on_duplicate_email(cookies.clone(), key.clone(), pool.clone()),
+		test_http_login_invalid_credentials(cookies.clone(), key.clone(), pool.clone()),
+		test_current_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_returns_account(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_partial_fields(cookies.clone(), key.clone(), pool.clone()),
+		test_update_endpoint_with_preferences(cookies.clone(), key.clone(), pool.clone()),
+		test_get_itinerary_id_not_found(cookies.clone(), key.clone(), pool.clone()),
+		test_invalid_signup_email(cookies.clone(), key.clone(), pool.clone()),
+		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
+		test_save_itineraries(cookies.clone(), key.clone(), pool.clone()),
+		test_chat_flow(cookies.clone(), key.clone(), pool.clone()),
+	);
+}
+
+async fn test_signup_conflict_on_duplicate_email(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("dupe+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Bob"),
+		last_name: String::from("Dupe"),
+		password: String::from("Password123")
+	});
+	// First signup should succeed
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json.clone())
+		.await
+		.unwrap();
+	// Second signup with same email should 409
+	assert_eq!(controllers::account::api_signup(&mut cookies, key, pool, json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 409);
+}
+
+async fn test_http_login_invalid_credentials(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("badEmail+{}@example.com", unique);
+    let json = Json(LoginRequest {
+		email,
+		password: String::from("Password123")
+	});
+    // attempt to login with nonexistant email
+    assert_eq!(controllers::account::api_login(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+
+    let email = format!("goodEmail+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email: email.clone(),
+        first_name: String::from("Alice"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // signup
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    let json = Json(LoginRequest {
+		email,
+		password: String::from("ChickenNugget1234")
+	});
+    // attempt to login with a correct email, but the wrong password
+    assert_eq!(controllers::account::api_login(&mut cookies, key, pool, json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+}
+
+async fn test_current_endpoint_returns_account(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("current+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Current"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    // Test /current endpoint returns Account struct
+    _ = controllers::account::api_current(pool.clone(), user)
+        .await
+        .unwrap();
+}
+
+async fn test_update_endpoint_returns_account(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("update+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Update"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with all fields
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: Some(format!("updated+{}@example.com", unique)),
+        first_name: Some(String::from("Updated")),
+        last_name: Some(String::from("User")),
+        password: Some(String::from("NewPassword123")),
+        budget_preference: Some(BudgetBucket::HighBudget),
+        risk_preference: Some(RiskTolerence::Adventurer),
+        food_allergies: Some(String::from("Peanuts, shellfish")),
+        disabilities: Some(String::from("Wheelchair accessible")),
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_update_endpoint_partial_fields(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("partial+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Partial"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with only some fields
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: None,
+        first_name: Some(String::from("PartiallyUpdated")),
+        last_name: None,
+        password: None,
+        budget_preference: None,
+        risk_preference: None,
+        food_allergies: Some(String::from("Gluten")),
+        disabilities: None,
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_update_endpoint_with_preferences(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("prefs+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Prefs"),
+        last_name: String::from("Tester"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /update endpoint with enum preferences
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(UpdateRequest {
+        email: None,
+        first_name: None,
+        last_name: None,
+        password: None,
+        budget_preference: Some(BudgetBucket::LuxuryBudget),
+        risk_preference: Some(RiskTolerence::RiskTaker),
+        food_allergies: None,
+        disabilities: None,
+    });
+    _ = controllers::account::api_update(pool, user, json)
+        .await
+        .unwrap();
+}
+
+async fn test_get_itinerary_id_not_found(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("get_itinerary+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Get"),
+        last_name: String::from("Itinerary"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /{id} endpoint with non-existent itinerary (should return 404)
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    assert_eq!(controllers::itinerary::api_get_itinerary(user, axum::extract::Path(999999), pool.clone())
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 404);
+}
+
+async fn test_invalid_signup_email(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("invalid_email_{}", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Get"),
+        last_name: String::from("Event"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    assert_eq!(controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap_err()
+        .status_code()
+        .as_u16(), 400);
+}
+
+async fn test_saved_itineraries_endpoint(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+    let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("saved_itineraries+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // Test /saved endpoint returns user's itineraries
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    _ = controllers::itinerary::api_saved_itineraries(user, pool)
+        .await
+        .unwrap();
+}
+
+async fn test_save_itineraries(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("test_save_itinerary_new+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+	// save itinerary with id not in db
+	let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+    	id: parts[1].parse().unwrap()
+    });
+    let json = Json(Itinerary {
+        id: 0,
+        start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+        end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
+        event_days: vec![],
+        chat_session_id: None,
+        title: String::from("Updated Title")
+    });
+    let itinerary_id = controllers::itinerary::api_save(user, pool.clone(), json)
+        .await
+        .unwrap()
+        .id;
+    assert_ne!(itinerary_id, 0);
+
+    // save itinerary with a matching id already in db
+    let json = Json(Itinerary {
+        id: itinerary_id,
+        start_date: NaiveDate::parse_from_str("2026-01-01", "%Y-%m-%d").unwrap(),
+        end_date: NaiveDate::parse_from_str("2026-12-31", "%Y-%m-%d").unwrap(),
+        event_days: vec![],
+        chat_session_id: None,
+        title: String::from("2nd Updated Title")
+    });
+    assert_eq!(controllers::itinerary::api_save(user, pool, json)
+        .await
+        .unwrap()
+        .id, itinerary_id);
+}
+
+async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+    let email = format!("test_latest_message_page+{}@example.com", unique);
+    let json = Json(SignupRequest {
+        email,
+        first_name: String::from("Saved"),
+        last_name: String::from("Itineraries"),
+        password: String::from("Password123")
+    });
+    // Signup user
+    controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+        .await
+        .unwrap();
+
+    // create new chat
+    let cookie = cookies.get("auth-token").unwrap();
+    let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+    let user = Extension(AuthUser {
+   		id: parts[1].parse().unwrap()
+    });
+    let first_chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+        .await
+        .unwrap()
+        .chat_session_id;
+    assert_ne!(first_chat_session_id, 0);
+
+    // create chat session - reusing first one because it's empty
+    let chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+        .await
+        .unwrap()
+        .chat_session_id;
+    assert_eq!(first_chat_session_id, chat_session_id);
+
+    // send a bunch of messages
+    let mut message_ids = [0; MESSAGE_PAGE_LEN as usize + 5];
+    for i in 0..MESSAGE_PAGE_LEN as usize + 5 {
+	    let json = Json(SendMessageRequest {
+	        chat_session_id,
+	        text: format!("Test msg {}", i),
+	        itinerary_id: None
+	    });
+	    message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), json)
+			.await
+			.unwrap()
+			.user_message_id;
+		assert_ne!(message_ids[i], 0);
+    }
+
+    // send empty message
+    let json = Json(SendMessageRequest {
+        chat_session_id,
+        text: String::new(),
+        itinerary_id: None
+    });
+    assert_eq!(controllers::chat::api_send_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 400);
+
+    // send message invalid chat session
+    let json = Json(SendMessageRequest {
+        chat_session_id: 0,
+        text: String::from("Test msg invalid chat session id"),
+        itinerary_id: None
+    });
+    assert_eq!(controllers::chat::api_send_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 404);
+
+	// get latest messages and make sure messages are in chronological order
+    let chat_session_id = *controllers::chat::api_chats(user, pool.clone())
+		.await
+		.unwrap()
+		.0
+		.chat_sessions
+		.first()
+		.unwrap();
+    let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(latest_page.0.message_page.is_sorted_by(|a,b| a.timestamp < b.timestamp));
+
+	// get specific messages and make sure messages are in chronological order
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: Some(latest_page.message_page[0].id)
+    });
+	let next_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(next_page.0.message_page.is_sorted_by(|a,b| a.timestamp < b.timestamp));
+	assert_eq!(latest_page.message_page[0].id, next_page.message_page.last().unwrap().id);
+
+	// get page with invalid message id
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: Some(0)
+    });
+	let empty_page = controllers::chat::api_message_page(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert_eq!(empty_page.message_page.len(), 0);
+	assert_eq!(empty_page.prev_message_id, None);
+
+	// get page with invalid chat session id
+
+	// update message with empty text
+	let json = Json(UpdateMessageRequest {
+	    message_id: message_ids[0],
+	    new_text: String::new(),
+	    itinerary_id: None,
+	});
+	assert_eq!(controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 400);
+
+	// update message with invalid message id
+	let json = Json(UpdateMessageRequest {
+	    message_id: 0,
+	    new_text: String::from("Updated message"),
+	    itinerary_id: None,
+	});
+	assert_eq!(controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap_err()
+		.status_code()
+		.as_u16(), 404);
+
+	// update message
+	let json = Json(UpdateMessageRequest {
+	    message_id: message_ids[0],
+	    new_text: String::from("Updated message"),
+	    itinerary_id: None,
+	});
+	_ = controllers::chat::api_update_message(user, pool.clone(), json)
+		.await
+		.unwrap();
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool, json)
+		.await
+		.unwrap();
+	assert_eq!(latest_page.prev_message_id, None);
+	assert_eq!(latest_page.message_page.len(), 2);
+}
+
 // INTEGRATION TESTS
 
 static mut PORT: u16 = 0;
 
 #[tokio::test]
-#[serial]
+#[serial(db, log, panic_log)]
 async fn test_endpoints() {
 	// Only use dotenvy for local testing
 	// CI testing should use GitHub environment variables
@@ -621,16 +1072,6 @@ async fn test_endpoints() {
 	}
     log::init_panic_handler();
     log::init_logger();
-
-    // Ensure env and database
-    if std::env::var("DATABASE_URL").is_err() {
-        unsafe {
-            std::env::set_var(
-                "DATABASE_URL",
-                "postgres://postgres:password@localhost:5432/capping2025",
-            );
-        }
-    }
 
     let pool = db::create_pool().await;
     match migrate!().run(&pool).await {
@@ -649,8 +1090,8 @@ async fn test_endpoints() {
     let chat_routes = controllers::chat::chat_routes();
     let api_routes = Router::new()
         .nest("/account", account_routes)
-        .nest("/itinerary", itinerary_routes);
-        // .nest("/chat", chat_routes);
+        .nest("/itinerary", itinerary_routes)
+        .nest("/chat", chat_routes);
     let app = Router::new()
         .nest("/api", api_routes)
         .layer(Extension(pool.clone()))
@@ -665,21 +1106,15 @@ async fn test_endpoints() {
         .serve(app.into_make_service());
     tokio::spawn(server);
 
+    // Any unit tests that test cookies or middleware, or any integration tests should go here.
+    // Any other unit test should not go here. Instead, run it as a separate unit test and just invoke the controller directly.
     tokio::join!(
     	test_signup_and_login_happy_path(&cookie_key),
      	test_auth_for_all_required(),
-     	test_signup_conflict_on_duplicate_email(),
      	test_http_signup_and_login_flow(),
-        test_http_login_invalid_credentials(),
 	    test_validate_with_bad_and_good_cookie(),
-	    test_current_endpoint_returns_account(),
-	    test_update_endpoint_returns_account(),
-	    test_update_endpoint_partial_fields(),
-	    test_update_endpoint_with_preferences(),
-	    test_saved_itineraries_endpoint(),
-	    test_get_itinerary_endpoint(),
-	    test_signup_logout(),
-		test_invalid_signup_email(),
+	    test_get_itinerary_invalid_format(),
+		test_signup_logout(),
         // just throw all the tests in here
     );
 }
@@ -737,67 +1172,49 @@ async fn test_auth_for_all_required() {
 	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
 
     let account_update_payload = json!({});
+    let chat_message_page_payload = json!({
+		"chat_session_id": 1,
+		"message_id": 1
+    });
     let chat_update_message_payload = json!({
-    	"message_id": 0,
-    	"new_text": ""
+    	"message_id": 1,
+    	"new_text": "test"
+    });
+    let chat_send_message_payload = json!({
+		"chat_session_id": 1,
+		"text": "test"
+    });
+    let itinerary_save_payload = json!({
+		"id": 1,
+		"start_date": "2025-11-05 00:00:00",
+		"end_date": "2025-11-10 00:00:00",
+		"morning_events": [],
+		"noon_events": [],
+		"afternoon_events": [],
+		"evening_events": []
     });
 
-    for res in futures::future::join_all(vec![
+    for res in futures::future::join_all([
 		hc.do_get("/api/account/current"),
 		hc.do_get("/api/account/validate"),
 		hc.do_get("/api/account/logout"),
-		// hc.do_get("/api/chat/chats"),
-		// hc.do_get("/api/chat/messagePage"),
-		// hc.do_get("/api/chat/sendMessage"),
+		hc.do_get("/api/chat/chats"),
+		hc.do_get("/api/chat/newChat"),
 		hc.do_get("/api/itinerary/saved"),
 		hc.do_get("/api/itinerary/:id"),
     ]).await.iter() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
     }
 
-    for res in futures::future::join_all(vec![
+    for res in futures::future::join_all([
 		hc.do_post("/api/account/update", account_update_payload),
-		// hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
-		// hc.do_post("/api/itinerary/save", itinerary_save_payload),
+		hc.do_post("/api/chat/messagePage", chat_message_page_payload),
+		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
+		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
+		hc.do_post("/api/itinerary/save", itinerary_save_payload),
     ]).await.iter() {
     	assert_eq!(res.as_ref().unwrap().status().as_u16(), 401, "Protected route should require authentication");
     }
-}
-
-async fn test_signup_conflict_on_duplicate_email() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-	let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("dupe+{}@example.com", unique);
-
-    // First signup should succeed
-    let resp1 = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Bob",
-                "last_name": "Dupe",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp1.status().as_u16(), 200);
-
-    // Second signup with same email should 409
-    let resp2 = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": format!("dupe+{}@example.com", unique),
-                "first_name": "Bob",
-                "last_name": "Dupe",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp2.status().as_u16(), 409);
 }
 
 async fn test_http_signup_and_login_flow() {
@@ -832,54 +1249,6 @@ async fn test_http_signup_and_login_flow() {
         .await
         .unwrap();
     assert!(resp.status().is_success(), "login failed: {}", resp.status());
-}
-
-async fn test_http_login_invalid_credentials() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let bad_email = format!("badEmail+{}@example.com", unique);
-
-    // Email not present in db
-    let resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": bad_email,
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 400, "expected 400 for email not in DB but got {}", resp.status());
-
-    //first need to sign in as an account
-    let good_email = format!("goodEmail+{}@example.com", unique);
-    let signup_res = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": good_email,
-                "first_name": "Alice",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_res.status().as_u16(), 200, "expected 200; got {}", resp.status());
-
-    // login with a correct email, but the wrong password
-    let resp = hc
-        .do_post(
-            "/api/account/login",
-            json!({
-                "email": good_email,
-                "password": "ChickenNugget1234"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status().as_u16(), 400, "expected 400 for valid email but invalid password, but got {}", resp.status());
 }
 
 async fn test_validate_with_bad_and_good_cookie() {
@@ -929,187 +1298,7 @@ async fn test_validate_with_bad_and_good_cookie() {
     assert_eq!(resp.status().as_u16(), 200, "/validate with good cookie should return 200");
 }
 
-async fn test_current_endpoint_returns_account() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("current+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Current",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /current endpoint returns Account struct
-    let current_resp = hc
-        .do_get("/api/account/current")
-        .await
-        .unwrap();
-    assert_eq!(current_resp.status().as_u16(), 200);
-
-    // Verify response is successful and contains data
-    // Note: JSON parsing would require checking httpc-test Response methods
-    assert!(current_resp.status().is_success());
-}
-
-async fn test_update_endpoint_returns_account() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("update+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Update",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with all fields
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "email": format!("updated+{}@example.com", unique),
-                "first_name": "Updated",
-                "last_name": "User",
-                "password": "NewPassword123",
-                "budget_preference": "HighBudget",
-                "risk_preference": "Adventurer",
-                "food_allergies": "Peanuts, shellfish",
-                "disabilities": "Wheelchair accessible"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_update_endpoint_partial_fields() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("partial+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Partial",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with only some fields
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "first_name": "PartiallyUpdated",
-                "food_allergies": "Gluten"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_update_endpoint_with_preferences() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("prefs+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Prefs",
-                "last_name": "Tester",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /update endpoint with enum preferences
-    let update_resp = hc
-        .do_post(
-            "/api/account/update",
-            json!({
-                "budget_preference": "LuxuryBudget",
-                "risk_preference": "RiskTaker"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(update_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(update_resp.status().is_success());
-}
-
-async fn test_saved_itineraries_endpoint() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("saved_itineraries+{}@example.com", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Saved",
-                "last_name": "Itineraries",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /saved endpoint returns user's itineraries
-    let saved_resp = hc
-        .do_get("/api/itinerary/saved")
-        .await
-        .unwrap();
-    assert_eq!(saved_resp.status().as_u16(), 200);
-
-    // Verify response is successful
-    assert!(saved_resp.status().is_success());
-}
-
-async fn test_get_itinerary_endpoint() {
+async fn test_get_itinerary_invalid_format() {
 	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
     let unique = Utc::now().timestamp_nanos_opt().unwrap();
     let email = format!("get_itinerary+{}@example.com", unique);
@@ -1128,13 +1317,6 @@ async fn test_get_itinerary_endpoint() {
         .await
         .unwrap();
     assert_eq!(signup_resp.status().as_u16(), 200);
-
-    // Test /{id} endpoint with non-existent itinerary (should return 404)
-    let get_resp = hc
-        .do_get("/api/itinerary/999999")
-        .await
-        .unwrap();
-    assert_eq!(get_resp.status().as_u16(), 404);
 
     // Test with invalid ID format (should return 400)
     let invalid_resp = hc
@@ -1183,25 +1365,4 @@ async fn test_signup_logout() {
         .await
         .unwrap();
     assert_eq!(validate_res.status().as_u16(), 401, "Missing/invalid cookie should return 401");
-}
-
-async fn test_invalid_signup_email() {
-	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe {PORT})).unwrap();
-    let unique = Utc::now().timestamp_nanos_opt().unwrap();
-    let email = format!("invalid_email_{}", unique);
-
-    // Signup user
-    let signup_resp = hc
-        .do_post(
-            "/api/account/signup",
-            json!({
-                "email": email,
-                "first_name": "Get",
-                "last_name": "Event",
-                "password": "Password123"
-            }),
-        )
-        .await
-        .unwrap();
-    assert_eq!(signup_resp.status().as_u16(), 400);
 }
