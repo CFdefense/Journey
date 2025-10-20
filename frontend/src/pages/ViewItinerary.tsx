@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
-
-import "../styles/Itinerary.css";
 import { apiItineraryDetails } from "../api/itinerary";
+import { populateItinerary } from "../helpers/populate_itinerary";
+import type { TimeBlock } from "../helpers/populate_itinerary";
+import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
 
   const unassignedEvents: Event[] = [
     { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
@@ -25,10 +27,12 @@ export default function ViewItineraryPage() {
       try {
         const testId = 3;
         const itinerary = await apiItineraryDetails(testId);
-        console.log(itinerary)
-        console.log("meow")
-      } catch {
-          console.log("Error")
+        const mapped = populateItinerary(itinerary);
+        setTimeBlocks(mapped);
+        console.log("Fetched itinerary:", itinerary);
+        console.log(mapped);
+      } catch (err){
+          console.log("Error", err);
       }
     }
     fetchItinerary();
@@ -37,7 +41,7 @@ export default function ViewItineraryPage() {
   return (
     <div className="view-page">
       <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} />
-      <Itinerary />
+      <Itinerary initialTimeBlocks={timeBlocks}/>
       <button>Edit with AI</button>
     </div>
   );

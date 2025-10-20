@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import EventCard from "./EventCard";
 import "../styles/Itinerary.css";
 
@@ -13,12 +13,22 @@ interface TimeBlock {
   events: Event[];
 }
 
-const Itinerary: React.FC = () => {
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([
+interface ItineraryProps {
+  initialTimeBlocks?: TimeBlock[];
+}
+
+const Itinerary: React.FC<ItineraryProps> = ({ initialTimeBlocks }) => {
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(
+    initialTimeBlocks || [
     { time: "Morning", events: [] },
     { time: "Afternoon", events: [] },
     { time: "Evening", events: [] }
   ]);
+
+  useEffect(() => {
+    if (initialTimeBlocks && initialTimeBlocks.length >0)
+      setTimeBlocks(initialTimeBlocks);
+  }, [initialTimeBlocks]);
 
   const onDrop = (e: React.DragEvent, timeIndex: number) => {
     const eventId = e.dataTransfer.getData("eventId");

@@ -1,7 +1,7 @@
 import React from "react";
 import "../styles/EventCard.css";
 
-//creation of this component will make api calls and generating a lot of different events much easier
+
 interface EventCardProps {
   title: string;
   desc?: string;
