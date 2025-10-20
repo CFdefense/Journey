@@ -3,9 +3,17 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct Message {
+	pub id: i32,
 	pub is_user: bool,
 	pub timestamp: NaiveDateTime,
 	pub text: String,
+	pub itinerary_id: Option<i32>
+}
+
+#[derive(Deserialize)]
+pub struct MessagePageRequest {
+	pub chat_session_id: i32,
+	pub message_id: Option<i32>
 }
 
 #[derive(Serialize)]
@@ -20,8 +28,14 @@ pub struct UpdateMessageRequest {
 	pub new_text: String
 }
 
+#[derive(Deserialize)]
+pub struct SendMessageRequest {
+	pub chat_session_id: i32,
+	pub text: String
+}
+
 #[derive(Serialize)]
-pub struct SaveMessageResponse {
+pub struct SendMessageResponse {
 	pub user_message_id: i32,
 	pub bot_message: Message
 }

@@ -39,7 +39,7 @@ pub struct LoginRequest {
 /// Validated server-side before insert.
 /// - Fields:
 ///   - `email`, `first_name`, `last_name`, `password`
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SignupRequest {
     pub email: String,
     pub first_name: String,

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::Type;
 
 pub mod account;
-pub mod event;
 pub mod event_list;
 pub mod itinerary;
 pub mod message;

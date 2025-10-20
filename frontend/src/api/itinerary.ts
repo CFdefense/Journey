@@ -1,50 +1,62 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import type { Itinerary, EventDay, Event } from "../models/itinerary";
 
-export interface Event {
-	id: string;
-	title: string;
-	desc?: string;
-	time?: string;
-	address?: string;
-	postal_code?: number;
-	city?: string;
-	type?: string;
+export async function apiItineraryDetails(itinerary_id: number): Promise<Itinerary> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/itinerary/${itinerary_id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: import.meta.env.DEV ? "include" : "same-origin",
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      // The backend returns { itinerary: Itinerary }
+      return data ?? placeholderItinerary(itinerary_id);
+    }
+
+    switch (response.status) {
+      case 401:
+        console.error("Unauthorized: User is not authenticated.");
+        break;
+      case 404:
+        console.error("Not Found: Itinerary does not exist or does not belong to user.");
+        break;
+      case 500:
+        console.error("Internal Server Error: Something went wrong on the server.");
+        break;
+      default:
+        console.warn(`Unexpected response status: ${response.status}`);
+    }
+
+    return placeholderItinerary(itinerary_id);
+
+  } catch (error) {
+    console.error("apiItineraryDetails network error:", error);
+    return placeholderItinerary(itinerary_id);
+  }
 }
 
-/// Calls `GET /api/itinerary/saved`
-///
-/// Fetches all saved itineraries from the backend database for authenticated user.
-///
-/// # Returns
-/// A list of itineraries.
-/// # Throws
-/// Error with descriptive message if fetching fails.
-export async function apiGetItinerary(): Promise<Event[]> {
-	try {
-		const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			credentials: "include"
-		});
+// default itinerary for dealing with errors or when a placeholder is needed
+function placeholderItinerary(itinerary_id: number): Itinerary {
+  const emptyEvents: Event[] = [];
 
-		if (!response.ok) {
-			if (response.status === 401) {
-				throw new Error("Unauthorized. Please log in again.");
-			} else if (response.status === 404) {
-				throw new Error("No events found.");
-			} else if (response.status === 500) {
-				throw new Error("Server error while fetching events.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
+  const emptyDay: EventDay = {
+    date: new Date().toISOString().split("T")[0],
+    morning_events: emptyEvents,
+    noon_events: emptyEvents,
+    afternoon_events: emptyEvents,
+    evening_events: emptyEvents,
+  };
 
-		const data = await response.json();
-		return data as Event[];
-	} catch (error) {
-		console.error("Get Events API error: ", error);
-		throw error;
-	}
+  return {
+    id: itinerary_id,
+    start_date: emptyDay.date,
+    end_date: emptyDay.date,
+    event_days: [emptyDay],
+    chat_session_id: -1,
+    title: "Untitled Itinerary",
+  };
 }

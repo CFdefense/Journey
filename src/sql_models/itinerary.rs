@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 /// Row model for the `itineraries` table.
@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 pub struct ItineraryJoinedRow {
     pub id: i32,
     pub account_id: Option<i32>,
-    pub date: NaiveDateTime,
-    pub chat_session_id: Option<i32>
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub chat_session_id: Option<i32>,
+    pub title: String
 }
