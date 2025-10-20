@@ -1,6 +1,25 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { Itinerary, EventDay, Event } from "../models/itinerary";
 
+/// Calls itinerary details
+///
+/// # Method
+/// Sends a `GET /api/itinerary/:itinerary_id` request to fetch the full details
+/// of a specific itinerary for the currently authenticated user.
+///
+/// # Parameters
+/// - `itinerary_id`: The numeric ID of the itinerary to retrieve.
+///
+/// # Returns
+/// - On success: The `Itinerary` object returned by the backend.
+/// - On failure: A placeholder itinerary with default values.
+///
+/// # Errors
+/// - Logs detailed error messages based on the response status code:
+///   - `401`: User is not authenticated.
+///   - `404`: The itinerary does not exist or does not belong to the user.
+///   - `500`: Internal server error.
+/// - Returns a placeholder itinerary if the request fails or encounters a network error.
 export async function apiItineraryDetails(itinerary_id: number): Promise<Itinerary> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/itinerary/${itinerary_id}`, {

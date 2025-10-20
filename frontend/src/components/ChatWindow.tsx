@@ -32,7 +32,8 @@ export default function ChatWindow({ messages, onSend, itineraryTitles }: ChatWi
               {msg.sender === "bot" && msg.itinerary_id && (
                 <div className="itinerary-info">
                   <Link to={`/itinerary/${msg.itinerary_id}`} className="itinerary-link">
-                    Itinerary: {itineraryTitles[msg.itinerary_id] || "No Itinerary (change later)"}
+                    Itinerary: {itineraryTitles[msg.itinerary_id] || "No Itinerary (change later)"} 
+                    {/* Will display this fallback text only if the database does not have an itinerary title for this message */} 
                   </Link>
                 </div>
               )}

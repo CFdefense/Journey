@@ -3,7 +3,18 @@ import type { ChatsResponse } from "../models/chat";
 import type { MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse } from "../models/chat";
 
 
-
+/// Calls chats
+///
+/// # Method
+/// Sends a `GET /api/chat/chats` request to fetch all chat sessions for the current user.
+///
+/// # Returns
+/// - On success: `ChatsResponse` containing all existing chat sessions.
+/// - On failure: An empty `ChatsResponse` with no chat sessions.
+///
+/// # Errors
+/// - Logs a warning if the response is non-OK.
+/// - Returns an empty list if there is a network or parsing error.
 export async function apiChats(): Promise<ChatsResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/chats`, {
@@ -31,6 +42,23 @@ export async function apiChats(): Promise<ChatsResponse> {
   }
 }
 
+
+/// Calls messagePage
+///
+/// # Method
+/// Sends a `POST /api/chat/messagePage` request to fetch a list of messages
+/// from a specific chat session.
+///
+/// # Parameters
+/// - `payload`: A `MessagePageRequest` object containing chat session ID.
+///
+/// # Returns
+/// - On success: `MessagePageResponse` containing the list of messages for a page.
+/// - On failure: Returns an empty `MessagePageResponse` with no messages.
+///
+/// # Errors
+/// - Logs warnings for non-OK or network errors.
+/// - Falls back to an empty message list on failure.
 export async function apiMessages(payload: MessagePageRequest): Promise<MessagePageResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/messagePage`, {
@@ -67,7 +95,22 @@ export async function apiMessages(payload: MessagePageRequest): Promise<MessageP
   }
 }
 
-
+/// Calls sendMessage
+///
+/// # Method
+/// Sends a `POST /api/chat/sendMessage` request to send a new user message to the backend,
+/// and receive an AI-generated bot response.
+///
+/// # Parameters
+/// - `payload`: A `SendMessageRequest` object containing the chat session ID and message text.
+///
+/// # Returns
+/// - On success: `SendMessageResponse` containing both the sent user message ID and bot response.
+/// - On failure: Returns a fallback object containing an error message.
+///
+/// # Errors
+/// - Logs warnings for non-OK or network failures.
+/// - Returns placeholder error text in the bot message when the request fails.
 export async function apiSendMessage(payload: SendMessageRequest): Promise<SendMessageResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/sendMessage`, {
@@ -123,7 +166,19 @@ export async function apiSendMessage(payload: SendMessageRequest): Promise<SendM
   }
 }
 
-
+/// Calls newChat
+///
+/// # Method
+/// Sends a `GET /api/chat/newChat` request to create a brand-new chat session
+/// for the current authenticated user.
+///
+/// # Returns
+/// - On success: The numeric ID of the newly created chat session.
+/// - On failure: `-1` if the request fails or no chat session ID is returned.
+///
+/// # Errors
+/// - Logs a warning for non-OK responses.
+/// - Logs an error for network or parsing failures.
 export async function apiNewChatId(): Promise<number> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/newChat`, {
