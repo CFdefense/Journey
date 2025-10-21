@@ -5,6 +5,32 @@ import { apiItineraryDetails } from "../api/itinerary";
 
 
 /**
+ * Creates a new blank chat session (frontend + backend).
+ */
+export async function createNewChat(
+  chats: ChatSession[],
+  setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
+  setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>
+): Promise<void> {
+  try {
+    const newChatId = await apiNewChatId();
+    if (newChatId === -1) return;
+
+    const blankChat: ChatSession = {
+      id: newChatId,
+      title: `Chat ${chats.length + 1}`,
+      messages: [],
+    };
+
+    setChats((prev) => [...prev, blankChat]);
+    setActiveChatId(newChatId);
+  } catch (err) {
+    console.error("Error creating chat:", err);
+  }
+}
+
+
+/**
  * Handles sending a message in an existing chat session.
  */
 export async function handleMessageSendExistingChat(
