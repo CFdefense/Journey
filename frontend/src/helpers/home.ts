@@ -38,7 +38,10 @@ export async function handleMessageSendExistingChat(
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
-    console.log(response.bot_message.itinerary_id)
+    if (response.user_message_id === -1) {
+      console.log("ERROR: " + response.bot_message.text);
+      return; // stop execution because there was an error with api call
+    }
 
     const botMessage: Message = {
       id: response.bot_message.id,
@@ -50,6 +53,11 @@ export async function handleMessageSendExistingChat(
     // get the itinerary information before displaying the messages
     if (botMessage.itinerary_id) {
       const itinerary = await apiItineraryDetails(botMessage.itinerary_id);
+      
+      if (itinerary.chat_session_id === -1) {
+        console.log("Failed to load itinerary details."); 
+      }
+      
       setItineraryTitles((prev) => ({
         ...prev,
         [botMessage.itinerary_id!]: itinerary.title,
@@ -115,8 +123,11 @@ export async function handleMessageSendNewChat(
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
-    console.log(response.bot_message.itinerary_id)
-
+    if (response.user_message_id === -1) {
+      console.log("ERROR: " + response.bot_message.text);
+      return; // stop execution because there was an error with api call
+    }
+    
     const botMessage: Message = {
       id: response.bot_message.id,
       text: response.bot_message.text,
@@ -127,6 +138,11 @@ export async function handleMessageSendNewChat(
     // get the itinerary information before displaying the messages
     if (botMessage.itinerary_id) {
       const itinerary = await apiItineraryDetails(botMessage.itinerary_id);
+      
+      if (itinerary.chat_session_id === -1) {
+        console.log("Failed to load itinerary details."); 
+      }
+      
       setItineraryTitles((prev) => ({
         ...prev,
         [botMessage.itinerary_id!]: itinerary.title,
