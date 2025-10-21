@@ -112,7 +112,6 @@ export async function handleMessageSendNewChat(
 ) {
   // get the chat session id from the backend
   const newChatId = await apiNewChatId();
-  console.log("New chat session ID:", newChatId);
 
   if (newChatId === -1) {
     console.error("Failed to create new chat session");

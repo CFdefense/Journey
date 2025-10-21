@@ -19,7 +19,8 @@ export default function Home() {
   const [itineraryTitles, setItineraryTitles] = useState<Record<number, string>>({});
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(null);
 
-  console.log(selectedItineraryId); // this is to prevent a build error. the value will be used later but not in this pr
+  void selectedItineraryId;
+ // this is to prevent a build error. the value will be used later but not in this pr
   // TODO, build this out and move to helper/home.ts
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
@@ -72,7 +73,6 @@ useEffect(() => {
         message_id: null,
       };
 
-      console.log(activeChatId);
       const messagePage: MessagePageResponse = await apiMessages(payload);
       const messages: Message[] = messagePage.message_page;
 
@@ -86,7 +86,6 @@ useEffect(() => {
             }));
           });
         }
-        console.log(msg);
       }
 
       // update messages for the selected chat
