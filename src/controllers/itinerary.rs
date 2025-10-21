@@ -454,6 +454,6 @@ pub fn itinerary_routes() -> AxumRouter {
     AxumRouter::new()
         .route("/saved", get(api_saved_itineraries))
         .route("/save", post(api_save))
-        .route("/:id", get(api_get_itinerary))
+        .route("/{id}", get(api_get_itinerary))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

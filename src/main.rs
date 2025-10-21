@@ -8,6 +8,8 @@ mod middleware;
 mod http_models;
 mod sql_models;
 mod error;
+
+#[cfg(not(tarpaulin_include))]
 mod swagger;
 
 #[cfg(test)]
@@ -76,9 +78,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     // API routes with CORS middleware
     let api_routes = AxumRouter::new()
-    	.nest("/account", controllers::account::account_routes());
-        // .nest("/itinerary", controllers::itinerary::itinerary_routes())
-        // .nest("/chat", controllers::chat::chat_routes());
+    	.nest("/account", controllers::account::account_routes())
+        .nest("/itinerary", controllers::itinerary::itinerary_routes())
+        .nest("/chat", controllers::chat::chat_routes());
      	// TODO: nest other routes...
 
     let api_routes = AxumRouter::new()
