@@ -1,13 +1,8 @@
 import MessageInput from "./MessageInput";
 import "../styles/ChatWindow.css";
-import { Link } from "react-router-dom";
+import type { Message } from "../models/chat";
 
-interface Message {
-  id: number;
-  text: string;
-  sender: "user" | "bot";
-  itinerary_id?: number | null; 
-}
+
 
 interface ChatWindowProps {
   messages: Message[];
@@ -26,11 +21,11 @@ export default function ChatWindow({ messages, onSend, itineraryTitles, onItiner
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`chat-message ${msg.sender === "user" ? "user" : "bot"}`}
+              className={`chat-message ${msg.is_user ? "user" : "bot"}`}
             >
               <p>{msg.text}</p>
               
-              {msg.sender === "bot" && msg.itinerary_id && (
+              {!msg.is_user && msg.itinerary_id && (
                 <div className="itinerary-info">
                     <button
                         className="display-itinerary-button"

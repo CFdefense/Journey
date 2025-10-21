@@ -1,5 +1,5 @@
-import type { ChatSession, Message } from "../models/home";
-import type { SendMessageRequest, SendMessageResponse } from "../models/chat";
+import type { ChatSession } from "../models/home";
+import type { Message, SendMessageRequest, SendMessageResponse } from "../models/chat";
 import { apiSendMessage, apiNewChatId } from "../api/home";
 import { apiItineraryDetails } from "../api/itinerary"; 
 
@@ -15,10 +15,11 @@ export async function handleMessageSendExistingChat(
 
 ) {
   const userMessage: Message = {
-    id: Date.now(), 
+    id: Date.now(),
     text,
-    sender: "user",
-    itinerary_id: null, 
+    is_user: true,
+    timestamp: new Date().toISOString(),
+    itinerary_id: null,
   };
 
   // Optimistically add the user message
@@ -43,12 +44,7 @@ export async function handleMessageSendExistingChat(
       return; // stop execution because there was an error with api call
     }
 
-    const botMessage: Message = {
-      id: response.bot_message.id,
-      text: response.bot_message.text,
-      sender: response.bot_message.is_user ? "user" : "bot",
-      itinerary_id: response.bot_message.itinerary_id ?? null, 
-    };
+    const botMessage = response.bot_message;
 
     // get the itinerary information before displaying the messages
     if (botMessage.itinerary_id) {
@@ -100,8 +96,9 @@ export async function handleMessageSendNewChat(
   const userMessage: Message = {
     id: Date.now(),
     text,
-    sender: "user",
-    itinerary_id: null, 
+    is_user: true,
+    timestamp: new Date().toISOString(),
+    itinerary_id: null,
   };
 
   // Create a new chat locally
@@ -128,12 +125,7 @@ export async function handleMessageSendNewChat(
       return; // stop execution because there was an error with api call
     }
     
-    const botMessage: Message = {
-      id: response.bot_message.id,
-      text: response.bot_message.text,
-      sender: response.bot_message.is_user ? "user" : "bot",
-      itinerary_id: response.bot_message.itinerary_id ?? null, 
-    };
+    const botMessage = response.bot_message;
 
     // get the itinerary information before displaying the messages
     if (botMessage.itinerary_id) {

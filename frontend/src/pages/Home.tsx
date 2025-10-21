@@ -9,7 +9,8 @@ import { apiChats, apiMessages, apiNewChatId } from "../api/home";
 import type { MessagePageRequest, MessagePageResponse } from "../models/chat";
 import { apiItineraryDetails } from "../api/itinerary"; 
 import { handleMessageSendExistingChat, handleMessageSendNewChat } from "../helpers/home";
-import type { Message, ChatSession } from "../models/home";
+import type { ChatSession } from "../models/home";
+import type { Message } from "../models/chat";
 
 export default function Home() {
   const [chats, setChats] = useState<ChatSession[]>([]);
@@ -56,12 +57,7 @@ export default function Home() {
 
             const messagePage: MessagePageResponse = await apiMessages(payload);
 
-            const messages: Message[] = messagePage.message_page.map((msg) => ({
-              id: msg.id,
-              text: msg.text,
-              sender: msg.is_user ? "user" : "bot",
-              itinerary_id: msg.itinerary_id, 
-            }));
+            const messages: Message[] = messagePage.message_page;
 
             // get the title from the itinerary id and put it on the bot message
             for (const msg of messages) {

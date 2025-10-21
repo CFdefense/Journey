@@ -1,10 +1,5 @@
 import "../styles/PrevChatSideBar.css";
-
-interface ChatSession {
-  id: number;
-  title: string;
-  messages?: { id: number; text: string; sender: string }[];
-}
+import type { ChatSession } from "../models/home"; 
 
 interface PrevChatSideBarProps {
   chats: ChatSession[];
