@@ -63,7 +63,7 @@ export default function Home() {
               itinerary_id: msg.itinerary_id, 
             }));
 
-            // 
+            // get the title from the itinerary id and put it on the bot message
             for (const msg of messages) {
               if (msg.itinerary_id && !itineraryTitles[msg.itinerary_id]) {
                 apiItineraryDetails(msg.itinerary_id).then((it) => {
@@ -137,7 +137,7 @@ export default function Home() {
           messages={activeChat?.messages || []}
           onSend={handleSendMessage}
           itineraryTitles={itineraryTitles}
-          onItinerarySelect={handleItinerarySelect} // 👈 pass handler
+          onItinerarySelect={handleItinerarySelect} 
         />
         
         <Itinerary />

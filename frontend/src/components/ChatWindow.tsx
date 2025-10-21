@@ -32,7 +32,13 @@ export default function ChatWindow({ messages, onSend, itineraryTitles, onItiner
               
               {msg.sender === "bot" && msg.itinerary_id && (
                 <div className="itinerary-info">
-                    <button className="display-itinerary-button" onClick={() => onItinerarySelect(msg.itinerary_id!)}>
+                    <button
+                        className="display-itinerary-button"
+                        onClick={() => {
+                          console.log("Selected itinerary ID:", msg.itinerary_id);
+                          onItinerarySelect(msg.itinerary_id!);
+                        }}
+                      >
                       Itinerary: {itineraryTitles[msg.itinerary_id] || "No Itinerary (change later)"} 
                       {/* Will display this fallback text only if the database does not have an itinerary title for this message */} 
                     </button>
