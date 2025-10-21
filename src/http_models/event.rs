@@ -3,8 +3,10 @@ use sqlx::FromRow;
 
 use crate::sql_models::event_list::EventListJoinRow;
 
+/// A single event without context from an itinerary
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Event {
+	/// Primary key
     pub id: i32,
     pub street_address: String,
     pub postal_code: i32,

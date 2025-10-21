@@ -8,7 +8,48 @@ use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppErr
 /// When the bot replies, it's message and itinerary are inserted into the db.
 /// # Warning!
 /// Assumes the user's message has already been inserted into the db.
-async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, pool: &PgPool) -> ApiResult<Message> {
+async fn send_message_to_llm(
+	text: &str,
+	account_id: i32,
+	chat_session_id: i32,
+	itinerary_id: Option<i32>,
+	pool: &PgPool
+) -> ApiResult<Message> {
+	// Give the LLM an itinerary for context
+	let itinerary_id = match itinerary_id {
+		Some(id) => Some(id), //use the provided itinerary
+		None => { //use the latest itinerary from the chat session
+			sqlx::query!(
+				r#"
+				SELECT m.itinerary_id
+				FROM messages m
+				INNER JOIN chat_sessions c
+				ON m.chat_session_id=c.id
+				WHERE
+					c.account_id=$1 AND
+					c.id=$2 AND
+					m.itinerary_id IS NOT NULL
+				ORDER BY m.timestamp DESC
+				LIMIT 1;
+				"#,
+				account_id,
+				chat_session_id
+			)
+			.fetch_optional(pool)
+			.await
+			.map_err(|e| AppError::from(e))?
+			.map(|record| record.itinerary_id.unwrap())
+		}
+	};
+	let context_itinerary = match itinerary_id {
+		Some(id) => Some(crate::controllers::itinerary::api_get_itinerary(
+			Extension(AuthUser { id: account_id }),
+			axum::extract::Path(id),
+			Extension(pool.clone())
+		).await?),
+		None => None
+	};
+
 	// TODO: this is where the LLM call will be.
 	// It should generate an itinerary, insert it into the db, and give some text.
 	// Fow now we just make a temporary message.
@@ -155,6 +196,21 @@ async fn send_message_to_llm(text: &str, account_id: i32, chat_session_id: i32, 
 	})
 }
 
+/// Fetch all the chat session ids belonging to the user to made the request
+///
+/// # Method
+/// `GET /api/chat/chats`
+///
+/// # Responses
+/// - `200 OK` - [ChatsResponse] - list of chat session ids
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X GET http://localhost:3001/api/chat/chats
+///   -H "Content-Type: application/json"
+/// ```
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>
@@ -176,6 +232,38 @@ pub async fn api_chats(
 	}))
 }
 
+/// Get a page of messages from this chat session belonging to the user who made the request
+///
+/// # Method
+/// `POST /api/chat/messagePage`
+///
+/// # Request Body
+/// - [MessagePageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [MessagePageResponse]
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// Fetch latest massages
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/messagePage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 3
+///       }'
+/// ```
+/// Fetch messages ending with specific message
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/messagePage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 3,
+///         "message_id": 6
+///       }'
+/// ```
 pub async fn api_message_page(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -236,10 +324,35 @@ pub async fn api_message_page(
 	}))
 }
 
+/// Update an existing message with new text, and get a message back from the LLM
+///
+/// # Method
+/// `POST /api/chat/updateMessage`
+///
+/// # Request Body
+/// - [UpdateMessageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [Message] - message from LLM
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided message id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/updateMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "message_id": 3,
+///         "new_text": "Updated message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
-    Json(UpdateMessageRequest {message_id, new_text}): Json<UpdateMessageRequest>
+    Json(UpdateMessageRequest {message_id, new_text, itinerary_id}): Json<UpdateMessageRequest>
 ) -> ApiResult<Json<Message>> {
 	if new_text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
 
@@ -293,15 +406,40 @@ pub async fn api_update_message(
 	.chat_session_id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, &pool).await?;
+	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
 
 	Ok(Json(bot_message))
 }
 
+/// Send a new message, and get a message back from the LLM
+///
+/// # Method
+/// `POST /api/chat/sendMessage`
+///
+/// # Request Body
+/// - [SendMessageRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [SendMessageResponse] - contains message from LLM
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided chat session id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/sendMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 6,
+///         "text": "New message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
-    Json(SendMessageRequest {chat_session_id, text}): Json<SendMessageRequest>
+    Json(SendMessageRequest {chat_session_id, text, itinerary_id}): Json<SendMessageRequest>
 ) -> ApiResult<Json<SendMessageResponse>> {
 	if text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
 
@@ -335,7 +473,7 @@ pub async fn api_send_message(
 	.id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, &pool).await?;
+	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,
@@ -343,6 +481,27 @@ pub async fn api_send_message(
 	}))
 }
 
+/// Get an empty chat session id belonging to this user, or create one if one doesn't exist
+///
+/// # Method
+/// `GET /api/chat/newChat`
+///
+/// # Responses
+/// - `200 OK` - with body: [NewChatResponse]
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/sendMessage
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 6,
+///         "text": "New message",
+///         "itinerary_id": 7
+///       }'
+/// ```
 pub async fn api_new_chat(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>
@@ -392,9 +551,10 @@ pub async fn api_new_chat(
 ///
 /// # Routes
 /// - `GET /chats` - Get metadata for all the user's chat sessions (protected)
-/// - `GET /messagePage/{chat_session_id}?message_id=[Option<i32>]` - Gets a page of messages in the session, ending with message_id or the latest message (protected)
+/// - `POST /messagePage` - Gets a page of messages in the session, ending with message_id or the latest message (protected)
 /// - `POST /updateMessage` - Updates a user's message and waits for a bot reply (protected)
-/// - `GET /sendMessage?text=[String]` - Sends a user's message and waits for a bot reply (protected)
+/// - `POST /sendMessage` - Sends a user's message and waits for a bot reply (protected)
+/// - `GET /newChat` - Gets a chat session id for an empty chat (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
