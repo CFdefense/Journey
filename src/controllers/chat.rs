@@ -1,8 +1,28 @@
 use axum::{routing::{get, post}, Extension, Json};
 use chrono::NaiveDate;
 use sqlx::PgPool;
+use utoipa::OpenApi;
 
-use crate::{controllers::{itinerary::insert_event_list, AxumRouter}, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+use crate::{controllers::{itinerary::insert_event_list, AxumRouter}, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow, swagger::SecurityAddon};
+
+#[derive(OpenApi)]
+#[openapi(
+	paths(
+		api_chats,
+		api_new_chat,
+		api_message_page,
+		api_send_message,
+		api_update_message
+	),
+	modifiers(&SecurityAddon),
+	security(("set-cookie"=[])),
+    info(
+    	title="Chat Routes",
+    	description = "API endpoints dealing with chatting and the home page."
+    ),
+    tags((name="Chat"))
+)]
+pub struct ChatApiDoc;
 
 /// Sends message and latest itinerary in chat session to llm, and waits for response.
 ///
@@ -205,6 +225,30 @@ async fn send_message_to_llm(
 /// curl -X GET http://localhost:3001/api/chat/chats
 ///   -H "Content-Type: application/json"
 /// ```
+#[utoipa::path(
+	get,
+	path="/chats",
+	summary="Fetch user's chat session IDs",
+	description="Fetches a list of all chat session IDs belonging to the user.",
+	responses(
+		(
+			status=200,
+			description="Successfully retrieved chat sessions",
+			body=ChatsResponse,
+			content_type="application/json",
+			example=json!({
+				"chat_sessions": [3, 15, 16, 84]
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>
@@ -258,6 +302,79 @@ pub async fn api_chats(
 ///         "message_id": 6
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/messagePage",
+	summary="Fetch a page of messages from a chat session",
+	description="If no message id is provided, this fetches the latest messages from the chat session. If a message id is provided, that message and messages preceeding it will be fetched.",
+	request_body(
+		content=MessagePageRequest,
+		content_type="application/json",
+		description="Message id may be omitted to get the latest messages",
+		examples(
+			("Latest Messages"=(
+				summary="Fetch the latest messages from a chat session",
+				value=json!({
+					"chat_session_id": 4
+				})
+			)),
+			("Specific Messages"=(
+				summary="Fetch a specific page of messages from a chat session",
+				value=json!({
+					"chat_session_id": 4,
+					"message_id": 4
+				})
+			))
+		)
+	),
+	responses(
+		(
+			status=200,
+			description="Messages retrieved successfully",
+			body=MessagePageResponse,
+			content_type="application/json",
+			examples(
+				("Latest Messages"=(
+					summary="The latest messages from a chat session",
+					value=json!({
+						"message_page": [
+							{"id": 6, "is_user": true, "timestamp": "2025-10-14 11-34-19", "text": "User message"},
+							{"id": 10, "is_user": false, "timestamp": "2025-10-14 11-34-24", "text": "Bot reply", "itinerary_id": 2},
+							{"id": 12, "is_user": true, "timestamp": "2025-10-14 11-34-42", "text": "User message"},
+							{"id": 22, "is_user": false, "timestamp": "2025-10-14 11-34-56", "text": "Bot reply", "itinerary_id": 5},
+							{"id": 26, "is_user": true, "timestamp": "2025-10-14 11-35-10", "text": "User message"},
+							{"id": 33, "is_user": false, "timestamp": "2025-10-14 11-35-19", "text": "Bot reply", "itinerary_id": 9},
+							{"id": 39, "is_user": true, "timestamp": "2025-10-14 11-35-31", "text": "User message"},
+							{"id": 44, "is_user": false, "timestamp": "2025-10-14 11-35-54", "text": "Bot reply", "itinerary_id": 14},
+							{"id": 61, "is_user": true, "timestamp": "2025-10-14 11-36-24", "text": "User message"},
+							{"id": 72, "is_user": false, "timestamp": "2025-10-14 11-36-29", "text": "Bot reply", "itinerary_id": 27}
+						],
+						"prev_message_id": 4
+					})
+				)),
+				("Specific Messages"=(
+					summary="A specific page of messages from a chat session",
+					value=json!({
+						"message_page": [
+							{"id": 1, "is_user": true, "timestamp": "2025-10-14 11-33-21", "text": "User message"},
+							{"id": 2, "is_user": false, "timestamp": "2025-10-14 11-33-35", "text": "Bot reply", "itinerary_id": 1},
+							{"id": 3, "is_user": true, "timestamp": "2025-10-14 11-33-45", "text": "User message"},
+							{"id": 4, "is_user": false, "timestamp": "2025-10-14 11-34-01", "text": "Bot reply", "itinerary_id": 1},
+						],
+						"prev_message_id": null
+					})
+				))
+			)
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
 pub async fn api_message_page(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -343,6 +460,45 @@ pub async fn api_message_page(
 ///         "itinerary_id": 7
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/updateMessage",
+	summary="Update the text of a message and wait for a reply from the LLM",
+	description="Updating a message deletes all proceeding messages, updates the text of the given message, and returns a response from the LLM.",
+	request_body(
+		content=UpdateMessageRequest,
+		content_type="application/json",
+		description="Itinerary id is optional and is used to give context to the LLM.",
+		example=json!({
+			"message_id": 41,
+			"new_text": "Updated message content",
+			"itinerary_id": 17
+		})
+	),
+	responses(
+		(
+			status=200,
+			description="Message updated, and LLM replied successfully",
+			body=Message,
+			content_type="application/json",
+			example=json!({
+				"id": 43,
+				"is_user": false,
+				"timestamp": "2025-10-14 11-38-52",
+				"text": "Bot reply",
+				"itinerary_id": 19
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Message not found in this chat session for this user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -430,6 +586,48 @@ pub async fn api_update_message(
 ///         "itinerary_id": 7
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/sendMessage",
+	summary="Send a message and wait for a reply from the LLM",
+	description="Ask the LLM to generate an itinerary and it should respond with one.",
+	request_body(
+		content=SendMessageRequest,
+		content_type="application/json",
+		description="Itinerary id is optional and is used to give context to the LLM.",
+		example=json!({
+			"chat_session_id": 12,
+			"text": "Make an itinerary",
+			"itinerary_id": 13
+		})
+	),
+	responses(
+		(
+			status=200,
+			description="Message sent, and LLM replied successfully",
+			body=SendMessageResponse,
+			content_type="application/json",
+			example=json!({
+				"user_message_id": 52,
+				"bot_message": {
+					"id": 53,
+					"is_user": false,
+					"timestamp": "2025-10-14 11-39-10",
+					"text": "Bot reply",
+					"itinerary_id": 14
+				}
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Chat session not found for this user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -496,6 +694,30 @@ pub async fn api_send_message(
 ///         "itinerary_id": 7
 ///       }'
 /// ```
+#[utoipa::path(
+	get,
+	path="/newChat",
+	summary="Get the chat session id for an empty chat",
+	description="Creates a new empty chat session for this user if one doesn't already exist, and returns its chat session id.",
+	responses(
+		(
+			status=200,
+			description="New chat session retrieved successfully",
+			body=NewChatResponse,
+			content_type="application/json",
+			example=json!({
+				"chat_session_id": 13
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
 pub async fn api_new_chat(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>

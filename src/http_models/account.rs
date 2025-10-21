@@ -61,8 +61,6 @@ pub struct UpdateRequest {
 /// - Contains full updated account profile for convenience.
 #[derive(Serialize, ToSchema, ToResponse)]
 pub struct UpdateResponse {
-	/// User id
-    pub id: i32,
 	/// Current email
     pub email: String,
 	/// Current first name

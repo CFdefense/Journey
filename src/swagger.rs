@@ -5,22 +5,32 @@ use utoipa_swagger_ui::SwaggerUi;
 use std::fs::{self, File};
 use std::io::Write;
 
+use crate::controllers::{account::AccountApiDoc, chat::ChatApiDoc, itinerary::ItineraryApiDoc};
+
 #[derive(OpenApi)]
 #[openapi(
-	paths(
-		crate::controllers::account::api_update,
-		crate::controllers::account::api_current,
-		crate::controllers::account::api_validate,
-		crate::controllers::account::api_logout,
-		crate::controllers::account::api_signup,
-		crate::controllers::account::api_login,
-	),
 	modifiers(&SecurityAddon),
-    info(description = "My Api description"),
+	security(
+		(),
+		("set-cookie"=[])
+	),
+    info(
+    	title="Journey API",
+    	description = "The public API documentation for the Journey web application."
+    ),
+    nest(
+    	(path="/api/account", api=AccountApiDoc),
+    	(path="/api/chat", api=ChatApiDoc),
+    	(path="/api/itinerary", api=ItineraryApiDoc)
+    ),
+    servers(
+    	(url="http://localhost:3001", description="Local host server for development"),
+     	//TODO add deployed production server URL
+    )
 )]
 struct ApiDoc;
 
-struct SecurityAddon;
+pub struct SecurityAddon;
 
 impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {

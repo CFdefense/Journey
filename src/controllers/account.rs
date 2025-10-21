@@ -20,10 +20,34 @@ use tower_cookies::cookie::CookieJar;
 
 use sqlx::PgPool;
 use tracing::debug;
+use utoipa::OpenApi;
 
-use crate::{controllers::AxumRouter, error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}};
+use crate::{controllers::AxumRouter, error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}, swagger::SecurityAddon};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::account::*;
+
+#[derive(OpenApi)]
+#[openapi(
+	paths(
+		api_signup,
+		api_login,
+		api_logout,
+		api_validate,
+		api_update,
+		api_current
+	),
+	modifiers(&SecurityAddon),
+	security(
+		(),
+		("set-cookie"=[])
+	),
+    info(
+    	title="Account Routes",
+    	description = "API endpoints dealing with authentication and account info."
+    ),
+    tags((name="Account"))
+)]
+pub struct AccountApiDoc;
 
 pub trait CookieStore {
 	fn private_add(&mut self, key: &Key, cookie: Cookie<'static>);
@@ -115,14 +139,19 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 /// ```
 #[utoipa::path(
 	post,
-	path="/api/account/signup",
+	path="/signup",
 	summary="Create a new account",
 	description="Inserts account details into db (if email isn't already taken), and returns with a cookie.",
 	request_body(
 		content=SignupRequest,
 		content_type="application/json",
 		description="Email must not already be taken. Password must be in plaintext.",
-		//TODO example
+		example=json!({
+			"email": "example@gmail.com",
+			"first_name": "First",
+			"last_name": "Last",
+			"password": "Password_123"
+		})
 	),
 	responses(
 		(status=200, description="Account successfully created"),
@@ -135,7 +164,8 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 	security(
 		(),
 		("set-cookie"=[])
-	)
+	),
+	tag="Account"
 )]
 pub async fn api_signup<C: CookieStore>(
 	cookies: &mut C,
@@ -237,13 +267,16 @@ pub async fn api_signup<C: CookieStore>(
 /// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
 #[utoipa::path(
 	post,
-	path="/api/account/login",
+	path="/login",
 	summary="Attempt user login",
 	description="Attempts to login and return with a cookie.",
 	request_body(
 		content=LoginRequest,
 		content_type="application/json",
-		//TODO example
+		example=json!({
+			"email": "example@gmail.com",
+			"password": "Password_123"
+		})
 	),
 	responses(
 		(status=200, description="Login succeeded"),
@@ -255,7 +288,8 @@ pub async fn api_signup<C: CookieStore>(
 	security(
 		(),
 		("set-cookie"=[])
-	)
+	),
+	tag="Account"
 )]
 pub async fn api_login<C: CookieStore>(
     cookies: &mut C,
@@ -322,7 +356,7 @@ pub async fn api_login<C: CookieStore>(
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 #[utoipa::path(
 	get,
-	path="/api/account/validate",
+	path="/validate",
 	summary="Whether the user has a valid auth-token",
 	description="Returns 200 if token is valid, or 401 if invalid or nonexistant.",
 	responses(
@@ -333,7 +367,8 @@ pub async fn api_login<C: CookieStore>(
 		(status=408, description="Request Timed Out"),
 		(status=500, description="Internal Server Error")
 	),
-	security(("set-cookie"=[]))
+	security(("set-cookie"=[])),
+	tag="Account"
 )]
 pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()> {
     debug!(
@@ -360,7 +395,7 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 /// ```
 #[utoipa::path(
 	get,
-	path="/api/account/current",
+	path="/current",
 	summary="Get account information",
 	description="Returns the user's non-sensitive account information.",
 	responses(
@@ -369,7 +404,15 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 			description="User's non-sensitive account information",
 			body=CurrentResponse,
 			content_type="application/json",
-			//TODO example
+			example=json!({
+				"email": "example@gmail.com",
+				"first_name": "First",
+				"last_name": "Last",
+				"budget_preference": "MediumBudget",
+				"risk_preference": "Adventurer",
+				"food_allergies": "peanuts,vegetarian,pollen",
+				"disabilities": "knee replacement"
+			})
 		),
 		(status=400, description="Bad Request"),
 		(status=401, description="User has an invalid cookie/no cookie"),
@@ -377,7 +420,8 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 		(status=408, description="Request Timed Out"),
 		(status=500, description="Internal Server Error")
 	),
-	security(("set-cookie"=[]))
+	security(("set-cookie"=[])),
+	tag="Account"
 )]
 pub async fn api_current(
     Extension(pool): Extension<PgPool>,
@@ -448,14 +492,16 @@ pub async fn api_current(
 /// ```
 #[utoipa::path(
 	post,
-	path="/api/account/update",
+	path="/update",
 	summary="Update information about the user",
 	description="Update account info with provided data.",
 	request_body(
 		content=UpdateRequest,
 		content_type="application/json",
 		description="Non-null fields will update that field. Null fields will not update that field.",
-		//TODO example
+		example=json!({
+			"budget_preference": "LowBudget"
+		})
 	),
 	responses(
 		(
@@ -463,7 +509,15 @@ pub async fn api_current(
 			description="Account info updated successfully",
 			body=UpdateResponse,
 			content_type="application/json",
-			//TODO example
+			example=json!({
+				"email": "example@gmail.com",
+				"first_name": "First",
+				"last_name": "last",
+				"budget_preference": "LowBudget",
+				"risk_preference": "Adventurer",
+				"food_allergies": "peanuts,vegetarian,pollen",
+				"disabilities": "knee replacement"
+			})
 		),
 		(status=400, description="Bad Request"),
 		(status=401, description="User has an invalid cookie/no cookie"),
@@ -471,7 +525,8 @@ pub async fn api_current(
 		(status=408, description="Request Timed Out"),
 		(status=500, description="Internal Server Error")
 	),
-	security(("set-cookie"=[]))
+	security(("set-cookie"=[])),
+	tag="Account"
 )]
 pub async fn api_update(
     Extension(pool): Extension<PgPool>,
@@ -511,7 +566,6 @@ pub async fn api_update(
             disabilities = COALESCE($8, disabilities)
         WHERE id = $9
         RETURNING
-            id,
             email,
             first_name,
             last_name,
@@ -554,7 +608,7 @@ pub async fn api_update(
 /// ```
 #[utoipa::path(
 	get,
-	path="/api/account/logout",
+	path="/logout",
 	summary="Logout by returning with expired cookie",
 	description="Sets the HTTP-only cookie as expired, which deauthenticates the user.",
 	responses(
@@ -565,7 +619,8 @@ pub async fn api_update(
 		(status=408, description="Request Timed Out"),
 		(status=500, description="Internal Server Error")
 	),
-	security(("set-cookie"=[]))
+	security(("set-cookie"=[])),
+	tag="Account"
 )]
 pub async fn api_logout<C: CookieStore>(
 	cookies: &mut C,
