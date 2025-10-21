@@ -16,6 +16,11 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
   const [itineraryTitles, setItineraryTitles] = useState<Record<number, string>>({});
+  const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(null);
+
+  const handleItinerarySelect = (itineraryId: number) => {
+    setSelectedItineraryId(itineraryId);
+  };
 
   //  Fetch user preferences 
   useEffect(() => {
@@ -132,7 +137,9 @@ export default function Home() {
           messages={activeChat?.messages || []}
           onSend={handleSendMessage}
           itineraryTitles={itineraryTitles}
+          onItinerarySelect={handleItinerarySelect} // 👈 pass handler
         />
+        
         <Itinerary />
       </div>
     </div>
