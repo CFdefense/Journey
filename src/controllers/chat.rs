@@ -1,7 +1,8 @@
-use axum::{routing::{get, post}, Extension, Json, Router};
+use axum::{routing::{get, post}, Extension, Json};
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use crate::{controllers::itinerary::insert_event_list, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
+
+use crate::{controllers::{itinerary::insert_event_list, AxumRouter}, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow};
 
 /// Sends message and latest itinerary in chat session to llm, and waits for response.
 ///
@@ -551,9 +552,8 @@ pub async fn api_new_chat(
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
-///
-pub fn chat_routes() -> Router {
-    Router::new()
+pub fn chat_routes() -> AxumRouter {
+    AxumRouter::new()
         .route("/chats", get(api_chats))
         .route("/messagePage", post(api_message_page))
         .route("/updateMessage", post(api_update_message))

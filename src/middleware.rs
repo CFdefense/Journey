@@ -1,5 +1,6 @@
 use axum::{
-    http::{Request, header},
+	extract::Request,
+    http::header,
     middleware::Next,
     response::IntoResponse,
 };
@@ -18,7 +19,7 @@ pub struct AuthUser {
 /// - Decrypts `auth-token` private cookie using `Key` from extensions
 /// - Validates embedded expiration and that the user exists in DB
 /// - Inserts `AuthUser` into request extensions on success; otherwise 401
-pub async fn middleware_auth<B>(mut req: Request<B>, next: Next<B>) -> impl IntoResponse {
+pub async fn middleware_auth(mut req: Request, next: Next) -> impl IntoResponse {
     let key = match req.extensions().get::<Key>() {
         Some(k) => k.clone(),
         None => return AppError::Unauthorized.into_response(),

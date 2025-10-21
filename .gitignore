@@ -21,3 +21,6 @@
 /frontend/*.local
 /frontend/src/helpers/config.ts
 /frontend/coverage
+
+#swagger
+/api-docs

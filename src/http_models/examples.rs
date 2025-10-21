@@ -1,0 +1,1 @@
+//! Contains example request and response payloads for Swagger

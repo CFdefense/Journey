@@ -8,12 +8,12 @@ mod middleware;
 mod http_models;
 mod sql_models;
 mod error;
+mod swagger;
 
 #[cfg(test)]
 mod tests;
 
 use axum::{
-	Router,
 	Extension,
 	routing::get_service
 };
@@ -34,6 +34,8 @@ use crate::global::*;
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Load our evironment variables
+
+    use crate::controllers::AxumRouter;
     dotenvy::dotenv().ok();
     log::init_panic_handler();
 	log::init_logger();
@@ -61,7 +63,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 .expect("Invalid frontend_url format"),
         )
         .allow_credentials(true)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_methods([Method::GET, Method::POST, Method::DELETE])
         .allow_headers([
             http::header::CONTENT_TYPE,
             http::header::ACCEPT,
@@ -73,18 +75,24 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let cookie_key = Key::generate();
 
     // API routes with CORS middleware
-    let api_routes = Router::new()
-    	.nest("/account", controllers::account::account_routes())
-        .nest("/itinerary", controllers::itinerary::itinerary_routes())
-        .nest("/chat", controllers::chat::chat_routes());
+    let api_routes = AxumRouter::new()
+    	.nest("/account", controllers::account::account_routes());
+        // .nest("/itinerary", controllers::itinerary::itinerary_routes())
+        // .nest("/chat", controllers::chat::chat_routes());
      	// TODO: nest other routes...
 
+    let api_routes = AxumRouter::new()
+        .nest("/api", api_routes);
+
+    #[cfg(all(not(test), debug_assertions))]
+    let api_routes = crate::swagger::merge_swagger(api_routes);
+
     // Build the main router
-    let app = Router::new()
-        .nest("/api", api_routes)
+    let app = axum::Router::new()
+        .merge(api_routes)
         // Static files served from /dist.
         // Fallback must be index.html since react handles routing on front end
-        .nest_service("/", get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))))
+        .fallback_service(get_service(ServeDir::new(DIST_DIR).fallback(ServeFile::new(Path::new(DIST_DIR).join("index.html")))))
         .layer(Extension(pool.clone()))
         .layer(Extension(cookie_key.clone()))
         .layer(CookieManagerLayer::new())
@@ -103,9 +111,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     / Serve the router ie: Start the server
     / We will start the server with the configured router and address
     */
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app.into_make_service()).await?;
 
     Ok(())
 }

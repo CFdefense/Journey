@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use utoipa::ToSchema;
 
 use crate::sql_models::event_list::EventListJoinRow;
 
 /// A single event without context from an itinerary
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct Event {
 	/// Primary key
     pub id: i32,

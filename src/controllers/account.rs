@@ -7,8 +7,7 @@
  *   Serve Account Related API Requests
  */
 
-use axum::{Extension, Json, Router, routing::{get, post}};
-
+use axum::{Extension, Json, routing::{get, post}};
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
@@ -22,7 +21,7 @@ use tower_cookies::cookie::CookieJar;
 use sqlx::PgPool;
 use tracing::debug;
 
-use crate::{error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}};
+use crate::{controllers::AxumRouter, error::{ApiResult, AppError}, sql_models::{account::AccountRow, BudgetBucket, RiskTolerence}};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::account::*;
 
@@ -68,7 +67,7 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 
     // Build the cookie with enhanced security
     // Store encrypted (private) cookie so value is confidential and authenticated
-    let cookie = Cookie::build("auth-token", token_value.clone())
+    let cookie = Cookie::build(("auth-token", token_value.clone()))
         .domain(domain.to_string())
         .path("/")
         .secure(on_production)
@@ -80,7 +79,7 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
         })
         .expires(Some(expires))
         .max_age(max_age)
-        .finish();
+        .build();
 
     // encrypt/sign cookie (private cookie via CookieManagerLayer key)
     cookies.private_add(key, cookie);
@@ -114,6 +113,30 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 ///        "password": "password123."
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/api/account/signup",
+	summary="Create a new account",
+	description="Inserts account details into db (if email isn't already taken), and returns with a cookie.",
+	request_body(
+		content=SignupRequest,
+		content_type="application/json",
+		description="Email must not already be taken. Password must be in plaintext.",
+		//TODO example
+	),
+	responses(
+		(status=200, description="Account successfully created"),
+		(status=400, description="Bad Request"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=409, description="Email already in use"),
+		(status=500, description="Internal Server Error")
+	),
+	security(
+		(),
+		("set-cookie"=[])
+	)
+)]
 pub async fn api_signup<C: CookieStore>(
 	cookies: &mut C,
     Extension(key): Extension<Key>,
@@ -212,6 +235,28 @@ pub async fn api_signup<C: CookieStore>(
 /// Notes:
 /// - Token format is `user-<id>.<exp>.sign`, where `<exp>` is epoch seconds (UTC) ~3 days out.
 /// - Cookie name is `auth-token`; in development it uses `SameSite=Lax`, not `Secure`.
+#[utoipa::path(
+	post,
+	path="/api/account/login",
+	summary="Attempt user login",
+	description="Attempts to login and return with a cookie.",
+	request_body(
+		content=LoginRequest,
+		content_type="application/json",
+		//TODO example
+	),
+	responses(
+		(status=200, description="Login succeeded"),
+		(status=400, description="Bad Request"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(
+		(),
+		("set-cookie"=[])
+	)
+)]
 pub async fn api_login<C: CookieStore>(
     cookies: &mut C,
     Extension(key): Extension<Key>,
@@ -275,6 +320,21 @@ pub async fn api_login<C: CookieStore>(
 /// # Responses
 /// - `200 OK` - user has a valid auth token
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+#[utoipa::path(
+	get,
+	path="/api/account/validate",
+	summary="Whether the user has a valid auth-token",
+	description="Returns 200 if token is valid, or 401 if invalid or nonexistant.",
+	responses(
+		(status=200, description="User has a valid cookie"),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[]))
+)]
 pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()> {
     debug!(
         "HANDLER ->> /api/account/validate 'api_validate' - User ID: {}",
@@ -298,6 +358,27 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 /// curl -X GET http://localhost:3001/api/account/current
 ///   -H "Content-Type: application/json"
 /// ```
+#[utoipa::path(
+	get,
+	path="/api/account/current",
+	summary="Get account information",
+	description="Returns the user's non-sensitive account information.",
+	responses(
+		(
+			status=200,
+			description="User's non-sensitive account information",
+			body=CurrentResponse,
+			content_type="application/json",
+			//TODO example
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[]))
+)]
 pub async fn api_current(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>,
@@ -365,6 +446,33 @@ pub async fn api_current(
 ///         "disabilities": ""
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/api/account/update",
+	summary="Update information about the user",
+	description="Update account info with provided data.",
+	request_body(
+		content=UpdateRequest,
+		content_type="application/json",
+		description="Non-null fields will update that field. Null fields will not update that field.",
+		//TODO example
+	),
+	responses(
+		(
+			status=200,
+			description="Account info updated successfully",
+			body=UpdateResponse,
+			content_type="application/json",
+			//TODO example
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[]))
+)]
 pub async fn api_update(
     Extension(pool): Extension<PgPool>,
     Extension(user): Extension<AuthUser>,
@@ -444,6 +552,21 @@ pub async fn api_update(
 /// curl -X GET http://localhost:3001/api/account/logout
 ///   -H "Content-Type: application/json"
 /// ```
+#[utoipa::path(
+	get,
+	path="/api/account/logout",
+	summary="Logout by returning with expired cookie",
+	description="Sets the HTTP-only cookie as expired, which deauthenticates the user.",
+	responses(
+		(status=200, description="Logged out successfully"),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[]))
+)]
 pub async fn api_logout<C: CookieStore>(
 	cookies: &mut C,
     Extension(key): Extension<Key>,
@@ -473,9 +596,8 @@ pub async fn api_logout<C: CookieStore>(
 /// # Middleware
 /// Protected routes are secured by `middleware_auth` which validates the `auth-token` cookie.
 /// Public routes (signup/login) are accessible without authentication.
-///
-pub fn account_routes() -> Router {
-    Router::new()
+pub fn account_routes() -> AxumRouter {
+    AxumRouter::new()
         .route("/update", post(api_update))
         .route("/current", get(api_current))
         .route("/validate", get(api_validate))

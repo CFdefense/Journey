@@ -8,10 +8,11 @@
  */
 
 use axum::routing::post;
-use axum::{extract::Path, routing::get, Extension, Json, Router};
+use axum::{extract::Path, routing::get, Extension, Json};
 use sqlx::PgPool;
 use tracing::debug;
 
+use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
@@ -357,8 +358,8 @@ pub async fn api_save(
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
-pub fn itinerary_routes() -> Router {
-    Router::new()
+pub fn itinerary_routes() -> AxumRouter {
+    AxumRouter::new()
         .route("/saved", get(api_saved_itineraries))
         .route("/save", post(api_save))
         .route("/:id", get(api_get_itinerary))
