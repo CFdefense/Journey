@@ -1,4 +1,5 @@
 import type { Itinerary as ApiItinerary, EventDay } from "../models/itinerary";
+import { apiItineraryDetails } from "../api/itinerary";
 
 export interface Event {
   id: string;
@@ -9,6 +10,21 @@ export interface Event {
 export interface TimeBlock {
   time: string;
   events: Event[];
+}
+
+//function that calls api on given itinerary Id, returns the time block used by itinerary component
+export async function fetchItinerary(itineraryID: number): Promise<TimeBlock[]> {
+  try {
+    const itinerary = await apiItineraryDetails(itineraryID);
+    return populateItinerary(itinerary);
+  } catch (err){
+      console.log("Error", err);
+      return [
+        { time: "Morning", events: [] },
+        { time: "Afternoon", events: [] },
+        { time: "Evening", events: [] }
+      ];
+    }
 }
 
 export function populateItinerary(apiItinerary: ApiItinerary): TimeBlock[] {

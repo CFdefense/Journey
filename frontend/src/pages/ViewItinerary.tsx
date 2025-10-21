@@ -3,7 +3,7 @@ import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
 import { apiItineraryDetails } from "../api/itinerary";
-import { populateItinerary } from "../helpers/populate_itinerary";
+import { fetchItinerary } from "../helpers/populate_itinerary";
 import type { TimeBlock } from "../helpers/populate_itinerary";
 import "../styles/Itinerary.css";
 
@@ -23,19 +23,11 @@ export default function ViewItineraryPage() {
 
   //properly gets JSON
   useEffect(() => {
-    async function fetchItinerary() {
-      try {
-        const testId = 3;
-        const itinerary = await apiItineraryDetails(testId);
-        const mapped = populateItinerary(itinerary);
-        setTimeBlocks(mapped);
-        console.log("Fetched itinerary:", itinerary);
-        console.log(mapped);
-      } catch (err){
-          console.log("Error", err);
-      }
+    async function load() {
+      const data = await fetchItinerary(3); //give the itinerary ID of the itinerary you want to display
+      setTimeBlocks(data);
     }
-    fetchItinerary();
+    load();
   }, []);
 
   return (
