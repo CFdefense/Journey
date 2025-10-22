@@ -8,16 +8,36 @@
  */
 
 use axum::routing::post;
-use axum::{extract::Path, routing::get, Extension, Json, Router};
+use axum::{extract::Path, routing::get, Extension, Json};
 use sqlx::PgPool;
 use tracing::debug;
+use utoipa::OpenApi;
 
+use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryRow;
 use crate::sql_models::TimeOfDay;
+use crate::swagger::SecurityAddon;
+
+#[derive(OpenApi)]
+#[openapi(
+	paths(
+		api_get_itinerary,
+		api_saved_itineraries,
+		api_save
+	),
+	modifiers(&SecurityAddon),
+	security(("set-cookie"=[])),
+    info(
+    	title="Itinerary Routes",
+    	description = "API endpoints dealing with managing and viewing itineraries."
+    ),
+    tags((name="Itinerary"))
+)]
+pub struct ItineraryApiDoc;
 
 /// Returns the [EventDay]s associated with this itinerary
 async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<EventDay>> {
@@ -147,6 +167,28 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 ///   -H "Cookie: auth-token=..."
 /// ```
 ///
+#[utoipa::path(
+	get,
+	path="/saved",
+	summary="Fetch all the saved itineraries from this user",
+	description="Fetches all the itineraries from this user that are marked as saved.",
+	responses(
+		(
+			status=200,
+			description="An array of itineraries",
+			body=SavedResponse,
+			content_type="application/json",
+			//TODO example
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Itinerary"
+)]
 pub async fn api_saved_itineraries(
     Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -188,7 +230,7 @@ pub async fn api_saved_itineraries(
     Ok(Json(SavedResponse { itineraries: res }))
 }
 
-/// Get a single saved itinerary for the authenticated user.
+/// Get a single saved itinerary either from the user or a public one
 ///
 /// # Method
 /// `GET /api/itinerary/{id}`
@@ -208,6 +250,29 @@ pub async fn api_saved_itineraries(
 /// curl -X GET http://localhost:3001/api/itinerary/123
 ///   -H "Cookie: auth-token=..."
 /// ```
+#[utoipa::path(
+	get,
+	path="/saved/{id}",
+	summary="Fetch a specific itinerary",
+	description="Fetches the specified itinerary if it belongs to this user or is public.",
+	responses(
+		(
+			status=200,
+			description="The desired itinerary",
+			body=Itinerary,
+			content_type="application/json",
+			//TODO example
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Itinerary not found"),
+		(status=405, description="Method Not Allowed - Must be GET"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Itinerary"
+)]
 pub async fn api_get_itinerary(
     Extension(user): Extension<AuthUser>,
     Path(itinerary_id): Path<i32>,
@@ -218,7 +283,7 @@ pub async fn api_get_itinerary(
         itinerary_id, user.id
     );
 
-    // Fetch the itinerary for the user
+    // Fetch the itinerary - from user or public
     let itinerary: ItineraryRow = sqlx::query_as!(
         ItineraryRow,
         r#"SELECT
@@ -228,7 +293,7 @@ pub async fn api_get_itinerary(
            	end_date,
             chat_session_id,
             title
-        FROM itineraries WHERE id = $1 AND account_id = $2"#,
+        FROM itineraries WHERE id = $1 AND (account_id = $2 OR is_public=TRUE)"#,
         itinerary_id,
         user.id
     )
@@ -292,6 +357,34 @@ pub async fn api_get_itinerary(
 ///         "title": "Poughkeepsie 7/15-21 2025"
 ///       }'
 /// ```
+#[utoipa::path(
+	post,
+	path="/save",
+	summary="Save a new or update an existing itinerary",
+	description="If the itinerary id is already saved for this user, it's updated with the provided values. Otherwise a new one is created.",
+	request_body(
+		content=Itinerary,
+		content_type="application/json",
+		description="The itinerary to save for the user.",
+		//TODO example
+	),
+	responses(
+		(
+			status=200,
+			description="The id of the itinerary that was just saved. It may be the same as the id passed in the request.",
+			body=SaveResponse,
+			content_type="application/json",
+			//TODO example
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Itinerary"
+)]
 pub async fn api_save(
 	Extension(user): Extension<AuthUser>,
     Extension(pool): Extension<PgPool>,
@@ -357,10 +450,10 @@ pub async fn api_save(
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
-pub fn itinerary_routes() -> Router {
-    Router::new()
+pub fn itinerary_routes() -> AxumRouter {
+    AxumRouter::new()
         .route("/saved", get(api_saved_itineraries))
         .route("/save", post(api_save))
-        .route("/:id", get(api_get_itinerary))
+        .route("/{id}", get(api_get_itinerary))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }

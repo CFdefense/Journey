@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
+use utoipa::ToSchema;
 
 pub mod account;
 pub mod event_list;
@@ -10,7 +11,7 @@ pub mod message;
 /// Used in account preferences and returned by account APIs.
 /// - Fields:
 ///   - Enum variants representing budget bands
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[derive(Debug, Serialize, Deserialize, Clone, Type, ToSchema)]
 #[sqlx(type_name = "budget_bucket")]
 pub enum BudgetBucket {
     VeryLowBudget,
@@ -24,7 +25,7 @@ pub enum BudgetBucket {
 /// Used in account preferences and returned by account APIs.
 /// - Fields:
 ///   - Enum variants representing risk appetite
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[derive(Debug, Serialize, Deserialize, Clone, Type, ToSchema)]
 #[sqlx(type_name = "risk_tolerence")]
 pub enum RiskTolerence {
     ChillVibes,

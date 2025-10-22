@@ -1,8 +1,9 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use utoipa::{ToResponse, ToSchema};
 
 /// A message in a chat session
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct Message {
 	/// Primary key
 	pub id: i32,
@@ -17,7 +18,7 @@ pub struct Message {
 }
 
 /// Request model for `/api/chat/messagePage` endpoint
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct MessagePageRequest {
 	/// chat session to fetch page from
 	pub chat_session_id: i32,
@@ -28,7 +29,7 @@ pub struct MessagePageRequest {
 }
 
 /// Response model for `/api/chat/messagePage` endpoint
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema, ToResponse)]
 pub struct MessagePageResponse {
 	/// A page of messages guaranteed to be sorted in chronological order
 	pub message_page: Vec<Message>,
@@ -37,7 +38,7 @@ pub struct MessagePageResponse {
 }
 
 /// Request model for `/api/chat/updateMessage` endpoint
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct UpdateMessageRequest {
 	/// ID of the message to update. This message must belong to a chat session which belongs to the user who made the request
 	pub message_id: i32,
@@ -48,7 +49,7 @@ pub struct UpdateMessageRequest {
 }
 
 /// Request model for `/api/chat/sendMessage` endpoint
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct SendMessageRequest {
 	/// The chat session to send this message in. It must belong to the user making the request.
 	pub chat_session_id: i32,
@@ -59,7 +60,7 @@ pub struct SendMessageRequest {
 }
 
 /// Response model for `/api/chat/sendMessage` endpoint
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct SendMessageResponse {
 	/// The newly-created id of the message you just sent
 	pub user_message_id: i32,

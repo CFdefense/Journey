@@ -1,0 +1,1499 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Journey API",
+    "description": "The public API documentation for the Journey web application.",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local host server for development"
+    }
+  ],
+  "paths": {
+    "/api/account/current": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get account information",
+        "description": "Returns the user's non-sensitive account information.",
+        "operationId": "api_current",
+        "responses": {
+          "200": {
+            "description": "User's non-sensitive account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentResponse"
+                },
+                "example": {
+                  "budget_preference": "MediumBudget",
+                  "disabilities": "knee replacement",
+                  "email": "example@gmail.com",
+                  "first_name": "First",
+                  "food_allergies": "peanuts,vegetarian,pollen",
+                  "last_name": "Last",
+                  "risk_preference": "Adventurer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/account/login": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Attempt user login",
+        "description": "Attempts to login and return with a cookie.",
+        "operationId": "api_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "email": "example@gmail.com",
+                "password": "Password_123"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login succeeded"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {},
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/account/logout": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Logout by returning with expired cookie",
+        "description": "Sets the HTTP-only cookie as expired, which deauthenticates the user.",
+        "operationId": "api_logout",
+        "responses": {
+          "200": {
+            "description": "Logged out successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/account/signup": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Create a new account",
+        "description": "Inserts account details into db (if email isn't already taken), and returns with a cookie.",
+        "operationId": "api_signup",
+        "requestBody": {
+          "description": "Email must not already be taken. Password must be in plaintext.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              },
+              "example": {
+                "email": "example@gmail.com",
+                "first_name": "First",
+                "last_name": "Last",
+                "password": "Password_123"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Account successfully created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "409": {
+            "description": "Email already in use"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {},
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/account/update": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Update information about the user",
+        "description": "Update account info with provided data.",
+        "operationId": "api_update",
+        "requestBody": {
+          "description": "Non-null fields will update that field. Null fields will not update that field.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequest"
+              },
+              "example": {
+                "budget_preference": "LowBudget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Account info updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateResponse"
+                },
+                "example": {
+                  "budget_preference": "LowBudget",
+                  "disabilities": "knee replacement",
+                  "email": "example@gmail.com",
+                  "first_name": "First",
+                  "food_allergies": "peanuts,vegetarian,pollen",
+                  "last_name": "last",
+                  "risk_preference": "Adventurer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/account/validate": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Whether the user has a valid auth-token",
+        "description": "Returns 200 if token is valid, or 401 if invalid or nonexistant.",
+        "operationId": "api_validate",
+        "responses": {
+          "200": {
+            "description": "User has a valid cookie"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/chats": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Fetch user's chat session IDs",
+        "description": "Fetches a list of all chat session IDs belonging to the user.",
+        "operationId": "api_chats",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved chat sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatsResponse"
+                },
+                "example": {
+                  "chat_sessions": [
+                    3,
+                    15,
+                    16,
+                    84
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/messagePage": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Fetch a page of messages from a chat session",
+        "description": "If no message id is provided, this fetches the latest messages from the chat session. If a message id is provided, that message and messages preceeding it will be fetched.",
+        "operationId": "api_message_page",
+        "requestBody": {
+          "description": "Message id may be omitted to get the latest messages",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessagePageRequest"
+              },
+              "examples": {
+                "Latest Messages": {
+                  "summary": "Fetch the latest messages from a chat session",
+                  "value": {
+                    "chat_session_id": 4
+                  }
+                },
+                "Specific Messages": {
+                  "summary": "Fetch a specific page of messages from a chat session",
+                  "value": {
+                    "chat_session_id": 4,
+                    "message_id": 4
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Messages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePageResponse"
+                },
+                "examples": {
+                  "Latest Messages": {
+                    "summary": "The latest messages from a chat session",
+                    "value": {
+                      "message_page": [
+                        {
+                          "id": 6,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-34-19"
+                        },
+                        {
+                          "id": 10,
+                          "is_user": false,
+                          "itinerary_id": 2,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-34-24"
+                        },
+                        {
+                          "id": 12,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-34-42"
+                        },
+                        {
+                          "id": 22,
+                          "is_user": false,
+                          "itinerary_id": 5,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-34-56"
+                        },
+                        {
+                          "id": 26,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-35-10"
+                        },
+                        {
+                          "id": 33,
+                          "is_user": false,
+                          "itinerary_id": 9,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-35-19"
+                        },
+                        {
+                          "id": 39,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-35-31"
+                        },
+                        {
+                          "id": 44,
+                          "is_user": false,
+                          "itinerary_id": 14,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-35-54"
+                        },
+                        {
+                          "id": 61,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-36-24"
+                        },
+                        {
+                          "id": 72,
+                          "is_user": false,
+                          "itinerary_id": 27,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-36-29"
+                        }
+                      ],
+                      "prev_message_id": 4
+                    }
+                  },
+                  "Specific Messages": {
+                    "summary": "A specific page of messages from a chat session",
+                    "value": {
+                      "message_page": [
+                        {
+                          "id": 1,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-33-21"
+                        },
+                        {
+                          "id": 2,
+                          "is_user": false,
+                          "itinerary_id": 1,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-33-35"
+                        },
+                        {
+                          "id": 3,
+                          "is_user": true,
+                          "text": "User message",
+                          "timestamp": "2025-10-14 11-33-45"
+                        },
+                        {
+                          "id": 4,
+                          "is_user": false,
+                          "itinerary_id": 1,
+                          "text": "Bot reply",
+                          "timestamp": "2025-10-14 11-34-01"
+                        }
+                      ],
+                      "prev_message_id": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/newChat": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get the chat session id for an empty chat",
+        "description": "Creates a new empty chat session for this user if one doesn't already exist, and returns its chat session id.",
+        "operationId": "api_new_chat",
+        "responses": {
+          "200": {
+            "description": "New chat session retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewChatResponse"
+                },
+                "example": {
+                  "chat_session_id": 13
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/sendMessage": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Send a message and wait for a reply from the LLM",
+        "description": "Ask the LLM to generate an itinerary and it should respond with one.",
+        "operationId": "api_send_message",
+        "requestBody": {
+          "description": "Itinerary id is optional and is used to give context to the LLM.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              },
+              "example": {
+                "chat_session_id": 12,
+                "itinerary_id": 13,
+                "text": "Make an itinerary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent, and LLM replied successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                },
+                "example": {
+                  "bot_message": {
+                    "id": 53,
+                    "is_user": false,
+                    "itinerary_id": 14,
+                    "text": "Bot reply",
+                    "timestamp": "2025-10-14 11-39-10"
+                  },
+                  "user_message_id": 52
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Chat session not found for this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/updateMessage": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Update the text of a message and wait for a reply from the LLM",
+        "description": "Updating a message deletes all proceeding messages, updates the text of the given message, and returns a response from the LLM.",
+        "operationId": "api_update_message",
+        "requestBody": {
+          "description": "Itinerary id is optional and is used to give context to the LLM.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMessageRequest"
+              },
+              "example": {
+                "itinerary_id": 17,
+                "message_id": 41,
+                "new_text": "Updated message content"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Message updated, and LLM replied successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "id": 43,
+                  "is_user": false,
+                  "itinerary_id": 19,
+                  "text": "Bot reply",
+                  "timestamp": "2025-10-14 11-38-52"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Message not found in this chat session for this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/itinerary/save": {
+      "post": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Save a new or update an existing itinerary",
+        "description": "If the itinerary id is already saved for this user, it's updated with the provided values. Otherwise a new one is created.",
+        "operationId": "api_save",
+        "requestBody": {
+          "description": "The itinerary to save for the user.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Itinerary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The id of the itinerary that was just saved. It may be the same as the id passed in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/itinerary/saved": {
+      "get": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Fetch all the saved itineraries from this user",
+        "description": "Fetches all the itineraries from this user that are marked as saved.",
+        "operationId": "api_saved_itineraries",
+        "responses": {
+          "200": {
+            "description": "An array of itineraries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/itinerary/saved/{id}": {
+      "get": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Fetch a specific itinerary",
+        "description": "Fetches the specified itinerary if it belongs to this user or is public.",
+        "operationId": "api_get_itinerary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The desired itinerary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Itinerary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Itinerary not found"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BudgetBucket": {
+        "type": "string",
+        "description": "Budget preference enum mapped to Postgres `budget_bucket`.\nUsed in account preferences and returned by account APIs.\n- Fields:\n  - Enum variants representing budget bands",
+        "enum": [
+          "VeryLowBudget",
+          "LowBudget",
+          "MediumBudget",
+          "HighBudget",
+          "LuxuryBudget"
+        ]
+      },
+      "ChatsResponse": {
+        "type": "object",
+        "description": "Response model from the `/api/chat/chats` endpoint",
+        "required": [
+          "chat_sessions"
+        ],
+        "properties": {
+          "chat_sessions": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "chat session ids belonging to the user who made the request"
+          }
+        }
+      },
+      "CurrentResponse": {
+        "type": "object",
+        "description": "API route response for GET `/api/account/current`.\n- Safe-to-return account profile for current user",
+        "required": [
+          "email",
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "budget_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BudgetBucket",
+                "description": "Optional budget enum"
+              }
+            ]
+          },
+          "disabilities": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional food and allergies preferences"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email"
+          },
+          "first_name": {
+            "type": "string",
+            "description": "First name"
+          },
+          "food_allergies": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional food and allergies preferences"
+          },
+          "last_name": {
+            "type": "string",
+            "description": "Last name"
+          },
+          "risk_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RiskTolerence",
+                "description": "Optional risk enum"
+              }
+            ]
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "description": "A single event without context from an itinerary",
+        "required": [
+          "id",
+          "street_address",
+          "postal_code",
+          "city",
+          "event_type",
+          "event_description",
+          "event_name"
+        ],
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "event_description": {
+            "type": "string"
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primary key"
+          },
+          "postal_code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "street_address": {
+            "type": "string"
+          }
+        }
+      },
+      "EventDay": {
+        "type": "object",
+        "description": "A single day of events in an itinerary",
+        "required": [
+          "morning_events",
+          "noon_events",
+          "afternoon_events",
+          "evening_events",
+          "date"
+        ],
+        "properties": {
+          "afternoon_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "description": "All the events taking place in the afternoon"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "The UTC date of this day within the range of itinerary start and end dates (%Y-%m-%d)"
+          },
+          "evening_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "description": "All the events taking place in the evening"
+          },
+          "morning_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "description": "All the events taking place in the morning"
+          },
+          "noon_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "description": "All the events taking place around noon"
+          }
+        }
+      },
+      "Itinerary": {
+        "type": "object",
+        "description": "A complete itinerary with event details",
+        "required": [
+          "id",
+          "start_date",
+          "end_date",
+          "event_days",
+          "title"
+        ],
+        "properties": {
+          "chat_session_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Possible associated chat session for easy editing on frontend"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "UTC date that the last event may take place (%Y-%m-%d)"
+          },
+          "event_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventDay"
+            },
+            "description": "List of days containing events for that day\n* Days are guaranteed to be sorted in chronological order"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primary key"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "UTC date that the first event may take place (%Y-%m-%d)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of itinerary, defaults to include location and date range"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "description": "Request payload for POST `/api/account/login`.",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Account email"
+          },
+          "password": {
+            "type": "string",
+            "description": "Plaintext password submitted by the user"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "description": "A message in a chat session",
+        "required": [
+          "id",
+          "is_user",
+          "timestamp",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primary key"
+          },
+          "is_user": {
+            "type": "boolean",
+            "description": "Whether the message was sent by a user or generated by the LLM"
+          },
+          "itinerary_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Possible itinerary associated with this message"
+          },
+          "text": {
+            "type": "string",
+            "description": "Content of this message"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp this message was sent (%Y-%m-%d %H:%M:%S)"
+          }
+        }
+      },
+      "MessagePageRequest": {
+        "type": "object",
+        "description": "Request model for `/api/chat/messagePage` endpoint",
+        "required": [
+          "chat_session_id"
+        ],
+        "properties": {
+          "chat_session_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "chat session to fetch page from"
+          },
+          "message_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Possible message id to represent the end of the page\n* If Some, it will fetch this message and consecutive previous messages in chronological order\n* If None, it will fetch the latest consecutive messages from the chat session in chronological order"
+          }
+        }
+      },
+      "MessagePageResponse": {
+        "type": "object",
+        "description": "Response model for `/api/chat/messagePage` endpoint",
+        "required": [
+          "message_page"
+        ],
+        "properties": {
+          "message_page": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "description": "A page of messages guaranteed to be sorted in chronological order"
+          },
+          "prev_message_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The id of the message that comes chronologically before the first message in message_page, if it exists"
+          }
+        }
+      },
+      "NewChatResponse": {
+        "type": "object",
+        "description": "Response model from the `/api/chat/newChat` endpoint",
+        "required": [
+          "chat_session_id"
+        ],
+        "properties": {
+          "chat_session_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "this chat session is guaranteed to not have any messages in it"
+          }
+        }
+      },
+      "RiskTolerence": {
+        "type": "string",
+        "description": "Risk tolerance enum mapped to Postgres `risk_tolerence`.\nUsed in account preferences and returned by account APIs.\n- Fields:\n  - Enum variants representing risk appetite",
+        "enum": [
+          "ChillVibes",
+          "LightFun",
+          "Adventurer",
+          "RiskTaker"
+        ]
+      },
+      "SaveResponse": {
+        "type": "object",
+        "description": "Response model from `/api/itinerary/save` endpoint",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "id of the itinerary that was just saved\n* May be the same as the itinerary id passed in the request"
+          }
+        }
+      },
+      "SavedResponse": {
+        "type": "object",
+        "description": "API route response for GET `/api/itinerary/saved`",
+        "required": [
+          "itineraries"
+        ],
+        "properties": {
+          "itineraries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Itinerary"
+            },
+            "description": "List of saved itineraries for the user."
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "description": "Request model for `/api/chat/sendMessage` endpoint",
+        "required": [
+          "chat_session_id",
+          "text"
+        ],
+        "properties": {
+          "chat_session_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The chat session to send this message in. It must belong to the user making the request."
+          },
+          "itinerary_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "A possible itinerary to give context to the LLM"
+          },
+          "text": {
+            "type": "string",
+            "description": "The content of the message"
+          }
+        }
+      },
+      "SendMessageResponse": {
+        "type": "object",
+        "description": "Response model for `/api/chat/sendMessage` endpoint",
+        "required": [
+          "user_message_id",
+          "bot_message"
+        ],
+        "properties": {
+          "bot_message": {
+            "$ref": "#/components/schemas/Message",
+            "description": "The response message from the LLM"
+          },
+          "user_message_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The newly-created id of the message you just sent"
+          }
+        }
+      },
+      "SignupRequest": {
+        "type": "object",
+        "description": "Request payload for POST `/api/account/signup`.\nValidated server-side before insert.",
+        "required": [
+          "email",
+          "first_name",
+          "last_name",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Account email"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "Plaintext password submitted by the user"
+          }
+        }
+      },
+      "UpdateMessageRequest": {
+        "type": "object",
+        "description": "Request model for `/api/chat/updateMessage` endpoint",
+        "required": [
+          "message_id",
+          "new_text"
+        ],
+        "properties": {
+          "itinerary_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "A possible itinerary to give context to the LLM"
+          },
+          "message_id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "ID of the message to update. This message must belong to a chat session which belongs to the user who made the request"
+          },
+          "new_text": {
+            "type": "string",
+            "description": "The text to replace the old content with"
+          }
+        }
+      },
+      "UpdateRequest": {
+        "type": "object",
+        "description": "Request payload for POST `/api/account/update`.\n- Only `Some` fields are updated.",
+        "properties": {
+          "budget_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BudgetBucket",
+                "description": "Optional new budget enum"
+              }
+            ]
+          },
+          "disabilities": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new disabilites\n* String is a comma-separated list of preferences"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new email"
+          },
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new first name"
+          },
+          "food_allergies": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new food and allergies preferences\n* String is a comma-separated list of preferences"
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new last name"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new plaintext password"
+          },
+          "risk_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RiskTolerence",
+                "description": "Optional new risk enum"
+              }
+            ]
+          }
+        }
+      },
+      "UpdateResponse": {
+        "type": "object",
+        "description": "API route response for POST `/api/account/update`.\n- Contains full updated account profile for convenience.",
+        "required": [
+          "email",
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "budget_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BudgetBucket",
+                "description": "Optional budget enum"
+              }
+            ]
+          },
+          "disabilities": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional disabilites\n* String is a comma-separated list of preferences"
+          },
+          "email": {
+            "type": "string",
+            "description": "Current email"
+          },
+          "first_name": {
+            "type": "string",
+            "description": "Current first name"
+          },
+          "food_allergies": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional food and allergies preferences\n* String is a comma-separated list of preferences"
+          },
+          "last_name": {
+            "type": "string",
+            "description": "Current last name"
+          },
+          "risk_preference": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RiskTolerence",
+                "description": "Optional risk enum"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "set-cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "auth-token",
+        "description": "An HTTP-only cookie which must encode a valid account id, expiration timestamp, and other information"
+      }
+    }
+  },
+  "security": [
+    {},
+    {
+      "set-cookie": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Chat"
+    },
+    {
+      "name": "Itinerary"
+    }
+  ]
+}

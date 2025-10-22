@@ -9,10 +9,11 @@
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use utoipa::{ToResponse, ToSchema};
 use crate::sql_models::{BudgetBucket, RiskTolerence};
 
 /// Request payload for POST `/api/account/login`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginRequest {
 	/// Account email
     pub email: String,
@@ -22,7 +23,7 @@ pub struct LoginRequest {
 
 /// Request payload for POST `/api/account/signup`.
 /// Validated server-side before insert.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, ToSchema)]
 pub struct SignupRequest {
 	/// Account email
     pub email: String,
@@ -34,7 +35,7 @@ pub struct SignupRequest {
 
 /// Request payload for POST `/api/account/update`.
 /// - Only `Some` fields are updated.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateRequest {
 	/// Optional new email
     pub email: Option<String>,
@@ -58,10 +59,8 @@ pub struct UpdateRequest {
 
 /// API route response for POST `/api/account/update`.
 /// - Contains full updated account profile for convenience.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema, ToResponse)]
 pub struct UpdateResponse {
-	/// User id
-    pub id: i32,
 	/// Current email
     pub email: String,
 	/// Current first name
@@ -82,7 +81,7 @@ pub struct UpdateResponse {
 
 /// API route response for GET `/api/account/current`.
 /// - Safe-to-return account profile for current user
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema, ToResponse)]
 pub struct CurrentResponse {
 	/// Email
     pub email: String,
