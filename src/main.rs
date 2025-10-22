@@ -31,13 +31,12 @@ use tower_http::{
 use tower_cookies::cookie::Key;
 use tower_cookies::CookieManagerLayer;
 use crate::global::*;
+use crate::controllers::AxumRouter;
 
 #[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Load our evironment variables
-
-    use crate::controllers::AxumRouter;
     dotenvy::dotenv().ok();
     log::init_panic_handler();
 	log::init_logger();
