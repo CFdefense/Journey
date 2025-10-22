@@ -9,9 +9,8 @@ export type Message = {
 }
 
 export type ChatsResponse = {
-	/// chat session ids
-    chat_sessions: number[]
-}
+    chat_sessions: number[];
+};
 
 export type MessagePageRequest = {
 	/// chat session to fetch page from

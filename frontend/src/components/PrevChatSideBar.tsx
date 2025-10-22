@@ -1,9 +1,5 @@
 import "../styles/PrevChatSideBar.css";
-
-interface ChatSession {
-  id: number;
-  title: string;
-}
+import type { ChatSession } from "../models/home"; 
 
 interface PrevChatSideBarProps {
   chats: ChatSession[];
@@ -13,16 +9,20 @@ interface PrevChatSideBarProps {
 }
 
 export default function PrevChatSideBar({
-  chats, // array of all chat sessions (which each have messages in them)
+  chats,
   activeChatId,
   onSelectChat,
   onNewChat,
 }: PrevChatSideBarProps) {
+  // Filter chats that have at least one message (only show these in sidebar)
+  //const visibleChats = chats.filter((chat) => chat.messages && chat.messages.length > 0);
+
   return (
     <div className="sidebar">
       <button className="new-chat-btn" onClick={onNewChat}>
         + New Chat
       </button>
+
       <ul className="chat-list">
         {chats.length === 0 ? (
           <p className="empty">No previous chats yet</p>

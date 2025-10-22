@@ -163,6 +163,7 @@ async fn send_message_to_llm(
 		title: String::from("World Tour 11/5-15 2025")
 	};
 
+
 	// insert generated itinerary into db
 	let itinerary_id = sqlx::query!(
 		r#"
@@ -178,10 +179,14 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(|e| {
+		AppError::from(e)
+	})?
 	.id;
 
 	ai_itinerary.id = itinerary_id;
+
+	// insert itinerary events
 	insert_event_list(ai_itinerary, pool).await?;
 
 	// insert bot message into db
@@ -197,7 +202,9 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(|e| {
+		AppError::from(e)
+	})?;
 
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
 
