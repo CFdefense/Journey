@@ -2,6 +2,28 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 import type { LoginRequest, SignUpRequest } from "../models/account";
 
+export interface UpdateRequest {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    password?: string;
+    budget_preference?: string; // BudgetBucket enum
+    risk_preference?: string;   // RiskTolerance enum
+    food_allergies?: string;
+    disabilities?: string;
+}
+
+export interface UpdateResponse {
+    id: number;
+    email: string;
+    first_name: string;
+    last_name: string;
+    budget_preference?: string;
+    risk_preference?: string;
+    food_allergies?: string;
+    disabilities?: string;
+}
+
 /// Calls login
 ///
 /// # Method
@@ -194,4 +216,74 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 		console.error("Current API error: ", error);
 		throw error;
 	}
+}
+/// Calls update account
+///
+/// # Method
+/// Sends a `POST /api/account/update` request to update user account details.
+///
+/// # Returns updated account information if successful.
+/// # Throws Error with message to be displayed.
+export async function apiUpdateAccount(payload: UpdateRequest): Promise<UpdateResponse> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/update`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            if (response.status === 400) {
+                throw new Error("Invalid input data.");
+            } else if (response.status === 401) {
+                throw new Error("Not authenticated.");
+            } else if (response.status === 500) {
+                throw new Error("Server error.");
+            } else {
+                throw new Error(`Unexpected error: ${response.status}`);
+            }
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Update Account API error: ", error);
+        throw error;
+    }
+}
+
+/// Get current account information
+///
+/// # Method
+/// Sends a `GET /api/account/profile` request to fetch user account details.
+///
+/// # Returns current account information if successful.
+/// # Throws Error with message to be displayed.
+export async function apiGetProfile(): Promise<UpdateResponse> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/current`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error("Not authenticated.");
+            } else if (response.status === 500) {
+                throw new Error("Server error.");
+            } else {
+                throw new Error(`Unexpected error: ${response.status}`);
+            }
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Get Profile API error: ", error);
+        throw error;
+    }
 }
