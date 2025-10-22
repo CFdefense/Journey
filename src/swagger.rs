@@ -49,11 +49,11 @@ impl Modify for SecurityAddon {
 /// Merges swagger with the current routes
 pub fn merge_swagger(router: OpenApiRouter) -> Router {
 	let doc = ApiDoc::openapi();
-	fs::create_dir_all("api-docs").unwrap();
-	let mut file = File::create("api-docs/openapi.json").unwrap();
+	fs::create_dir_all("docs").unwrap();
+	let mut file = File::create("docs/openapi.json").unwrap();
 	file.write_all(doc.to_pretty_json().unwrap().as_bytes()).unwrap();
 	let (router, api) = OpenApiRouter::with_openapi(doc)
         .merge(router)
         .split_for_parts();
-	router.merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", api.clone()))
+	router.merge(SwaggerUi::new("/swagger").url("/docs/openapi.json", api.clone()))
 }
