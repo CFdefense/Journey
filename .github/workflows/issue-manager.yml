@@ -79,9 +79,9 @@ jobs:
             }
           }')
 
-          echo $"ISSUES_RAW"
+          echo "$ISSUES_RAW"
 
-          ISSUES=$(echo $"ISSUES_RAW" | jq '{
+          ISSUES=$(echo "$ISSUES_RAW" | jq '{
             projectId: .data.repository.projectV2.id,
             startedId: .data.repository.projectV2.startedField.id,
             dueId: .data.repository.projectV2.dueField.id,
