@@ -23,7 +23,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Check all workspaces
   #       run: cargo fmt --check
@@ -36,7 +36,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - uses: actions-rs/audit-check@v1
   #       with:
@@ -65,7 +65,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Install SQLx CLI
   #       run: cargo install sqlx-cli --no-default-features --features rustls,postgres
@@ -99,7 +99,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Install SQLx CLI
   #       run: cargo install sqlx-cli --no-default-features --features rustls,postgres
@@ -135,7 +135,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Install SQLx CLI
   #       run: cargo install sqlx-cli --no-default-features --features rustls,postgres
@@ -169,7 +169,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Install SQLx CLI
   #       run: cargo install sqlx-cli --no-default-features --features rustls,postgres
@@ -203,7 +203,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
   #       with:
   #         cache-on-failure: "true"
-  #         cache-all-crates: true"
+  #         cache-all-crates: "true"
   #         cache-workspace-crates: "true"
   #     - name: Install SQLx CLI
   #       run: cargo install sqlx-cli --no-default-features --features rustls,postgres
@@ -237,7 +237,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: "true"
-          cache-all-crates: true"
+          cache-all-crates: "true"
           cache-workspace-crates: "true"
       - uses: taiki-e/install-action@v2
         with:
