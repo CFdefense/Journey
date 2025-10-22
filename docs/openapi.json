@@ -712,6 +712,55 @@
         ]
       }
     },
+    "/api/chat/{id}": {
+      "delete": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Delete the given chat session",
+        "description": "Deletes a chat session and its associated messages and unsaved, private itineraries if it belongs to the user making the request.",
+        "operationId": "api_delete_chat",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat session and associated messages and unsaved, private itineraries deleted successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Chat session not found for this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be DELETE"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
     "/api/itinerary/save": {
       "post": {
         "tags": [

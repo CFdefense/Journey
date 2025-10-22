@@ -1048,11 +1048,25 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
         chat_session_id,
         message_id: None
     });
-	let latest_page = controllers::chat::api_message_page(user, pool, json)
+	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
 	assert_eq!(latest_page.message_page.len(), 2);
+
+	//delete chat session
+	controllers::chat::api_delete_chat(user, pool.clone(), axum::extract::Path(chat_session_id))
+		.await
+		.unwrap();
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool, json)
+		.await
+		.unwrap();
+	assert_eq!(latest_page.prev_message_id, None);
+	assert_eq!(latest_page.message_page.len(), 0);
 }
 
 // INTEGRATION TESTS
