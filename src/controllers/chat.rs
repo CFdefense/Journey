@@ -1,4 +1,4 @@
-use axum::{routing::{get, post}, Extension, Json};
+use axum::{extract::Path, routing::{delete, get, post}, Extension, Json};
 use chrono::NaiveDate;
 use sqlx::PgPool;
 use utoipa::OpenApi;
@@ -12,7 +12,8 @@ use crate::{controllers::{itinerary::insert_event_list, AxumRouter}, error::{Api
 		api_new_chat,
 		api_message_page,
 		api_send_message,
-		api_update_message
+		api_update_message,
+		api_delete_chat
 	),
 	modifiers(&SecurityAddon),
 	security(("set-cookie"=[])),
@@ -770,6 +771,80 @@ pub async fn api_new_chat(
 	Ok(Json(NewChatResponse { chat_session_id }))
 }
 
+/// Delete the chat session with the given ID
+///
+/// # Method
+/// `DELETE /api/chat/:id`
+///
+/// # Responses
+/// - `200 OK` - chat session and associated messages and unsaved itineraries successfully deleted
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided chat session id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X DELETE http://localhost:3001/api/chat/7
+///   -H "Content-Type: application/json"
+/// ```
+#[utoipa::path(
+	delete,
+	path="/{id}",
+	summary="Delete the given chat session",
+	description="Deletes a chat session and its associated messages and unsaved, private itineraries if it belongs to the user making the request.",
+	responses(
+		(status=200, description="Chat session and associated messages and unsaved, private itineraries deleted successfully"),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Chat session not found for this user"),
+		(status=405, description="Method Not Allowed - Must be DELETE"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
+pub async fn api_delete_chat(
+	Extension(user): Extension<AuthUser>,
+    Extension(pool): Extension<PgPool>,
+    Path(chat_session_id): Path<i32>
+) -> ApiResult<()> {
+	// itineraries do not cascade, so we delete manually
+	sqlx::query!(
+		r#"
+		DELETE FROM itineraries
+		WHERE
+			chat_session_id=$1 AND
+			account_id=$2 AND
+			is_public=FALSE AND
+			saved=FALSE;
+		"#,
+		chat_session_id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
+
+	// messages will cascade
+	sqlx::query!(
+		r#"
+		DELETE FROM chat_sessions
+		WHERE id=$1 AND account_id=$2
+		RETURNING id;
+		"#,
+		chat_session_id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?
+	.ok_or(AppError::NotFound)?;
+
+	Ok(())
+}
+
 /// Create the chat routes with authentication middleware.
 ///
 /// # Routes
@@ -778,6 +853,7 @@ pub async fn api_new_chat(
 /// - `POST /updateMessage` - Updates a user's message and waits for a bot reply (protected)
 /// - `POST /sendMessage` - Sends a user's message and waits for a bot reply (protected)
 /// - `GET /newChat` - Gets a chat session id for an empty chat (protected)
+/// - `DELETE /:id` - Delete a chat session and associated messages (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -788,5 +864,6 @@ pub fn chat_routes() -> AxumRouter {
         .route("/updateMessage", post(api_update_message))
         .route("/sendMessage", post(api_send_message))
         .route("/newChat", get(api_new_chat))
+        .route("/{id}", delete(api_delete_chat))
         .route_layer(axum::middleware::from_fn(middleware_auth))
 }
