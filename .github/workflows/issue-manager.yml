@@ -102,7 +102,7 @@ jobs:
                       milestoneId: .parent.milestone.id
                     } else null end
                   ),
-                  subDays: ((.subIssues.nodes // []) | map(.projectItems.nodes[0].days.number? // 0) | add) // 0
+                  subDays: ((.subIssues.nodes // []) | map(.projectItems.nodes[0].days.number? // 0) | add // 0)
                 })
             )
           }')
