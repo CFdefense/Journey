@@ -16,6 +16,7 @@ export interface TimeBlock {
 export async function fetchItinerary(itineraryID: number): Promise<TimeBlock[]> {
   try {
     const itinerary = await apiItineraryDetails(itineraryID);
+    console.log(itinerary);
     return populateItinerary(itinerary);
   } catch (err){
       console.log("Error", err);

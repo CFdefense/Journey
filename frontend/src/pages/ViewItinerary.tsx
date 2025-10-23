@@ -24,7 +24,7 @@ export default function ViewItineraryPage() {
   //properly gets JSON
   useEffect(() => {
     async function load() {
-      const data = await fetchItinerary(3); //give the itinerary ID of the itinerary you want to display
+      const data = await fetchItinerary(6); //give the itinerary ID of the itinerary you want to display
       setTimeBlocks(data);
     }
     load();
