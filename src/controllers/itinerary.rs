@@ -8,18 +8,18 @@
  */
 
 use axum::routing::post;
-use axum::{extract::Path, routing::get, Extension, Json};
+use axum::{Extension, Json, extract::Path, routing::get};
 use sqlx::PgPool;
 use tracing::debug;
 use utoipa::OpenApi;
 
 use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
-use crate::middleware::{AuthUser, middleware_auth};
 use crate::http_models::itinerary::*;
+use crate::middleware::{AuthUser, middleware_auth};
+use crate::sql_models::TimeOfDay;
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryRow;
-use crate::sql_models::TimeOfDay;
 use crate::swagger::SecurityAddon;
 
 #[derive(OpenApi)]
@@ -65,7 +65,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 	.map_err(|e| AppError::from(e))?;
 
 	let mut event_days = Vec::with_capacity(event_list.len());
-	for event_day in event_list.chunk_by(|a,b| a.date == b.date) {
+	for event_day in event_list.chunk_by(|a, b| a.date == b.date) {
 		let mut morning_events = Vec::with_capacity(event_list.len());
 		let mut noon_events = Vec::with_capacity(event_list.len());
 		let mut afternoon_events = Vec::with_capacity(event_list.len());
@@ -73,24 +73,24 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 
 		for event in event_day.into_iter() {
 			match event.time_of_day {
-			    TimeOfDay::Morning => morning_events.push(event.into()),
-			    TimeOfDay::Noon => noon_events.push(event.into()),
-			    TimeOfDay::Afternoon => afternoon_events.push(event.into()),
-			    TimeOfDay::Evening => evening_events.push(event.into()),
+				TimeOfDay::Morning => morning_events.push(event.into()),
+				TimeOfDay::Noon => noon_events.push(event.into()),
+				TimeOfDay::Afternoon => afternoon_events.push(event.into()),
+				TimeOfDay::Evening => evening_events.push(event.into()),
 			}
 		}
 
 		if let Some(event) = event_day.first() {
 			event_days.push(EventDay {
-			    morning_events,
-			    noon_events,
-			    afternoon_events,
-			    evening_events,
-			    date: event.date
+				morning_events,
+				noon_events,
+				afternoon_events,
+				evening_events,
+				date: event.date,
 			});
 		}
 	}
-	event_days.sort_by(|a,b| a.date.cmp(&b.date));
+	event_days.sort_by(|a, b| a.date.cmp(&b.date));
 
 	Ok(event_days)
 }
@@ -140,9 +140,9 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 		times.as_slice() as &[TimeOfDay],
 		dates.as_slice()
 	)
-   	.execute(pool)
-    .await
-    .map_err(|e| AppError::from(e))?;
+	.execute(pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
 
 	Ok(())
 }
@@ -190,18 +190,18 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	tag="Itinerary"
 )]
 pub async fn api_saved_itineraries(
-    Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<SavedResponse>> {
-    debug!(
-        "HANDLER ->> /api/itinerary/saved 'api_saved_itineraries' - User ID: {}",
-        user.id
-    );
+	debug!(
+		"HANDLER ->> /api/itinerary/saved 'api_saved_itineraries' - User ID: {}",
+		user.id
+	);
 
-    // Fetch all itineraries for the user
-    let itineraries: Vec<ItineraryRow> = sqlx::query_as!(
-        ItineraryRow,
-        r#"SELECT
+	// Fetch all itineraries for the user
+	let itineraries: Vec<ItineraryRow> = sqlx::query_as!(
+		ItineraryRow,
+		r#"SELECT
         	id,
          	account_id,
           	start_date,
@@ -209,25 +209,25 @@ pub async fn api_saved_itineraries(
             chat_session_id,
             title
         FROM itineraries WHERE account_id=$1 AND saved=TRUE"#,
-        user.id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| AppError::from(e))?;
+		user.id
+	)
+	.fetch_all(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?;
 
-    let mut res = Vec::with_capacity(itineraries.len());
-    for itinerary in itineraries.into_iter() {
+	let mut res = Vec::with_capacity(itineraries.len());
+	for itinerary in itineraries.into_iter() {
 		res.push(Itinerary {
 			id: itinerary.id,
-		    start_date: itinerary.start_date,
-		    end_date: itinerary.end_date,
-		    event_days: itinerary_events(itinerary.id, &pool).await?,
+			start_date: itinerary.start_date,
+			end_date: itinerary.end_date,
+			event_days: itinerary_events(itinerary.id, &pool).await?,
 			chat_session_id: itinerary.chat_session_id,
-			title: itinerary.title
+			title: itinerary.title,
 		});
-    }
+	}
 
-    Ok(Json(SavedResponse { itineraries: res }))
+	Ok(Json(SavedResponse { itineraries: res }))
 }
 
 /// Get a single saved itinerary either from the user or a public one
@@ -274,19 +274,19 @@ pub async fn api_saved_itineraries(
 	tag="Itinerary"
 )]
 pub async fn api_get_itinerary(
-    Extension(user): Extension<AuthUser>,
-    Path(itinerary_id): Path<i32>,
-    Extension(pool): Extension<PgPool>,
+	Extension(user): Extension<AuthUser>,
+	Path(itinerary_id): Path<i32>,
+	Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<Itinerary>> {
-    debug!(
-        "HANDLER ->> /api/itinerary/{} 'api_get_itinerary' - User ID: {}",
-        itinerary_id, user.id
-    );
+	debug!(
+		"HANDLER ->> /api/itinerary/{} 'api_get_itinerary' - User ID: {}",
+		itinerary_id, user.id
+	);
 
-    // Fetch the itinerary - from user or public
-    let itinerary: ItineraryRow = sqlx::query_as!(
-        ItineraryRow,
-        r#"SELECT
+	// Fetch the itinerary - from user or public
+	let itinerary: ItineraryRow = sqlx::query_as!(
+		ItineraryRow,
+		r#"SELECT
         	id,
          	account_id,
           	start_date,
@@ -294,21 +294,21 @@ pub async fn api_get_itinerary(
             chat_session_id,
             title
         FROM itineraries WHERE id = $1 AND (account_id = $2 OR is_public=TRUE)"#,
-        itinerary_id,
-        user.id
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| AppError::from(e))?
-    .ok_or(AppError::NotFound)?;
+		itinerary_id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?
+	.ok_or(AppError::NotFound)?;
 
-    Ok(Json(Itinerary {
-    	id: itinerary.id,
-	    start_date: itinerary.start_date,
-	    end_date: itinerary.end_date,
-	    event_days: itinerary_events(itinerary_id, &pool).await?,
+	Ok(Json(Itinerary {
+		id: itinerary.id,
+		start_date: itinerary.start_date,
+		end_date: itinerary.end_date,
+		event_days: itinerary_events(itinerary_id, &pool).await?,
 		chat_session_id: itinerary.chat_session_id,
-		title: itinerary.title
+		title: itinerary.title,
 	}))
 }
 
@@ -387,19 +387,19 @@ pub async fn api_get_itinerary(
 )]
 pub async fn api_save(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
-    Json(itinerary): Json<Itinerary>
+	Extension(pool): Extension<PgPool>,
+	Json(itinerary): Json<Itinerary>,
 ) -> ApiResult<Json<SaveResponse>> {
 	// check if itinerary id already exists for this user
 	let id_opt = sqlx::query!(
-        r#"SELECT id FROM itineraries WHERE id=$1 AND account_id=$2"#,
-        itinerary.id,
-        user.id
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| AppError::from(e))?
-    .map(|record| record.id);
+		r#"SELECT id FROM itineraries WHERE id=$1 AND account_id=$2"#,
+		itinerary.id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(|e| AppError::from(e))?
+	.map(|record| record.id);
 
 	// if it doesn't exist, insert a new one
 	let id = match id_opt {
@@ -438,7 +438,7 @@ pub async fn api_save(
 
 	insert_event_list(itinerary, &pool).await?;
 
-	Ok(Json(SaveResponse {id}))
+	Ok(Json(SaveResponse { id }))
 }
 
 /// Create the itinerary routes with authentication middleware.
@@ -451,9 +451,9 @@ pub async fn api_save(
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
 pub fn itinerary_routes() -> AxumRouter {
-    AxumRouter::new()
-        .route("/saved", get(api_saved_itineraries))
-        .route("/save", post(api_save))
-        .route("/{id}", get(api_get_itinerary))
-        .route_layer(axum::middleware::from_fn(middleware_auth))
+	AxumRouter::new()
+		.route("/saved", get(api_saved_itineraries))
+		.route("/save", post(api_save))
+		.route("/{id}", get(api_get_itinerary))
+		.route_layer(axum::middleware::from_fn(middleware_auth))
 }

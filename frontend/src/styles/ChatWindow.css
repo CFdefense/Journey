@@ -6,11 +6,11 @@
   height: 80vh;
   width: 500px; /* widened from 400px */
   margin: auto;
-  background: #FFE3B3; /* light cream background */
+  background: #ffe3b3; /* light cream background */
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border-top: 6px solid #30A0E0;
+  border-top: 6px solid #30a0e0;
 }
 
 /* Scrollable message area */
@@ -39,7 +39,7 @@
 /* Sent messages (user) */
 .chat-message.user {
   align-self: flex-end;
-  background: linear-gradient(90deg, #00C897, #30A0E0);
+  background: linear-gradient(90deg, #00c897, #30a0e0);
   color: #ffffff;
   border-top-right-radius: 0;
 }
@@ -48,8 +48,8 @@
 .chat-message.bot {
   align-self: flex-start;
   background: #ffffff;
-  border: 2px solid #30A0E0;
-  color: #006BBB;
+  border: 2px solid #30a0e0;
+  color: #006bbb;
   border-top-left-radius: 0;
 }
 
@@ -85,7 +85,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem;
-  border-top: 2px solid #30A0E0;
+  border-top: 2px solid #30a0e0;
   background: #ffffff;
   border-radius: 8px;
 }
@@ -93,13 +93,16 @@
 /* Input box */
 .message-box {
   flex: 1;
-  border: 2px solid #30A0E0;
+  border: 2px solid #30a0e0;
   border-radius: 8px;
   padding: 0.6rem 0.8rem;
   font-size: 1rem;
   background: #f8fcff;
   color: #003b60;
-  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s,
+    background 0.3s;
 }
 
 .message-box::placeholder {
@@ -112,10 +115,10 @@
 }
 
 .message-box:focus {
-  border-color: #006BBB;
+  border-color: #006bbb;
   outline: none;
   background: #ffffff;
-  box-shadow: 0 0 8px #30A0E0;
+  box-shadow: 0 0 8px #30a0e0;
 }
 
 /* Send button */
@@ -123,14 +126,16 @@
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(90deg, #00C897, #30A0E0);
+  background: linear-gradient(90deg, #00c897, #30a0e0);
   color: white;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
+  transition:
+    background 0.3s,
+    transform 0.2s;
 }
 
 .send-button:hover {
-  background: linear-gradient(90deg, #30A0E0, #00C897);
+  background: linear-gradient(90deg, #30a0e0, #00c897);
   transform: translateY(-2px);
 }

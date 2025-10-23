@@ -14,11 +14,11 @@ pub mod message;
 #[derive(Debug, Serialize, Deserialize, Clone, Type, ToSchema)]
 #[sqlx(type_name = "budget_bucket")]
 pub enum BudgetBucket {
-    VeryLowBudget,
-    LowBudget,
-    MediumBudget,
-    HighBudget,
-    LuxuryBudget,
+	VeryLowBudget,
+	LowBudget,
+	MediumBudget,
+	HighBudget,
+	LuxuryBudget,
 }
 
 /// Risk tolerance enum mapped to Postgres `risk_tolerence`.
@@ -28,10 +28,10 @@ pub enum BudgetBucket {
 #[derive(Debug, Serialize, Deserialize, Clone, Type, ToSchema)]
 #[sqlx(type_name = "risk_tolerence")]
 pub enum RiskTolerence {
-    ChillVibes,
-    LightFun,
-    Adventurer,
-    RiskTaker,
+	ChillVibes,
+	LightFun,
+	Adventurer,
+	RiskTaker,
 }
 
 /// The time of day the event will take place in the itinerary
@@ -41,5 +41,5 @@ pub enum TimeOfDay {
 	Morning,
 	Noon,
 	Afternoon,
-	Evening
+	Evening,
 }

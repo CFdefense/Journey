@@ -5,7 +5,9 @@ import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
 
 export default function Account() {
-  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
+  const { setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
 
   const onLogout = async () => {
     console.log("Logging out");

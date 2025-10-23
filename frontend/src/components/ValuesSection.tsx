@@ -11,22 +11,24 @@ export default function ValuesSection() {
             <div className="value-icon">AI</div>
             <div className="value-title">Assistive Intelligence</div>
             <p className="value-text">
-              We design agents that collaborate with you—transparent, controllable,
-              and helpful at every step.
+              We design agents that collaborate with you—transparent,
+              controllable, and helpful at every step.
             </p>
           </div>
           <div className="value-card reveal delay-1">
             <div className="value-icon">TR</div>
             <div className="value-title">Trust & Privacy</div>
             <p className="value-text">
-              Your data is yours. We prioritize security and clear consent over growth hacks.
+              Your data is yours. We prioritize security and clear consent over
+              growth hacks.
             </p>
           </div>
           <div className="value-card reveal delay-2">
             <div className="value-icon">DL</div>
             <div className="value-title">Delight</div>
             <p className="value-text">
-              Travel should feel magical. We sweat the details to make planning effortless.
+              Travel should feel magical. We sweat the details to make planning
+              effortless.
             </p>
           </div>
         </div>
@@ -34,5 +36,3 @@ export default function ValuesSection() {
     </section>
   );
 }
-
-

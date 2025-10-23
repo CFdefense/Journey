@@ -1,7 +1,7 @@
 .finish-popup-container {
   position: fixed;
-  top: 20px;          /* move to top */
-  right: 20px;        /* stay right-aligned */
+  top: 20px; /* move to top */
+  right: 20px; /* stay right-aligned */
   z-index: 1000;
 }
 

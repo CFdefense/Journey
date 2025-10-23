@@ -11,9 +11,20 @@
 
 .auth-page--signup {
   background:
-    linear-gradient(to right, transparent 0%, transparent 50%, #ffffff 0%, #ffffff 90%),
-    radial-gradient(ellipse at 100% 0%, #FFC872 20%, #FA8072 25%, transparent 90%),
-    linear-gradient(180deg, #FA8072 0%, #FFE3B3 0%, #ffffff 150%);
+    linear-gradient(
+      to right,
+      transparent 0%,
+      transparent 50%,
+      #ffffff 0%,
+      #ffffff 90%
+    ),
+    radial-gradient(
+      ellipse at 100% 0%,
+      #ffc872 20%,
+      #fa8072 25%,
+      transparent 90%
+    ),
+    linear-gradient(180deg, #fa8072 0%, #ffe3b3 0%, #ffffff 150%);
 }
 
 .auth-content {
@@ -97,7 +108,7 @@
 
 .signup-box h1 {
   text-align: center;
-  margin-bottom: 2.0rem;
+  margin-bottom: 2rem;
   color: #0b1220;
   font-size: 1.35rem;
   font-weight: 500;
@@ -112,7 +123,6 @@
   border-radius: 2px;
   margin: 12px auto 0;
 }
-
 
 .signup-box label {
   display: block;
@@ -143,7 +153,9 @@
   border: none;
   box-sizing: border-box;
   overflow: hidden;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
   border-radius: 12px;
 }
 
@@ -216,7 +228,9 @@
   font-weight: 700;
   font-size: 1.05rem;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
   box-sizing: border-box;
 }
 
@@ -251,7 +265,7 @@
 
 @media (max-width: 1100px) {
   .auth-page--signup {
-    background: linear-gradient(180deg, #FA8072 0%, #FFE3B3 40%, #ffffff 100%);
+    background: linear-gradient(180deg, #fa8072 0%, #ffe3b3 40%, #ffffff 100%);
   }
 
   .auth-content {
@@ -300,11 +314,15 @@
 }
 
 @media (min-width: 1101px) {
-  .auth-page--signup .auth-brand { display: none; }
+  .auth-page--signup .auth-brand {
+    display: none;
+  }
 }
 
 @media (min-width: 980px) {
-  .signup-box h1::after { width: 240px; }
+  .signup-box h1::after {
+    width: 240px;
+  }
 
   .signup-page-content {
     max-width: 1200px;
@@ -315,8 +333,12 @@
     gap: 64px;
   }
 
-  .signup-bullets { margin-top: 48px; }
-  .bullet-item { margin-bottom: 44px; }
+  .signup-bullets {
+    margin-top: 48px;
+  }
+  .bullet-item {
+    margin-bottom: 44px;
+  }
 }
 
 .signup-brand {
@@ -361,7 +383,6 @@
   margin-bottom: 0;
 }
 
-
 .bullet-item::before {
   content: "✓";
   flex-shrink: 0;
@@ -378,7 +399,10 @@
   margin-top: 2px;
 }
 
-.bullet-content { flex: 1; text-align: left; }
+.bullet-content {
+  flex: 1;
+  text-align: left;
+}
 
 .bullet-title {
   font-weight: 700;
@@ -395,7 +419,9 @@
   margin: 0;
 }
 
-.bullet-desc + .bullet-desc { margin-top: 6px; }
+.bullet-desc + .bullet-desc {
+  margin-top: 6px;
+}
 
 .signup-form-panel {
   justify-self: start;

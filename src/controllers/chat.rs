@@ -1,9 +1,29 @@
-use axum::{extract::Path, routing::{delete, get, post}, Extension, Json};
+use axum::{
+	Extension, Json,
+	extract::Path,
+	routing::{delete, get, post},
+};
 use chrono::NaiveDate;
 use sqlx::PgPool;
 use utoipa::OpenApi;
 
-use crate::{controllers::{itinerary::insert_event_list, AxumRouter}, error::{ApiResult, AppError}, global::MESSAGE_PAGE_LEN, http_models::{chat_session::{ChatsResponse, NewChatResponse}, event::Event, itinerary::{EventDay, Itinerary}, message::{Message, MessagePageRequest, MessagePageResponse, SendMessageRequest, SendMessageResponse, UpdateMessageRequest}}, middleware::{middleware_auth, AuthUser}, sql_models::message::MessageRow, swagger::SecurityAddon};
+use crate::{
+	controllers::{AxumRouter, itinerary::insert_event_list},
+	error::{ApiResult, AppError},
+	global::MESSAGE_PAGE_LEN,
+	http_models::{
+		chat_session::{ChatsResponse, NewChatResponse},
+		event::Event,
+		itinerary::{EventDay, Itinerary},
+		message::{
+			Message, MessagePageRequest, MessagePageResponse, SendMessageRequest,
+			SendMessageResponse, UpdateMessageRequest,
+		},
+	},
+	middleware::{AuthUser, middleware_auth},
+	sql_models::message::{ChatSessionRow, MessageRow},
+	swagger::SecurityAddon,
+};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -35,12 +55,13 @@ async fn send_message_to_llm(
 	account_id: i32,
 	chat_session_id: i32,
 	itinerary_id: Option<i32>,
-	pool: &PgPool
+	pool: &PgPool,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
 		Some(id) => Some(id), //use the provided itinerary
-		None => { //use the latest itinerary from the chat session
+		None => {
+			//use the latest itinerary from the chat session
 			sqlx::query!(
 				r#"
 				SELECT m.itinerary_id
@@ -64,12 +85,15 @@ async fn send_message_to_llm(
 		}
 	};
 	let context_itinerary = match itinerary_id {
-		Some(id) => Some(crate::controllers::itinerary::api_get_itinerary(
-			Extension(AuthUser { id: account_id }),
-			axum::extract::Path(id),
-			Extension(pool.clone())
-		).await?),
-		None => None
+		Some(id) => Some(
+			crate::controllers::itinerary::api_get_itinerary(
+				Extension(AuthUser { id: account_id }),
+				axum::extract::Path(id),
+				Extension(pool.clone()),
+			)
+			.await?,
+		),
+		None => None,
 	};
 
 	// TODO: this is where the LLM call will be.
@@ -77,10 +101,10 @@ async fn send_message_to_llm(
 	// Fow now we just make a temporary message.
 	let ai_text = "Bot reply";
 	let mut ai_itinerary = Itinerary {
-	    id: 0,
-	    start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-	    end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
-	    event_days: vec![
+		id: 0,
+		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+		end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+		event_days: vec![
 			EventDay {
 				morning_events: vec![Event {
 					id: 1,
@@ -88,8 +112,10 @@ async fn send_message_to_llm(
 					postal_code: 17013,
 					city: String::from("Carlisle"),
 					event_type: String::from("Hike"),
-					event_description: String::from("A beautiful stroll along a river in this cute small town."),
-					event_name: String::from("Family Walking Path")
+					event_description: String::from(
+						"A beautiful stroll along a river in this cute small town.",
+					),
+					event_name: String::from("Family Walking Path"),
 				}],
 				noon_events: vec![Event {
 					id: 2,
@@ -97,8 +123,10 @@ async fn send_message_to_llm(
 					postal_code: 12601,
 					city: String::from("Poughkeepsie"),
 					event_type: String::from("Restaurant"),
-					event_description: String::from("Local Italian restaurant known for its authentic pasta and upscale dining."),
-					event_name: String::from("Cosimos")
+					event_description: String::from(
+						"Local Italian restaurant known for its authentic pasta and upscale dining.",
+					),
+					event_name: String::from("Cosimos"),
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -106,8 +134,10 @@ async fn send_message_to_llm(
 					postal_code: 10017,
 					city: String::from("New York"),
 					event_type: String::from("Museum"),
-					event_description: String::from("World famous art museum with a focus on modern works, including Starry Starry Night by VanGough."),
-					event_name: String::from("Museum of Modern Art- MoMA")
+					event_description: String::from(
+						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
+					),
+					event_name: String::from("Museum of Modern Art- MoMA"),
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -115,10 +145,12 @@ async fn send_message_to_llm(
 					postal_code: 19107,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Concert"),
-					event_description: String::from("Music center which hosts local and national bands."),
-					event_name: String::from("Jazz night at Broad Street")
+					event_description: String::from(
+						"Music center which hosts local and national bands.",
+					),
+					event_name: String::from("Jazz night at Broad Street"),
 				}],
-				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap()
+				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
 			EventDay {
 				morning_events: vec![Event {
@@ -127,8 +159,10 @@ async fn send_message_to_llm(
 					postal_code: 19148,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Sports"),
-					event_description: String::from("A Phillies baseball game is a must-do for locals and visitors alike."),
-					event_name: String::from("Phillies Baseball Game")
+					event_description: String::from(
+						"A Phillies baseball game is a must-do for locals and visitors alike.",
+					),
+					event_name: String::from("Phillies Baseball Game"),
 				}],
 				noon_events: vec![Event {
 					id: 6,
@@ -136,8 +170,10 @@ async fn send_message_to_llm(
 					postal_code: 60615,
 					city: String::from("Chicago"),
 					event_type: String::from("Festival"),
-					event_description: String::from("Annual music festival with the biggest names in pop and indie scenes."),
-					event_name: String::from("LollaPalooza")
+					event_description: String::from(
+						"Annual music festival with the biggest names in pop and indie scenes.",
+					),
+					event_name: String::from("LollaPalooza"),
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -146,7 +182,7 @@ async fn send_message_to_llm(
 					city: String::from("Paris"),
 					event_type: String::from("Museum"),
 					event_description: String::from("Explore the beautiful landmark of Paris."),
-					event_name: String::from("Eiffel Tower")
+					event_name: String::from("Eiffel Tower"),
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -154,16 +190,17 @@ async fn send_message_to_llm(
 					postal_code: 0,
 					city: String::from("Paris"),
 					event_type: String::from("Museum"),
-					event_description: String::from("Wander the halls of the world famous art museum."),
-					event_name: String::from("le Louvre")
+					event_description: String::from(
+						"Wander the halls of the world famous art museum.",
+					),
+					event_name: String::from("le Louvre"),
 				}],
-				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap()
-			}
+				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+			},
 		],
-	    chat_session_id: None,
-		title: String::from("World Tour 11/5-15 2025")
+		chat_session_id: None,
+		title: String::from("World Tour 11/5-15 2025"),
 	};
-
 
 	// insert generated itinerary into db
 	let itinerary_id = sqlx::query!(
@@ -203,9 +240,7 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| {
-		AppError::from(e)
-	})?;
+	.map_err(|e| AppError::from(e))?;
 
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
 
@@ -259,10 +294,10 @@ async fn send_message_to_llm(
 )]
 pub async fn api_chats(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>
+	Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<ChatsResponse>> {
-	Ok(Json(ChatsResponse { chat_sessions:
-		sqlx::query!(
+	Ok(Json(ChatsResponse {
+		chat_sessions: sqlx::query!(
 			r#"
 			SELECT id from chat_sessions
 			WHERE account_id=$1;
@@ -273,8 +308,11 @@ pub async fn api_chats(
 		.await
 		.map_err(|e| AppError::from(e))?
 		.into_iter()
-		.map(|record| record.id)
-		.collect()
+		.map(|record| ChatSessionRow {
+			id: record.id,
+			title: String::from("TODO: get chat title from db"),
+		})
+		.collect(),
 	}))
 }
 
@@ -385,8 +423,11 @@ pub async fn api_chats(
 )]
 pub async fn api_message_page(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
-    Json(MessagePageRequest {chat_session_id, message_id}): Json<MessagePageRequest>
+	Extension(pool): Extension<PgPool>,
+	Json(MessagePageRequest {
+		chat_session_id,
+		message_id,
+	}): Json<MessagePageRequest>,
 ) -> ApiResult<Json<MessagePageResponse>> {
 	let mut message_page: Vec<Message> = sqlx::query_as!(
 		MessageRow,
@@ -426,7 +467,7 @@ pub async fn api_message_page(
 		is_user: msg_row.is_user,
 		timestamp: msg_row.timestamp,
 		text: msg_row.text,
-		itinerary_id: msg_row.itinerary_id
+		itinerary_id: msg_row.itinerary_id,
 	})
 	.collect();
 
@@ -439,7 +480,7 @@ pub async fn api_message_page(
 
 	Ok(Json(MessagePageResponse {
 		message_page,
-		prev_message_id
+		prev_message_id,
 	}))
 }
 
@@ -509,10 +550,16 @@ pub async fn api_message_page(
 )]
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
-    Json(UpdateMessageRequest {message_id, new_text, itinerary_id}): Json<UpdateMessageRequest>
+	Extension(pool): Extension<PgPool>,
+	Json(UpdateMessageRequest {
+		message_id,
+		new_text,
+		itinerary_id,
+	}): Json<UpdateMessageRequest>,
 ) -> ApiResult<Json<Message>> {
-	if new_text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
+	if new_text.is_empty() {
+		return Err(AppError::BadRequest(String::from("Text cannot be empty")));
+	}
 
 	// verify the message id belongs to this user
 	sqlx::query!(
@@ -564,7 +611,14 @@ pub async fn api_update_message(
 	.chat_session_id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(new_text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
+	let bot_message = send_message_to_llm(
+		new_text.as_str(),
+		user.id,
+		chat_session_id,
+		itinerary_id,
+		&pool,
+	)
+	.await?;
 
 	Ok(Json(bot_message))
 }
@@ -638,10 +692,16 @@ pub async fn api_update_message(
 )]
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
-    Json(SendMessageRequest {chat_session_id, text, itinerary_id}): Json<SendMessageRequest>
+	Extension(pool): Extension<PgPool>,
+	Json(SendMessageRequest {
+		chat_session_id,
+		text,
+		itinerary_id,
+	}): Json<SendMessageRequest>,
 ) -> ApiResult<Json<SendMessageResponse>> {
-	if text.is_empty() {return Err(AppError::BadRequest(String::from("Text cannot be empty")))}
+	if text.is_empty() {
+		return Err(AppError::BadRequest(String::from("Text cannot be empty")));
+	}
 
 	// verify the given chat session belongs to this user
 	sqlx::query!(
@@ -673,11 +733,12 @@ pub async fn api_send_message(
 	.id;
 
 	// call llm and insert bot response into db
-	let bot_message = send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
+	let bot_message =
+		send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,
-		bot_message
+		bot_message,
 	}))
 }
 
@@ -728,7 +789,7 @@ pub async fn api_send_message(
 )]
 pub async fn api_new_chat(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>
+	Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<NewChatResponse>> {
 	// check to see if there's already an empty chat session before making a new one
 	let chat_sessions = sqlx::query!(
@@ -807,8 +868,8 @@ pub async fn api_new_chat(
 )]
 pub async fn api_delete_chat(
 	Extension(user): Extension<AuthUser>,
-    Extension(pool): Extension<PgPool>,
-    Path(chat_session_id): Path<i32>
+	Extension(pool): Extension<PgPool>,
+	Path(chat_session_id): Path<i32>,
 ) -> ApiResult<()> {
 	// itineraries do not cascade, so we delete manually
 	sqlx::query!(
@@ -858,12 +919,12 @@ pub async fn api_delete_chat(
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
 pub fn chat_routes() -> AxumRouter {
-    AxumRouter::new()
-        .route("/chats", get(api_chats))
-        .route("/messagePage", post(api_message_page))
-        .route("/updateMessage", post(api_update_message))
-        .route("/sendMessage", post(api_send_message))
-        .route("/newChat", get(api_new_chat))
-        .route("/{id}", delete(api_delete_chat))
-        .route_layer(axum::middleware::from_fn(middleware_auth))
+	AxumRouter::new()
+		.route("/chats", get(api_chats))
+		.route("/messagePage", post(api_message_page))
+		.route("/updateMessage", post(api_update_message))
+		.route("/sendMessage", post(api_send_message))
+		.route("/newChat", get(api_new_chat))
+		.route("/{id}", delete(api_delete_chat))
+		.route_layer(axum::middleware::from_fn(middleware_auth))
 }
