@@ -10,11 +10,12 @@
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use utoipa::{ToResponse, ToSchema};
 
 use crate::http_models::event::Event;
 
 /// A complete itinerary with event details
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, ToResponse)]
 pub struct Itinerary {
 	/// Primary key
 	pub id: i32,
@@ -32,7 +33,7 @@ pub struct Itinerary {
 }
 
 /// A single day of events in an itinerary
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, ToResponse)]
 pub struct EventDay {
 	/// All the events taking place in the morning
 	pub morning_events: Vec<Event>,
@@ -47,14 +48,14 @@ pub struct EventDay {
 }
 
 /// API route response for GET `/api/itinerary/saved`
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, ToResponse)]
 pub struct SavedResponse {
 	/// List of saved itineraries for the user.
     pub itineraries: Vec<Itinerary>
 }
 
 /// Response model from `/api/itinerary/save` endpoint
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema, ToResponse)]
 pub struct SaveResponse {
 	/// id of the itinerary that was just saved
 	/// * May be the same as the itinerary id passed in the request

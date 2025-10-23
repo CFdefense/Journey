@@ -4,102 +4,108 @@ import PrevChatSideBar from "../components/PrevChatSideBar";
 import Itinerary from "../components/Itinerary";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
-import { apiCheckIfPreferencesPopulated } from "../api/account";
-import { apiChats, apiMessages, apiNewChatId } from "../api/home";
+import { apiChats, apiMessages } from "../api/home";
 import type { MessagePageRequest, MessagePageResponse } from "../models/chat";
 import { apiItineraryDetails } from "../api/itinerary"; 
-import { handleMessageSendExistingChat, handleMessageSendNewChat } from "../helpers/home";
-import type { Message, ChatSession } from "../models/home";
+import { apiCheckIfPreferencesPopulated } from "../api/account";
+import { handleMessageSendExistingChat, handleMessageSendNewChat, createNewChat } from "../helpers/home";
+import type { ChatSession } from "../models/home";
+import type { Message } from "../models/chat";
 
 export default function Home() {
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
   const [itineraryTitles, setItineraryTitles] = useState<Record<number, string>>({});
+  const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(null);
 
-  //  Fetch user preferences 
-  useEffect(() => {
-    async function fetchPreferences() {
-      try {
-        const preferencesFilled = await apiCheckIfPreferencesPopulated();
-        setShowFinishPopup(!preferencesFilled);
-      } catch {
-        setShowFinishPopup(true);
-      }
-    }
-    fetchPreferences();
+  void selectedItineraryId;
+ // this is to prevent a build error. the value will be used later but not in this pr
+  // TODO, build this out and move to helper/home.ts
+  const handleItinerarySelect = (itineraryId: number) => {
+    setSelectedItineraryId(itineraryId);
+  };
+
+  //fetch userPreferences
+  useEffect(() => { 
+    async function fetchPreferences() { 
+      try { 
+        const preferencesFilled = await apiCheckIfPreferencesPopulated(); 
+        setShowFinishPopup(!preferencesFilled); 
+      } catch { 
+        setShowFinishPopup(true); 
+      } 
+    } fetchPreferences(); 
   }, []);
 
-  //  Fetch chats and messages 
+
+  // fetch all of the chatSessions from the db
   useEffect(() => {
-    async function fetchChatsAndMessages() {
-      try {
-        const chatData = await apiChats();
-
-        const initialChats: ChatSession[] = chatData.chat_sessions.map((id, i) => ({
-          id,
-          title: `Chat ${i + 1}`,
-          messages: [],
-        }));
-
-        const chatsWithMessages = await Promise.all(
-          initialChats.map(async (chat) => {
-            const payload: MessagePageRequest = {
-              chat_session_id: chat.id,
-              message_id: null,
-            };
-
-            const messagePage: MessagePageResponse = await apiMessages(payload);
-
-            const messages: Message[] = messagePage.message_page.map((msg) => ({
-              id: msg.id,
-              text: msg.text,
-              sender: msg.is_user ? "user" : "bot",
-              itinerary_id: msg.itinerary_id, 
-            }));
-
-            // 
-            for (const msg of messages) {
-              if (msg.itinerary_id && !itineraryTitles[msg.itinerary_id]) {
-                apiItineraryDetails(msg.itinerary_id).then((it) => {
-                  setItineraryTitles((prev) => ({
-                    ...prev,
-                    [msg.itinerary_id!]: it.title,
-                  }));
-                });
-              }
-            }
-
-            return { ...chat, messages };
-          })
-        );
-
-        setChats(chatsWithMessages);
-      } catch (err) {
-        console.error("Error fetching chats:", err);
-      }
-    }
-
-    fetchChatsAndMessages();
-  }, []);
-
-  // clicking the button opens up a blank chatwindow, but a new chat is not created until a user sends in a message
-  const createNewChatFromButton = async () => {
+  async function fetchChats() {
     try {
-      const newChatId = await apiNewChatId();
-      if (newChatId === -1) return;
+      // get the list of chat session ids
+      const chatData = await apiChats();
 
-      const blankChat: ChatSession = {
-        id: newChatId,
-        title: `Chat ${chats.length + 1}`,
-        messages: [],
+      const chatList: ChatSession[] = chatData.chat_sessions.map((id, i) => ({
+        id,
+        title: `Chat ${i + 1}`,
+        messages: [], // message loading handled at fetchMessagesForActiveChat
+      }));
+
+      setChats(chatList);
+
+    } catch (err) {
+      console.error("Error fetching chats:", err);
+    }
+  }
+
+  fetchChats();
+}, []);
+
+// fetch message pages only for the current active chat
+useEffect(() => {
+  async function fetchMessagesForActiveChat() {
+    if (activeChatId === null) return;
+
+    try {
+      const payload: MessagePageRequest = {
+        chat_session_id: activeChatId,
+        message_id: null,
       };
 
-      setChats((prev) => [...prev, blankChat]);
-      setActiveChatId(newChatId);
+      const messagePage: MessagePageResponse = await apiMessages(payload);
+      const messages: Message[] = messagePage.message_page;
+
+      // get the itinerary titles for only messages in this chat session
+      for (const msg of messages) {
+        if (msg.itinerary_id && !itineraryTitles[msg.itinerary_id]) {
+          apiItineraryDetails(msg.itinerary_id).then((it) => {
+            setItineraryTitles((prev) => ({
+              ...prev,
+              [msg.itinerary_id!]: it.title,
+            }));
+          });
+        }
+      }
+
+      // update messages for the selected chat
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === activeChatId ? { ...chat, messages } : chat
+        )
+      );
     } catch (err) {
-      console.error("Error creating chat:", err);
+      console.error(`Error fetching messages for chat ${activeChatId}:`, err);
     }
+  }
+
+  fetchMessagesForActiveChat();
+}, [activeChatId]);
+
+
+  // creates a new chat
+  const handleNewChat = async () => {
+    await createNewChat(chats, setChats, setActiveChatId);
   };
 
   // utlizes functions in helper/home to deal with sending a chat properly
@@ -107,10 +113,11 @@ export default function Home() {
     if (!text.trim()) return;
     const isNewChat = chats.length === 0 || activeChatId === null;
     if (isNewChat) {
-      await handleMessageSendNewChat(text, chats, setChats, setActiveChatId);
+      await handleMessageSendNewChat(text, chats, setChats, setActiveChatId, setItineraryTitles);
     } else {
-      await handleMessageSendExistingChat(text, activeChatId, setChats);
+      await handleMessageSendExistingChat(text, activeChatId, setChats, setItineraryTitles);
     }
+
   };
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
@@ -124,14 +131,16 @@ export default function Home() {
           chats={chats}
           activeChatId={activeChatId}
           onSelectChat={setActiveChatId}
-          onNewChat={createNewChatFromButton}
+          onNewChat={handleNewChat}
         />
 
         <ChatWindow
           messages={activeChat?.messages || []}
           onSend={handleSendMessage}
           itineraryTitles={itineraryTitles}
+          onItinerarySelect={handleItinerarySelect} 
         />
+        
         <Itinerary />
       </div>
     </div>

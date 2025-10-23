@@ -1,6 +1,34 @@
-import type { ChatSession, Message } from "../models/home";
-import type { SendMessageRequest, SendMessageResponse } from "../models/chat";
+import type { ChatSession } from "../models/home";
+import type { Message, SendMessageRequest, SendMessageResponse } from "../models/chat";
 import { apiSendMessage, apiNewChatId } from "../api/home";
+import { apiItineraryDetails } from "../api/itinerary"; 
+
+
+/**
+ * Creates a new blank chat session (frontend + backend).
+ */
+export async function createNewChat(
+  chats: ChatSession[],
+  setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
+  setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>
+): Promise<void> {
+  try {
+    const newChatId = await apiNewChatId();
+    if (newChatId === -1) return;
+
+    const blankChat: ChatSession = {
+      id: newChatId,
+      title: `Chat ${chats.length + 1}`,
+      messages: [],
+    };
+
+    setChats((prev) => [...prev, blankChat]);
+    setActiveChatId(newChatId);
+  } catch (err) {
+    console.error("Error creating chat:", err);
+  }
+}
+
 
 /**
  * Handles sending a message in an existing chat session.
@@ -8,13 +36,16 @@ import { apiSendMessage, apiNewChatId } from "../api/home";
 export async function handleMessageSendExistingChat(
   text: string,
   chatId: number,
-  setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>
+  setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
+  setItineraryTitles: React.Dispatch<React.SetStateAction<Record<number, string>>>
+
 ) {
   const userMessage: Message = {
-    id: Date.now(), 
+    id: Date.now(),
     text,
-    sender: "user",
-    itinerary_id: null, 
+    is_user: true,
+    timestamp: new Date().toISOString(),
+    itinerary_id: null,
   };
 
   // Optimistically add the user message
@@ -30,17 +61,30 @@ export async function handleMessageSendExistingChat(
     const payload: SendMessageRequest = {
       chat_session_id: chatId,
       text,
+      itinerary_id: null,
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
-    console.log(response.bot_message.itinerary_id)
+    if (response.user_message_id === -1) {
+      console.log("ERROR: " + response.bot_message.text);
+      return; // stop execution because there was an error with api call
+    }
 
-    const botMessage: Message = {
-      id: response.bot_message.id,
-      text: response.bot_message.text,
-      sender: response.bot_message.is_user ? "user" : "bot",
-      itinerary_id: response.bot_message.itinerary_id ?? null, 
-    };
+    const botMessage = response.bot_message;
+
+    // get the itinerary information before displaying the messages
+    if (botMessage.itinerary_id) {
+      const itinerary = await apiItineraryDetails(botMessage.itinerary_id);
+      
+      if (itinerary.chat_session_id === -1) {
+        console.log("Failed to load itinerary details."); 
+      }
+      
+      setItineraryTitles((prev) => ({
+        ...prev,
+        [botMessage.itinerary_id!]: itinerary.title,
+      }));
+    }
 
     // Append bot message to the correct chat
     setChats((prevChats) =>
@@ -62,11 +106,12 @@ export async function handleMessageSendNewChat(
   text: string,
   chats: ChatSession[],
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>,
-  setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>
+  setActiveChatId: React.Dispatch<React.SetStateAction<number | null>>,
+  setItineraryTitles: React.Dispatch<React.SetStateAction<Record<number, string>>>
+
 ) {
   // get the chat session id from the backend
   const newChatId = await apiNewChatId();
-  console.log("New chat session ID:", newChatId);
 
   if (newChatId === -1) {
     console.error("Failed to create new chat session");
@@ -76,8 +121,9 @@ export async function handleMessageSendNewChat(
   const userMessage: Message = {
     id: Date.now(),
     text,
-    sender: "user",
-    itinerary_id: null, 
+    is_user: true,
+    timestamp: new Date().toISOString(),
+    itinerary_id: null,
   };
 
   // Create a new chat locally
@@ -95,17 +141,30 @@ export async function handleMessageSendNewChat(
     const payload: SendMessageRequest = {
       chat_session_id: newChatId,
       text,
+      itinerary_id: null,
     };
 
     const response: SendMessageResponse = await apiSendMessage(payload);
-    console.log(response.bot_message.itinerary_id)
+    if (response.user_message_id === -1) {
+      console.log("ERROR: " + response.bot_message.text);
+      return; // stop execution because there was an error with api call
+    }
+    
+    const botMessage = response.bot_message;
 
-    const botMessage: Message = {
-      id: response.bot_message.id,
-      text: response.bot_message.text,
-      sender: response.bot_message.is_user ? "user" : "bot",
-      itinerary_id: response.bot_message.itinerary_id ?? null, 
-    };
+    // get the itinerary information before displaying the messages
+    if (botMessage.itinerary_id) {
+      const itinerary = await apiItineraryDetails(botMessage.itinerary_id);
+      
+      if (itinerary.chat_session_id === -1) {
+        console.log("Failed to load itinerary details."); 
+      }
+      
+      setItineraryTitles((prev) => ({
+        ...prev,
+        [botMessage.itinerary_id!]: itinerary.title,
+      }));
+    }
 
     // Update the same chat with the bot response
     setChats((prevChats) =>

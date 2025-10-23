@@ -6,6 +6,6 @@ skip-clean = true
 locked = true
 
 [report]
-output-dir = "tmp"
+output-dir = "docs"
 out = ["Stdout", "Html"]
 fail-under = 80

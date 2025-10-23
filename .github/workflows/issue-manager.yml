@@ -1,0 +1,271 @@
+name: Issue Manager
+
+on:
+  schedule:
+    # switch these on November 2 at 2:00 am
+    - cron: "45 3 * * *"   # 3:45 UTC == 11:45 PM New York (DST)
+    # - cron: "45 4 * * *"   # 4:45 UTC == 11:45 PM New York (Standard Time)
+  workflow_dispatch:
+
+jobs:
+  issue-manager:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Manage Issues In Project
+        env:
+          GITHUB_TOKEN: ${{ secrets.CAPPING_PAT }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          ISSUES=$(gh api graphql --paginate -f query='
+          query {
+            repository(owner:"CFdefense", name:"Capping2025") {
+              projectV2(number:2) {
+                id
+                startedField: field(name:"Started") {... on ProjectV2Field {id}}
+                dueField:     field(name:"Due")     {... on ProjectV2Field {id}}
+                daysField:    field(name:"Days")    {... on ProjectV2Field {id}}
+              }
+              issues(first:100, states:OPEN){
+                nodes {
+                  id
+                  title
+                  url
+                  assignees(first:5) { nodes { login } }
+                  milestone { id }
+                  projectItems(first:1) {
+                    nodes{
+                      id
+                      days: fieldValueByName(name:"Days") {
+                        ... on ProjectV2ItemFieldNumberValue {number}
+                      }
+                      started: fieldValueByName(name:"Started") {
+                        ... on ProjectV2ItemFieldDateValue {date}
+                      }
+                      due: fieldValueByName(name:"Due") {
+                        ... on ProjectV2ItemFieldDateValue {date}
+                      }
+                      type: fieldValueByName(name:"Type") {
+                        ... on ProjectV2ItemFieldSingleSelectValue {name}
+                      }
+                      status: fieldValueByName(name:"Status") {
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                  parent {
+                    id
+                    milestone { id }
+                  }
+                  subIssues(first:100) {
+                    nodes {
+                      id
+                      projectItems(first:1){
+                        nodes{
+                          days: fieldValueByName(name:"Days") {
+                            ... on ProjectV2ItemFieldNumberValue {number}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' | jq '{
+            projectId: .data.repository.projectV2.id,
+            startedId: .data.repository.projectV2.startedField.id,
+            dueId: .data.repository.projectV2.dueField.id,
+            daysId: .data.repository.projectV2.daysField.id,
+            issues: (
+              .data.repository.issues.nodes
+              | map({
+                  issueId: .id,
+                  title: .title,
+                  url: .url,
+                  assignees: (.assignees.nodes // [] | map(.login)),
+                  milestoneId: (.milestone.id // null),
+                  itemId: (.projectItems.nodes[0].id // null),
+                  days: (.projectItems.nodes[0].days.number // 0),
+                  started: (.projectItems.nodes[0].started.date // null),
+                  due: (.projectItems.nodes[0].due.date // null),
+                  type: (.projectItems.nodes[0].type.name // null),
+                  status: (.projectItems.nodes[0].status.name // null),
+                  parent: (
+                    if .parent != null then {
+                      id: .parent.id,
+                      milestoneId: .parent.milestone.id
+                    } else null end
+                  ),
+                  subDays: ((.subIssues.nodes // []) | map(.projectItems.nodes[0].days.number? // 0) | add // 0)
+                })
+            )
+          }')
+
+          PROJECT_ID=$(echo "$ISSUES" | jq -r '.projectId')
+          STARTED_ID=$(echo "$ISSUES" | jq -r '.startedId')
+          DUE_ID=$(echo "$ISSUES" | jq -r '.dueId')
+          DAYS_ID=$(echo "$ISSUES" | jq -r '.daysId')
+          EMBEDS_OVERDUE="[]"
+          EMBEDS_SOON="[]"
+          NOW=$(date +%s)
+          TWO_DAYS=$((NOW + 48*3600))
+          TODAY=$(date +%Y-%m-%d)
+
+          while read -r row; do
+            TITLE=$(    echo "$row" | jq -r '.title')
+            URL=$(      echo "$row" | jq -r '.url')
+            ASSIGNEES=$(echo "$row" | jq -r '.assignees | if length==0 then "No Assignee" else join(", ") end')
+            ITEM_ID=$(  echo "$row" | jq -r '.itemId')
+            DAYS=$(     echo "$row" | jq -r '(.days // 0) | tonumber | floor')
+            DUE=$(      echo "$row" | jq -r '.due')
+            TYPE=$(     echo "$row" | jq -r '.type')
+            STATUS=$(   echo "$row" | jq -r '.status')
+
+            if [ "$TYPE" = "Story" ]; then
+              # Set milestone of story to that of its parent epic
+
+              PARENT_ID=$(          echo "$row" | jq -r '.parent.id')
+              PARENT_MILESTONE_ID=$(echo "$row" | jq -r '.parent.milestoneId')
+              ISSUE_ID=$(           echo "$row" | jq -r '.issueId')
+              MILESTONE_ID=$(       echo "$row" | jq -r '.milestoneId')
+
+              if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ]; then
+                gh api graphql -f query='
+                mutation($sId:ID!, $mId:ID!) {
+                  updateIssue(input:{
+                    clientMutationId:"milestone_gh_action"
+                    id:$sId
+                    milestoneId:$mId
+                  }) {clientMutationId}
+                }' -F sId=$ISSUE_ID -F mId=$PARENT_MILESTONE_ID
+              fi
+            elif [ "$TYPE" = "Epic" ]; then
+              # Set days of epic to sum of days of child stories
+
+              SUB_DAYS=$(echo "$row" | jq '(.subDays // 0) | tonumber | round')
+
+              if [ "$DAYS" -ne "$SUB_DAYS" ] && [ -n "$DAYS_ID" ] && [ "$DAYS_ID" != "null" ]; then
+                gh api graphql -f query='
+                mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Float!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    clientMutationId:"milestone_gh_action"
+                    fieldId:$fId
+                    itemId:$iId
+                    projectId:$pId
+                    value:{number:$val}
+                  }) {clientMutationId}
+                }' -F fId=$DAYS_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$SUB_DAYS
+              fi
+            fi
+
+            if [ "$STATUS" = "In Progress" ] || [ "$STATUS" = "In Review" ]; then
+              STARTED=$(echo "$row" | jq -r '.started')
+
+              if [ "$STARTED" = "null" ] || [ -z "$STARTED" ]; then
+                # Set Started date if missing
+
+                gh api graphql -f query='
+                mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    clientMutationId:"roadmap_gh_action"
+                    fieldId:$fId
+                    itemId:$iId
+                    projectId:$pId
+                    value:{date:$val}
+                  }) {clientMutationId}
+                }' -F fId=$STARTED_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$TODAY
+              fi
+
+              if [ "$DUE" = "null" ] || [ -z "$DUE" ]; then
+                if [ "$DAYS" != "null" ] && [ -n "$DAYS" ] && [ "$STARTED" != "null" ] && [ -n "$STARTED" ]; then
+                  # Set Due = Started + Days
+
+                  DUE_DATE=$(date -d "$STARTED + $DAYS day" +%Y-%m-%d)
+
+                  gh api graphql -f query='
+                  mutation($fId:ID!, $iId:ID!, $pId:ID!, $val:Date!) {
+                    updateProjectV2ItemFieldValue(input:{
+                      clientMutationId:"roadmap_gh_action"
+                      fieldId:$fId
+                      itemId:$iId
+                      projectId:$pId
+                      value:{date:$val}
+                    }) {clientMutationId}
+                  }' -F fId=$DUE_ID -F iId=$ITEM_ID -F pId=$PROJECT_ID -F val=$DUE_DATE
+                fi
+              fi
+            fi
+
+            # Create reminders for issues due soon and overdue
+
+            # Parse due date as UTC
+            if [ -z "$DUE" ] || [ "$DUE" = "null" ]; then
+              echo "Skipping issue with no due date: $TITLE"
+              continue
+            fi
+            if ! DUE_EPOCH=$(TZ="America/New_York" date -d "${DUE} 23:58:00" +%s 2>/dev/null); then
+              echo "Skipping issue with invalid due date: $TITLE ($DUE)"
+              continue
+            fi
+
+            if [ "$DUE_EPOCH" -lt "$NOW" ]; then
+              # Overdue
+              EMBEDS_OVERDUE=$(echo "$EMBEDS_OVERDUE" | jq --arg title "$TITLE" \
+                                                            --arg url "$URL" \
+                                                            --arg due "$DUE" \
+                                                            --arg assignees "$ASSIGNEES" \
+                                                            '. + [{
+                                                              "title": $title,
+                                                              "url": $url,
+                                                              "description": "❗ Overdue since \($due)\n👤 Assignee(s): \($assignees)",
+                                                              "color": 15158332
+                                                            }]')
+            elif [ "$DUE_EPOCH" -le "$TWO_DAYS" ]; then
+              # Due soon
+              EMBEDS_SOON=$(echo "$EMBEDS_SOON" | jq --arg title "$TITLE" \
+                                                        --arg url "$URL" \
+                                                        --arg due "$DUE" \
+                                                        --arg assignees "$ASSIGNEES" \
+                                                        '. + [{
+                                                          "title": $title,
+                                                          "url": $url,
+                                                          "description": "⚠️ Due on \($due)\n👤 Assignee(s): \($assignees)",
+                                                          "color": 15105570
+                                                        }]')
+            else
+              echo "Skipping future issue: $TITLE ($DUE)"
+            fi
+          done < <(jq -c '.issues[]' <<< "$ISSUES")
+
+          send_embeds_chunked() {
+            local embeds=$1
+            local header=$2
+            COUNT=$(echo "$embeds" | jq 'length')
+            if [ "$COUNT" -eq 0 ]; then
+              return
+            fi
+
+            EMBEDS_SORTED=$(echo "$embeds" | jq 'sort_by(.epoch) | map(del(.epoch))')
+            # Split into chunks of 10
+            CHUNKS=$(( (COUNT + 9) / 10 ))
+
+            for i in $(seq 0 $((CHUNKS-1))); do
+              START=$((i*10))
+              END=$((START+10))
+              SUBSET=$(echo "$EMBEDS_SORTED" | jq ".[$START:$END]")
+              WEBHOOK_URL=$(echo "$DISCORD_WEBHOOK" | tr -d '\r\n')
+              echo "Sending chunk $((i+1))/$CHUNKS..."
+              curl -H "Content-Type: application/json" -X POST \
+                -d "{\"content\": \"$header\", \"embeds\": $SUBSET}" \
+                "$WEBHOOK_URL"
+            done
+          }
+
+          send_embeds_chunked "$EMBEDS_OVERDUE" "❗ Overdue issues:"
+          send_embeds_chunked "$EMBEDS_SOON" "📢 Issues due in the next 48 hours:"

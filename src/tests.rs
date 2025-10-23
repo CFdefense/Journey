@@ -1,4 +1,4 @@
-use std::{fs, io::Write, net::TcpListener, path::Path, time::{Duration, SystemTime}};
+use std::{fs, io::Write, path::Path, time::{Duration, SystemTime}};
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
@@ -8,6 +8,7 @@ use chrono::{NaiveDate, Utc};
 use serde_json::json;
 use serial_test::serial;
 use sqlx::{migrate, PgPool};
+use tokio::net::TcpListener;
 use tower_cookies::{
     cookie::{time, CookieJar, SameSite}, Cookie, CookieManagerLayer, Key
 };
@@ -64,7 +65,7 @@ fn test_cookie_security_development() {
     let on_production = false;
     let domain = "localhost";
 
-    let cookie = Cookie::build("auth-token", token_value)
+    let cookie = Cookie::build(("auth-token", token_value))
         .domain(domain.to_string())
         .path("/")
         .secure(on_production)
@@ -75,7 +76,7 @@ fn test_cookie_security_development() {
             SameSite::Lax
         })
         .max_age(time::Duration::days(3))
-        .finish();
+        .build();
 
     assert_eq!(cookie.name(), "auth-token");
     assert_eq!(cookie.value(), token_value);
@@ -92,7 +93,7 @@ fn test_cookie_security_production() {
     let on_production = true;
     let domain = "example.com";
 
-    let cookie = Cookie::build("auth-token", token_value)
+    let cookie = Cookie::build(("auth-token", token_value))
         .domain(domain.to_string())
         .path("/")
         .secure(on_production)
@@ -103,7 +104,7 @@ fn test_cookie_security_production() {
             SameSite::Lax
         })
         .max_age(time::Duration::days(3))
-        .finish();
+        .build();
 
     assert_eq!(cookie.name(), "auth-token");
     assert_eq!(cookie.value(), token_value);
@@ -1047,11 +1048,25 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
         chat_session_id,
         message_id: None
     });
-	let latest_page = controllers::chat::api_message_page(user, pool, json)
+	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
 	assert_eq!(latest_page.message_page.len(), 2);
+
+	//delete chat session
+	controllers::chat::api_delete_chat(user, pool.clone(), axum::extract::Path(chat_session_id))
+		.await
+		.unwrap();
+	let json = Json(MessagePageRequest {
+        chat_session_id,
+        message_id: None
+    });
+	let latest_page = controllers::chat::api_message_page(user, pool, json)
+		.await
+		.unwrap();
+	assert_eq!(latest_page.prev_message_id, None);
+	assert_eq!(latest_page.message_page.len(), 0);
 }
 
 // INTEGRATION TESTS
@@ -1099,11 +1114,9 @@ async fn test_endpoints() {
         .layer(CookieManagerLayer::new());
 
     // Bind to ephemeral port and spawn server
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind test server");
     unsafe {PORT = listener.local_addr().unwrap().port()};
-    let server = axum::Server::from_tcp(listener)
-        .unwrap()
-        .serve(app.into_make_service());
+    let server = axum::serve(listener, app.into_make_service()).into_future();
     tokio::spawn(server);
 
     // Any unit tests that test cookies or middleware, or any integration tests should go here.

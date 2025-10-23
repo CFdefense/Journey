@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.6", features = ["macros", "multipart"] }
-tower-http = { version = "0.4", features = ["cors", "fs"] }
-http = "0.2"
-tower-cookies = { version = "0.9", features = ["private","signed"] }
+axum = { version = "0.8.6", features = ["macros", "multipart"] }
+tower-http = { version = "0.6.6", features = [ "cors", "fs" ] }
+http = "1.3.1"
+tower-cookies = { version = "0.11.0", features = [ "private", "signed" ] }
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "macros", "chrono"] }
-tokio = { version = "1.47.1", features = [ "full" ] }
+tokio = { version = "1.48.0", features = [ "full" ] }
 pgvector = { version = "0.4.1", features = ["sqlx"] }
 serde = { version = "1.0.228", features = [ "derive" ] }
 chrono = { version = "0.4.42", features = [ "serde" ] }
@@ -18,14 +18,17 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter", "registry"] }
 dotenvy = "0.15.7"
 serde_json = "1.0"
-argon2 = "0.5.0"
+argon2 = "0.5.3"
 regex = "1"
+utoipa = { version= "5.4.0", features = ["axum_extras", "chrono", "time", "openapi_extensions"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum", "cache"] }
+utoipa-axum = "0.2.0"
 
 [dev-dependencies]
 sqlx-cli = "0.8"
-tower = "0.4"
+tower = "0.5.2"
 serial_test = "3"
 anyhow = "1"
 httpc-test = "0.1"
-reqwest = { version = "0.11", default-features = true, features = ["json"] }
+reqwest = { version = "0.12.24", default-features = true, features = [ "json" ] }
 futures = "0.3.31"
