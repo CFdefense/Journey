@@ -107,3 +107,33 @@
 .event-card:active {
   cursor: grabbing;
 }
+
+.day-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.day-tab {
+  background: #FFE3B3;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  color: black;
+}
+
+.day-tab.active {
+  background: #FA8072;
+  color: black;
+  border-color: transparent;
+}
+
+.day-tab.active:hover {
+  background: #fd6b5b;
+}
+
+.day-tab:hover {
+  background: #ffbd54
+}

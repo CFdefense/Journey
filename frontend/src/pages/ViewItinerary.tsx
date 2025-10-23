@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
-import { apiItineraryDetails } from "../api/itinerary";
 import { fetchItinerary } from "../helpers/populate_itinerary";
-import type { TimeBlock } from "../helpers/populate_itinerary";
+import type { DayItinerary } from "../helpers/populate_itinerary";
 import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
+  const [days, setDays] = useState<DayItinerary[]>([]);
 
   const unassignedEvents: Event[] = [
     { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
@@ -25,7 +24,7 @@ export default function ViewItineraryPage() {
   useEffect(() => {
     async function load() {
       const data = await fetchItinerary(6); //give the itinerary ID of the itinerary you want to display
-      setTimeBlocks(data);
+      setDays(data);
     }
     load();
   }, []);
@@ -33,7 +32,7 @@ export default function ViewItineraryPage() {
   return (
     <div className="view-page">
       <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} />
-      <Itinerary initialTimeBlocks={timeBlocks}/>
+      <Itinerary days={days}/>
       <button>Edit with AI</button>
     </div>
   );

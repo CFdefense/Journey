@@ -13,22 +13,24 @@ interface TimeBlock {
   events: Event[];
 }
 
-interface ItineraryProps {
-  initialTimeBlocks?: TimeBlock[];
+interface DayItinerary {
+  date: string;
+  timeBlocks: TimeBlock[];
 }
 
-const Itinerary: React.FC<ItineraryProps> = ({ initialTimeBlocks }) => {
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(
-    initialTimeBlocks || [
-    { time: "Morning", events: [] },
-    { time: "Afternoon", events: [] },
-    { time: "Evening", events: [] }
-  ]);
+interface ItineraryProps {
+  days?: DayItinerary[];
+}
+
+const Itinerary: React.FC<ItineraryProps> = ({ days }) => {
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
 
   useEffect(() => {
-    if (initialTimeBlocks && initialTimeBlocks.length >0)
-      setTimeBlocks(initialTimeBlocks);
-  }, [initialTimeBlocks]);
+    if (days && days.length > 0) {
+      setTimeBlocks(days[selectedDayIndex].timeBlocks);
+    }
+  }, [days, selectedDayIndex]);
 
   const onDrop = (e: React.DragEvent, timeIndex: number) => {
     const eventId = e.dataTransfer.getData("eventId");
@@ -50,9 +52,27 @@ const Itinerary: React.FC<ItineraryProps> = ({ initialTimeBlocks }) => {
 
   const onDragOver = (e: React.DragEvent) => e.preventDefault();
 
+  if (!days || days.length === 0) {
+    return <div className="itinerary-section">No itinerary data available</div>;
+  }
+
   return (
     <div className="itinerary-section">
       <h3>Itinerary</h3>
+
+      {/* Day Tabs */}
+      <div className="day-tabs">
+        {days.map((day, index) => (
+          <button
+            key={day.date}
+            className={`day-tab ${index === selectedDayIndex ? "active" : ""}`}
+            onClick={() => setSelectedDayIndex(index)}
+          >
+            Day {index + 1} ({day.date})
+          </button>
+        ))}
+      </div>
+
       <div className="itinerary-list">
         {timeBlocks.map((block, index) => (
           <div
