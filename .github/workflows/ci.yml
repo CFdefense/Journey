@@ -10,6 +10,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: full
   DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
+  API_BASE_URL: http://localhost:3001
 
 jobs:
   # format:
@@ -376,7 +377,7 @@ jobs:
     - name: Run Code Coverage
       run: |
         cargo build
-        cargo run &
+        ./target/debug/Capping2025 &
         BACKEND_PID=$!
 
         cd ./frontend
