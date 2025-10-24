@@ -76,7 +76,7 @@ pub struct UpdateResponse {
 	pub food_allergies: String,
 	/// Optional disabilites
 	/// * String is a comma-separated list of preferences
-	pub disabilities: String
+	pub disabilities: String,
 }
 
 /// API route response for GET `/api/account/current`.
@@ -96,7 +96,7 @@ pub struct CurrentResponse {
 	/// Optional food and allergies preferences
 	pub food_allergies: String,
 	/// Optional food and allergies preferences
-	pub disabilities: String
+	pub disabilities: String,
 }
 
 impl SignupRequest {
