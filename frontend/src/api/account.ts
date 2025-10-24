@@ -108,17 +108,13 @@ export async function apiLogout(): Promise<number> {
 /// Never throws an exception
 export async function apiValidate(): Promise<boolean> {
 	try {
-		return (
-			(
-				await fetch(`${API_BASE_URL}/api/account/validate`, {
-					method: "GET",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					credentials: import.meta.env.DEV ? "include" : "same-origin"
-				})
-			).status === 200
-		);
+		return (await fetch(`${API_BASE_URL}/api/account/validate`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin"
+		})).status === 200;
 	} catch (error) {
 		console.error("Validate API error: ", error);
 		return false;
