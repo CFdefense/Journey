@@ -8,7 +8,8 @@ export default function Footer() {
         <div className="footer-left">
           <div className="footer-summary">
             <p className="footer-summary-text">
-              Journey is your AI travel copilot—plan and coordinate trips in minutes. Available worldwide online.
+              Journey is your AI travel copilot—plan and coordinate trips in
+              minutes. Available worldwide online.
             </p>
           </div>
           <div className="footer-mission">
@@ -19,14 +20,21 @@ export default function Footer() {
         </div>
 
         <div className="footer-center">
-          <div className="footer-logo-placeholder" aria-label="Journey logo placeholder" />
+          <div
+            className="footer-logo-placeholder"
+            aria-label="Journey logo placeholder"
+          />
           <div className="footer-copyright">
             <div className="footer-company">Journey</div>
             <div className="footer-legal">©2025 · All rights reserved</div>
             <div className="footer-links-inline">
-              <Link to="/terms" className="footer-inline-link">Terms</Link>
+              <Link to="/terms" className="footer-inline-link">
+                Terms
+              </Link>
               <span className="bullet">·</span>
-              <Link to="/privacy" className="footer-inline-link">Privacy</Link>
+              <Link to="/privacy" className="footer-inline-link">
+                Privacy
+              </Link>
             </div>
           </div>
         </div>
@@ -58,16 +66,30 @@ export default function Footer() {
                 aria-label="Email address"
                 required
               />
-              <button type="submit" className="newsletter-submit" aria-label="Submit email">
-                <span className="newsletter-arrow" aria-hidden>›</span>
+              <button
+                type="submit"
+                className="newsletter-submit"
+                aria-label="Submit email"
+              >
+                <span className="newsletter-arrow" aria-hidden>
+                  ›
+                </span>
               </button>
             </form>
 
             <div className="footer-quick-links">
-              <Link to="/about" className="footer-link">About</Link>
-              <Link to="/demo" className="footer-link">Demo</Link>
-              <Link to="/linkedin" className="footer-link">LinkedIn</Link>
-              <Link to="/x" className="footer-link">X</Link>
+              <Link to="/about" className="footer-link">
+                About
+              </Link>
+              <Link to="/demo" className="footer-link">
+                Demo
+              </Link>
+              <Link to="/linkedin" className="footer-link">
+                LinkedIn
+              </Link>
+              <Link to="/x" className="footer-link">
+                X
+              </Link>
             </div>
           </div>
         </div>
@@ -75,5 +97,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-

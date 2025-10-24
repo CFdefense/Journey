@@ -14,7 +14,10 @@ interface UnassignedEventsProps {
   onDragStart: (e: React.DragEvent, event: Event) => void;
 }
 
-const UnassignedEvents: React.FC<UnassignedEventsProps> = ({ events, onDragStart }) => {
+const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
+  events,
+  onDragStart
+}) => {
   return (
     <div className="unassigned-section">
       <h3>Unassigned Events</h3>

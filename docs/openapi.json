@@ -926,6 +926,25 @@
           "LuxuryBudget"
         ]
       },
+      "ChatSessionRow": {
+        "type": "object",
+        "description": "Row model for `chat_sessions` table",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primary key"
+          },
+          "title": {
+            "type": "string",
+            "description": "Name of chat for user context"
+          }
+        }
+      },
       "ChatsResponse": {
         "type": "object",
         "description": "Response model from the `/api/chat/chats` endpoint",
@@ -936,8 +955,7 @@
           "chat_sessions": {
             "type": "array",
             "items": {
-              "type": "integer",
-              "format": "int32"
+              "$ref": "#/components/schemas/ChatSessionRow"
             },
             "description": "chat session ids belonging to the user who made the request"
           }

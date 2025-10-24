@@ -11,7 +11,9 @@ import type { GlobalState } from "./GlobalProvider";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ProtectedRoute({ children }: any) {
   const [loading, setLoading] = useState(true);
-  const { authorized, setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
+  const { authorized, setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
 
   useEffect(() => {
     if (!bypassProtection()) {
@@ -50,7 +52,9 @@ export function ProtectedRoute({ children }: any) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function InverseProtectedRoute({ children }: any) {
   const [loading, setLoading] = useState(true);
-  const { authorized, setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
+  const { authorized, setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
 
   useEffect(() => {
     if (!bypassProtection()) {

@@ -12,7 +12,7 @@
 .auth-page--login {
   background:
     radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
-      linear-gradient(180deg, #d87f75 0%, #E8C89F 30%, #ffffff 100%);
+    linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
 }
 
 .auth-content {
@@ -25,7 +25,9 @@
   z-index: 1;
 }
 
-.auth-page--login .auth-content { background: transparent; }
+.auth-page--login .auth-content {
+  background: transparent;
+}
 
 .auth-navbar {
   position: sticky;
@@ -44,15 +46,32 @@
   justify-content: space-between;
 }
 
-.auth-brand { font-weight: 800; letter-spacing: 0.5px; text-decoration: none; }
+.auth-brand {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
 
-.auth-page--login .auth-brand { color: #000000; }
+.auth-page--login .auth-brand {
+  color: #000000;
+}
 
-.auth-cta { display: flex; gap: 10px; align-items: center; }
-.auth-page--login .auth-cta { color: rgba(0, 0, 0, 0.7); }
+.auth-cta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.auth-page--login .auth-cta {
+  color: rgba(0, 0, 0, 0.7);
+}
 
-.auth-cta-link { text-decoration: none; font-weight: 700; }
-.auth-page--login .auth-cta-link { color: #000000; }
+.auth-cta-link {
+  text-decoration: none;
+  font-weight: 700;
+}
+.auth-page--login .auth-cta-link {
+  color: #000000;
+}
 
 .login-container {
   display: flex;
@@ -75,7 +94,7 @@
 
 .login-box h1 {
   text-align: center;
-  margin-bottom: 2.0rem;
+  margin-bottom: 2rem;
   color: #0b1220;
   font-size: 1.35rem;
   font-weight: 500;
@@ -94,7 +113,10 @@
   margin-bottom: 0.85rem;
   border: none !important;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background-color 0.2s;
   background-color: #ffffff;
   color: #0b1220;
 }
@@ -135,7 +157,9 @@
   font-weight: 700;
   font-size: 1.05rem;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
 }
 
 .login-box button:hover {
@@ -172,7 +196,9 @@
   border: none;
   box-sizing: border-box;
   overflow: hidden;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
   border-radius: 12px;
 }
 
@@ -215,7 +241,9 @@
   outline: none;
   box-shadow: none;
 }
-.field input::placeholder { color: rgba(11, 18, 32, 0.6); }
+.field input::placeholder {
+  color: rgba(11, 18, 32, 0.6);
+}
 
 .login-box .field input {
   margin-bottom: 0;
@@ -237,6 +265,6 @@
   .auth-page--login {
     background:
       radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
-      linear-gradient(180deg, #e67d71 0%, #E8C89F 30%, #ffffff 100%);
+      linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
   }
 }

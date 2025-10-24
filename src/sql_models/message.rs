@@ -1,6 +1,16 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use chrono::NaiveDateTime;
+use utoipa::ToSchema;
+
+/// Row model for `chat_sessions` table
+#[derive(Serialize, Deserialize, FromRow, ToSchema)]
+pub struct ChatSessionRow {
+	/// Primary key
+	pub id: i32,
+	/// Name of chat for user context
+	pub title: String,
+}
 
 /// Row model for `message` table
 #[derive(Serialize, Deserialize, FromRow)]
@@ -16,5 +26,5 @@ pub struct MessageRow {
 	/// UTC timestamp this message was sent (%Y-%m-%d %H:%M:%S)
 	pub timestamp: NaiveDateTime,
 	/// Content of the message
-	pub text: String
+	pub text: String,
 }

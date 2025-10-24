@@ -14,16 +14,16 @@ export default function DemoSection() {
           </div>
           <div className="demo-text reveal delay-1">
             <p>
-              Start with a vibe—"foodie trip to Lisbon"—and instantly see a curated
-              plan with budget options, transit tips, and hidden gems. Tweak anything,
-              and watch the itinerary adapt in real time.
+              Start with a vibe—"foodie trip to Lisbon"—and instantly see a
+              curated plan with budget options, transit tips, and hidden gems.
+              Tweak anything, and watch the itinerary adapt in real time.
             </p>
-            <Link to="/signup" className="demo-cta">Try the Demo</Link>
+            <Link to="/signup" className="demo-cta">
+              Try the Demo
+            </Link>
           </div>
         </div>
       </div>
     </section>
   );
 }
-
-

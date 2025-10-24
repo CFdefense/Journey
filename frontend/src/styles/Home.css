@@ -14,18 +14,18 @@
 
 /* Sidebar styling */
 .home-layout > .sidebar {
-  flex: 1;      /* takes less space */
+  flex: 1; /* takes less space */
   min-width: 200px;
 }
 
 /* Chat window styling */
 .home-layout > .chat-container {
-  flex: 2;      /* larger column */
+  flex: 2; /* larger column */
   min-width: 300px;
 }
 
 /* Itinerary styling */
 .home-layout > .itinerary-section {
-  flex: 2;      /* similar width to chat window */
+  flex: 2; /* similar width to chat window */
   min-width: 300px;
 }

@@ -30,12 +30,14 @@ export default function Index() {
       });
     });
 
-    const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const elements = Array.from(
+      document.querySelectorAll<HTMLElement>(".reveal")
+    );
     if (elements.length === 0) return;
 
     const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
+      (entries) => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("in-view");
             observer.unobserve(entry.target);
@@ -45,7 +47,7 @@ export default function Index() {
       { root: null, rootMargin: "0px", threshold: 0.15 }
     );
 
-    elements.forEach(el => observer.observe(el));
+    elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
@@ -55,14 +57,17 @@ export default function Index() {
       "#000000", // black
       "#006BBB", // blue
       "#FA8072", // salmon / coral
-      "#FFC872", // light orange / gold
+      "#FFC872" // light orange / gold
     ];
 
     let ticking = false;
     const updateTheme = () => {
       const doc = document.documentElement;
       const maxScroll = doc.scrollHeight - window.innerHeight;
-      const progress = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+      const progress =
+        maxScroll > 0
+          ? Math.min(1, Math.max(0, window.scrollY / maxScroll))
+          : 0;
 
       const segments = colorStops.length - 1;
       const position = progress * segments;
@@ -71,9 +76,9 @@ export default function Index() {
 
       const root = document.querySelector<HTMLElement>(".index-page");
       if (root) {
-        root.style.setProperty('--from', colorStops[i]);
-        root.style.setProperty('--to', colorStops[i + 1]);
-        root.style.setProperty('--t', `${t * 100}%`);
+        root.style.setProperty("--from", colorStops[i]);
+        root.style.setProperty("--to", colorStops[i + 1]);
+        root.style.setProperty("--t", `${t * 100}%`);
       }
     };
 
@@ -88,11 +93,11 @@ export default function Index() {
     };
 
     updateTheme();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
   }, []);
   return (

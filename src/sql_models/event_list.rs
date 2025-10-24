@@ -10,19 +10,19 @@ pub struct EventListJoinRow {
 	/// Primary key
 	pub id: i32,
 	/// Morning/Noon/Afternoon/Evening
-    pub time_of_day: TimeOfDay,
+	pub time_of_day: TimeOfDay,
 	/// UTC date within itinerary date range (%Y-%m-%d)
-    pub date: NaiveDate,
+	pub date: NaiveDate,
 	/// Event address
-    pub street_address: String,
+	pub street_address: String,
 	/// Event post code
-    pub postal_code: i32,
+	pub postal_code: i32,
 	/// Event City
-    pub city: String,
+	pub city: String,
 	/// Event type
-    pub event_type: String,
+	pub event_type: String,
 	/// Event description
-    pub event_description: String,
+	pub event_description: String,
 	/// Event name
-    pub event_name: String,
+	pub event_name: String,
 }

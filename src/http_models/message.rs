@@ -14,7 +14,7 @@ pub struct Message {
 	/// Content of this message
 	pub text: String,
 	/// Possible itinerary associated with this message
-	pub itinerary_id: Option<i32>
+	pub itinerary_id: Option<i32>,
 }
 
 /// Request model for `/api/chat/messagePage` endpoint
@@ -25,7 +25,7 @@ pub struct MessagePageRequest {
 	/// Possible message id to represent the end of the page
 	/// * If Some, it will fetch this message and consecutive previous messages in chronological order
 	/// * If None, it will fetch the latest consecutive messages from the chat session in chronological order
-	pub message_id: Option<i32>
+	pub message_id: Option<i32>,
 }
 
 /// Response model for `/api/chat/messagePage` endpoint
@@ -34,7 +34,7 @@ pub struct MessagePageResponse {
 	/// A page of messages guaranteed to be sorted in chronological order
 	pub message_page: Vec<Message>,
 	/// The id of the message that comes chronologically before the first message in message_page, if it exists
-	pub prev_message_id: Option<i32>
+	pub prev_message_id: Option<i32>,
 }
 
 /// Request model for `/api/chat/updateMessage` endpoint
@@ -45,7 +45,7 @@ pub struct UpdateMessageRequest {
 	/// The text to replace the old content with
 	pub new_text: String,
 	/// A possible itinerary to give context to the LLM
-	pub itinerary_id: Option<i32>
+	pub itinerary_id: Option<i32>,
 }
 
 /// Request model for `/api/chat/sendMessage` endpoint
@@ -56,7 +56,7 @@ pub struct SendMessageRequest {
 	/// The content of the message
 	pub text: String,
 	/// A possible itinerary to give context to the LLM
-	pub itinerary_id: Option<i32>
+	pub itinerary_id: Option<i32>,
 }
 
 /// Response model for `/api/chat/sendMessage` endpoint
@@ -65,5 +65,5 @@ pub struct SendMessageResponse {
 	/// The newly-created id of the message you just sent
 	pub user_message_id: i32,
 	/// The response message from the LLM
-	pub bot_message: Message
+	pub bot_message: Message,
 }
