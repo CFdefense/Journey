@@ -21,3 +21,4 @@
 /frontend/*.local
 /frontend/src/helpers/config.ts
 /frontend/coverage
+/frontend/docs/openapi.json
