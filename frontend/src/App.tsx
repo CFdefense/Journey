@@ -17,7 +17,14 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route
+          path="/"
+          element={
+            <InverseProtectedRoute>
+              <Index />
+            </InverseProtectedRoute>
+          }
+        />
         <Route
           path="/home"
           element={
@@ -55,9 +62,11 @@ export default function App() {
         <Route
           path="/signup"
           element={
-            <AuthLayout variant="signup">
-              <Signup />
-            </AuthLayout>
+            <InverseProtectedRoute>
+              <AuthLayout variant="signup">
+                <Signup />
+              </AuthLayout>
+            </InverseProtectedRoute>
           }
         />
         <Route path="*" element={<NotFound />} />

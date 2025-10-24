@@ -19,22 +19,21 @@ import type {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiLogin(payload: LoginRequest): Promise<number> {
-	try {
-		return (
-			await fetch(`${API_BASE_URL}/api/account/login`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				credentials: import.meta.env.DEV ? "include" : "same-origin",
-				body: JSON.stringify(payload)
-			})
-		).status;
-	} catch (error) {
-		console.error("Login API error: ", error);
-		return -1;
-	}
+export async function apiLogin(payload: LoginRequest): Promise<ApiResult<boolean>> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: import.meta.env.DEV ? "include" : "same-origin",
+            body: JSON.stringify(payload)
+        });
+        return { result: response.ok, status: response.status };
+    } catch (error) {
+        console.error("Login API error: ", error);
+        return { result: false, status: -1 };
+    }
 }
 
 /// Calls signup
@@ -49,22 +48,21 @@ export async function apiLogin(payload: LoginRequest): Promise<number> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiSignUp(payload: SignUpRequest): Promise<number> {
-	try {
-		return (
-			await fetch(`${API_BASE_URL}/api/account/signup`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				credentials: import.meta.env.DEV ? "include" : "same-origin",
-				body: JSON.stringify(payload)
-			})
-		).status;
-	} catch (error) {
-		console.error("Sign Up API error: ", error);
-		return -1;
-	}
+export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<number>> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/signup`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: import.meta.env.DEV ? "include" : "same-origin",
+            body: JSON.stringify(payload)
+        });
+        return { result: response.status, status: response.status };
+    } catch (error) {
+        console.error("Sign Up API error: ", error);
+        return { result: null, status: -1 };
+    }
 }
 
 /// Calls logout
@@ -79,21 +77,20 @@ export async function apiSignUp(payload: SignUpRequest): Promise<number> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiLogout(): Promise<number> {
-	try {
-		return (
-			await fetch(`${API_BASE_URL}/api/account/logout`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				credentials: import.meta.env.DEV ? "include" : "same-origin"
-			})
-		).status;
-	} catch (error) {
-		console.error("Logout Up API error: ", error);
-		return -1;
-	}
+export async function apiLogout(): Promise<ApiResult<boolean>> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/logout`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: import.meta.env.DEV ? "include" : "same-origin"
+        });
+        return { result: response.ok, status: response.status };
+    } catch (error) {
+        console.error("Logout Up API error: ", error);
+        return { result: false, status: -1 };
+    }
 }
 
 /// Calls validate
@@ -106,23 +103,20 @@ export async function apiLogout(): Promise<number> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiValidate(): Promise<boolean> {
-	try {
-		return (
-			(
-				await fetch(`${API_BASE_URL}/api/account/validate`, {
-					method: "GET",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					credentials: import.meta.env.DEV ? "include" : "same-origin"
-				})
-			).status === 200
-		);
-	} catch (error) {
-		console.error("Validate API error: ", error);
-		return false;
-	}
+export async function apiValidate(): Promise<ApiResult<boolean>> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/account/validate`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: import.meta.env.DEV ? "include" : "same-origin"
+        });
+        return { result: response.ok, status: response.status };
+    } catch (error) {
+        console.error("Validate API error: ", error);
+        return { result: false, status: -1 };
+    }
 }
 
 /// Calls current
@@ -147,6 +141,9 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("Current API error: ", error);

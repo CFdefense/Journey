@@ -22,8 +22,8 @@ export function ProtectedRoute({ children }: any) {
         return;
       }
       apiValidate()
-        .then((valid: boolean) => {
-          setAuthorized(valid);
+        .then(({ result, status }) => {
+          setAuthorized(result && status === 200);
         })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .catch((err: any) => {
@@ -63,8 +63,8 @@ export function InverseProtectedRoute({ children }: any) {
         return;
       }
       apiValidate()
-        .then((valid: boolean) => {
-          setAuthorized(valid);
+        .then(({ result, status }) => {
+          setAuthorized(result && status === 200);
         })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .catch((err: any) => {
