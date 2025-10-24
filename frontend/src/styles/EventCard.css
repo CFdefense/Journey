@@ -79,3 +79,15 @@
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+.event-card.draggable {
+  cursor: grab;
+  opacity: 0.9;
+  border: 2px dashed #888;
+}
+
+.event-card.draggable:active {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+

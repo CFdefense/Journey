@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "../styles/EventCard.css";
-
 
 interface EventCardProps {
   title: string;
@@ -12,23 +11,41 @@ interface EventCardProps {
   city?: string;
   type?: string;
 
-  onDragStart?: (e: React.DragEvent) => void;
+  // Added handlers for drag logic
+  onDragStart?: (e: React.DragEvent, eventData: any) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({title, desc, time, address, draggable = false, onDragStart}) => {
+const EventCard: React.FC<EventCardProps> = ({
+  title,
+  desc,
+  time,
+  address,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openModal = () => setIsOpen(true);
+  const openModal = () => {
+    if (!draggable) setIsOpen(true); // Prevent click from opening modal while dragging
+  };
   const closeModal = () => setIsOpen(false);
 
-   return (
+  return (
     <>
-      {/* Normal card view */}
-      <div className="event-card" onClick={openModal}>
+      {/* Card container */}
+      <div
+        className={`event-card ${draggable ? "draggable" : ""}`}
+        draggable={draggable}
+        onDragStart={(e) => onDragStart && onDragStart(e, { title, desc, time })}
+        onDragEnd={onDragEnd}
+        onClick={openModal}
+      >
         <h3 className="event-title">{title}</h3>
       </div>
 
-      {/* Pop-out modal */}
+      {/* Modal display */}
       {isOpen && (
         <div className="event-modal-overlay" onClick={closeModal}>
           <div className="event-modal" onClick={(e) => e.stopPropagation()}>
@@ -36,9 +53,17 @@ const EventCard: React.FC<EventCardProps> = ({title, desc, time, address, dragga
               ✕
             </button>
             <h2>{title}</h2>
-            <p>{desc}</p>
-            {time && <p><strong>Date:</strong> {time}</p>}
-            {address && <p><strong>Location:</strong> {address}</p>}
+            {desc && <p>{desc}</p>}
+            {time && (
+              <p>
+                <strong>Time:</strong> {time}
+              </p>
+            )}
+            {address && (
+              <p>
+                <strong>Location:</strong> {address}
+              </p>
+            )}
           </div>
         </div>
       )}

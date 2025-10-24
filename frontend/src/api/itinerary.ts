@@ -58,6 +58,51 @@ export async function apiItineraryDetails(itinerary_id: number): Promise<Itinera
   }
 }
 
+export async function saveItinerary(itinerary:Itinerary): Promise<Itinerary> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: import.meta.env.DEV ? "include" : "same-origin",
+      body: JSON.stringify(itinerary),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      // The backend responds with { id: number } inside SaveResponse
+      // Attach this id back to the itinerary we just saved
+      return {...itinerary, id: data.id};
+    }
+
+    switch (response.status) {
+      case 400:
+        console.error("Bad Request: Invalid itinerary data.");
+        break;
+      case 401:
+        console.error("Unauthorized: User is not authenticated.");
+        break;
+      case 405:
+        console.error("Method Not Allowed: Must use POST.");
+        break;
+      case 408:
+        console.error("Request Timed Out.");
+        break;
+      case 500:
+        console.error("Internal Server Error: Something went wrong on the server.");
+        break;
+      default:
+        console.warn(`Unexpected response status: ${response.status}`);
+    }
+
+    throw new Error(`Failed to save itinerary (status ${response.status})`);
+
+  } catch (error) {
+    console.error("saveItinerary network or parsing error:", error);
+    throw error;
+  }
+}
+
 // default itinerary for dealing with errors or when a placeholder is needed
 function placeholderItinerary(itinerary_id: number): Itinerary {
   const emptyEvents: Event[] = [];
