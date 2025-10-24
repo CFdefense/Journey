@@ -21,9 +21,10 @@ export default function ChatWindow({
         {messages.length === 0 ? (
           <p className="chat-placeholder"> </p>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, i) => {
             return (
               <ChatMessage
+                key={i}
                 message={msg}
                 onItinerarySelect={onItinerarySelect}
               />

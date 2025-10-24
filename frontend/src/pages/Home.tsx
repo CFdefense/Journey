@@ -108,8 +108,9 @@ export default function Home() {
     // instead, create the new chat once a message has been sent in it
     setActiveChatId(null);
   };
-  const handleSendMessage = async (text: string) => {
-    if (text.trim() === "") return;
+  const handleSendMessage = async (txt: string) => {
+    const text = txt.trim();
+    if (text === "") return;
 
     const userMessage: Message = {
       id: -1, //temporary id until the server gives us the real id
