@@ -22,6 +22,7 @@ export default function Home() {
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
+  const [sidebarVisible, setSidebarVisible] = useState(true); 
 
   useEffect(() => {
     async function fetchAccount() {
@@ -54,7 +55,6 @@ export default function Home() {
       // get all chat session ids
       const chatsResult = await apiChats();
       // TODO: 401 -> navigate to /logout
-
       if (chatsResult.result === null || chatsResult.status !== 200) {
         return; // TODO handle and display error
       }
@@ -84,7 +84,7 @@ export default function Home() {
         return; // TODO handle and display error
       }
 
-      // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
+    // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
 
       const messages = messagePageResult.result.message_page;
       setChats(
@@ -103,11 +103,13 @@ export default function Home() {
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
   };
+
   const handleNewChat = async () => {
     // don't allow spamming new chats
     // instead, create the new chat once a message has been sent in it
     setActiveChatId(null);
   };
+
   const handleSendMessage = async (txt: string) => {
     const text = txt.trim();
     if (text === "") return;
@@ -160,7 +162,6 @@ export default function Home() {
 
     const sendResult = await apiSendMessage(payload);
     // TODO: 401 -> navigate to /login
-
     if (sendResult.result === null || sendResult.status !== 200) {
       return; // TODO: handle and display error
     }
@@ -184,19 +185,33 @@ export default function Home() {
     );
   };
 
+  const handleToggleSidebar = () => {
+    setSidebarVisible((prev) => !prev);
+  };
+
   const activeChat = chats?.find((c) => c.id === activeChatId) ?? null;
 
   return (
     <div className="home-page">
       <h1>Where do you plan to explore?</h1>
-      <div className="home-layout">
+      <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
         {showFinishPopup && <FinishAccountPopup />}
-        <PrevChatSideBar
-          chats={chats}
-          activeChatId={activeChatId}
-          onSelectChat={setActiveChatId}
-          onNewChat={handleNewChat}
-        />
+
+        {sidebarVisible && (
+          <PrevChatSideBar
+            chats={chats}
+            activeChatId={activeChatId}
+            onSelectChat={setActiveChatId}
+            onNewChat={handleNewChat}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )}
+
+        {!sidebarVisible && (
+          <button className="show-sidebar-btn" onClick={handleToggleSidebar}>
+            ☰ Chats
+          </button>
+        )}
 
         <ChatWindow
           messages={activeChat?.messages ?? []}
@@ -204,7 +219,9 @@ export default function Home() {
           onItinerarySelect={handleItinerarySelect}
         />
 
-        <Itinerary />
+        <div className="itinerary-wrapper">
+          <Itinerary />
+        </div>
       </div>
     </div>
   );
