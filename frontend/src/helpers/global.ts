@@ -10,3 +10,8 @@ export function bypassProtection(): boolean {
 }
 
 export const GlobalContext = createContext<GlobalState | null>(null);
+
+export type ApiResult<T> = {
+	result: T | null;
+	status: number;
+};

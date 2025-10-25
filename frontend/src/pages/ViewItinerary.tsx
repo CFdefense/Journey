@@ -11,7 +11,7 @@ export default function ViewItineraryPage() {
 
   const unassignedEvents: Event[] = [
     { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
-    { id: "2", title: "Meeting", desc: "Capping discussion" },
+    { id: "2", title: "Meeting", desc: "Capping discussion" }
   ];
 
   const onDragStart = (e: React.DragEvent, event: Event) => {

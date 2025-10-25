@@ -1,6 +1,6 @@
 pub mod account;
-pub mod itinerary;
 pub mod chat;
+pub mod itinerary;
 
 /// A regular [axum::Router] in test and release builds, or [utoipa_axum::router::OpenApiRouter] in non-test or dev builds
 #[cfg(any(test, not(debug_assertions)))]

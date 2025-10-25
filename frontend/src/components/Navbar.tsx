@@ -28,8 +28,12 @@ export default function Navbar({ page }: NavbarProps) {
       case "index":
         return (
           <div className="auth-cta">
-            <Link to="/signup" className="auth-cta-link">Sign up</Link>
-            <Link to="/login" className="auth-cta-link">Log in</Link>
+            <Link to="/signup" className="auth-cta-link">
+              Sign up
+            </Link>
+            <Link to="/login" className="auth-cta-link">
+              Log in
+            </Link>
           </div>
         );
       default:
@@ -40,10 +44,11 @@ export default function Navbar({ page }: NavbarProps) {
   return (
     <header className="auth-navbar">
       <div className="auth-navbar-content">
-        <Link to="/" className="auth-brand">Journey</Link>
+        <Link to="/" className="auth-brand">
+          Journey
+        </Link>
         {renderCTA()}
       </div>
     </header>
   );
 }
-

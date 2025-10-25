@@ -20,4 +20,4 @@
 /frontend/dist-ssr
 /frontend/*.local
 /frontend/src/helpers/config.ts
-/frontend/coverage
+/frontend/tests/testApi.ts

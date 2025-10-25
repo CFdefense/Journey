@@ -45,9 +45,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days }) => {
 
     setTimeBlocks((prev) =>
       prev.map((tb, i) =>
-        i === timeIndex
-          ? { ...tb, events: [...tb.events, draggedEvent] }
-          : tb
+        i === timeIndex ? { ...tb, events: [...tb.events, draggedEvent] } : tb
       )
     );
   };
