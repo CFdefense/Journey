@@ -11,6 +11,8 @@ env:
   RUST_BACKTRACE: full
   DATABASE_URL: postgres://postgres:password@localhost:5432/capping2025
   API_BASE_URL: http://localhost:3001
+  FRONTEND_URL: http://localhost:5173
+  BIND_ADDRESS: 0.0.0.0:3001
 
 jobs:
   # format:
