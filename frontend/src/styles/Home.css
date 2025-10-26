@@ -1,42 +1,119 @@
 .home-page {
-  padding: 2rem;
+  padding: 0;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.home-page .auth-navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 16px clamp(16px, 4vw, 56px);
+  z-index: 100;
+}
+
+.home-page .auth-navbar .auth-navbar-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.home-page .auth-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.home-page .auth-brand:hover {
+  color: #34495e;
+}
+
+.home-page .auth-cta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.home-page .auth-cta span {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.home-page .auth-cta-link {
+  color: #2c3e50;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.home-page .auth-cta-link:hover {
+  background: #f5f5f5;
+  color: #1a252f;
+}
+
+.home-page h1 {
+  text-align: center;
+  padding: 2rem 2rem 1rem 2rem;
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.8rem;
+  font-weight: 600;
 }
 
 .home-layout {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0;
-  height: 80vh;
+  gap: 1rem;
+  height: calc(100vh - 180px); /* Adjust for navbar and title */
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 2rem 2rem;
   transition: all 0.3s ease;
 }
 
 /* Chat window grows when sidebar hidden */
 .home-layout.with-sidebar .chat-container {
-  flex: 2;
+  flex: 1;
+  max-width: 800px;
 }
 
 .home-layout.no-sidebar .chat-container {
-  flex: 3;
+  flex: 1;
+  max-width: 900px;
 }
 
 /* Sidebar toggle button */
 .show-sidebar-btn {
-  position: absolute;
+  position: fixed;
   left: 1rem;
-  top: 6rem;
-  background: #007bff;
+  top: 8rem;
+  background: #2c3e50;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
   cursor: pointer;
   z-index: 10;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .show-sidebar-btn:hover {
-  background: #005bb5;
+  background: #34495e;
 }
 
 /* ✅ Fix the itinerary width and pin it to the right */
@@ -47,4 +124,35 @@
   justify-content: center;
   padding: 1rem;
   box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .itinerary-wrapper {
+    display: none;
+  }
+  
+  .home-layout.with-sidebar .chat-container,
+  .home-layout.no-sidebar .chat-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-page h1 {
+    font-size: 1.5rem;
+    padding: 1.5rem 1rem 1rem 1rem;
+  }
+  
+  .home-layout {
+    padding: 0 1rem 1rem 1rem;
+  }
+  
+  .home-page .auth-cta span {
+    display: none;
+  }
+
+  .home-page .auth-cta {
+    gap: 0.5rem;
+  }
 }
