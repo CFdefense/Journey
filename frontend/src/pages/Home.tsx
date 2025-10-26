@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import Itinerary from "../components/Itinerary";
+import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import {
@@ -193,6 +194,7 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      <Navbar page="home" />
       <h1>Where do you plan to explore?</h1>
       <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
         {showFinishPopup && <FinishAccountPopup />}
