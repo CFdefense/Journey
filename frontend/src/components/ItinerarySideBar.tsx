@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
@@ -15,12 +16,20 @@ export default function ItinerarySideBar({
   itineraryData,
   selectedItineraryId
 }: ItinerarySideBarProps) {
+  const navigate = useNavigate();
   
   const handleSaveItinerary = () => {
     if (selectedItineraryId !== null) {
       console.log("Saving itinerary with ID:", selectedItineraryId);
     } else {
       console.log("No itinerary selected to save");
+    }
+  };
+
+  // TODO this will need to change but will be based on how ViewItinerary is set up
+  const handleViewItinerary = () => {
+    if (selectedItineraryId !== null) {
+      navigate('/view', { state: { itineraryId: selectedItineraryId } });
     }
   };
 
@@ -40,13 +49,22 @@ export default function ItinerarySideBar({
             days={itineraryData ?? undefined} 
           />
           
-          <button 
-            className="save-itinerary-btn"
-            onClick={handleSaveItinerary}
-            disabled={selectedItineraryId === null}
-          >
-            Save Itinerary
-          </button>
+          <div className="itinerary-actions">
+            <button 
+              className="view-itinerary-btn"
+              onClick={handleViewItinerary}
+              disabled={selectedItineraryId === null}
+            >
+              View
+            </button>
+            <button 
+              className="save-itinerary-btn"
+              onClick={handleSaveItinerary}
+              disabled={selectedItineraryId === null}
+            >
+              Save
+            </button>
+          </div>
         </div>
       )}
     </div>

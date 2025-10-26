@@ -108,11 +108,19 @@
   display: none;
 }
 
-/* Save button at the bottom of itinerary sidebar */
-.save-itinerary-btn {
+/* Action buttons container at the bottom of itinerary sidebar */
+.itinerary-actions {
   margin-top: auto;
-  padding: 0.75rem 1.5rem;
-  background: #006BBB;
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+/* Base button styles */
+.save-itinerary-btn,
+.view-itinerary-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
   color: white;
   border: none;
   border-radius: 6px;
@@ -120,21 +128,45 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+/* Save button */
+.save-itinerary-btn {
+  background: #006BBB;
   box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
 }
 
-.save-itinerary-btn:hover {
+.save-itinerary-btn:hover:not(:disabled) {
   background: #30A0E0;
   box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
   transform: translateY(-1px);
 }
 
-.save-itinerary-btn:active {
+.save-itinerary-btn:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
 }
 
-.save-itinerary-btn:disabled {
+/* View button */
+.view-itinerary-btn {
+  background: #FA8072;
+  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+}
+
+.view-itinerary-btn:hover:not(:disabled) {
+  background: #FF9B8A;
+  box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
+  transform: translateY(-1px);
+}
+
+.view-itinerary-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
+}
+
+/* Disabled state for both buttons */
+.save-itinerary-btn:disabled,
+.view-itinerary-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
   box-shadow: none;
