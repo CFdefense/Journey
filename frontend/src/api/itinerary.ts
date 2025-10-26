@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
-import type { Itinerary } from "../models/itinerary";
+import type { Itinerary, SaveResponse } from "../models/itinerary";
 
 /// Calls itinerary details
 ///
@@ -37,4 +37,33 @@ export async function apiItineraryDetails(
 		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };
 	}
+}
+
+
+
+
+
+export async function saveItineraryChanges(payload: Itinerary): Promise<SaveResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: import.meta.env.DEV ? "include" : "same-origin",
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save itinerary: ${response.status} ${errorText}`);
+    }
+
+    // Parse and return the SaveResponse
+    const data: SaveResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Save API error:", error);
+    throw error;
+  }
 }
