@@ -1,7 +1,10 @@
 .home-page {
+  display: flex;
+  flex-direction: column;
   padding: 0;
   background: #f5f5f5;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .home-page .auth-navbar {
@@ -13,6 +16,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 16px clamp(16px, 4vw, 56px);
   z-index: 100;
+  flex-shrink: 0;
 }
 
 .home-page .auth-navbar .auth-navbar-content {
@@ -63,76 +67,20 @@
   color: #1a252f;
 }
 
-.home-page h1 {
-  text-align: center;
-  padding: 2rem 2rem 1rem 2rem;
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.8rem;
-  font-weight: 600;
-}
-
 .home-layout {
+  flex: 1;
   display: flex;
   align-items: stretch;
   justify-content: flex-start;
   gap: 0;
-  height: calc(100vh - 180px);
   max-width: 100%;
   margin: 0;
-  padding: 0;
-  transition: all 0.3s ease;
+  padding: 1rem; /* Add padding here instead of on individual wrappers */
   position: relative;
-}
-
-/* Sidebar container - always present for border */
-.sidebar-container {
-  position: relative;
-  height: 100%;
-  flex-shrink: 0;
-  transition: width 0.3s ease;
-  border-right: 1px solid #e0e0e0;
-  background: #ffffff;
-}
-
-/* When sidebar is visible */
-.home-layout.with-sidebar .sidebar-container {
-  width: 260px;
-}
-
-/* When sidebar is hidden - just show thin border */
-.home-layout.no-sidebar .sidebar-container {
-  width: 50px;
-  background: #fafafa;
-}
-
-/* Toggle button at top of sidebar */
-.sidebar-toggle-btn {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50px;
   background: transparent;
-  border: none;
-  border-bottom: 1px solid #e0e0e0;
-  color: #2c3e50;
-  font-size: 1.3rem;
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.sidebar-toggle-btn:hover {
-  background: #f5f5f5;
-}
-
-/* When sidebar is collapsed, center the hamburger */
-.home-layout.no-sidebar .sidebar-toggle-btn {
-  width: 50px;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Chat window positioning - fills available space */
@@ -141,9 +89,11 @@
   display: flex;
   justify-content: center;
   align-items: stretch;
-  padding: 1rem;
+  padding: 0; /* Remove padding here */
+  padding-left: 1rem; /* Add left padding for spacing from sidebar */
   transition: all 0.3s ease;
-  min-width: 0; /* Allow flex item to shrink below content size */
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* Chat container - expands to fill wrapper */
@@ -153,13 +103,14 @@
   height: 100%;
 }
 
-/* ✅ Fix the itinerary width and pin it to the right */
+/* Itinerary wrapper */
 .itinerary-wrapper {
   width: 340px;
   flex-shrink: 0;
   display: flex;
   justify-content: center;
-  padding: 1rem;
+  padding: 0; /* Remove padding here */
+  padding-left: 1rem; /* Add left padding for spacing */
   box-sizing: border-box;
 }
 
@@ -176,13 +127,12 @@
 }
 
 @media (max-width: 768px) {
-  .home-page h1 {
-    font-size: 1.5rem;
-    padding: 1.5rem 1rem 1rem 1rem;
+  .home-layout {
+    padding: 0.5rem;
   }
   
   .chat-window-wrapper {
-    padding: 0.5rem;
+    padding-left: 0.5rem;
   }
   
   .home-page .auth-cta span {
@@ -191,17 +141,5 @@
 
   .home-page .auth-cta {
     gap: 0.5rem;
-  }
-  
-  .home-layout.no-sidebar .sidebar-container {
-    width: 0;
-  }
-  
-  .home-layout.no-sidebar .sidebar-toggle-btn {
-    position: fixed;
-    top: 8rem;
-    left: 0;
-    border-radius: 0 8px 8px 0;
-    width: 50px;
   }
 }

@@ -198,20 +198,14 @@ export default function Home() {
       <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
         {showFinishPopup && <FinishAccountPopup />}
 
-        <div className="sidebar-container">
-          <button className="sidebar-toggle-btn" onClick={handleToggleSidebar}>
-            ☰
-          </button>
-          
-          {sidebarVisible && (
-            <PrevChatSideBar
-              chats={chats}
-              activeChatId={activeChatId}
-              onSelectChat={setActiveChatId}
-              onNewChat={handleNewChat}
-            />
-          )}
-        </div>
+        <PrevChatSideBar
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelectChat={setActiveChatId}
+          onNewChat={handleNewChat}
+          onToggleSidebar={handleToggleSidebar}
+          sidebarVisible={sidebarVisible}
+        />
 
         <div className="chat-window-wrapper">
           <ChatWindow

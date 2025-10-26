@@ -19,7 +19,9 @@ export default function ChatWindow({
     <div className="chat-container">
       <div className="chat-messages">
         {messages.length === 0 ? (
-          <p className="chat-placeholder"> </p>
+          <div className="chat-empty-state">
+            <p>What are your travel plans?</p>
+          </div>
         ) : (
           messages.map((msg, i) => {
             return (

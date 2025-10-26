@@ -24,7 +24,23 @@
   background: #fafafa;
 }
 
-/* Placeholder for empty chat */
+/* Empty state styling */
+.chat-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.chat-empty-state p {
+  color: #999;
+  font-size: 1.2rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* Placeholder for empty chat - no longer used but kept for compatibility */
 .chat-placeholder {
   color: #999;
   text-align: center;
