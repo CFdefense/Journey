@@ -17,6 +17,7 @@ use axum::{
 };
 #[cfg(test)]
 use tower_cookies::cookie::CookieJar;
+
 use tower_cookies::{
 	Cookie, Cookies,
 	cookie::{
@@ -24,6 +25,9 @@ use tower_cookies::{
 		time::{Duration, OffsetDateTime},
 	},
 };
+
+#[cfg(test)]
+use crate::global::TEST_COOKIE_EXP_SECONDS;
 
 use sqlx::PgPool;
 use tracing::debug;
@@ -94,7 +98,13 @@ fn set_cookie(account_id: i32, expired: bool, cookies: &mut impl CookieStore, ke
 	let (expires, max_age) = if expired {
 		(OffsetDateTime::UNIX_EPOCH, Duration::days(0))
 	} else {
+		#[cfg(not(test))]
 		let age = Duration::days(3);
+
+		// if tests start failing because the cookie expires too fast, just raise it by a little bit
+		#[cfg(test)]
+		let age = Duration::seconds(TEST_COOKIE_EXP_SECONDS);
+
 		(OffsetDateTime::now_utc() + age, age)
 	};
 	let token_value = format!("user-{}.{}.sign", account_id, expires.unix_timestamp());
