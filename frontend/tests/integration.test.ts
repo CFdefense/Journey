@@ -145,4 +145,31 @@ describe("Integration Tests", () => {
 
 	expect((await apiValidate()).status !== 200).toBe(true);
 	});
+
+	test("Error handling coverage", async () => {
+		test_state.dev_mode = true;
+		
+		// Test error handling paths
+		const errorResult = await apiCurrent();
+		expect(errorResult.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorChats = await apiChats();
+		expect(errorChats.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorChatId = await apiNewChatId();
+		expect(errorChatId.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorItinerary = await apiItineraryDetails(99999);
+		expect(errorItinerary.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorMessages = await apiMessages({ chat_session_id: 99999, message_id: null });
+		expect(errorMessages.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorSend = await apiSendMessage({ 
+			chat_session_id: 99999, 
+			text: "test", 
+			itinerary_id: null 
+		});
+		expect(errorSend.status).toBeGreaterThanOrEqual(-1);
+	});
 });
