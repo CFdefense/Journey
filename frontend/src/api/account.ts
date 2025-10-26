@@ -48,7 +48,7 @@ export async function apiLogin(payload: LoginRequest): Promise<ApiResult<void>> 
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<number>> {
+export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<void>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/signup`, {
             method: "POST",
@@ -58,7 +58,7 @@ export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<numbe
             credentials: import.meta.env.DEV ? "include" : "same-origin",
             body: JSON.stringify(payload)
         });
-        return { result: response.status, status: response.status };
+        return { result: null, status: response.status };
     } catch (error) {
         console.error("Sign Up API error: ", error);
         return { result: null, status: -1 };

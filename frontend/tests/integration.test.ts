@@ -34,8 +34,8 @@ describe("Integration Tests", () => {
 				last_name: "Last",
 			budget_preference: null,
 			risk_preference: null,
-			food_allergies: "",
-			disabilities: ""
+			food_allergies: null,
+			disabilities: null
 			},
 			status: 200
 		});
@@ -102,8 +102,8 @@ describe("Integration Tests", () => {
 				last_name: "Last",
 			budget_preference: null,
 			risk_preference: null,
-			food_allergies: "",
-			disabilities: ""
+			food_allergies: null,
+			disabilities: null
 			},
 			status: 200
 		});
