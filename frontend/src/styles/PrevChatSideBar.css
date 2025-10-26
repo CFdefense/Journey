@@ -1,38 +1,35 @@
 .sidebar {
   width: 260px;
+  height: 100%;
   background: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  height: 80vh;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
+  gap: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
 }
 
 .sidebar-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 0.75rem;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 50px; /* Space for toggle button */
+}
+
+.sidebar-title {
+  padding: 1rem 1rem 0.75rem 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
   border-bottom: 1px solid #e0e0e0;
 }
 
-.toggle-btn {
-  background: none;
-  border: none;
-  font-size: 1.3rem;
-  color: #666;
-  cursor: pointer;
-  font-weight: bold;
-  padding: 0.25rem;
-  transition: color 0.2s;
-}
-
-.toggle-btn:hover {
-  color: #333;
+.new-chat-btn-wrapper {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .new-chat-btn {
@@ -40,11 +37,12 @@
   color: white;
   border: none;
   border-radius: 6px;
-  padding: 0.5rem 1rem;
+  padding: 0.65rem 1rem;
   cursor: pointer;
   font-weight: 500;
   font-size: 0.9rem;
   transition: background 0.2s;
+  width: 100%;
 }
 
 .new-chat-btn:hover {
@@ -53,7 +51,7 @@
 
 .chat-list {
   list-style: none;
-  padding: 0;
+  padding: 0.5rem;
   margin: 0;
   overflow-y: auto;
   flex: 1;
@@ -87,4 +85,5 @@
   font-size: 0.9rem;
   margin-top: 1rem;
   text-align: center;
+  padding: 0 1rem;
 }

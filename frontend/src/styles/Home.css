@@ -74,52 +74,89 @@
 
 .home-layout {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  height: calc(100vh - 180px); /* Adjust for navbar and title */
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem 2rem 2rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  height: calc(100vh - 180px);
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   transition: all 0.3s ease;
+  position: relative;
 }
 
-/* Chat window grows when sidebar hidden */
-.home-layout.with-sidebar .chat-container {
-  flex: 1;
-  max-width: 800px;
+/* Sidebar container - always present for border */
+.sidebar-container {
+  position: relative;
+  height: 100%;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  border-right: 1px solid #e0e0e0;
+  background: #ffffff;
 }
 
-.home-layout.no-sidebar .chat-container {
-  flex: 1;
-  max-width: 900px;
+/* When sidebar is visible */
+.home-layout.with-sidebar .sidebar-container {
+  width: 260px;
 }
 
-/* Sidebar toggle button */
-.show-sidebar-btn {
-  position: fixed;
-  left: 1rem;
-  top: 8rem;
-  background: #2c3e50;
-  color: white;
+/* When sidebar is hidden - just show thin border */
+.home-layout.no-sidebar .sidebar-container {
+  width: 50px;
+  background: #fafafa;
+}
+
+/* Toggle button at top of sidebar */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background: transparent;
   border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  color: #2c3e50;
+  font-size: 1.3rem;
   cursor: pointer;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  font-size: 0.9rem;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
 }
 
-.show-sidebar-btn:hover {
-  background: #34495e;
+.sidebar-toggle-btn:hover {
+  background: #f5f5f5;
+}
+
+/* When sidebar is collapsed, center the hamburger */
+.home-layout.no-sidebar .sidebar-toggle-btn {
+  width: 50px;
+}
+
+/* Chat window positioning - fills available space */
+.chat-window-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  min-width: 0; /* Allow flex item to shrink below content size */
+}
+
+/* Chat container - expands to fill wrapper */
+.chat-window-wrapper .chat-container {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
 }
 
 /* ✅ Fix the itinerary width and pin it to the right */
 .itinerary-wrapper {
-  width: 340px;          /* fixed width */
-  flex-shrink: 0;        /* don't shrink when window resizes */
+  width: 340px;
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
   padding: 1rem;
@@ -132,9 +169,9 @@
     display: none;
   }
   
-  .home-layout.with-sidebar .chat-container,
-  .home-layout.no-sidebar .chat-container {
-    max-width: 100%;
+  .chat-window-wrapper .chat-container {
+    max-width: 900px;
+    margin: 0 auto;
   }
 }
 
@@ -144,8 +181,8 @@
     padding: 1.5rem 1rem 1rem 1rem;
   }
   
-  .home-layout {
-    padding: 0 1rem 1rem 1rem;
+  .chat-window-wrapper {
+    padding: 0.5rem;
   }
   
   .home-page .auth-cta span {
@@ -154,5 +191,17 @@
 
   .home-page .auth-cta {
     gap: 0.5rem;
+  }
+  
+  .home-layout.no-sidebar .sidebar-container {
+    width: 0;
+  }
+  
+  .home-layout.no-sidebar .sidebar-toggle-btn {
+    position: fixed;
+    top: 8rem;
+    left: 0;
+    border-radius: 0 8px 8px 0;
+    width: 50px;
   }
 }

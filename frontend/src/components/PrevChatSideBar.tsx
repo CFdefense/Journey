@@ -6,27 +6,25 @@ interface PrevChatSideBarProps {
   activeChatId: number | null;
   onSelectChat: (id: number) => void;
   onNewChat: () => void;
-  onToggleSidebar: () => void;
 }
 
 export default function PrevChatSideBar({
   chats,
   activeChatId,
   onSelectChat,
-  onNewChat,
-  onToggleSidebar
+  onNewChat
 }: PrevChatSideBarProps) {
    // Filter chats that have at least one message (only show these in sidebar)
   //const visibleChats = chats.filter((chat) => chat.messages && chat.messages.length > 0);
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <button className="toggle-btn" onClick={onToggleSidebar}>
-          ✕
-        </button>
-        <button className="new-chat-btn" onClick={onNewChat}>
-          + New Chat
-        </button>
+        <div className="sidebar-title">Chat History</div>
+        <div className="new-chat-btn-wrapper">
+          <button className="new-chat-btn" onClick={onNewChat}>
+            + New Chat
+          </button>
+        </div>
       </div>
 
       <ul className="chat-list">

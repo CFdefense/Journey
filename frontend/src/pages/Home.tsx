@@ -195,31 +195,31 @@ export default function Home() {
   return (
     <div className="home-page">
       <Navbar page="home" />
-      
       <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
         {showFinishPopup && <FinishAccountPopup />}
 
-        {sidebarVisible && (
-          <PrevChatSideBar
-            chats={chats}
-            activeChatId={activeChatId}
-            onSelectChat={setActiveChatId}
-            onNewChat={handleNewChat}
-            onToggleSidebar={handleToggleSidebar}
-          />
-        )}
-
-        {!sidebarVisible && (
-          <button className="show-sidebar-btn" onClick={handleToggleSidebar}>
-            ☰ Chats
+        <div className="sidebar-container">
+          <button className="sidebar-toggle-btn" onClick={handleToggleSidebar}>
+            ☰
           </button>
-        )}
+          
+          {sidebarVisible && (
+            <PrevChatSideBar
+              chats={chats}
+              activeChatId={activeChatId}
+              onSelectChat={setActiveChatId}
+              onNewChat={handleNewChat}
+            />
+          )}
+        </div>
 
-        <ChatWindow
-          messages={activeChat?.messages ?? []}
-          onSend={handleSendMessage}
-          onItinerarySelect={handleItinerarySelect}
-        />
+        <div className="chat-window-wrapper">
+          <ChatWindow
+            messages={activeChat?.messages ?? []}
+            onSend={handleSendMessage}
+            onItinerarySelect={handleItinerarySelect}
+          />
+        </div>
 
         <div className="itinerary-wrapper">
           <Itinerary />
