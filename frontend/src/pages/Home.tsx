@@ -15,6 +15,8 @@ import type { MessagePageRequest, SendMessageRequest } from "../models/chat";
 import type { ChatSession } from "../models/home";
 import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
+import { fetchItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../helpers/itinerary";
 
 export default function Home() {
   const [chats, setChats] = useState<ChatSession[] | null>(null);
@@ -26,6 +28,7 @@ export default function Home() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
   const [firstName, setFirstName] = useState<string>("");
+  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
 
   useEffect(() => {
     async function fetchAccount() {
@@ -105,6 +108,35 @@ export default function Home() {
     fetchAccount();
     fetchChats();
   }, [showFinishPopup, activeChatId]);
+
+  // Fetch itinerary data when selectedItineraryId changes
+  useEffect(() => {
+    async function loadItinerary() {
+      const itineraryId = selectedItineraryId;
+      
+      // if no current itinerary is selected, do not try and populate it 
+      if (itineraryId === null) {
+        return;
+      }
+      
+      try {
+        const data = await fetchItinerary(itineraryId);
+        setItineraryData(data);
+        console.log("Loaded itinerary data:", data);
+      } catch (error) {
+        console.error("Error loading itinerary:", error);
+        setItineraryData(null);
+      }
+    }
+
+    loadItinerary();
+  }, [selectedItineraryId]);
+
+  // whenever the active chat changes, clear all itinerary information on home page. 
+  useEffect(() => {
+    setSelectedItineraryId(null);
+    setItineraryData(null);
+  }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
@@ -227,6 +259,7 @@ export default function Home() {
         <ItinerarySideBar
           onToggleSidebar={handleToggleItinerarySidebar}
           sidebarVisible={itinerarySidebarVisible}
+          itineraryData={itineraryData}
         />
       </div>
     </div>

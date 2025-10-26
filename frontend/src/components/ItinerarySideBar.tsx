@@ -1,14 +1,17 @@
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
+import type { DayItinerary } from "../helpers/itinerary";
 
 interface ItinerarySideBarProps {
   onToggleSidebar: () => void;
   sidebarVisible: boolean;
+  itineraryData: DayItinerary[] | null;
 }
 
 export default function ItinerarySideBar({
   onToggleSidebar,
-  sidebarVisible
+  sidebarVisible,
+  itineraryData
 }: ItinerarySideBarProps) {
   return (
     <div className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}>
@@ -21,7 +24,10 @@ export default function ItinerarySideBar({
 
       {sidebarVisible && (
         <div className="itinerary-content">
-          <Itinerary />
+          <Itinerary 
+            key={itineraryData ? JSON.stringify(itineraryData[0]?.date) : 'no-itinerary'}
+            days={itineraryData ?? undefined} 
+          />
         </div>
       )}
     </div>

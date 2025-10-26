@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
-import { convertToApiFormat, fetchItinerary } from "../helpers/populate_itinerary";
-import type { DayItinerary } from "../helpers/populate_itinerary";
+import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../helpers/itinerary";
 import { apiItineraryDetails, saveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
 
