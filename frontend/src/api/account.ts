@@ -29,10 +29,10 @@ export async function apiLogin(payload: LoginRequest): Promise<ApiResult<void>> 
             credentials: import.meta.env.DEV ? "include" : "same-origin",
             body: JSON.stringify(payload)
         });
-        return { result: undefined, status: response.status };
+        return { result: null, status: response.status };
     } catch (error) {
         console.error("Login API error: ", error);
-        return { result: false, status: -1 };
+        return { result: null, status: -1 };
     }
 }
 
@@ -86,10 +86,10 @@ export async function apiLogout(): Promise<ApiResult<void>> {
             },
             credentials: import.meta.env.DEV ? "include" : "same-origin"
         });
-        return { result: undefined, status: response.status };
+        return { result: null, status: response.status };
     } catch (error) {
         console.error("Logout Up API error: ", error);
-        return { result: undefined, status: -1 };
+        return { result: null, status: -1 };
     }
 }
 
@@ -112,7 +112,7 @@ export async function apiValidate(): Promise<ApiResult<void>> {
             },
             credentials: import.meta.env.DEV ? "include" : "same-origin"
         });
-        return { result: undefined, status: response.status };
+        return { result: null, status: response.status };
     } catch (error) {
         console.error("Validate API error: ", error);
         return { result: null, status: -1 };

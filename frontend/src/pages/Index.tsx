@@ -21,8 +21,8 @@ export default function Index() {
   // Check auth status on mount if not already set
   useEffect(() => {
     if (!bypassProtection() && authorized === null) {
-      apiValidate().then(({ result, status }) => {
-        setAuthorized(!!result && status === 200);
+      apiValidate().then(({ status }) => {
+        setAuthorized(status === 200);
       }).catch(() => {
         setAuthorized(false);
       });
