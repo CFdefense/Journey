@@ -260,6 +260,7 @@ export default function Home() {
           onToggleSidebar={handleToggleItinerarySidebar}
           sidebarVisible={itinerarySidebarVisible}
           itineraryData={itineraryData}
+          selectedItineraryId={selectedItineraryId}
         />
       </div>
     </div>

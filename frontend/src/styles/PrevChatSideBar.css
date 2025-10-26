@@ -79,7 +79,7 @@
 }
 
 .new-chat-btn {
-  background: #2c3e50;
+  background: #006BBB;
   color: white;
   border: none;
   border-radius: 6px;
@@ -87,12 +87,19 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: all 0.2s;
   width: 100%;
 }
 
 .new-chat-btn:hover {
-  background: #34495e;
+  background: #30A0E0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+}
+
+.new-chat-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.1);
 }
 
 /* Chat list */
@@ -102,6 +109,30 @@
   margin: 0;
   overflow-y: auto;
   flex: 1;
+}
+
+/* Custom scrollbar for chat list */
+.chat-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 4px;
+}
+
+.chat-list::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Firefox scrollbar */
+.chat-list {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 transparent;
 }
 
 .sidebar.closed .chat-list {
@@ -128,10 +159,10 @@
 }
 
 .chat-list li.active {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #E6F3FF;
+  color: #006BBB;
   font-weight: 500;
-  border-color: #90caf9;
+  border-color: #30A0E0;
 }
 
 .empty {
