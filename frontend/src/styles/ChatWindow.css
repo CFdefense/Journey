@@ -12,15 +12,57 @@
   border: 1px solid #e0e0e0;
 }
 
+/* Chat Header */
+.chat-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 1rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.chat-header-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.chat-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-content: flex-start;
+}
+
+.chat-header-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.chat-header-subtitle {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.2;
+  text-align: left;
+}
+
 /* Scrollable message area */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden; /* remove horizontal scroll */
-  padding: 1.5rem;
+  overflow-x: hidden;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   background: #fafafa;
 }
 
@@ -47,21 +89,61 @@
   margin-top: 2rem;
 }
 
+/* Message wrapper - contains avatar and message content */
+.chat-message-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.chat-message-wrapper.user {
+  justify-content: flex-end;
+}
+
+.chat-message-wrapper.bot {
+  justify-content: flex-start;
+}
+
+/* Avatar for bot messages */
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+/* Message content wrapper - contains message bubble and timestamp */
+.chat-message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 70%;
+}
+
+.chat-message-wrapper.user .chat-message-content {
+  align-items: flex-end;
+}
+
+.chat-message-wrapper.bot .chat-message-content {
+  align-items: flex-start;
+}
+
 /* Base message style */
 .chat-message {
   position: relative;
-  padding: 0.9rem 1.1rem;
+  padding: 0.7rem 0.9rem;
   border-radius: 12px;
-  max-width: 70%; /* slightly wider message bubbles */
   word-wrap: break-word;
   font-size: 0.95rem;
   line-height: 1.5;
   transition: background-color 0.2s ease;
+  width: fit-content;
 }
 
 /* Sent messages (user) */
 .chat-message.user {
-  align-self: flex-end;
   background: #2c3e50;
   color: #ffffff;
   border-bottom-right-radius: 4px;
@@ -69,39 +151,66 @@
 
 /* Received messages (bot) */
 .chat-message.bot {
-  align-self: flex-start;
   background: #ffffff;
   border: 1px solid #e0e0e0;
   color: #333;
   border-bottom-left-radius: 4px;
 }
 
-/* Timestamp styling */
-.timestamp {
-  display: block;
-  font-size: 0.75em;
-  color: #999;
-  margin-top: 4px;
-  text-align: right;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
+/* Message text wrapper */
+.message-text {
+  margin: 0;
 }
 
-/* Align timestamps based on message sender */
-.chat-message.bot .timestamp {
+.message-text p {
+  margin: 0;
+}
+
+/* Timestamp styling - hidden by default, shown on hover */
+.timestamp {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  padding: 0 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-message-wrapper.user .timestamp {
+  text-align: right;
+  color: #999;
+}
+
+.chat-message-wrapper.bot .timestamp {
   text-align: left;
   color: #999;
 }
 
-.chat-message.user .timestamp {
-  text-align: right;
-  color: rgba(255, 255, 255, 0.7);
+/* Show timestamp on hover */
+.chat-message-wrapper:hover .timestamp {
+  opacity: 1;
 }
 
-/* Show timestamp on hover */
-.chat-message:hover .timestamp {
-  opacity: 1;
+/* Itinerary button styling */
+.itinerary-info {
+  margin-top: 0.5rem;
+}
+
+.display-itinerary-button {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  color: #1976d2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.display-itinerary-button:hover {
+  background: #bbdefb;
+  border-color: #64b5f6;
 }
 
 /* Input area */
@@ -113,6 +222,7 @@
   border-top: 1px solid #e0e0e0;
   background: #ffffff;
   border-radius: 0 0 8px 8px;
+  flex-shrink: 0;
 }
 
 /* Input box */

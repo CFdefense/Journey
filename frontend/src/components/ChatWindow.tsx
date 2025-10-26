@@ -2,6 +2,7 @@ import MessageInput from "./MessageInput";
 import "../styles/ChatWindow.css";
 import type { Message } from "../models/chat";
 import ChatMessage from "./ChatMessage";
+import aiPic from "../assets/ai-pic.png";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -14,9 +15,17 @@ export default function ChatWindow({
   onSend,
   onItinerarySelect
 }: ChatWindowProps) {
-  // returns the entire ChatWindow Component
   return (
     <div className="chat-container">
+      {/* Header Section */}
+      <div className="chat-header">
+        <img src={aiPic} alt="AI Assistant" className="chat-header-image" />
+        <div className="chat-header-text">
+          <div className="chat-header-title">Travel Assistant</div>
+          <div className="chat-header-subtitle">Ready to help with your next adventure</div>
+        </div>
+      </div>
+
       <div className="chat-messages">
         {messages.length === 0 ? (
           <div className="chat-empty-state">
