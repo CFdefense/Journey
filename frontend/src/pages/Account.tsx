@@ -1,6 +1,11 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { apiLogout } from "../api/account";
-import { useContext, useState, type Context } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { 
+  apiLogout, 
+  apiUpdateAccount, 
+  apiGetProfile, 
+  type UpdateRequest 
+} from "../api/account";
+import { useContext, useState, useEffect, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
 import "../styles/Account.css";
@@ -10,19 +15,28 @@ export default function Account() {
     GlobalContext as Context<GlobalState>
   );
   const navigate = useNavigate();
-  const location = useLocation();
   
-  // Determine current page based on route
-  const currentPage = location.pathname.split('/').pop() || 'account';
-  
-  // Your existing state variables
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [email, setEmail] = useState("ellielknapp@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [budget, setBudget] = useState("Medium");
-  const [riskTolerance, setRiskTolerance] = useState("Medium");
-  const [disabilities, setDisabilities] = useState("");
-  const [foodPreferences, setFoodPreferences] = useState("");
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await apiGetProfile();
+        setEmail(data.email || "");
+      } catch (e) {
+        console.error("Failed to load profile:", e);
+        setStatusMessage({ 
+          message: "Failed to load account details. Please log in again.", 
+          type: 'error' 
+        });
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const onLogout = async () => {
     console.log("Logging out");
@@ -38,8 +52,27 @@ export default function Account() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Your update logic here
-    setStatusMessage({type: 'success', message: 'Settings updated successfully!'});
+    setStatusMessage(null);
+
+    const payload: UpdateRequest = {
+      ...(password && { password: password })
+    };
+
+    try {
+      await apiUpdateAccount(payload);
+      setStatusMessage({ 
+        message: "Account settings updated successfully!", 
+        type: 'success' 
+      });
+      setPassword("");
+    } catch (error) {
+      console.error("Update failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during update.";
+      setStatusMessage({ 
+        message: `Update failed: ${errorMessage}`, 
+        type: 'error' 
+      });
+    }
   };
 
   return (
@@ -116,142 +149,56 @@ export default function Account() {
           <main className="main-content">
             <div className="account-container">
               <div className="account-box">
+                <h1>Account Settings</h1>
                 
-                {/* Account Information Page */}
-                {currentPage === 'account' && (
-                  <>
-                    <h1>Account Settings</h1>
+                {statusMessage && (
+                  <div className={`status-message status-message--${statusMessage.type}`}>
+                    {statusMessage.message}
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdate}>
+                  <div className="settings-section">
+                    <h2>Login Details</h2>
                     
-                    {statusMessage && (
-                      <div className={`status-message status-message--${statusMessage.type}`}>
-                        {statusMessage.message}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleUpdate}>
-                      <div className="settings-section">
-                        <h2>Login Details</h2>
-                        
-                        <div className="field-group">
-                          <label htmlFor="email">Username (Email):</label>
-                          <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            readOnly 
-                            className="input-readonly"
-                          />
-                          <small>Your username is linked to your email and cannot be changed here.</small>
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="password">New Password (Leave blank to keep current):</label>
-                          <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter new password"
-                          />
-                          <small>Only enter a password if you wish to change it.</small>
-                        </div>
-                      </div>
-
-                      <button type="submit" className="btn-primary">
-                        Update All Settings
-                      </button>
-                    </form>
-
-                    <hr className="section-divider" />
-
-                    <div className="logout-section">
-                      <h2>Session Management</h2>
-                      <button onClick={onLogout} className="btn-danger">
-                        Logout
-                      </button>
+                    <div className="field-group">
+                      <label htmlFor="email">Username (Email):</label>
+                      <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        readOnly 
+                        className="input-readonly"
+                      />
+                      <small>Your username is linked to your email and cannot be changed here.</small>
                     </div>
-                  </>
-                )}
 
-                {/* Preferences Page */}
-                {currentPage === 'preferences' && (
-                  <>
-                    <h1>Activity Preferences</h1>
-                    
-                    {statusMessage && (
-                      <div className={`status-message status-message--${statusMessage.type}`}>
-                        {statusMessage.message}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleUpdate}>
-                      <div className="settings-section">
-                        <div className="field-group">
-                          <label htmlFor="budget">Budget:</label>
-                          <select
-                            id="budget"
-                            value={budget}
-                            onChange={(e) => setBudget(e.target.value)}
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                          </select>
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="riskTolerance">Risk Tolerance:</label>
-                          <select
-                            id="riskTolerance"
-                            value={riskTolerance}
-                            onChange={(e) => setRiskTolerance(e.target.value)}
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                          </select>
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="disabilities">Disabilities/Accessibility Needs:</label>
-                          <textarea
-                            id="disabilities"
-                            value={disabilities}
-                            onChange={(e) => setDisabilities(e.target.value)}
-                            placeholder="e.g., Wheelchair user, needs assistance with stairs, visual impairment."
-                          />
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="foodPreferences">Food Preferences/Allergies:</label>
-                          <textarea
-                            id="foodPreferences"
-                            value={foodPreferences}
-                            onChange={(e) => setFoodPreferences(e.target.value)}
-                            placeholder="e.g., Gluten-free, no shellfish, vegan, prefers Italian cuisine."
-                          />
-                        </div>
-                      </div>
-
-                      <button type="submit" className="btn-primary">
-                        Update All Settings
-                      </button>
-                    </form>
-                  </>
-                )}
-
-                {/* Saved Itineraries Page */}
-                {currentPage === 'itineraries' && (
-                  <>
-                    <h1>Saved Itineraries</h1>
-                    
-                    <div className="empty-state">
-                      <p>No saved itineraries yet</p>
-                      <p style={{fontSize: '0.9rem', marginTop: '8px'}}>Your saved travel plans will appear here</p>
+                    <div className="field-group">
+                      <label htmlFor="password">New Password (Leave blank to keep current):</label>
+                      <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter new password"
+                      />
+                      <small>Only enter a password if you wish to change it.</small>
                     </div>
-                  </>
-                )}
+                  </div>
 
+                  <button type="submit" className="btn-primary">
+                    Update Account Information
+                  </button>
+                </form>
+
+                <hr className="section-divider" />
+
+                <div className="logout-section">
+                  <h2>Session Management</h2>
+                  <button onClick={onLogout} className="btn-danger">
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
           </main>

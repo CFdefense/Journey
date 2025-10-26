@@ -1,22 +1,75 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useContext, useState, type Context } from "react";
-import { GlobalContext } from "../helpers/global";
-import type { GlobalState } from "../components/GlobalProvider";
+import { 
+  apiUpdateAccount, 
+  apiGetProfile, 
+  type UpdateRequest 
+} from "../api/account";
+import { useState, useEffect } from "react";
 import "../styles/Account.css";
+
+type BudgetOption = 'VeryLowBudget' | 'LowBudget' | 'MediumBudget' | 'HighBudget' | 'LuxuryBudget';
+type RiskOption = 'ChillVibes' | 'LightFun' | 'Adventurer' | 'RiskTaker';
 
 export default function Preferences() {
   const navigate = useNavigate();
   
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [budget, setBudget] = useState("Medium");
-  const [riskTolerance, setRiskTolerance] = useState("Medium");
+  const [budget, setBudget] = useState<BudgetOption>("MediumBudget");
+  const [riskTolerance, setRiskTolerance] = useState<RiskOption>("LightFun");
   const [disabilities, setDisabilities] = useState("");
   const [foodPreferences, setFoodPreferences] = useState("");
 
+  const budgetOptions: BudgetOption[] = ['VeryLowBudget', 'LowBudget', 'MediumBudget', 'HighBudget', 'LuxuryBudget'];
+  const riskOptions: RiskOption[] = ['ChillVibes', 'LightFun', 'Adventurer', 'RiskTaker'];
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await apiGetProfile();
+        
+        setBudget((data.budget_preference as BudgetOption) || "MediumBudget");
+        setRiskTolerance((data.risk_preference as RiskOption) || "LightFun");
+        setDisabilities(data.disabilities || "");
+        setFoodPreferences(data.food_allergies || "");
+        
+      } catch (e) {
+        console.error("Failed to load profile:", e);
+        setStatusMessage({ 
+          message: "Failed to load preferences. Please try again.", 
+          type: 'error' 
+        });
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Your update logic here
-    setStatusMessage({type: 'success', message: 'Preferences updated successfully!'});
+    setStatusMessage(null);
+
+    const payload: UpdateRequest = {
+      budget_preference: budget,
+      risk_preference: riskTolerance,
+      disabilities: disabilities,
+      food_allergies: foodPreferences,
+    };
+
+    try {
+      await apiUpdateAccount(payload);
+      setStatusMessage({ 
+        message: "Preferences updated successfully!", 
+        type: 'success' 
+      });
+    } catch (error) {
+      console.error("Update failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during update.";
+      setStatusMessage({ 
+        message: `Update failed: ${errorMessage}`, 
+        type: 'error' 
+      });
+    }
   };
 
   return (
@@ -108,11 +161,11 @@ export default function Preferences() {
                       <select
                         id="budget"
                         value={budget}
-                        onChange={(e) => setBudget(e.target.value)}
+                        onChange={(e) => setBudget(e.target.value as BudgetOption)}
                       >
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
+                        {budgetOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -121,11 +174,11 @@ export default function Preferences() {
                       <select
                         id="riskTolerance"
                         value={riskTolerance}
-                        onChange={(e) => setRiskTolerance(e.target.value)}
+                        onChange={(e) => setRiskTolerance(e.target.value as RiskOption)}
                       >
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
+                        {riskOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -151,7 +204,7 @@ export default function Preferences() {
                   </div>
 
                   <button type="submit" className="btn-primary">
-                    Update All Settings
+                    Update Preferences
                   </button>
                 </form>
               </div>

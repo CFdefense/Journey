@@ -24,6 +24,37 @@ export interface UpdateResponse {
     disabilities?: string;
 }
 
+export interface Event {
+    id: number;
+    event_name: string;
+    event_description: string;
+    event_type: string;
+    street_address: string;
+    city: string;
+    postal_code: number;
+}
+
+export interface EventDay {
+    date: string;
+    morning_events: Event[];
+    noon_events: Event[];
+    afternoon_events: Event[];
+    evening_events: Event[];
+}
+
+export interface Itinerary {
+    id: number;
+    chat_session_id: number;
+    title: string;
+    start_date: string;
+    end_date: string;
+    event_days: EventDay[];
+}
+
+export interface SavedItinerariesResponse {
+    itineraries: Itinerary[];
+}
+
 /// Calls login
 ///
 /// # Method
@@ -284,6 +315,37 @@ export async function apiGetProfile(): Promise<UpdateResponse> {
         return await response.json();
     } catch (error) {
         console.error("Get Profile API error: ", error);
+        throw error;
+    }
+}
+
+/// Sends a `GET /api/itinerary/saved` request to fetch all saved itineraries.
+///
+/// # Returns list of saved itineraries if successful.
+/// # Throws Error with message to be displayed.
+export async function apiGetSavedItineraries(): Promise<SavedItinerariesResponse> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error("Not authenticated.");
+            } else if (response.status === 500) {
+                throw new Error("Server error.");
+            } else {
+                throw new Error(`Unexpected error: ${response.status}`);
+            }
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Get Saved Itineraries API error: ", error);
         throw error;
     }
 }

@@ -6,6 +6,7 @@ import Account from "./pages/Account";
 import Preferences from './pages/Preferences';
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
+import Itineraries from './pages/Itineraries';
 import NotFound from "./pages/NotFound";
 import "./App.css";
 import {
@@ -67,6 +68,15 @@ export default function App() {
             <ProtectedRoute>
               <Preferences />
             </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/account/itineraries" 
+          element={
+            <ProtectedRoute>
+              <Itineraries />
+            </ProtectedRoute>
+            
           } 
         />
         <Route path="*" element={<NotFound />} />
