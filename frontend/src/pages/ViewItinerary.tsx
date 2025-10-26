@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import Itinerary from "../components/Itinerary";
 import UnassignedEvents from "../components/UnassignedEvents";
 import type { Event } from "../components/UnassignedEvents";
-import { convertToApiFormat, fetchItinerary } from "../helpers/populateItinerary";
-import type { DayItinerary } from "../helpers/populateItinerary";
+import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../helpers/itinerary";
 import { apiItineraryDetails, saveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
 
@@ -19,10 +19,10 @@ export default function ViewItineraryPage() {
     chatSessionId: null as number | null,
   });
 
-  const unassignedEvents: Event[] = [
-    { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
-    { id: "2", title: "Meeting", desc: "Capping discussion" }
-  ];
+  // const unassignedEvents: Event[] = [
+  //   { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
+  //   { id: "2", title: "Meeting", desc: "Capping discussion" }
+  // ];
 
   const onDragStart = (e: React.DragEvent, event: Event) => {
     e.dataTransfer.setData("eventId", event.id);
@@ -81,7 +81,7 @@ export default function ViewItineraryPage() {
 
   return (
     <div className="view-page">
-      <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} />
+      {/* <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} /> */}
       <Itinerary 
         days={days} 
         onUpdate={handleItineraryUpdate}

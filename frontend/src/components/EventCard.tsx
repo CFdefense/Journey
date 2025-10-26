@@ -15,11 +15,14 @@ interface EventCardProps {
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
   onDragEnd?: (e: React.DragEvent) => void;
 }
+
 const EventCard: React.FC<EventCardProps> = ({
   title,
   desc,
   time,
   address,
+  city,
+  type,
   draggable = false,
   onDragStart,
   onDragEnd,
@@ -57,6 +60,12 @@ const EventCard: React.FC<EventCardProps> = ({
         onClick={openModal}
       >
         <h3 className="event-title">{title}</h3>
+        {(address || city) && (
+          <p className="event-location">
+            {address && city ? `${address}, ${city}` : address || city}
+          </p>
+        )}
+        {type && <p className="event-type">{type}</p>}
       </div>
 
       {isOpen && (
@@ -74,7 +83,17 @@ const EventCard: React.FC<EventCardProps> = ({
             )}
             {address && (
               <p>
-                <strong>Location:</strong> {address}
+                <strong>Address:</strong> {address}
+              </p>
+            )}
+            {city && (
+              <p>
+                <strong>City:</strong> {city}
+              </p>
+            )}
+            {type && (
+              <p>
+                <strong>Type:</strong> {type}
               </p>
             )}
           </div>
@@ -83,4 +102,5 @@ const EventCard: React.FC<EventCardProps> = ({
     </>
   );
 };
+
 export default EventCard;

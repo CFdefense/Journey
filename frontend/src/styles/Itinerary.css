@@ -1,190 +1,308 @@
 /* Overall page layout */
-.itinerary-page {
+.view-page {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  width: 800px;
-  padding: 30px;
-  background-color: transparent;
-  color: #000;
+  padding: 40px 20px;
+  background-color: #f8f8f8;
+  min-height: 100vh;
   box-sizing: border-box;
 }
 
-/* Unassigned section — spans full itinerary width */
-.unassigned-section {
-  width: 90%;
-  background-color: transparent;
-  border: 2px solid #ccc;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.unassigned-section h3 {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.unassigned-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
-}
-
-/* Itinerary main area */
+/* Itinerary main section */
 .itinerary-section {
-  width: 90%;
-  background-color: transparent;
-  border: 2px solid #ccc;
-  padding: 30px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  color: var(--light-blue);
+  width: 100%;
+  max-width: 1400px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  box-sizing: border-box;
 }
 
-.itinerary-section h3 {
-  text-align: center;
-  margin-bottom: 25px;
-}
-
-/* Time blocks stacked vertically */
-.itinerary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Each time block */
-.time-block {
-  background: #fdfdfd;
-  border: 1px solid #bbb;
-  padding: 20px;
-  min-height: 150px;
-  transition: background 0.2s ease;
-}
-
-.time-block:hover {
-  background: #f0f8ff;
-}
-
-/* Time label */
-.time-label {
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 12px;
-  color: #333;
-}
-
-/* Events inside each time block */
-.events-area {
-  min-height: 80px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  background-color: transparent;
-}
-
-/* Event cards */
-.event-card {
-  background-color: #e0e0e0;
-  padding: 12px 20px;
-  font-size: 1rem;
-  cursor: grab;
-  user-select: none;
-  transition:
-    transform 0.1s ease,
-    background 0.2s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.event-card:hover {
-  background-color: #d3d3d3;
-  transform: scale(1.05);
-}
-
-.event-card:active {
-  cursor: grabbing;
-}
-
-.day-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 1rem;
-}
-
-.day-tab {
-  background: #FFE3B3;
-  border: 1px solid transparent;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  color: black;
-}
-
-.day-tab.active {
-  background: #FA8072;
-  color: black;
-  border-color: transparent;
-}
-
-.day-tab.active:hover {
-  background: #fd6b5b;
-}
-
-.day-tab:hover {
-  background: #ffbd54
-}
-
+/* Header with title and menu */
 .itinerary-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e8e8e8;
 }
 
+.itinerary-header h3 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+/* Menu dropdown */
 .menu-wrapper {
   position: relative;
-  display: inline-block;
 }
 
 .menu-button {
   background: transparent;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   cursor: pointer;
   padding: 4px 8px;
+  color: #666;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.menu-button:hover {
+  background: #f0f0f0;
 }
 
 .menu-dropdown {
   position: absolute;
-  top: 28px;
+  top: 40px;
   right: 0;
   background-color: white;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 120px;
+  overflow: hidden;
 }
 
 .menu-item {
   display: block;
-  padding: 8px 12px;
+  padding: 10px 16px;
   background: none;
   border: none;
   width: 100%;
   text-align: left;
   cursor: pointer;
-  color: black;
+  color: #555;
+  font-size: 0.95rem;
+  transition: background 0.15s ease;
 }
 
 .menu-item:hover {
-  background-color: #f5f5f5;
+  background-color: #FFE3B3;
+  color: #333;
+}
+
+/* Day tabs */
+.day-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.day-tab {
+  background: #f0f0f0;
+  border: 2px solid #e0e0e0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.day-tab:hover {
+  background: #FFE3B3;
+  border-color: #FFC872;
+  color: #333;
+}
+
+.day-tab.active {
+  background: #006BBB;
+  color: white;
+  border-color: #006BBB;
+}
+
+.day-tab.active:hover {
+  background: #005a9e;
+  border-color: #005a9e;
+}
+
+/* Itinerary list - HORIZONTAL layout */
+.itinerary-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+/* Time block container */
+.time-block {
+  background: #fafafa;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.time-block:hover {
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+}
+
+/* Different colors for each time block */
+.time-block:nth-child(1) {
+  border-color: #FFC872;
+}
+
+.time-block:nth-child(2) {
+  border-color: #30A0E0;
+}
+
+.time-block:nth-child(3) {
+  border-color: #FA8072;
 }
 
 .time-block.editable {
-  border: 2px dashed #007bff;
+  border: 2px dashed #006BBB;
+  background: #f0f7ff;
+}
+
+.time-block.editable:hover {
+  background: #e8f2ff;
+  border-color: #30A0E0;
+}
+
+/* Time label */
+.time-label {
+  font-weight: 700;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+  color: #444;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.time-label > span:first-child {
+  text-align: left;
+}
+
+.time-range {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #999;
+  text-align: right;
+}
+
+/* Color-code time labels */
+.time-block:nth-child(1) .time-label {
+  color: #d49c45;
+}
+
+.time-block:nth-child(2) .time-label {
+  color: #2890c8;
+}
+
+.time-block:nth-child(3) .time-label {
+  color: #e56b5d;
+}
+
+/* Events area - grows to fit content */
+.events-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for events area */
+.events-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.events-area::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.events-area::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 3px;
+}
+
+.events-area::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Edit with AI button */
+.view-page > button {
+  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
   border-radius: 8px;
-  transition: 0.2s;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 107, 187, 0.3);
+  margin-top: 12px;
+  align-self: center;
+}
+
+.view-page > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 107, 187, 0.4);
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+}
+
+.view-page > button:active {
+  transform: translateY(0);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .itinerary-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .time-block {
+    aspect-ratio: auto;
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .view-page {
+    padding: 20px 12px;
+  }
+
+  .itinerary-section {
+    padding: 20px;
+  }
+
+  .day-tabs {
+    gap: 6px;
+  }
+
+  .day-tab {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .time-label {
+    font-size: 1.1rem;
+  }
+
+  .time-block {
+    padding: 16px;
+  }
 }

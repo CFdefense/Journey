@@ -118,6 +118,19 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
 
   const currentDay = localDays[selectedDayIndex];
 
+  const getTimeRange = (timeLabel: string): string => {
+  switch (timeLabel) {
+    case "Morning":
+      return "6:00 AM - 12:00 PM";
+    case "Afternoon":
+      return "12:00 PM - 6:00 PM";
+    case "Evening":
+      return "6:00 PM - 12:00 AM";
+    default:
+      return "";
+    }
+  };
+
   return (
     <div className="itinerary-section">
       {/* Header Row */}
@@ -177,7 +190,10 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
             onDrop={(e) => onDrop(e, timeIndex)}
             onDragOver={onDragOver}
           >
-            <div className="time-label">{block.time}</div>
+            <div className="time-label">
+              <span>{block.time}</span>
+              <span className="time-range">{getTimeRange(block.time)}</span>
+            </div>
             <div className="events-area">
               {block.events.map((event) => (
                 <EventCard
@@ -185,6 +201,9 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
                   title={event.title}
                   desc={event.desc}
                   time={block.time}
+                  address={event.street_address}
+                  city={event.city}
+                  type={event.event_type}
                   draggable={editMode}
                   onDragStart={(e) => onDragStart(e, event, timeIndex)}
                 />
