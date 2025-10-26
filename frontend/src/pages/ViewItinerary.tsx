@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import Itinerary from "../components/Itinerary";
-import UnassignedEvents from "../components/UnassignedEvents";
-import type { Event } from "../components/UnassignedEvents";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
 import { apiItineraryDetails, saveItineraryChanges } from "../api/itinerary";
+import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
+import { apiCurrent } from "../api/account";
 
 export default function ViewItineraryPage() {
   const [days, setDays] = useState<DayItinerary[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [firstName, setFirstName] = useState<string>("");
   
   // Store metadata needed for saving
   const [itineraryMetadata, setItineraryMetadata] = useState({
@@ -19,17 +21,19 @@ export default function ViewItineraryPage() {
     chatSessionId: null as number | null,
   });
 
-  // const unassignedEvents: Event[] = [
-  //   { id: "1", title: "Breakfast", desc: "Saxbys coffee and bagel" },
-  //   { id: "2", title: "Meeting", desc: "Capping discussion" }
-  // ];
-
-  const onDragStart = (e: React.DragEvent, event: Event) => {
-    e.dataTransfer.setData("eventId", event.id);
-    e.dataTransfer.setData("eventTitle", event.title);
-    e.dataTransfer.setData("eventDesc", event.desc || "");
-  };
-
+  useEffect(() => {
+    async function fetchAccount() {
+      const currentResult = await apiCurrent();
+      const account = currentResult.result;
+      
+      if (account && currentResult.status === 200) {
+        setFirstName(account.first_name || "");
+      }
+    }
+    
+    fetchAccount();
+  }, []);
+  
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
     setDays(updatedDays);
   };
@@ -81,13 +85,45 @@ export default function ViewItineraryPage() {
 
   return (
     <div className="view-page">
-      {/* <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} /> */}
+      <Navbar page="view" firstName={firstName} />
       <Itinerary 
         days={days} 
         onUpdate={handleItineraryUpdate}
         onSave={handleSave}
+        editMode={editMode}
+        onEditModeChange={setEditMode}
+        title={itineraryMetadata.title}
       />
-      <button>Edit with AI</button>
-    </div>
+
+      {!editMode && <button className="edit-ai-button">Edit with AI</button>}
+
+      {editMode && (
+        <div className="edit-actions">
+          <button 
+            className="save-button"
+            onClick={async () => {
+              await handleSave(days);
+              setEditMode(false);
+            }}
+          >
+            Save Changes
+          </button>
+          <button 
+            className="cancel-button"
+            onClick={() => {
+              setEditMode(false);
+              async function reload() {
+                const itineraryId = 6;
+                const data = await fetchItinerary(itineraryId);
+                setDays(data);
+              }
+              reload();
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+  </div>
   );
 }

@@ -10,6 +10,80 @@
   box-sizing: border-box;
 }
 
+/* Navbar styling for view page */
+.view-page .auth-navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 16px clamp(16px, 4vw, 56px);
+  z-index: 100;
+  flex-shrink: 0;
+  margin-bottom: 20px;
+}
+
+.view-page .auth-navbar .auth-navbar-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.view-page .auth-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.view-page .auth-brand:hover {
+  color: #34495e;
+}
+
+.view-page .auth-cta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.view-page .auth-cta span {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.view-page .auth-cta-link {
+  color: #2c3e50;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.view-page .auth-cta-link:hover {
+  background: #f5f5f5;
+  color: #1a252f;
+}
+
+
+/* Compact layout for home page */
+.itinerary-section.compact .itinerary-list {
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.itinerary-section.compact .time-block {
+  min-height: 300px;
+}
+
+
 /* Itinerary main section */
 .itinerary-section {
   width: 100%;
@@ -242,7 +316,7 @@
 }
 
 /* Edit with AI button */
-.view-page > button {
+.edit-ai-button {
   background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
   color: white;
   border: none;
@@ -254,7 +328,66 @@
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 107, 187, 0.3);
   margin-top: 12px;
-  align-self: center;
+}
+
+.edit-ai-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 107, 187, 0.4);
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+}
+
+.edit-ai-button:active {
+  transform: translateY(0);
+}
+
+/* Edit mode action buttons */
+.edit-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.save-button,
+.cancel-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.save-button {
+  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
+  color: white;
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+  background: linear-gradient(135deg, #218838 0%, #28a745 100%);
+}
+
+.save-button:active {
+  transform: translateY(0);
+}
+
+.cancel-button {
+  background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+  color: white;
+}
+
+.cancel-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+  background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+}
+
+.cancel-button:active {
+  transform: translateY(0);
 }
 
 .view-page > button:hover {
