@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
@@ -8,13 +9,17 @@ import "../styles/Itinerary.css";
 import { apiCurrent } from "../api/account";
 
 export default function ViewItineraryPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [days, setDays] = useState<DayItinerary[]>([]);
-  const [editMode, setEditMode] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
+  
+  // Get itinerary ID from navigation state
+  const itineraryId = location.state?.itineraryId;
   
   // Store metadata needed for saving
   const [itineraryMetadata, setItineraryMetadata] = useState({
-    id: 6,
+    id: 0,
     startDate: "",
     endDate: "",
     title: "",
@@ -50,7 +55,7 @@ export default function ViewItineraryPage() {
       );
       
       const result = await saveItineraryChanges(apiPayload);
-      console.log("Save successful! Itinerary ID:", result.id);
+      console.log("Save result:", result);
       alert("Itinerary saved successfully!");
     } catch (error) {
       console.error("Failed to save itinerary:", error);
@@ -59,29 +64,41 @@ export default function ViewItineraryPage() {
   };
 
   useEffect(() => {
+    // Redirect back to home if no itinerary ID is provided
+    if (!itineraryId) {
+      console.error("No itinerary ID provided");
+      navigate('/');
+      return;
+    }
+
     async function load() {
-      const itineraryId = 6; // <--itinerary ID for itinerary that is being fetched
-      
-      // Fetch the full API response to get metadata
-      const apiResponse = await apiItineraryDetails(itineraryId);
-      
-      if (apiResponse.result) {
-        // Store metadata
-        setItineraryMetadata({
-          id: apiResponse.result.id,
-          startDate: apiResponse.result.start_date,
-          endDate: apiResponse.result.end_date,
-          title: apiResponse.result.title,
-          chatSessionId: apiResponse.result.chat_session_id,
-        });
+      try {
+        // Fetch the full API response to get metadata
+        const apiResponse = await apiItineraryDetails(itineraryId);
         
-        // Transform and store days
-        const data = await fetchItinerary(itineraryId);
-        setDays(data);
+        if (apiResponse.result) {
+          // Store metadata
+          setItineraryMetadata({
+            id: apiResponse.result.id,
+            startDate: apiResponse.result.start_date,
+            endDate: apiResponse.result.end_date,
+            title: apiResponse.result.title,
+            chatSessionId: apiResponse.result.chat_session_id,
+          });
+          
+          // Transform and store days
+          const data = await fetchItinerary(itineraryId);
+          setDays(data);
+        }
+      } catch (error) {
+        console.error("Failed to load itinerary:", error);
+        alert("Failed to load itinerary. Redirecting to home.");
+        navigate('/');
       }
     }
+    
     load();
-  }, []);
+  }, [itineraryId, navigate]);
 
   return (
     <div className="view-page">
@@ -90,40 +107,9 @@ export default function ViewItineraryPage() {
         days={days} 
         onUpdate={handleItineraryUpdate}
         onSave={handleSave}
-        editMode={editMode}
-        onEditModeChange={setEditMode}
         title={itineraryMetadata.title}
       />
-
-      {!editMode && <button className="edit-ai-button">Edit with AI</button>}
-
-      {editMode && (
-        <div className="edit-actions">
-          <button 
-            className="save-button"
-            onClick={async () => {
-              await handleSave(days);
-              setEditMode(false);
-            }}
-          >
-            Save Changes
-          </button>
-          <button 
-            className="cancel-button"
-            onClick={() => {
-              setEditMode(false);
-              async function reload() {
-                const itineraryId = 6;
-                const data = await fetchItinerary(itineraryId);
-                setDays(data);
-              }
-              reload();
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-  </div>
+      <button className="edit-ai-button">Edit with AI</button>
+    </div>
   );
 }
