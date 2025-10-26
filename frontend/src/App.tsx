@@ -20,9 +20,7 @@ export default function App() {
         <Route
           path="/"
           element={
-            <InverseProtectedRoute>
               <Index />
-            </InverseProtectedRoute>
           }
         />
         <Route

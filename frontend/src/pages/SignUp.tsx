@@ -52,6 +52,10 @@ export default function Signup() {
       last_name: lastName,
       password
     });
+    if (status === 409) {
+      setError("An account with this email already exists. Please log in instead.");
+      return;
+    }
     if (status !== 200) {
       setAuthorized(false);
       setError("Sign up failed.");
