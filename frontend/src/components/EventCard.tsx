@@ -15,7 +15,6 @@ interface EventCardProps {
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
   onDragEnd?: (e: React.DragEvent) => void;
 }
-
 const EventCard: React.FC<EventCardProps> = ({
   title,
   desc,
@@ -26,26 +25,40 @@ const EventCard: React.FC<EventCardProps> = ({
   onDragEnd,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const openModal = () => {
-    if (!draggable) setIsOpen(true); // Prevent click from opening modal while dragging
+    if (!isDragging) setIsOpen(true);
   };
+  
   const closeModal = () => setIsOpen(false);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    if (onDragStart) {
+      onDragStart(e, { title, desc, time });
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false);
+    if (onDragEnd) {
+      onDragEnd(e);
+    }
+  };
 
   return (
     <>
-      {/* Card container */}
       <div
         className={`event-card ${draggable ? "draggable" : ""}`}
         draggable={draggable}
-        onDragStart={(e) => onDragStart && onDragStart(e, { title, desc, time })}
-        onDragEnd={onDragEnd}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
         onClick={openModal}
       >
         <h3 className="event-title">{title}</h3>
       </div>
 
-      {/* Modal display */}
       {isOpen && (
         <div className="event-modal-overlay" onClick={closeModal}>
           <div className="event-modal" onClick={(e) => e.stopPropagation()}>
@@ -70,5 +83,4 @@ const EventCard: React.FC<EventCardProps> = ({
     </>
   );
 };
-
 export default EventCard;
