@@ -3,6 +3,7 @@ import IndexPage from "./pages/IndexPage";
 import Home from "./pages/Home";
 import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
+import Preferences from './pages/Preferences';
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,14 @@ export default function App() {
               <Signup />
             </AuthLayout>
           }
+        />
+        <Route 
+          path="/account/preferences" 
+          element={
+            <ProtectedRoute>
+              <Preferences />
+            </ProtectedRoute>
+          } 
         />
         <Route path="*" element={<NotFound />} />
       </Routes>

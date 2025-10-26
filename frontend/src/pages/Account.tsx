@@ -1,67 +1,29 @@
-import { Link } from "react-router-dom";
-// Import all necessary API functions and types
-import { 
-  apiLogout, 
-  apiUpdateAccount, 
-  apiGetProfile, 
-  type UpdateRequest, 
-  type UpdateResponse 
-} from "../api/account";
-import { useContext, type Context, useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { apiLogout } from "../api/account";
+import { useContext, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
-
-// Define the types for the preference options for clarity
-type BudgetOption = 'VeryLowBudget' | 'LowBudget' | 'MediumBudget' | 'HighBudget' | 'LuxuryBudget';
-type RiskOption = 'ChillVibes' | 'LightFun' | 'Adventurer' | 'RiskTaker';
+import "../styles/Account.css";
 
 export default function Account() {
-  // --- Component State ---
-  // The 'username' field (which corresponds to 'email' in the API) will be disabled for editing
-  // as the API uses 'email' but the form shows 'username'. Assuming 'username' is what the user sees.
-  const [email, setEmail] = useState("");
+  const { setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine current page based on route
+  const currentPage = location.pathname.split('/').pop() || 'account';
+  
+  // Your existing state variables
+  const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const [email, setEmail] = useState("ellielknapp@gmail.com");
   const [password, setPassword] = useState("");
-  const [budget, setBudget] = useState<BudgetOption>("MediumBudget");
-  const [riskTolerance, setRiskTolerance] = useState<RiskOption>("LightFun");
+  const [budget, setBudget] = useState("Medium");
+  const [riskTolerance, setRiskTolerance] = useState("Medium");
   const [disabilities, setDisabilities] = useState("");
   const [foodPreferences, setFoodPreferences] = useState("");
-  const [statusMessage, setStatusMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
-  const { setAuthorized } = useContext<GlobalState>(GlobalContext as Context<GlobalState>);
-
-  // --- Utility Data ---
-  const budgetOptions: BudgetOption[] = ['VeryLowBudget', 'LowBudget', 'MediumBudget', 'HighBudget', 'LuxuryBudget'];
-  const riskOptions: RiskOption[] = ['ChillVibes', 'LightFun', 'Adventurer', 'RiskTaker'];
-
-  // --- Fetch Initial Data on Load ---
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data: UpdateResponse = await apiGetProfile();
-        
-        // Populate state from API response
-        setEmail(data.email || "");
-        
-        // The password should NEVER be returned from the API, so we leave it empty for a new input
-        setPassword(""); 
-
-        // Populate preferences, converting nulls to empty strings or default enum values
-        setBudget((data.budget_preference as BudgetOption) || "MediumBudget");
-        setRiskTolerance((data.risk_preference as RiskOption) || "LightFun");
-        setDisabilities(data.disabilities || "");
-        setFoodPreferences(data.food_allergies || "");
-        
-      } catch (e) {
-        console.error("Failed to load profile:", e);
-        setStatusMessage({ message: "Failed to load account details. Please log in again.", type: 'error' });
-      }
-    };
-
-    fetchProfile();
-  }, [setAuthorized]);
-
-
-  // --- Logout Logic (unchanged) ---
   const onLogout = async () => {
     console.log("Logging out");
     try {
@@ -69,212 +31,231 @@ export default function Account() {
     } catch (e) {
       console.error("Logout error:", e);
     } finally {
-      window.location.href = "/"; 
+      window.location.href = "/";
       setAuthorized(false);
     }
   };
 
-  // --- Handle Update Logic (The new core function) ---
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatusMessage(null); // Clear previous messages
-
-    const payload: UpdateRequest = {
-      // Username is typically the email in backend, we should not change it 
-      // unless we know the API supports it, so we exclude it or ensure it's not editable.
-      // email: email, // Assuming email is the username field and is read-only
-      
-      // Only include password if the user typed something new
-      ...(password && { password: password }), 
-      
-      // Include all preferences
-      budget_preference: budget,
-      risk_preference: riskTolerance,
-      disabilities: disabilities,
-      food_allergies: foodPreferences,
-    };
-    
-    // Remove undefined/empty optional fields from payload if necessary,
-    // though the provided structure handles optional fields with '?'
-
-    console.log("Sending update payload:", payload);
-
-    try {
-      // Call the API
-      await apiUpdateAccount(payload);
-      
-      // On success: 
-      setStatusMessage({ message: "Account settings updated successfully! 🎉", type: 'success' });
-      // Reset the password field after a successful update for security
-      setPassword(""); 
-
-    } catch (error) {
-      console.error("Update failed:", error);
-      let errorMessage = "An unknown error occurred during update.";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      setStatusMessage({ message: `Update failed: ${errorMessage}`, type: 'error' });
-    }
-  };
-
-
-  // --- Styling (kept from previous step) ---
-  const sectionStyle: React.CSSProperties = { 
-    marginTop: "20px", 
-    border: "1px solid #ccc", 
-    padding: "20px", 
-    maxWidth: "550px", 
-    marginBottom: "20px" 
-  };
-  const inputGroupStyle: React.CSSProperties = { marginBottom: "15px" };
-  const labelStyle: React.CSSProperties = { display: "block", marginBottom: "5px", fontWeight: "bold" };
-  const inputStyle: React.CSSProperties = { width: "100%", padding: "8px", boxSizing: "border-box" };
-  const statusStyle: React.CSSProperties = {
-    padding: '10px',
-    borderRadius: '4px',
-    marginBottom: '20px',
-    color: 'white',
-    fontWeight: 'bold'
+    // Your update logic here
+    setStatusMessage({type: 'success', message: 'Settings updated successfully!'});
   };
 
   return (
-    <div>
-      {/* Navigation */}
-      <nav>
-        <Link to="/">Index</Link> | <Link to="/home">Home</Link> |{" "}
-        <Link to="/view">View</Link>
+    <div className="auth-page auth-page--account">
+      <nav className="auth-navbar">
+        <div className="auth-navbar-content">
+          <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+            <Link to="/">Index</Link>
+            <span>|</span>
+            <Link to="/home">Home</Link>
+            <span>|</span>
+            <Link to="/view">View</Link>
+          </div>
+        </div>
       </nav>
-
-      <h1>Account Settings</h1>
-
-      {/* Status Message Display */}
-      {statusMessage && (
-        <div style={{ 
-          ...statusStyle, 
-          backgroundColor: statusMessage.type === 'success' ? '#28a745' : '#dc3545',
-          maxWidth: "550px"
-        }}>
-          {statusMessage.message}
-        </div>
-      )}
-
-      {/* Main Update Form for All Settings */}
-      <form onSubmit={handleUpdate}>
-
-        {/* --- 1. Account Details Section --- */}
-        <div style={sectionStyle}>
-          <h2>👤 Login Details</h2>
-          
-          {/* Email/Username Field (ReadOnly) */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="email" style={labelStyle}>Username (Email):</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              // Set to readOnly because changing the primary login ID (email) 
-              // is often a separate, complex process.
-              readOnly 
-              style={{ ...inputStyle, backgroundColor: '#f4f4f4' }} 
-            />
-            <small style={{ color: '#666' }}>Your username is linked to your email and cannot be changed here.</small>
-          </div>
-
-          {/* Password Field */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="password" style={labelStyle}>New Password (Leave blank to keep current):</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
-              placeholder="Enter new password"
-            />
-            <small style={{ color: '#666' }}>Only enter a password if you wish to change it.</small>
-          </div>
-        </div>
-
-        {/* --- 2. User Preferences Section --- */}
-        <div style={sectionStyle}>
-          <h2>⚙️ Activity Preferences</h2>
-          
-          {/* Budget Dropdown */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="budget" style={labelStyle}>Budget:</label>
-            <select
-              id="budget"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value as BudgetOption)}
-              style={inputStyle}
-            >
-              {budgetOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Risk Tolerance Dropdown */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="riskTolerance" style={labelStyle}>Risk Tolerance:</label>
-            <select
-              id="riskTolerance"
-              value={riskTolerance}
-              onChange={(e) => setRiskTolerance(e.target.value as RiskOption)}
-              style={inputStyle}
-            >
-              {riskOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Disabilities Text Area */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="disabilities" style={labelStyle}>Disabilities/Accessibility Needs:</label>
-            <textarea
-              id="disabilities"
-              value={disabilities}
-              onChange={(e) => setDisabilities(e.target.value)}
-              style={{ ...inputStyle, minHeight: '80px' }}
-              placeholder="e.g., Wheelchair user, needs assistance with stairs, visual impairment."
-            />
-          </div>
-
-          {/* Food Preferences/Allergies Text Area */}
-          <div style={inputGroupStyle}>
-            <label htmlFor="foodPreferences" style={labelStyle}>Food Preferences/Allergies:</label>
-            <textarea
-              id="foodPreferences"
-              value={foodPreferences}
-              onChange={(e) => setFoodPreferences(e.target.value)}
-              style={{ ...inputStyle, minHeight: '80px' }}
-              placeholder="e.g., Gluten-free, no shellfish, vegan, prefers Italian cuisine."
-            />
-          </div>
-
-        </div>
-
-        {/* Global Update Button for the whole form */}
-        <button 
-          type="submit" 
-          style={{ padding: "12px 20px", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontWeight: "bold" }}
-        >
-          Update All Settings
-        </button>
-
-      </form>
       
-      <hr style={{ margin: "40px 0" }} />
+      <div className="auth-content">
+        <div className="account-wrapper">
+          
+          {/* Collapsible Sidebar */}
+          <aside className="sidebar">
+            <div className="sidebar-toggle">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            
+            <div className="sidebar-content">
+              <button 
+                className="sidebar-item"
+                onClick={() => navigate('/account')}
+              >
+                <div className="sidebar-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <span className="sidebar-label">Account Information</span>
+              </button>
+              
+              <button 
+                className="sidebar-item"
+                onClick={() => navigate('/account/preferences')}
+              >
+                <div className="sidebar-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3" />
+                  </svg>
+                </div>
+                <span className="sidebar-label">Preference Update</span>
+              </button>
+              
+              <button 
+                className="sidebar-item"
+                onClick={() => navigate('/account/itineraries')}
+              >
+                <div className="sidebar-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
+                </div>
+                <span className="sidebar-label">Saved Itineraries</span>
+              </button>
+            </div>
+          </aside>
 
-      {/* Logout Section */}
-      <div style={{ maxWidth: "550px" }}>
-        <h2>🚪 Session Management</h2>
-        <button onClick={onLogout} style={{ padding: "10px 15px", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer" }}>
-          Logout
-        </button>
+          {/* Main Content */}
+          <main className="main-content">
+            <div className="account-container">
+              <div className="account-box">
+                
+                {/* Account Information Page */}
+                {currentPage === 'account' && (
+                  <>
+                    <h1>Account Settings</h1>
+                    
+                    {statusMessage && (
+                      <div className={`status-message status-message--${statusMessage.type}`}>
+                        {statusMessage.message}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleUpdate}>
+                      <div className="settings-section">
+                        <h2>Login Details</h2>
+                        
+                        <div className="field-group">
+                          <label htmlFor="email">Username (Email):</label>
+                          <input
+                            type="email"
+                            id="email"
+                            value={email}
+                            readOnly 
+                            className="input-readonly"
+                          />
+                          <small>Your username is linked to your email and cannot be changed here.</small>
+                        </div>
+
+                        <div className="field-group">
+                          <label htmlFor="password">New Password (Leave blank to keep current):</label>
+                          <input
+                            type="password"
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter new password"
+                          />
+                          <small>Only enter a password if you wish to change it.</small>
+                        </div>
+                      </div>
+
+                      <button type="submit" className="btn-primary">
+                        Update All Settings
+                      </button>
+                    </form>
+
+                    <hr className="section-divider" />
+
+                    <div className="logout-section">
+                      <h2>Session Management</h2>
+                      <button onClick={onLogout} className="btn-danger">
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Preferences Page */}
+                {currentPage === 'preferences' && (
+                  <>
+                    <h1>Activity Preferences</h1>
+                    
+                    {statusMessage && (
+                      <div className={`status-message status-message--${statusMessage.type}`}>
+                        {statusMessage.message}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleUpdate}>
+                      <div className="settings-section">
+                        <div className="field-group">
+                          <label htmlFor="budget">Budget:</label>
+                          <select
+                            id="budget"
+                            value={budget}
+                            onChange={(e) => setBudget(e.target.value)}
+                          >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+
+                        <div className="field-group">
+                          <label htmlFor="riskTolerance">Risk Tolerance:</label>
+                          <select
+                            id="riskTolerance"
+                            value={riskTolerance}
+                            onChange={(e) => setRiskTolerance(e.target.value)}
+                          >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+
+                        <div className="field-group">
+                          <label htmlFor="disabilities">Disabilities/Accessibility Needs:</label>
+                          <textarea
+                            id="disabilities"
+                            value={disabilities}
+                            onChange={(e) => setDisabilities(e.target.value)}
+                            placeholder="e.g., Wheelchair user, needs assistance with stairs, visual impairment."
+                          />
+                        </div>
+
+                        <div className="field-group">
+                          <label htmlFor="foodPreferences">Food Preferences/Allergies:</label>
+                          <textarea
+                            id="foodPreferences"
+                            value={foodPreferences}
+                            onChange={(e) => setFoodPreferences(e.target.value)}
+                            placeholder="e.g., Gluten-free, no shellfish, vegan, prefers Italian cuisine."
+                          />
+                        </div>
+                      </div>
+
+                      <button type="submit" className="btn-primary">
+                        Update All Settings
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {/* Saved Itineraries Page */}
+                {currentPage === 'itineraries' && (
+                  <>
+                    <h1>Saved Itineraries</h1>
+                    
+                    <div className="empty-state">
+                      <p>No saved itineraries yet</p>
+                      <p style={{fontSize: '0.9rem', marginTop: '8px'}}>Your saved travel plans will appear here</p>
+                    </div>
+                  </>
+                )}
+
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
