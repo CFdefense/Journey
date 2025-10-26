@@ -1,8 +1,8 @@
 use crate::error::AppError;
-use axum::{extract::Request, http::header, middleware::Next, response::IntoResponse};
+use axum::{extract::Request, middleware::Next, response::IntoResponse};
 use chrono::Utc;
 use sqlx::PgPool;
-use tower_cookies::cookie::{Cookie, CookieJar, Key};
+use tower_cookies::{cookie::{time::{Duration, OffsetDateTime}, Cookie, Key, SameSite}, Cookies};
 
 /// Inserted into request extensions on authenticated requests
 #[derive(Clone, Copy, Debug)]
@@ -14,7 +14,7 @@ pub struct AuthUser {
 /// - Decrypts `auth-token` private cookie using `Key` from extensions
 /// - Validates embedded expiration and that the user exists in DB
 /// - Inserts `AuthUser` into request extensions on success; otherwise 401
-pub async fn middleware_auth(mut req: Request, next: Next) -> impl IntoResponse {
+pub async fn middleware_auth(cookies: Cookies, mut req: Request, next: Next) -> impl IntoResponse {
 	let key = match req.extensions().get::<Key>() {
 		Some(k) => k.clone(),
 		None => return AppError::Unauthorized.into_response(),
@@ -24,30 +24,8 @@ pub async fn middleware_auth(mut req: Request, next: Next) -> impl IntoResponse 
 		None => return AppError::Unauthorized.into_response(),
 	};
 
-	// Read Cookie header
-	let cookie_header = match req.headers().get(header::COOKIE) {
-		Some(v) => v,
-		None => return AppError::Unauthorized.into_response(),
-	};
-	let cookie_str = match cookie_header.to_str() {
-		Ok(s) => s,
-		Err(_) => return AppError::Unauthorized.into_response(),
-	};
-
-	// Build a jar from incoming cookies
-	let mut jar = CookieJar::new();
-	for pair in cookie_str.split(';') {
-		let s = pair.trim();
-		if s.is_empty() {
-			continue;
-		}
-		if let Ok(parsed) = Cookie::parse(s.to_string()) {
-			jar.add(parsed);
-		}
-	}
-
 	// Decrypt private cookie and extract token
-	let decrypted = match jar.private(&key).get("auth-token") {
+	let decrypted = match cookies.private(&key).get("auth-token") {
 		Some(c) => c,
 		None => return AppError::Unauthorized.into_response(),
 	};
@@ -70,8 +48,36 @@ pub async fn middleware_auth(mut req: Request, next: Next) -> impl IntoResponse 
 		Err(_) => return AppError::Unauthorized.into_response(),
 	};
 
-	if Utc::now().timestamp() > exp {
+	let now = Utc::now().timestamp();
+	if now > exp {
 		return AppError::Unauthorized.into_response();
+	}
+
+	// If the cookie will expire in less than an hour, set it's expiration to one hour from now
+	let one_hour = 3600;
+	if exp - now < one_hour {
+		let new_exp = now + one_hour;
+		let new_token = format!("user-{}.{}.sign", user_id, new_exp);
+
+		let domain = option_env!("DOMAIN").unwrap_or("localhost");
+		let app_env = option_env!("APP_ENV").unwrap_or("development");
+		let on_production = app_env == "production";
+
+		let new_cookie = Cookie::build(("auth-token", new_token.clone()))
+			.domain(domain.to_string())
+			.path("/")
+			.secure(on_production)
+			.http_only(true)
+			.same_site(if on_production {
+				SameSite::Strict
+			} else {
+				SameSite::Lax
+			})
+			.expires(OffsetDateTime::now_utc().saturating_add(Duration::hours(1)))
+			.max_age(Duration::hours(1))
+			.build();
+
+		cookies.private(&key).add(new_cookie);
 	}
 
 	// Ensure user exists

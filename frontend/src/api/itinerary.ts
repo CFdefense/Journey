@@ -34,7 +34,7 @@ export async function apiItineraryDetails(
 		);
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
-		console.error("apiItineraryDetails network error:", error);
+		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };
 	}
 }

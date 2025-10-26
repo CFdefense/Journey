@@ -73,10 +73,10 @@ pub struct UpdateResponse {
 	pub risk_preference: Option<RiskTolerence>,
 	/// Optional food and allergies preferences
 	/// * String is a comma-separated list of preferences
-	pub food_allergies: Option<String>,
+	pub food_allergies: String,
 	/// Optional disabilites
 	/// * String is a comma-separated list of preferences
-	pub disabilities: Option<String>,
+	pub disabilities: String,
 }
 
 /// API route response for GET `/api/account/current`.
@@ -94,9 +94,9 @@ pub struct CurrentResponse {
 	/// Optional risk enum
 	pub risk_preference: Option<RiskTolerence>,
 	/// Optional food and allergies preferences
-	pub food_allergies: Option<String>,
+	pub food_allergies: String,
 	/// Optional food and allergies preferences
-	pub disabilities: Option<String>,
+	pub disabilities: String,
 }
 
 impl SignupRequest {

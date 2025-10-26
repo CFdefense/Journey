@@ -22,12 +22,6 @@ export default function Signup() {
     e.preventDefault();
 
     // sanitize user input
-    const emailError = logic.checkIfValidEmail(email);
-    if (emailError) {
-      setError(emailError);
-      return;
-    }
-
     const nameError = logic.checkIfValidName(firstName, lastName);
     if (nameError) {
       setError(nameError);

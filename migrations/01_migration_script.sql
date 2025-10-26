@@ -46,8 +46,8 @@ CREATE TABLE accounts (
     last_name VARCHAR(255) NOT NULL,
     budget_preference budget_bucket,
     risk_preference risk_tolerence,
-    food_allergies TEXT,
-    disabilities TEXT
+    food_allergies TEXT NOT NULL DEFAULT '',
+    disabilities TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE events (
