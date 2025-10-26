@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
-import Itinerary from "../components/Itinerary";
+import ItinerarySideBar from "../components/ItinerarySideBar";
 import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
@@ -24,6 +24,7 @@ export default function Home() {
     null
   );
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
   const [firstName, setFirstName] = useState<string>("");
 
   useEffect(() => {
@@ -194,6 +195,10 @@ export default function Home() {
     setSidebarVisible((prev) => !prev);
   };
 
+  const handleToggleItinerarySidebar = () => {
+    setItinerarySidebarVisible((prev) => !prev);
+  };
+
   const activeChat = chats?.find((c) => c.id === activeChatId) ?? null;
 
   return (
@@ -219,9 +224,10 @@ export default function Home() {
           />
         </div>
 
-        <div className="itinerary-wrapper">
-          <Itinerary />
-        </div>
+        <ItinerarySideBar
+          onToggleSidebar={handleToggleItinerarySidebar}
+          sidebarVisible={itinerarySidebarVisible}
+        />
       </div>
     </div>
   );

@@ -67,55 +67,6 @@
   color: #1a252f;
 }
 
-.home-layout {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 0;
-  max-width: 100%;
-  margin: 0;
-  padding: 1rem; /* Add padding here instead of on individual wrappers */
-  position: relative;
-  background: transparent;
-  min-height: 0;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-/* Chat window positioning - fills available space */
-.chat-window-wrapper {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  padding: 0; /* Remove padding here */
-  padding-left: 1rem; /* Add left padding for spacing from sidebar */
-  transition: all 0.3s ease;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-/* Chat container - expands to fill wrapper */
-.chat-window-wrapper .chat-container {
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-}
-
-/* Itinerary wrapper */
-.itinerary-wrapper {
-  width: 340px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: 0; /* Remove padding here */
-  padding-left: 1rem; /* Add left padding for spacing */
-  box-sizing: border-box;
-}
-
-/* Add to Home.css or your navbar styles */
-
 .user-profile-link {
   display: flex;
   align-items: center;
@@ -139,12 +90,45 @@
   color: #1a252f;
 }
 
+.home-layout {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+  position: relative;
+  background: transparent;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Chat window positioning - fills available space */
+.chat-window-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Chat container - expands to fill wrapper */
+.chat-window-wrapper .chat-container {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-  .itinerary-wrapper {
-    display: none;
-  }
-  
   .chat-window-wrapper .chat-container {
     max-width: 900px;
     margin: 0 auto;
@@ -158,6 +142,7 @@
   
   .chat-window-wrapper {
     padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
   
   .home-page .auth-cta span {
