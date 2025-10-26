@@ -19,7 +19,7 @@ import type {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiLogin(payload: LoginRequest): Promise<ApiResult<boolean>> {
+export async function apiLogin(payload: LoginRequest): Promise<ApiResult<void>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/login`, {
             method: "POST",
@@ -29,7 +29,7 @@ export async function apiLogin(payload: LoginRequest): Promise<ApiResult<boolean
             credentials: import.meta.env.DEV ? "include" : "same-origin",
             body: JSON.stringify(payload)
         });
-        return { result: response.ok, status: response.status };
+        return { result: undefined, status: response.status };
     } catch (error) {
         console.error("Login API error: ", error);
         return { result: false, status: -1 };
@@ -77,7 +77,7 @@ export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<numbe
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiLogout(): Promise<ApiResult<boolean>> {
+export async function apiLogout(): Promise<ApiResult<void>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/logout`, {
             method: "GET",
@@ -86,10 +86,10 @@ export async function apiLogout(): Promise<ApiResult<boolean>> {
             },
             credentials: import.meta.env.DEV ? "include" : "same-origin"
         });
-        return { result: response.ok, status: response.status };
+        return { result: undefined, status: response.status };
     } catch (error) {
         console.error("Logout Up API error: ", error);
-        return { result: false, status: -1 };
+        return { result: undefined, status: -1 };
     }
 }
 
@@ -103,7 +103,7 @@ export async function apiLogout(): Promise<ApiResult<boolean>> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiValidate(): Promise<ApiResult<boolean>> {
+export async function apiValidate(): Promise<ApiResult<void>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/validate`, {
             method: "GET",
@@ -112,10 +112,10 @@ export async function apiValidate(): Promise<ApiResult<boolean>> {
             },
             credentials: import.meta.env.DEV ? "include" : "same-origin"
         });
-        return { result: response.ok, status: response.status };
+        return { result: undefined, status: response.status };
     } catch (error) {
         console.error("Validate API error: ", error);
-        return { result: false, status: -1 };
+        return { result: null, status: -1 };
     }
 }
 

@@ -22,7 +22,7 @@ export default function Index() {
   useEffect(() => {
     if (!bypassProtection() && authorized === null) {
       apiValidate().then(({ result, status }) => {
-        setAuthorized(result && status === 200);
+        setAuthorized(!!result && status === 200);
       }).catch(() => {
         setAuthorized(false);
       });
