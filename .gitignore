@@ -21,4 +21,5 @@
 /frontend/*.local
 /frontend/src/helpers/config.ts
 /frontend/tests/testApi.ts
-/frontend/coverage  
+/frontend/coverage
+coverage/
