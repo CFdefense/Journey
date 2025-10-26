@@ -114,6 +114,31 @@
   box-sizing: border-box;
 }
 
+/* Add to Home.css or your navbar styles */
+
+.user-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem !important;
+}
+
+.user-profile-pic {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-first-name {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.user-profile-link:hover .user-first-name {
+  color: #1a252f;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .itinerary-wrapper {

@@ -23,7 +23,8 @@ export default function Home() {
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
-  const [sidebarVisible, setSidebarVisible] = useState(true); 
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [firstName, setFirstName] = useState<string>("");
 
   useEffect(() => {
     async function fetchAccount() {
@@ -42,6 +43,9 @@ export default function Home() {
         setShowFinishPopup(false);
         return; // TODO handle and display error
       }
+
+      // Set the first name
+      setFirstName(account.first_name || "");
 
       // check if any preferences were not yet filled out
       setShowFinishPopup(
@@ -85,7 +89,7 @@ export default function Home() {
         return; // TODO handle and display error
       }
 
-    // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
+      // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
 
       const messages = messagePageResult.result.message_page;
       setChats(
@@ -194,7 +198,7 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Navbar page="home" />
+      <Navbar page="home" firstName={firstName} />
       <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
         {showFinishPopup && <FinishAccountPopup />}
 
