@@ -5,17 +5,17 @@
   justify-content: space-between;
   height: 100%;
   width: 100%;
-  background: #ffffff;
+  background: #FFE3B3;
   border-radius: 8px;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e0e0e0;
+  border: 1px solid #FFC872;
 }
 
 /* Chat Header */
 .chat-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  background: #FFE3B3;
+  border-bottom: 1px solid #FFC872;
   padding: 1rem 1.5rem;
   border-radius: 8px 8px 0 0;
   flex-shrink: 0;
@@ -63,7 +63,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: #fafafa;
+  background: #FFE3B3;
 }
 
 /* Custom scrollbar for chat messages */
@@ -76,18 +76,18 @@
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
+  background: #FFC872;
   border-radius: 4px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
+  background: #FFB84D;
 }
 
 /* Firefox scrollbar */
 .chat-messages {
   scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
+  scrollbar-color: #FFC872 transparent;
 }
 
 /* Empty state styling */
@@ -100,7 +100,7 @@
 }
 
 .chat-empty-state p {
-  color: #999;
+  color: #8B6914;
   font-size: 1.2rem;
   text-align: center;
   margin: 0;
@@ -108,7 +108,7 @@
 
 /* Placeholder for empty chat - no longer used but kept for compatibility */
 .chat-placeholder {
-  color: #999;
+  color: #8B6914;
   text-align: center;
   margin-top: 2rem;
 }
@@ -175,9 +175,9 @@
 
 /* Received messages (bot) */
 .chat-message.bot {
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
-  color: #333;
+  background: #30A0E0;
+  border: 1px solid #006BBB;
+  color: #ffffff;
   border-bottom-left-radius: 4px;
 }
 
@@ -194,7 +194,7 @@
 .timestamp {
   display: block;
   font-size: 0.75rem;
-  color: #999;
+  color: #8B6914;
   padding: 0 0.25rem;
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -202,12 +202,12 @@
 
 .chat-message-wrapper.user .timestamp {
   text-align: right;
-  color: #999;
+  color: #8B6914;
 }
 
 .chat-message-wrapper.bot .timestamp {
   text-align: left;
-  color: #999;
+  color: #8B6914;
 }
 
 /* Show timestamp on hover */
@@ -221,9 +221,9 @@
 }
 
 .display-itinerary-button {
-  background: #FFE3B3;
-  border: 1px solid #FFC872;
-  color: #8B6914;
+  background: #FFC872;
+  border: 1px solid #FFB84D;
+  color: #2c3e50;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -233,8 +233,8 @@
 }
 
 .display-itinerary-button:hover {
-  background: #FFC872;
-  border-color: #FFB84D;
+  background: #FFB84D;
+  border-color: #FFA500;
   transform: translateY(-1px);
 }
 
@@ -244,8 +244,8 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e0e0e0;
-  background: #ffffff;
+  border-top: 1px solid #FFC872;
+  background: #FFE3B3;
   border-radius: 0 0 8px 8px;
   flex-shrink: 0;
 }
@@ -253,11 +253,11 @@
 /* Input box */
 .message-box {
   flex: 1;
-  border: 1px solid #ddd;
+  border: 1px solid #FFC872;
   border-radius: 24px;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
-  background: #f9f9f9;
+  background: #ffffff;
   color: #333;
   transition:
     border-color 0.3s,

@@ -157,6 +157,7 @@ export default function Home() {
     // don't allow spamming new chats
     // instead, create the new chat once a message has been sent in it
     setActiveChatId(null);
+    setItinerarySidebarVisible(false);
   };
 
   const handleSendMessage = async (txt: string) => {
@@ -215,6 +216,8 @@ export default function Home() {
       return; // TODO: handle and display error
     }
 
+    const botMessage = sendResult.result!.bot_message;
+
     // Thanks, React, for making this the convention for updating state
     setChats((prevChats) =>
       (prevChats ?? []).map((c) =>
@@ -232,6 +235,11 @@ export default function Home() {
           : c
       )
     );
+
+    if (botMessage.itinerary_id !== null) {
+      setSelectedItineraryId(botMessage.itinerary_id);
+      setItinerarySidebarVisible(true);
+    }
   };
 
   const handleToggleSidebar = () => {
