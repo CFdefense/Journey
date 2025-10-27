@@ -5,6 +5,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
+use std::sync::Arc;
 use utoipa::OpenApi;
 
 use crate::{
@@ -24,6 +25,9 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
+
+// Define the agent type as a type alias for cleaner code
+type AgentType = Arc<std::sync::Mutex<langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>>>;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -56,6 +60,7 @@ async fn send_message_to_llm(
 	chat_session_id: i32,
 	itinerary_id: Option<i32>,
 	pool: &PgPool,
+	agent: &AgentType,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
@@ -551,6 +556,7 @@ pub async fn api_message_page(
 pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
+	Extension(agent): Extension<AgentType>,
 	Json(UpdateMessageRequest {
 		message_id,
 		new_text,
@@ -617,6 +623,7 @@ pub async fn api_update_message(
 		chat_session_id,
 		itinerary_id,
 		&pool,
+		&agent,
 	)
 	.await?;
 
@@ -693,6 +700,7 @@ pub async fn api_update_message(
 pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
+	Extension(agent): Extension<AgentType>,
 	Json(SendMessageRequest {
 		chat_session_id,
 		text,
@@ -734,7 +742,7 @@ pub async fn api_send_message(
 
 	// call llm and insert bot response into db
 	let bot_message =
-		send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool).await?;
+		send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool, &agent).await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,
