@@ -9,7 +9,7 @@ type NavbarProps = {
   firstName?: string;
 };
 
-export default function Navbar({ page }: NavbarProps) {
+export default function Navbar({ page, firstName }: NavbarProps) {
   const { authorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );

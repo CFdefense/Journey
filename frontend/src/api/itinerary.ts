@@ -39,10 +39,6 @@ export async function apiItineraryDetails(
 	}
 }
 
-
-
-
-
 export async function saveItineraryChanges(payload: Itinerary): Promise<SaveResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
