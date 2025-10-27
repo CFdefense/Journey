@@ -1,6 +1,6 @@
 .itinerary-sidebar {
-  background: #FFE3B3;
-  border-left: 1px solid #FFC872;
+  background: #ffffff;
+  border-left: 1px solid #e0e0e0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -9,6 +9,7 @@
   transition: width 0.3s ease;
   align-self: stretch;
   box-sizing: border-box;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
 /* When sidebar is open - 30% of viewport width */
@@ -21,7 +22,7 @@
 /* When sidebar is closed */
 .itinerary-sidebar.closed {
   width: 50px;
-  background: #FFE3B3;
+  background: #ffffff;
 }
 
 /* Top section with toggle button and optional title */
@@ -30,7 +31,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem;
-  border-bottom: 1px solid #FFC872;
+  border-bottom: 1px solid #e0e0e0;
   height: 50px;
   box-sizing: border-box;
 }
@@ -54,20 +55,21 @@
 .itinerary-sidebar-toggle-btn {
   background: transparent;
   border: none;
-  color: #2c3e50;
+  color: #666;
   font-size: 1.3rem;
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: all 0.2s;
   border-radius: 4px;
   flex-shrink: 0;
 }
 
 .itinerary-sidebar-toggle-btn:hover {
-  background: rgba(255, 200, 114, 0.3);
+  background: #f0f0f0;
+  color: #333;
 }
 
 /* Itinerary content wrapper */
@@ -90,18 +92,18 @@
 }
 
 .itinerary-content::-webkit-scrollbar-thumb {
-  background: #FFC872;
+  background: #d0d0d0;
   border-radius: 4px;
 }
 
 .itinerary-content::-webkit-scrollbar-thumb:hover {
-  background: #FFB84D;
+  background: #b0b0b0;
 }
 
 /* Firefox scrollbar */
 .itinerary-content {
   scrollbar-width: thin;
-  scrollbar-color: #FFC872 transparent;
+  scrollbar-color: #d0d0d0 transparent;
 }
 
 .itinerary-sidebar.closed .itinerary-content {
@@ -132,12 +134,12 @@
 
 /* Save button */
 .save-itinerary-btn {
-  background: #006BBB;
+  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
   box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
 }
 
 .save-itinerary-btn:hover:not(:disabled) {
-  background: #30A0E0;
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
   box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
   transform: translateY(-1px);
 }
@@ -149,12 +151,12 @@
 
 /* Edit button */
 .edit-itinerary-btn {
-  background: #FA8072;
+  background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
   box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
 }
 
 .edit-itinerary-btn:hover:not(:disabled) {
-  background: #FF9B8A;
+  background: linear-gradient(135deg, #e56b5d 0%, #FA8072 100%);
   box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
   transform: translateY(-1px);
 }
