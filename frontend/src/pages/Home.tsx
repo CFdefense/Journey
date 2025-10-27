@@ -17,6 +17,7 @@ import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
 import { fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
+import { apiItineraryDetails } from "../api/itinerary";
 
 export default function Home() {
   const [chats, setChats] = useState<ChatSession[] | null>(null);
@@ -29,6 +30,7 @@ export default function Home() {
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
   const [firstName, setFirstName] = useState<string>("");
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
+  const [itineraryTitle, setItineraryTitle] = useState<string>("");
 
   useEffect(() => {
     async function fetchAccount() {
@@ -122,10 +124,18 @@ export default function Home() {
       try {
         const data = await fetchItinerary(itineraryId);
         setItineraryData(data);
+
+        const apiResponse = await apiItineraryDetails(itineraryId);
+
+        if (apiResponse.result) {
+        setItineraryTitle(apiResponse.result.title);
+        }
+
         console.log("Loaded itinerary data:", data);
       } catch (error) {
         console.error("Error loading itinerary:", error);
         setItineraryData(null);
+        setItineraryTitle("");
       }
     }
 
@@ -136,6 +146,7 @@ export default function Home() {
   useEffect(() => {
     setSelectedItineraryId(null);
     setItineraryData(null);
+     setItineraryTitle("");
   }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
@@ -269,6 +280,7 @@ export default function Home() {
           sidebarVisible={itinerarySidebarVisible}
           itineraryData={itineraryData}
           selectedItineraryId={selectedItineraryId}
+          itineraryTitle={itineraryTitle}
         />
       </div>
     </div>
