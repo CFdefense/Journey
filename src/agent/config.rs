@@ -20,6 +20,9 @@ use langchain_rust::{
 
 use crate::agent::tools::GreetingTool;
 
+// Use a type alias for the agent type to make it easier to use
+pub type AgentType = Arc<tokio::sync::Mutex<langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>>>;
+
 pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();

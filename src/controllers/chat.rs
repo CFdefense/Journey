@@ -5,10 +5,10 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use std::sync::Arc;
 use utoipa::OpenApi;
 
 use crate::{
+	agent::config::AgentType,
 	controllers::{AxumRouter, itinerary::insert_event_list},
 	error::{ApiResult, AppError},
 	global::MESSAGE_PAGE_LEN,
@@ -25,9 +25,7 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
-
-// Define the agent type as a type alias for cleaner code
-type AgentType = Arc<std::sync::Mutex<langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>>>;
+use langchain_rust::{prompt_args, chain::Chain};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -89,7 +87,7 @@ async fn send_message_to_llm(
 			.map(|record| record.itinerary_id.unwrap())
 		}
 	};
-	let context_itinerary = match itinerary_id {
+	let _context_itinerary = match itinerary_id {
 		Some(id) => Some(
 			crate::controllers::itinerary::api_get_itinerary(
 				Extension(AuthUser { id: account_id }),
@@ -101,10 +99,20 @@ async fn send_message_to_llm(
 		None => None,
 	};
 
-	// TODO: this is where the LLM call will be.
-	// It should generate an itinerary, insert it into the db, and give some text.
-	// Fow now we just make a temporary message.
-	let ai_text = "Bot reply";
+	// Actually call the AI agent
+	let ai_response = {
+		let agent_guard = agent.lock().await;
+		agent_guard
+			.invoke(prompt_args! {
+				"input" => text,
+			})
+			.await
+			.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
+	};
+	
+	let ai_text = ai_response;
+	
+	// Create dummy itinerary (will be replaced by AI-generated one later)
 	let mut ai_itinerary = Itinerary {
 		id: 0,
 		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
@@ -117,9 +125,7 @@ async fn send_message_to_llm(
 					postal_code: 17013,
 					city: String::from("Carlisle"),
 					event_type: String::from("Hike"),
-					event_description: String::from(
-						"A beautiful stroll along a river in this cute small town.",
-					),
+					event_description: String::from("A beautiful stroll along a river in this cute small town."),
 					event_name: String::from("Family Walking Path"),
 				}],
 				noon_events: vec![Event {
@@ -128,9 +134,7 @@ async fn send_message_to_llm(
 					postal_code: 12601,
 					city: String::from("Poughkeepsie"),
 					event_type: String::from("Restaurant"),
-					event_description: String::from(
-						"Local Italian restaurant known for its authentic pasta and upscale dining.",
-					),
+					event_description: String::from("Local Italian restaurant known for its authentic pasta and upscale dining."),
 					event_name: String::from("Cosimos"),
 				}],
 				afternoon_events: vec![Event {
@@ -139,9 +143,7 @@ async fn send_message_to_llm(
 					postal_code: 10017,
 					city: String::from("New York"),
 					event_type: String::from("Museum"),
-					event_description: String::from(
-						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
-					),
+					event_description: String::from("World famous art museum with a focus on modern works, including Starry Starry Night by VanGough."),
 					event_name: String::from("Museum of Modern Art- MoMA"),
 				}],
 				evening_events: vec![Event {
@@ -150,9 +152,7 @@ async fn send_message_to_llm(
 					postal_code: 19107,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Concert"),
-					event_description: String::from(
-						"Music center which hosts local and national bands.",
-					),
+					event_description: String::from("Music center which hosts local and national bands."),
 					event_name: String::from("Jazz night at Broad Street"),
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
@@ -164,9 +164,7 @@ async fn send_message_to_llm(
 					postal_code: 19148,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Sports"),
-					event_description: String::from(
-						"A Phillies baseball game is a must-do for locals and visitors alike.",
-					),
+					event_description: String::from("A Phillies baseball game is a must-do for locals and visitors alike."),
 					event_name: String::from("Phillies Baseball Game"),
 				}],
 				noon_events: vec![Event {
@@ -175,9 +173,7 @@ async fn send_message_to_llm(
 					postal_code: 60615,
 					city: String::from("Chicago"),
 					event_type: String::from("Festival"),
-					event_description: String::from(
-						"Annual music festival with the biggest names in pop and indie scenes.",
-					),
+					event_description: String::from("Annual music festival with the biggest names in pop and indie scenes."),
 					event_name: String::from("LollaPalooza"),
 				}],
 				afternoon_events: vec![Event {
@@ -195,9 +191,7 @@ async fn send_message_to_llm(
 					postal_code: 0,
 					city: String::from("Paris"),
 					event_type: String::from("Museum"),
-					event_description: String::from(
-						"Wander the halls of the world famous art museum.",
-					),
+					event_description: String::from("Wander the halls of the world famous art museum."),
 					event_name: String::from("le Louvre"),
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
@@ -207,8 +201,8 @@ async fn send_message_to_llm(
 		title: String::from("World Tour 11/5-15 2025"),
 	};
 
-	// insert generated itinerary into db
-	let itinerary_id = sqlx::query!(
+	// Insert generated itinerary into db
+	let inserted_itinerary_id = sqlx::query!(
 		r#"
 		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
 		VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
@@ -222,17 +216,15 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| {
-		AppError::from(e)
-	})?
+	.map_err(|e| AppError::from(e))?
 	.id;
 
-	ai_itinerary.id = itinerary_id;
+	ai_itinerary.id = inserted_itinerary_id;
 
-	// insert itinerary events
+	// Insert itinerary events
 	insert_event_list(ai_itinerary, pool).await?;
 
-	// insert bot message into db
+	// Insert bot message with itinerary
 	let record = sqlx::query!(
 		r#"
 		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
@@ -240,8 +232,8 @@ async fn send_message_to_llm(
 		RETURNING id, timestamp;
 		"#,
 		chat_session_id,
-		itinerary_id,
-		ai_text
+		inserted_itinerary_id,
+		ai_text.clone()
 	)
 	.fetch_one(pool)
 	.await
@@ -253,8 +245,8 @@ async fn send_message_to_llm(
 		id: bot_message_id,
 		is_user: false,
 		timestamp,
-		text: String::from(ai_text),
-		itinerary_id: Some(itinerary_id),
+		text: ai_text,
+		itinerary_id: Some(inserted_itinerary_id),
 	})
 }
 
