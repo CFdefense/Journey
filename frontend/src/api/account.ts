@@ -191,6 +191,7 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 	console.log("Calling validate API");
 
 	try {
+
 		const response = await fetch(`${API_BASE_URL}/api/account/current`, {
 			method: "GET",
 			headers: {
@@ -198,16 +199,6 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 			},
 			credentials: "include" // needed param for dealing with cookies
 		});
-
-
-		// Read the response body as JSON if possible
-		const data = await response.json().catch(() => null);
-		console.log("Response body:", data);
-		
-		// check if any preferences were not yet filled out 
-		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {
-			return false;
-		}
 
 		// handle all errors from backend
 		if (!response.ok) {
@@ -219,12 +210,21 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 				throw new Error(`Unexpected error: ${response.status}`);
 			}
 		}
+
+		// Read the response body as JSON if possible
+		const data = await response.json().catch(() => null);
+		console.log("Response body:", data);
 		
+		// check if any preferences were not yet filled out 
+		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {
+			return false;
+		}
+
 		return true;
 	
 	} catch (error) {
 		console.error("Current API error: ", error);
-		throw error;
+		return false;
 	}
 }
 /// Calls update account
@@ -234,7 +234,7 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 ///
 /// # Returns updated account information if successful.
 /// # Throws Error with message to be displayed.
-export async function apiUpdateAccount(payload: UpdateRequest): Promise<UpdateResponse> {
+export async function apiUpdateAccount(payload: UpdateRequest): Promise<ApiResult<CurrentResponse>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/update`, {
             method: "POST",
@@ -257,10 +257,10 @@ export async function apiUpdateAccount(payload: UpdateRequest): Promise<UpdateRe
             }
         }
 
-        return await response.json();
+        return { result: await response.json(), status: response.status };
     } catch (error) {
         console.error("Update Account API error: ", error);
-        throw error;
+        return { result: null, status: -1 };
     }
 }
 
@@ -271,7 +271,7 @@ export async function apiUpdateAccount(payload: UpdateRequest): Promise<UpdateRe
 ///
 /// # Returns current account information if successful.
 /// # Throws Error with message to be displayed.
-export async function apiGetProfile(): Promise<UpdateResponse> {
+export async function apiGetProfile(): Promise<ApiResult<CurrentResponse>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/account/current`, {
             method: "GET",
@@ -291,10 +291,10 @@ export async function apiGetProfile(): Promise<UpdateResponse> {
             }
         }
 
-        return await response.json();
+        return { result: await response.json(), status: response.status };
     } catch (error) {
         console.error("Get Profile API error: ", error);
-        throw error;
+        return { result: null, status: -1 };
     }
 }
 
@@ -302,7 +302,7 @@ export async function apiGetProfile(): Promise<UpdateResponse> {
 ///
 /// # Returns list of saved itineraries if successful.
 /// # Throws Error with message to be displayed.
-export async function apiGetSavedItineraries(): Promise<SavedItinerariesResponse> {
+export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerariesResponse>> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
             method: "GET",
@@ -322,10 +322,10 @@ export async function apiGetSavedItineraries(): Promise<SavedItinerariesResponse
             }
         }
 
-        return await response.json();
+        return { result: await response.json(), status: response.status };
     } catch (error) {
         console.error("Get Saved Itineraries API error: ", error);
-        throw error;
+        return { result: null, status: -1 };
     }
 }
 /// Calls current

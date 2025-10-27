@@ -25,7 +25,14 @@ export default function Account() {
     const fetchProfile = async () => {
       try {
         const data = await apiGetProfile();
-        setEmail(data.email || "");
+        if (data.result) {
+          setEmail(data.result.email || "");
+      } else {
+        setStatusMessage({ 
+          message: "Failed to load account details. Please log in again.", 
+          type: 'error' 
+        });
+      }
       } catch (e) {
         console.error("Failed to load profile:", e);
         setStatusMessage({ 

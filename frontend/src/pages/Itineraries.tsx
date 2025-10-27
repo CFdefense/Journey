@@ -32,10 +32,13 @@ export default function Itineraries() {
 
   const fetchItineraries = async () => {
     try {
-      const data = await apiGetSavedItineraries();
-      console.log("Fetched itineraries:", data);
-      console.log("Event days:", data.itineraries);
-      setEventDays(data.itineraries || []);
+      const result = await apiGetSavedItineraries();
+      const data = result.result;
+      if (data){
+        console.log("Fetched itineraries:", data);
+        console.log("Event days:", data.itineraries);
+        setEventDays(data.itineraries || []);
+      }
     } catch (err) {
       console.error('Error fetching itineraries:', err);
       setError(err instanceof Error ? err.message : 'Failed to load itineraries');
