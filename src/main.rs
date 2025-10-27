@@ -8,6 +8,7 @@ mod http_models;
 mod log;
 mod middleware;
 mod sql_models;
+mod agent;
 
 #[cfg(not(tarpaulin_include))]
 mod swagger;
@@ -45,6 +46,10 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
 	// Initialize the database pool connection
 	let pool = db::create_pool().await;
+
+	// Initialize the AI agent
+	let agent = agent::config::create_agent()
+		.expect("Failed to create agent");
 
 	/*
 	/ Configure CORS
@@ -95,6 +100,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		))
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
 		.layer(CookieManagerLayer::new())
 		.layer(cors);
 
