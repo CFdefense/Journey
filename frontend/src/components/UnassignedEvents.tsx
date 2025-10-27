@@ -7,6 +7,10 @@ export interface Event {
   id: string;
   title: string;
   desc?: string;
+  street_address?: string;
+  postal_code?: number;
+  city?: string;
+  event_type?: string;
 }
 
 interface UnassignedEventsProps {

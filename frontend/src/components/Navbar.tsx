@@ -2,16 +2,17 @@ import { Link } from "react-router-dom";
 import { useContext, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
+import userPfp from "../assets/user-pfp-temp.png";
 
 type NavbarProps = {
-  page: "login" | "signup" | "index";
+  page: "login" | "signup" | "index" | "home";
+  firstName?: string;
 };
 
 export default function Navbar({ page }: NavbarProps) {
   const { authorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
-
   const renderCTA = () => {
     switch (page) {
       case "login":
@@ -52,6 +53,15 @@ export default function Navbar({ page }: NavbarProps) {
             </Link>
             <Link to="/login" className="auth-cta-link">
               Log in
+            </Link>
+          </div>
+        );
+      case "home":
+        return (
+          <div className="auth-cta">
+            <Link to="/account" className="auth-cta-link user-profile-link">
+              <img src={userPfp} alt="User profile" className="user-profile-pic" />
+              <span className="user-first-name">{firstName || "User"}</span>
             </Link>
           </div>
         );
