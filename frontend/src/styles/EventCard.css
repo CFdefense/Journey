@@ -25,8 +25,69 @@
   margin-bottom: 4px;
 }
 
-.event-desc {
-  font-size: 0.9rem;
-  color: #444;
-  line-height: 1.3;
+.event-title:hover {
+  color: rgb(6, 113, 171);
+  cursor: pointer;
 }
+
+.event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Modal content */
+.event-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  animation: popUp 0.3s ease;
+  position: relative;
+}
+
+/* Close button */
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.event-card.draggable {
+  cursor: grab;
+  opacity: 0.9;
+  border: 2px dashed #888;
+}
+
+.event-card.draggable:active {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+

@@ -1,6 +1,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-import type { LoginRequest, SignUpRequest } from "../models/account";
+import type { ApiResult } from "../helpers/global";
+import type {
+	CurrentResponse,
+	LoginRequest,
+	SignUpRequest
+} from "../models/account";
 
 export interface UpdateRequest {
     email?: string;
@@ -61,33 +66,28 @@ export interface Itinerary {
 /// # Method
 /// Calls `POST /api/account/login` through `apiLogin`.
 ///
-/// # Returns if login was successful.
-/// # Throws Error with message to be displayed.
-export async function apiLogin(payload: LoginRequest): Promise<void> {
+/// # Returns
+/// Status of login call.
+/// * 200: successful login
+/// * -1: fetch call threw an exception
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiLogin(payload: LoginRequest): Promise<number> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/account/login`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			credentials: "include", // needed param for dealing with cookies
-			body: JSON.stringify(payload)
-		});
-
-		// handle all errors from backend
-		if (!response.ok) {
-			if (response.status === 400) {
-				throw new Error("Invalid email or password.");
-			} else if (response.status === 500) {
-				throw new Error("Server error.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
-		return;
+		return (
+			await fetch(`${API_BASE_URL}/api/account/login`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: import.meta.env.DEV ? "include" : "same-origin",
+				body: JSON.stringify(payload)
+			})
+		).status;
 	} catch (error) {
 		console.error("Login API error: ", error);
-		throw error;
+		return -1;
 	}
 }
 
@@ -96,37 +96,28 @@ export async function apiLogin(payload: LoginRequest): Promise<void> {
 /// # Method
 /// Sends a `POST /api/account/signup` request to create a new user account.
 ///
-/// # Returns if account creation was successful.
-/// # Throws Error with message to be displayed.
-export async function apiSignUp(payload: SignUpRequest): Promise<void> {
+/// # Returns
+/// Status of signup call.
+/// * 200: successful signup
+/// * -1: fetch call threw an exception
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiSignUp(payload: SignUpRequest): Promise<number> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/account/signup`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			credentials: "include", // needed param for dealing with cookies
-			body: JSON.stringify(payload)
-		});
-
-		// handle all errors from backend
-		if (!response.ok) {
-			if (response.status === 409) {
-				throw new Error(
-					"An account was already created with this email address."
-				);
-			} else if (response.status === 400) {
-				throw new Error("Bad Request");
-			} else if (response.status === 500) {
-				throw new Error("Server error.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
-		return;
+		return (
+			await fetch(`${API_BASE_URL}/api/account/signup`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: import.meta.env.DEV ? "include" : "same-origin",
+				body: JSON.stringify(payload)
+			})
+		).status;
 	} catch (error) {
 		console.error("Sign Up API error: ", error);
-		throw error;
+		return -1;
 	}
 }
 
@@ -135,70 +126,57 @@ export async function apiSignUp(payload: SignUpRequest): Promise<void> {
 /// # Method
 /// Sends a `GET /api/account/logout` request set cookie as expired.
 ///
-/// # Returns if account creation was successful.
-/// # Throws Error with message to be displayed.
-export async function apiLogout(): Promise<void> {
-	console.log("Calling logout API");
-
+/// # Returns
+/// Status of logout call.
+/// * 200: successful logout
+/// * -1: fetch call threw an exception
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiLogout(): Promise<number> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/account/logout`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			credentials: "include" // needed param for dealing with cookies
-		});
-
-		// handle all errors from backend
-		if (!response.ok) {
-			if (response.status === 401) {
-				throw new Error("Already logged out");
-			} else if (response.status === 500) {
-				throw new Error("Server error.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
-		return;
+		return (
+			await fetch(`${API_BASE_URL}/api/account/logout`, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: import.meta.env.DEV ? "include" : "same-origin"
+			})
+		).status;
 	} catch (error) {
 		console.error("Logout Up API error: ", error);
-		throw error;
+		return -1;
 	}
 }
+
 
 /// Calls validate
 ///
 /// # Method
 /// Sends a `GET /api/account/validate` request set cookie as expired.
 ///
-/// # Returns whether session is currently valid.
-/// # Throws Error with message.
+/// # Returns
+/// Whether session is currently valid.
+///
+/// # Exceptions
+/// Never throws an exception
 export async function apiValidate(): Promise<boolean> {
-	console.log("Calling validate API");
-
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/account/validate`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			credentials: "include" // needed param for dealing with cookies
-		});
-
-		// handle all errors from backend
-		if (!response.ok) {
-			if (response.status === 401) {
-				return false;
-			} else if (response.status === 500) {
-				throw new Error("Server error.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
-		return true;
+		return (
+			(
+				await fetch(`${API_BASE_URL}/api/account/validate`, {
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					credentials: import.meta.env.DEV ? "include" : "same-origin"
+				})
+			).status === 200
+		);
 	} catch (error) {
 		console.error("Validate API error: ", error);
-		throw error;
+		return false;
 	}
 }
 
@@ -349,4 +327,32 @@ export async function apiGetSavedItineraries(): Promise<SavedItinerariesResponse
         console.error("Get Saved Itineraries API error: ", error);
         throw error;
     }
+}
+/// Calls current
+///
+/// # Method
+/// Sends a `GET /api/account/current` request set cookie as expired.
+///
+/// # Returns
+/// Non-sensitive account info and the status of the API call
+/// * 200: successful fetch
+/// * -1: fetch call threw an exception
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
+	// TODO: get account data from cache if it exists
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/account/current`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin"
+		});
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("Current API error: ", error);
+		return { result: null, status: -1 };
+	}
 }

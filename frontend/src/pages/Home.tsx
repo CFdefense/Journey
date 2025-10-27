@@ -1,131 +1,276 @@
 import { useState, useEffect } from "react";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
-import Itinerary from "../components/Itinerary";
+import ItinerarySideBar from "../components/ItinerarySideBar";
+import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
-import { apiCheckIfPreferencesPopulated } from "../api/account";
-
-interface Message {
-  id: number;
-  text: string;
-  sender: "user" | "bot";
-}
-
-interface ChatSession {
-  id: number;
-  title: string;
-  messages: Message[];
-}
+import {
+  apiChats,
+  apiMessages,
+  apiNewChatId,
+  apiSendMessage
+} from "../api/home";
+import type { MessagePageRequest, SendMessageRequest } from "../models/chat";
+import type { ChatSession } from "../models/home";
+import type { Message } from "../models/chat";
+import { apiCurrent } from "../api/account";
+import { fetchItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../helpers/itinerary";
 
 export default function Home() {
-  //array of chat sessions. each chat session has an id, title, and list of messages
-  const [chats, setChats] = useState<ChatSession[]>([]);
-  // current chat in window 
-  //TODO use this to determine which itinerary to show
+  const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
-
   const [showFinishPopup, setShowFinishPopup] = useState(false);
+  const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
+    null
+  );
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
+  const [firstName, setFirstName] = useState<string>("");
+  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
 
-    useEffect(() => {
-      async function fetchPreferences() {
-        try {
-          const preferencesFilled = await apiCheckIfPreferencesPopulated();
-          console.log("Preferences filled:", preferencesFilled);
-          setShowFinishPopup(!preferencesFilled); // show only if false
-        } catch (err) {
-          console.error("Error calling apiCheckIfPreferencesPopulated:", err);
-          setShowFinishPopup(true); // any auth error just show the popup 
-        }
+  useEffect(() => {
+    async function fetchAccount() {
+      if (showFinishPopup) {
+        return;
+      }
+      const currentResult = await apiCurrent();
+      // TODO 401 -> navigate to /login
+
+      const account = currentResult.result;
+      if (account === null || currentResult.status !== 200) {
+        console.error(
+          "API call to /api/account/current failed with status: ",
+          currentResult.status
+        );
+        setShowFinishPopup(false);
+        return; // TODO handle and display error
       }
 
-      fetchPreferences();
-    }, []);
+      // Set the first name
+      setFirstName(account.first_name || "");
 
-  // Create a new blank chat
-  const handleNewChat = () => {
-    const newChat: ChatSession = {
-      id: Date.now(),
-      title: `Chat ${chats.length + 1}`,
-      messages: [],
-    };
-    setChats((prev) => [...prev, newChat]);
-    setActiveChatId(newChat.id);
+      // check if any preferences were not yet filled out
+      setShowFinishPopup(
+        account.budget_preference === null ||
+          account.disabilities === null ||
+          account.food_allergies === null ||
+          account.risk_preference === null
+      );
+    }
+
+    async function fetchChats() {
+      // get all chat session ids
+      const chatsResult = await apiChats();
+      // TODO: 401 -> navigate to /logout
+      if (chatsResult.result === null || chatsResult.status !== 200) {
+        return; // TODO handle and display error
+      }
+
+      const tempChats = chatsResult.result.chat_sessions.map((chat) => ({
+        id: chat.id,
+        title: chat.title,
+        messages: [] // message loading handled at fetchMessagesForActiveChat
+      }));
+
+      if (activeChatId === null) {
+        setChats(tempChats);
+        return;
+      }
+      // get latest message page for this chat session
+      const payload: MessagePageRequest = {
+        chat_session_id: activeChatId,
+        message_id: null
+      };
+      const messagePageResult = await apiMessages(payload);
+      // TODO: 401 -> navigate to /logout
+
+      if (
+        messagePageResult.result === null ||
+        messagePageResult.status !== 200
+      ) {
+        return; // TODO handle and display error
+      }
+
+      // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
+
+      const messages = messagePageResult.result.message_page;
+      setChats(
+        tempChats.map((c) =>
+          c.id === activeChatId
+            ? { ...c, messages: [...c.messages, ...messages] }
+            : c
+        )
+      );
+    }
+
+    fetchAccount();
+    fetchChats();
+  }, [showFinishPopup, activeChatId]);
+
+  // Fetch itinerary data when selectedItineraryId changes
+  useEffect(() => {
+    async function loadItinerary() {
+      const itineraryId = selectedItineraryId;
+      
+      // if no current itinerary is selected, do not try and populate it 
+      if (itineraryId === null) {
+        return;
+      }
+      
+      try {
+        const data = await fetchItinerary(itineraryId);
+        setItineraryData(data);
+        console.log("Loaded itinerary data:", data);
+      } catch (error) {
+        console.error("Error loading itinerary:", error);
+        setItineraryData(null);
+      }
+    }
+
+    loadItinerary();
+  }, [selectedItineraryId]);
+
+  // whenever the active chat changes, clear all itinerary information on home page. 
+  useEffect(() => {
+    setSelectedItineraryId(null);
+    setItineraryData(null);
+  }, [activeChatId]);
+
+  const handleItinerarySelect = (itineraryId: number) => {
+    setSelectedItineraryId(itineraryId);
   };
 
-  // Handle sending a message
-const handleSendMessage = (text: string) => {
-  if (!text.trim()) return;
+  const handleNewChat = async () => {
+    // don't allow spamming new chats
+    // instead, create the new chat once a message has been sent in it
+    setActiveChatId(null);
+    setItinerarySidebarVisible(false);
+  };
 
-  // If there are no chats yet, create a new chat including this first message
-  // When the user makes a chat for the first time, they do not have to click, new chat, they just have to start chatting
-  if (chats.length === 0) {
+  const handleSendMessage = async (txt: string) => {
+    const text = txt.trim();
+    if (text === "") return;
+
     const userMessage: Message = {
-      id: Date.now(),
+      id: -1, //temporary id until the server gives us the real id
       text,
-      sender: "user",
+      is_user: true,
+      timestamp: new Date().toISOString(),
+      itinerary_id: null
     };
 
-    const botMessage: Message = {
-      id: Date.now() + 1,
-      text: "bot reply",
-      sender: "bot",
+    let currChatId = activeChatId;
+
+    // create a new chat if there is no active chat
+    if (activeChatId === null) {
+      const newChatResult = await apiNewChatId();
+      // TODO: 401 -> navigate to /login
+
+      if (newChatResult.result === null || newChatResult.status !== 200) {
+        return; // TODO: handle and display error
+      }
+
+      const newChat: ChatSession = {
+        id: newChatResult.result,
+        messages: [],
+        title: "New Chat"
+      };
+
+      setChats((prevChats) => [...(prevChats ?? []), newChat]);
+      setActiveChatId(newChat.id);
+      currChatId = newChat.id;
+    }
+
+    // The request might take some time, so we display the user message now,
+    // then display the bot reply after we get it.
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) =>
+        c.id === currChatId!
+          ? { ...c, messages: [...c.messages, userMessage] }
+          : c
+      )
+    );
+
+    const payload: SendMessageRequest = {
+      chat_session_id: currChatId!,
+      text,
+      itinerary_id: selectedItineraryId
     };
 
-    const newChat: ChatSession = {
-      id: Date.now(),
-      title: `Chat 1`,
-      messages: [userMessage, botMessage], // include the first message
-    };
+    const sendResult = await apiSendMessage(payload);
+    // TODO: 401 -> navigate to /login
+    if (sendResult.result === null || sendResult.status !== 200) {
+      return; // TODO: handle and display error
+    }
 
-    setChats([newChat]);
-    setActiveChatId(newChat.id);
-    return; // message already added, exit
-  }
+    const botMessage = sendResult.result!.bot_message;
 
-  // There are existing chats, add to the active chat
-  if (activeChatId === null) return;
+    // Thanks, React, for making this the convention for updating state
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) =>
+        c.id === currChatId!
+          ? {
+              ...c,
+              messages: c.messages
+                .map((m) =>
+                  m.id === -1
+                    ? { ...m, id: sendResult.result!.user_message_id }
+                    : m
+                )
+                .concat([sendResult.result!.bot_message])
+            }
+          : c
+      )
+    );
 
-  setChats((prevChats) =>
-    prevChats.map((chat) => {
-      if (chat.id !== activeChatId) return chat;
+    if (botMessage.itinerary_id !== null) {
+      setSelectedItineraryId(botMessage.itinerary_id);
+      setItinerarySidebarVisible(true);
+    }
+  };
 
-      const userMessage: Message = {
-        id: Date.now(),
-        text,
-        sender: "user",
-      };
+  const handleToggleSidebar = () => {
+    setSidebarVisible((prev) => !prev);
+  };
 
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        text: "bot reply",
-        sender: "bot",
-      };
+  const handleToggleItinerarySidebar = () => {
+    setItinerarySidebarVisible((prev) => !prev);
+  };
 
-      return {
-        ...chat,
-        messages: [...chat.messages, userMessage, botMessage],
-      };
-    })
-  );
-};
-
-  const activeChat = chats.find((c) => c.id === activeChatId) || null;
+  const activeChat = chats?.find((c) => c.id === activeChatId) ?? null;
 
   return (
     <div className="home-page">
-    <h1>Where do you plan to explore?</h1>
-    <div className="home-layout">
-      {showFinishPopup && <FinishAccountPopup />}
-      <PrevChatSideBar
-        chats={chats}
-        activeChatId={activeChatId}
-        onSelectChat={setActiveChatId}
-        onNewChat={handleNewChat}
-      />
-      <ChatWindow messages={activeChat?.messages || []} onSend={handleSendMessage} />
-      <Itinerary />
+      <Navbar page="home" firstName={firstName} />
+      <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
+        {showFinishPopup && <FinishAccountPopup />}
+
+        <PrevChatSideBar
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelectChat={setActiveChatId}
+          onNewChat={handleNewChat}
+          onToggleSidebar={handleToggleSidebar}
+          sidebarVisible={sidebarVisible}
+        />
+
+        <div className="chat-window-wrapper">
+          <ChatWindow
+            messages={activeChat?.messages ?? []}
+            onSend={handleSendMessage}
+            onItinerarySelect={handleItinerarySelect}
+          />
+        </div>
+
+        <ItinerarySideBar
+          onToggleSidebar={handleToggleItinerarySidebar}
+          sidebarVisible={itinerarySidebarVisible}
+          itineraryData={itineraryData}
+          selectedItineraryId={selectedItineraryId}
+        />
+      </div>
     </div>
-  </div>
   );
 }

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>API Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" crossorigin/>
+    <style>
+      .codecov {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 1rem 0;
+      }
+
+      .codecov-btn {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        background-color: #2563eb; /* blue-600 */
+        color: white;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-family: system-ui, sans-serif;
+        font-weight: 500;
+        transition: background-color 0.2s, transform 0.1s;
+      }
+
+      .codecov-btn:hover {
+        background-color: #1d4ed8; /* blue-700 */
+        transform: translateY(-1px);
+      }
+
+      .codecov-btn:active {
+        background-color: #1e40af; /* blue-800 */
+        transform: translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="codecov">
+      <a href="tarpaulin-report.html" class="codecov-btn">Backend Code Coverage Report</a>
+      <a href="./frontend-codecov/index.html" class="codecov-btn">Frontend Code Coverage Report</a>
+    </div>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js" crossorigin></script>
+    <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js" crossorigin></script>
+    <script>
+      window.onload = () => {
+        SwaggerUIBundle({
+          url: './openapi.json',
+          dom_id: '#swagger-ui',
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          layout: "StandaloneLayout",
+          tryItOutEnabled: false, //We can get rid of this if we want to be able to hit the endpoints for the deployed prod server
+        });
+      };
+    </script>
+  </body>
+</html>

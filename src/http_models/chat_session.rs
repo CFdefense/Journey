@@ -1,13 +1,18 @@
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use serde::Serialize;
+use utoipa::{ToResponse, ToSchema};
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct ChatSession {
-    pub id: i32,
-    pub account_id: i32
+use crate::sql_models::message::ChatSessionRow;
+
+/// Response model from the `/api/chat/chats` endpoint
+#[derive(Serialize, ToSchema, ToResponse)]
+pub struct ChatsResponse {
+	/// chat session ids belonging to the user who made the request
+	pub chat_sessions: Vec<ChatSessionRow>,
 }
 
-#[derive(Serialize)]
-pub struct ChatsResponse {
-    pub chat_sessions: Vec<ChatSession>
+/// Response model from the `/api/chat/newChat` endpoint
+#[derive(Serialize, ToSchema, ToResponse)]
+pub struct NewChatResponse {
+	/// this chat session is guaranteed to not have any messages in it
+	pub chat_session_id: i32,
 }

@@ -1,5 +1,9 @@
 :root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -20,10 +24,19 @@
   border-radius: 10px;
 }
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
   padding: 0;
-  text-align: center;
 }
 
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  min-height: 100%;
+}

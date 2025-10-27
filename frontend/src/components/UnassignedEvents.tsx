@@ -7,6 +7,10 @@ export interface Event {
   id: string;
   title: string;
   desc?: string;
+  street_address?: string;
+  postal_code?: number;
+  city?: string;
+  event_type?: string;
 }
 
 interface UnassignedEventsProps {
@@ -14,7 +18,10 @@ interface UnassignedEventsProps {
   onDragStart: (e: React.DragEvent, event: Event) => void;
 }
 
-const UnassignedEvents: React.FC<UnassignedEventsProps> = ({ events, onDragStart }) => {
+const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
+  events,
+  onDragStart
+}) => {
   return (
     <div className="unassigned-section">
       <h3>Unassigned Events</h3>

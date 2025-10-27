@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import IndexPage from "./pages/IndexPage";
+import Index from "./pages/Index";
 import Home from "./pages/Home";
 import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
@@ -19,7 +19,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<IndexPage />} />
+        <Route path="/" element={<Index />} />
         <Route
           path="/home"
           element={

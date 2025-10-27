@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import userPfp from "../assets/user-pfp-temp.png";
 
 type NavbarProps = {
-  page: "login" | "signup";
+  page: "login" | "signup" | "index" | "home";
+  firstName?: string;
 };
 
-export default function Navbar({ page }: NavbarProps) {
+export default function Navbar({ page, firstName }: NavbarProps) {
   const renderCTA = () => {
     switch (page) {
       case "login":
@@ -25,6 +27,26 @@ export default function Navbar({ page }: NavbarProps) {
             </Link>
           </div>
         );
+      case "index":
+        return (
+          <div className="auth-cta">
+            <Link to="/signup" className="auth-cta-link">
+              Sign up
+            </Link>
+            <Link to="/login" className="auth-cta-link">
+              Log in
+            </Link>
+          </div>
+        );
+      case "home":
+        return (
+          <div className="auth-cta">
+            <Link to="/account" className="auth-cta-link user-profile-link">
+              <img src={userPfp} alt="User profile" className="user-profile-pic" />
+              <span className="user-first-name">{firstName || "User"}</span>
+            </Link>
+          </div>
+        );
       default:
         return null;
     }
@@ -33,10 +55,11 @@ export default function Navbar({ page }: NavbarProps) {
   return (
     <header className="auth-navbar">
       <div className="auth-navbar-content">
-        <Link to="/" className="auth-brand">Journey</Link>
+        <Link to="/" className="auth-brand">
+          Journey
+        </Link>
         {renderCTA()}
       </div>
     </header>
   );
 }
-
