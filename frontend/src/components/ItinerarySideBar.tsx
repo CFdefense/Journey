@@ -51,11 +51,11 @@ export default function ItinerarySideBar({
           
           <div className="itinerary-actions">
             <button 
-              className="view-itinerary-btn"
+              className="edit-itinerary-btn"
               onClick={handleViewItinerary}
               disabled={selectedItineraryId === null}
             >
-              View
+              Edit
             </button>
             <button 
               className="save-itinerary-btn"
