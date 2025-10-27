@@ -37,7 +37,12 @@ export default function Itineraries() {
       if (data){
         console.log("Fetched itineraries:", data);
         console.log("Event days:", data.itineraries);
-        setEventDays(data.itineraries || []);
+        const allEventDays = data.itineraries.flatMap((itinerary: any) => {
+            // Assuming each item in 'data.itineraries' has an 'event_days' array
+            return itinerary.event_days || [];
+        });
+        console.log("Flattened Event Days for State:", allEventDays);
+        setEventDays(allEventDays);
       }
     } catch (err) {
       console.error('Error fetching itineraries:', err);
@@ -84,6 +89,7 @@ export default function Itineraries() {
     ];
     
     console.log("All events for name:", allEvents);
+    console.log("date:", day);
     
     if (allEvents.length > 0 && allEvents[0]?.event_name) {
       return allEvents[0].event_name;
