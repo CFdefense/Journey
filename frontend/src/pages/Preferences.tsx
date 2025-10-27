@@ -146,7 +146,7 @@ export default function Preferences() {
           <main className="main-content">
             <div className="account-container">
               <div className="account-box">
-                <h1>Activity Preferences</h1>
+                <h1>Account Preferences</h1>
                 
                 {statusMessage && (
                   <div className={`status-message status-message--${statusMessage.type}`}>

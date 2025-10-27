@@ -1,11 +1,28 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { apiGetSavedItineraries, type Itinerary } from "../api/account";
+import { apiGetSavedItineraries } from "../api/account";
 import "../styles/Account.css";
+
+interface Event {
+  city: string;
+  event_description: string;
+  event_name: string;
+  event_type: string;
+  postal_code: number;
+  street_address: string;
+}
+
+interface EventDay {
+  date: string;
+  morning_events: Event[];
+  noon_events: Event[];
+  afternoon_events: Event[];
+  evening_events: Event[];
+}
 
 export default function Itineraries() {
   const navigate = useNavigate();
-  const [itineraries, setItineraries] = useState<Itinerary[]>([]);
+  const [eventDays, setEventDays] = useState<EventDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,13 +33,63 @@ export default function Itineraries() {
   const fetchItineraries = async () => {
     try {
       const data = await apiGetSavedItineraries();
-      setItineraries(data.itineraries || []);
+      console.log("Fetched itineraries:", data);
+      console.log("Event days:", data.itineraries);
+      setEventDays(data.itineraries || []);
     } catch (err) {
       console.error('Error fetching itineraries:', err);
       setError(err instanceof Error ? err.message : 'Failed to load itineraries');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getLocation = (day: EventDay) => {
+    // Check all event arrays for the first event with a city
+    const allEvents = [
+      ...(day.afternoon_events || []),
+      ...(day.evening_events || []),
+      ...(day.morning_events || []),
+      ...(day.noon_events || [])
+    ];
+    
+    console.log("All events for location:", allEvents);
+    
+    if (allEvents.length > 0 && allEvents[0]?.city) {
+      return allEvents[0].city;
+    }
+    return 'Unknown Location';
+  };
+
+  const getTotalEvents = (day: EventDay) => {
+    const total = (
+      (day.morning_events?.length || 0) +
+      (day.noon_events?.length || 0) +
+      (day.afternoon_events?.length || 0) +
+      (day.evening_events?.length || 0)
+    );
+    console.log("Total events:", total);
+    return total;
+  };
+
+  const getFirstEventName = (day: EventDay) => {
+    const allEvents = [
+      ...(day.afternoon_events || []),
+      ...(day.evening_events || []),
+      ...(day.morning_events || []),
+      ...(day.noon_events || [])
+    ];
+    
+    console.log("All events for name:", allEvents);
+    
+    if (allEvents.length > 0 && allEvents[0]?.event_name) {
+      return allEvents[0].event_name;
+    }
+    return 'Day Trip';
+  };
+
+  const handleCardClick = (date: string) => {
+    navigate('/view', { state: { date } });
   };
 
   return (
@@ -42,7 +109,7 @@ export default function Itineraries() {
       <div className="auth-content">
         <div className="account-wrapper">
           
-          {/* Same sidebar as above */}
+          {/* Collapsible Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-toggle">
               <span></span>
@@ -97,13 +164,47 @@ export default function Itineraries() {
 
           <main className="main-content">
             <div className="account-container">
-              <div className="account-box">
+              <div className="account-box" style={{ maxWidth: '800px' }}>
                 <h1>Saved Itineraries</h1>
                 
-                <div className="empty-state">
-                  <p>No saved itineraries yet</p>
-                  <p style={{fontSize: '0.9rem', marginTop: '8px'}}>Your saved travel plans will appear here</p>
-                </div>
+                {loading ? (
+                  <div className="empty-state">
+                    <p>Loading itineraries...</p>
+                  </div>
+                ) : error ? (
+                  <div className="empty-state">
+                    <p style={{ color: '#dc3545' }}>{error}</p>
+                  </div>
+                ) : eventDays.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No saved itineraries yet</p>
+                    <p style={{fontSize: '0.9rem', marginTop: '8px'}}>Your saved travel plans will appear here</p>
+                  </div>
+                ) : (
+                  <div className="itineraries-list">
+                    {eventDays.map((day, index) => {
+                      console.log("Rendering day:", day);
+                      return (
+                        <div 
+                          key={index}
+                          className="itinerary-card"
+                          onClick={() => handleCardClick(day.date)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <h3>{getFirstEventName(day)}</h3>
+                          <p><strong>Location:</strong> {getLocation(day)}</p>
+                          <p><strong>Date:</strong> {day.date ? new Date(day.date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          }) : 'Date not available'}</p>
+                          <p><strong>Total Events:</strong> {getTotalEvents(day)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </main>

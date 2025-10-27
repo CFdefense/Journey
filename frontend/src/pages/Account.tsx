@@ -194,7 +194,6 @@ export default function Account() {
                 <hr className="section-divider" />
 
                 <div className="logout-section">
-                  <h2>Session Management</h2>
                   <button onClick={onLogout} className="btn-danger">
                     Logout
                   </button>
