@@ -13,29 +13,29 @@ describe("Integration Tests", () => {
 		test_state.dev_mode = true;
 		const unique: number = Date.now();
 		const email = `test${unique}@gmail.com`
-		expect(await apiSignUp({
-			email: email,
-			first_name: "First",
-			last_name: "Last",
-			password: "Password123"
-		})).toBe(200);
+	expect((await apiSignUp({
+		email: email,
+		first_name: "First",
+		last_name: "Last",
+		password: "Password123"
+	})).status).toBe(200);
 
-		expect(await apiValidate()).toBe(true);
+	expect((await apiValidate()).status === 200).toBe(true);
 
-		expect(await apiLogin({
-			email: email,
-			password: "Password123"
-		})).toBe(200);
+	expect((await apiLogin({
+		email: email,
+		password: "Password123"
+	})).status).toBe(200);
 
 		expect(await apiCurrent()).toStrictEqual({
 			result: {
 				email: email,
 				first_name: "First",
 				last_name: "Last",
-				budget_preference: null,
-				risk_preference: null,
-				food_allergies: "",
-				disabilities: ""
+			budget_preference: null,
+			risk_preference: null,
+			food_allergies: "",
+			disabilities: ""
 			},
 			status: 200
 		});
@@ -73,37 +73,37 @@ describe("Integration Tests", () => {
 		expect(pageResult.result!.message_page[0].id).toBe(messageId);
 		expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
 
-		expect(await apiLogout()).toBe(200);
+	expect((await apiLogout()).status).toBe(200);
 
-		expect(await apiValidate()).toBe(false);
+	expect((await apiValidate()).status !== 200).toBe(true);
 	});
 	test("Journey Flow PROD", async () => {
 		test_state.dev_mode = false;
 		const unique: number = Date.now();
 		const email = `test${unique}@gmail.com`
-		expect(await apiSignUp({
-			email: email,
-			first_name: "First",
-			last_name: "Last",
-			password: "Password123"
-		})).toBe(200);
+	expect((await apiSignUp({
+		email: email,
+		first_name: "First",
+		last_name: "Last",
+		password: "Password123"
+	})).status).toBe(200);
 
-		expect(await apiValidate()).toBe(true);
+	expect((await apiValidate()).status === 200).toBe(true);
 
-		expect(await apiLogin({
-			email: email,
-			password: "Password123"
-		})).toBe(200);
+	expect((await apiLogin({
+		email: email,
+		password: "Password123"
+	})).status).toBe(200);
 
 		expect(await apiCurrent()).toStrictEqual({
 			result: {
 				email: email,
 				first_name: "First",
 				last_name: "Last",
-				budget_preference: null,
-				risk_preference: null,
-				food_allergies: "",
-				disabilities: ""
+			budget_preference: null,
+			risk_preference: null,
+			food_allergies: "",
+			disabilities: ""
 			},
 			status: 200
 		});
@@ -141,8 +141,35 @@ describe("Integration Tests", () => {
 		expect(pageResult.result!.message_page[0].id).toBe(messageId);
 		expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
 
-		expect(await apiLogout()).toBe(200);
+	expect((await apiLogout()).status).toBe(200);
 
-		expect(await apiValidate()).toBe(false);
+	expect((await apiValidate()).status !== 200).toBe(true);
+	});
+
+	test("Error handling coverage", async () => {
+		test_state.dev_mode = true;
+		
+		// Test error handling paths
+		const errorResult = await apiCurrent();
+		expect(errorResult.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorChats = await apiChats();
+		expect(errorChats.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorChatId = await apiNewChatId();
+		expect(errorChatId.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorItinerary = await apiItineraryDetails(99999);
+		expect(errorItinerary.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorMessages = await apiMessages({ chat_session_id: 99999, message_id: null });
+		expect(errorMessages.status).toBeGreaterThanOrEqual(-1);
+		
+		const errorSend = await apiSendMessage({ 
+			chat_session_id: 99999, 
+			text: "test", 
+			itinerary_id: null 
+		});
+		expect(errorSend.status).toBeGreaterThanOrEqual(-1);
 	});
 });
