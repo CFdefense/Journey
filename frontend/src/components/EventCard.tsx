@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import "../styles/EventCard.css";
 
-//creation of this component will make api calls and generating a lot of different events much easier
 interface EventCardProps {
   title: string;
   desc?: string;
@@ -12,21 +11,95 @@ interface EventCardProps {
   city?: string;
   type?: string;
 
-  onDragStart?: (e: React.DragEvent) => void;
+  // Added handlers for drag logic
+  onDragStart?: (e: React.DragEvent, eventData: any) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
 }
 
-//
 const EventCard: React.FC<EventCardProps> = ({
   title,
   desc,
+  time,
+  address,
+  city,
+  type,
   draggable = false,
-  onDragStart
+  onDragStart,
+  onDragEnd,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const openModal = () => {
+    if (!isDragging) setIsOpen(true);
+  };
+  
+  const closeModal = () => setIsOpen(false);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    if (onDragStart) {
+      onDragStart(e, { title, desc, time });
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false);
+    if (onDragEnd) {
+      onDragEnd(e);
+    }
+  };
+
   return (
-    <div className="event-card" draggable={draggable} onDragStart={onDragStart}>
-      <div className="event-title">{title}</div>
-      {desc && <div className="event-desc">{desc}</div>}
-    </div>
+    <>
+      <div
+        className={`event-card ${draggable ? "draggable" : ""}`}
+        draggable={draggable}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onClick={openModal}
+      >
+        <h3 className="event-title">{title}</h3>
+        {(address || city) && (
+          <p className="event-location">
+            {address && city ? `${address}, ${city}` : address || city}
+          </p>
+        )}
+        {type && <p className="event-type">{type}</p>}
+      </div>
+
+      {isOpen && (
+        <div className="event-modal-overlay" onClick={closeModal}>
+          <div className="event-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-button" onClick={closeModal}>
+              ✕
+            </button>
+            <h2>{title}</h2>
+            {desc && <p>{desc}</p>}
+            {time && (
+              <p>
+                <strong>Time:</strong> {time}
+              </p>
+            )}
+            {address && (
+              <p>
+                <strong>Address:</strong> {address}
+              </p>
+            )}
+            {city && (
+              <p>
+                <strong>City:</strong> {city}
+              </p>
+            )}
+            {type && (
+              <p>
+                <strong>Type:</strong> {type}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

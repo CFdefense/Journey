@@ -29,6 +29,9 @@ export async function apiChats(): Promise<ApiResult<ChatsResponse>> {
 			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("apiChats error:", error);
@@ -64,6 +67,9 @@ export async function apiMessages(
 			credentials: import.meta.env.DEV ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("apiMessages error:", error);
@@ -98,6 +104,9 @@ export async function apiSendMessage(
 			credentials: import.meta.env.DEV ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("apiSendMessage error:", error);
@@ -126,6 +135,9 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 		return {
 			result: (await response.json()).chat_session_id,
 			status: response.status

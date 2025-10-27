@@ -1236,6 +1236,7 @@ async fn test_endpoints() {
 		test_validate_with_bad_and_good_cookie(),
 		test_get_itinerary_invalid_format(),
 		test_signup_logout(),
+		test_cookie_exp_extended(),
 		// just throw all the tests in here
 	);
 }
@@ -1505,4 +1506,37 @@ async fn test_signup_logout() {
 		401,
 		"Missing/invalid cookie should return 401"
 	);
+}
+
+async fn test_cookie_exp_extended() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe { PORT })).unwrap();
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_cookie_exp_extended+{}@example.com", unique);
+
+	// Signup user
+	let signup_resp = hc
+		.do_post(
+			"/api/account/signup",
+			json!({
+				"email": email,
+				"first_name": "Get",
+				"last_name": "Event",
+				"password": "Password123"
+			}),
+		)
+		.await
+		.unwrap();
+	assert_eq!(signup_resp.status().as_u16(), 200);
+
+	let cookie = signup_resp.res_cookie("auth-token").unwrap();
+	assert!(cookie.expires.unwrap() > SystemTime::now());
+	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
+
+	// Hit any protected route
+	let validate_resp = hc.do_get("/api/account/validate").await.unwrap();
+	assert_eq!(validate_resp.status().as_u16(), 200);
+
+	let cookie = validate_resp.res_cookie("auth-token").unwrap();
+	assert!(cookie.expires.unwrap() > SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
+	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(3600)).unwrap());
 }

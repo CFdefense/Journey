@@ -1,6 +1,7 @@
 use axum::Router;
 use std::fs::{self, File};
 use std::io::Write;
+use std::path::PathBuf;
 use utoipa::{
 	Modify, OpenApi,
 	openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -52,8 +53,9 @@ impl Modify for SecurityAddon {
 /// Merges swagger with the current routes
 pub fn merge_swagger(router: OpenApiRouter) -> Router {
 	let doc = ApiDoc::openapi();
-	fs::create_dir_all("docs").unwrap();
-	let mut file = File::create("docs/openapi.json").unwrap();
+	let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs");
+	fs::create_dir_all(&docs_path).unwrap();
+	let mut file = File::create(docs_path.join("openapi.json")).unwrap();
 	file.write_all(doc.to_pretty_json().unwrap().as_bytes())
 		.unwrap();
 	let (router, api) = OpenApiRouter::with_openapi(doc)

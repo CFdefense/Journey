@@ -967,7 +967,9 @@
         "required": [
           "email",
           "first_name",
-          "last_name"
+          "last_name",
+          "food_allergies",
+          "disabilities"
         ],
         "properties": {
           "budget_preference": {
@@ -982,10 +984,7 @@
             ]
           },
           "disabilities": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "Optional food and allergies preferences"
           },
           "email": {
@@ -997,10 +996,7 @@
             "description": "First name"
           },
           "food_allergies": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "Optional food and allergies preferences"
           },
           "last_name": {
@@ -1483,7 +1479,9 @@
         "required": [
           "email",
           "first_name",
-          "last_name"
+          "last_name",
+          "food_allergies",
+          "disabilities"
         ],
         "properties": {
           "budget_preference": {
@@ -1498,10 +1496,7 @@
             ]
           },
           "disabilities": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "Optional disabilites\n* String is a comma-separated list of preferences"
           },
           "email": {
@@ -1513,10 +1508,7 @@
             "description": "Current first name"
           },
           "food_allergies": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "Optional food and allergies preferences\n* String is a comma-separated list of preferences"
           },
           "last_name": {

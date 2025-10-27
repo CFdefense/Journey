@@ -1,0 +1,190 @@
+.itinerary-sidebar {
+  background: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  align-self: stretch;
+  box-sizing: border-box;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+/* When sidebar is open - 30% of viewport width */
+.itinerary-sidebar.open {
+  width: 30%;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+/* When sidebar is closed */
+.itinerary-sidebar.closed {
+  width: 50px;
+  background: #ffffff;
+}
+
+/* Top section with toggle button and optional title */
+.itinerary-sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+  height: 50px;
+  box-sizing: border-box;
+}
+
+.itinerary-sidebar.closed .itinerary-sidebar-top {
+  justify-content: center;
+  padding: 0;
+}
+
+.itinerary-sidebar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
+}
+
+.itinerary-sidebar.closed .itinerary-sidebar-title {
+  display: none;
+}
+
+.itinerary-sidebar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.itinerary-sidebar-toggle-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+/* Itinerary content wrapper */
+.itinerary-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbar for itinerary content */
+.itinerary-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.itinerary-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.itinerary-content::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 4px;
+}
+
+.itinerary-content::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Firefox scrollbar */
+.itinerary-content {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 transparent;
+}
+
+.itinerary-sidebar.closed .itinerary-content {
+  display: none;
+}
+
+/* Action buttons container at the bottom of itinerary sidebar */
+.itinerary-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+/* Base button styles */
+.save-itinerary-btn,
+.edit-itinerary-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Save button */
+.save-itinerary-btn {
+  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
+  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+}
+
+.save-itinerary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
+  transform: translateY(-1px);
+}
+
+.save-itinerary-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
+}
+
+/* Edit button */
+.edit-itinerary-btn {
+  background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
+  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+}
+
+.edit-itinerary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e56b5d 0%, #FA8072 100%);
+  box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
+  transform: translateY(-1px);
+}
+
+.edit-itinerary-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
+}
+
+/* Disabled state for both buttons */
+.save-itinerary-btn:disabled,
+.edit-itinerary-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 1200px) {
+  .itinerary-sidebar.open {
+    width: 35%;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .itinerary-sidebar.open {
+    width: 40%;
+    min-width: 250px;
+  }
+}
