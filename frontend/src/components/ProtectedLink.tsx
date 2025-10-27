@@ -36,8 +36,8 @@ export function ProtectedLink({
         return;
       }
       apiValidate()
-        .then((valid: boolean) => {
-          setAuthorized(valid);
+        .then(({ status }) => {
+          setAuthorized(status === 200);
         })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .catch((err: any) => {

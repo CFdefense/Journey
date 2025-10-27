@@ -11,14 +11,11 @@ export default function Account() {
 
   const onLogout = async () => {
     console.log("Logging out");
-    try {
-      await apiLogout();
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
-      window.location.href = "/"; //workaround since navigate doesn't work properly
-      setAuthorized(false);
+    const { status } = await apiLogout();
+    if (status !== 200) {
+      console.error("Logout failed with status", status);
     }
+    setAuthorized(false);
   };
 
   return (
