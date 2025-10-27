@@ -47,19 +47,9 @@ export default function Account() {
 
   const onLogout = async () => {
     console.log("Logging out");
-<<<<<<< HEAD
-    try {
-      await apiLogout();
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
-      window.location.href = "/";
-      setAuthorized(false);
-=======
     const { status } = await apiLogout();
     if (status !== 200) {
       console.error("Logout failed with status", status);
->>>>>>> origin/DEMO
     }
     setAuthorized(false);
   };
