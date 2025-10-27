@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  apiLogout, 
-  apiUpdateAccount, 
-  apiGetProfile, 
-  type UpdateRequest 
+import {
+  apiLogout,
+  apiUpdateAccount,
+  apiGetProfile,
+  type UpdateRequest
 } from "../api/account";
 import { useContext, useState, useEffect, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
@@ -15,7 +15,7 @@ export default function Account() {
     GlobalContext as Context<GlobalState>
   );
   const navigate = useNavigate();
-  
+
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,16 +28,16 @@ export default function Account() {
         if (data.result) {
           setEmail(data.result.email || "");
       } else {
-        setStatusMessage({ 
-          message: "Failed to load account details. Please log in again.", 
-          type: 'error' 
+        setStatusMessage({
+          message: "Failed to load account details. Please log in again.",
+          type: 'error'
         });
       }
       } catch (e) {
         console.error("Failed to load profile:", e);
-        setStatusMessage({ 
-          message: "Failed to load account details. Please log in again.", 
-          type: 'error' 
+        setStatusMessage({
+          message: "Failed to load account details. Please log in again.",
+          type: 'error'
         });
       }
     };
@@ -47,19 +47,9 @@ export default function Account() {
 
   const onLogout = async () => {
     console.log("Logging out");
-<<<<<<< HEAD
-    try {
-      await apiLogout();
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
-      window.location.href = "/";
-      setAuthorized(false);
-=======
     const { status } = await apiLogout();
     if (status !== 200) {
       console.error("Logout failed with status", status);
->>>>>>> origin/DEMO
     }
     setAuthorized(false);
   };
@@ -74,17 +64,17 @@ export default function Account() {
 
     try {
       await apiUpdateAccount(payload);
-      setStatusMessage({ 
-        message: "Account settings updated successfully!", 
-        type: 'success' 
+      setStatusMessage({
+        message: "Account settings updated successfully!",
+        type: 'success'
       });
       setPassword("");
     } catch (error) {
       console.error("Update failed:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during update.";
-      setStatusMessage({ 
-        message: `Update failed: ${errorMessage}`, 
-        type: 'error' 
+      setStatusMessage({
+        message: `Update failed: ${errorMessage}`,
+        type: 'error'
       });
     }
   };
@@ -102,10 +92,10 @@ export default function Account() {
           </div>
         </div>
       </nav>
-      
+
       <div className="auth-content">
         <div className="account-wrapper">
-          
+
           {/* Collapsible Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-toggle">
@@ -113,9 +103,9 @@ export default function Account() {
               <span></span>
               <span></span>
             </div>
-            
+
             <div className="sidebar-content">
-              <button 
+              <button
                 className="sidebar-item"
                 onClick={() => navigate('/account')}
               >
@@ -127,8 +117,8 @@ export default function Account() {
                 </div>
                 <span className="sidebar-label">Account Information</span>
               </button>
-              
-              <button 
+
+              <button
                 className="sidebar-item"
                 onClick={() => navigate('/account/preferences')}
               >
@@ -140,8 +130,8 @@ export default function Account() {
                 </div>
                 <span className="sidebar-label">Preference Update</span>
               </button>
-              
-              <button 
+
+              <button
                 className="sidebar-item"
                 onClick={() => navigate('/account/itineraries')}
               >
@@ -164,7 +154,7 @@ export default function Account() {
             <div className="account-container">
               <div className="account-box">
                 <h1>Account Settings</h1>
-                
+
                 {statusMessage && (
                   <div className={`status-message status-message--${statusMessage.type}`}>
                     {statusMessage.message}
@@ -174,14 +164,14 @@ export default function Account() {
                 <form onSubmit={handleUpdate}>
                   <div className="settings-section">
                     <h2>Login Details</h2>
-                    
+
                     <div className="field-group">
                       <label htmlFor="email">Username (Email):</label>
                       <input
                         type="email"
                         id="email"
                         value={email}
-                        readOnly 
+                        readOnly
                         className="input-readonly"
                       />
                       <small>Your username is linked to your email and cannot be changed here.</small>
