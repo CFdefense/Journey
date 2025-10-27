@@ -1,5 +1,5 @@
 use crate::{
-	controllers, db,
+	controllers, db, agent,
 	global::*,
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
@@ -990,6 +990,12 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
+	// Create a dummy agent for testing
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
+		agent::config::create_agent()
+			.expect("Failed to create test agent")
+	)));
+	
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
 	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
@@ -1017,7 +1023,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			text: format!("Test msg {}", i),
 			itinerary_id: None,
 		});
-		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), json)
+		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap()
 			.user_message_id;
@@ -1031,7 +1037,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1046,7 +1052,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1112,7 +1118,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1127,7 +1133,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1141,7 +1147,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, pool.clone(), json)
+	_ = controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
