@@ -24,6 +24,7 @@ utoipa = { version= "5.4.0", features = ["axum_extras", "chrono", "time", "opena
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum", "cache"] }
 utoipa-axum = "0.2.0"
 langchain-rust = "4.6.0"
+async-trait = "0.1"
 
 [dev-dependencies]
 sqlx-cli = "0.8"

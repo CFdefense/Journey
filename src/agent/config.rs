@@ -15,8 +15,10 @@ use langchain_rust::{
 	chain::options::ChainCallOptions,
 	llm::openai::{OpenAI, OpenAIModel},
 	memory::SimpleMemory,
-	tools::CommandExecutor,
+	//tools:: <- Some tools can be gotten from here
 };
+
+use crate::agent::tools::GreetingTool;
 
 pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
@@ -24,14 +26,42 @@ pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> 
 
 	// Create memory
 	let memory = SimpleMemory::new();
-	let command_executor = CommandExecutor::default();
+
+	// Get tools
+	let greeting_tool = GreetingTool;
 
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
-	// Create agent
+	// Create agent with system prompt and tools
+	let system_prompt = format!(
+		"You are a helpful AI assistant for planning travel itineraries. \
+		You help users create and manage their trip plans with a friendly and professional demeanor. \
+		Always be concise, clear, and focus on providing practical travel planning advice. \
+		\
+		User Info: \
+		Name: {} \
+		Location: {} \
+		Preferences: {} \
+		Budget: {} \
+		Travel Dates: {} \
+		Travel Type: {} \
+		Travel Style: {} \
+		Travel Budget: {} \
+	",  "christian", 
+		"Philadelphia", 
+		"Adventurous", 
+		"Cheap", 
+		"August 1st - August 8th", 
+		"Vacation", 
+		"Adventurous", 
+		"Cheap");
+	
 	let agent = ConversationalAgentBuilder::new()
-		.tools(&[Arc::new(command_executor)])
+		.prefix(system_prompt)
+		.tools(&[
+			Arc::new(greeting_tool),
+		])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
