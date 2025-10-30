@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   padding: 0;
-  background: #FFE3B3;
+  background: #ffe3b3;
   height: 100vh;
   overflow: hidden;
 }
@@ -11,8 +11,8 @@
   position: sticky;
   top: 0;
   width: 100%;
-  background: #FFC872;
-  border-bottom: 1px solid #FFB84D;
+  background: #ffc872;
+  border-bottom: 1px solid #ffb84d;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 16px clamp(16px, 4vw, 56px);
   z-index: 100;
@@ -59,7 +59,9 @@
   font-size: 0.95rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .home-page .auth-cta-link:hover {
@@ -139,12 +141,12 @@
   .home-layout {
     padding: 0.5rem;
   }
-  
+
   .chat-window-wrapper {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  
+
   .home-page .auth-cta span {
     display: none;
   }

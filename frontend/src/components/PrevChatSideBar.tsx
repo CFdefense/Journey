@@ -18,7 +18,7 @@ export default function PrevChatSideBar({
   onToggleSidebar,
   sidebarVisible
 }: PrevChatSideBarProps) {
-   // Filter chats that have at least one message (only show these in sidebar)
+  // Filter chats that have at least one message (only show these in sidebar)
   //const visibleChats = chats.filter((chat) => chat.messages && chat.messages.length > 0);
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>

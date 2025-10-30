@@ -95,17 +95,17 @@
   .finish-popup-container.banner-style {
     padding: 0 1rem;
   }
-  
+
   .finish-popup-container.banner-style .finish-account-wrapper {
     flex-direction: column;
     gap: 0.75rem;
     align-items: stretch;
   }
-  
+
   .finish-popup-container.banner-style .banner-message {
     text-align: center;
   }
-  
+
   .finish-popup-container.banner-style .finish-account-setup {
     justify-content: center;
   }

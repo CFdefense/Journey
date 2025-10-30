@@ -28,7 +28,9 @@ export default function Home() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
   const [firstName, setFirstName] = useState<string>("");
-  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
+  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
+    null
+  );
 
   useEffect(() => {
     async function fetchAccount() {
@@ -113,12 +115,12 @@ export default function Home() {
   useEffect(() => {
     async function loadItinerary() {
       const itineraryId = selectedItineraryId;
-      
-      // if no current itinerary is selected, do not try and populate it 
+
+      // if no current itinerary is selected, do not try and populate it
       if (itineraryId === null) {
         return;
       }
-      
+
       try {
         const data = await fetchItinerary(itineraryId);
         setItineraryData(data);
@@ -132,7 +134,7 @@ export default function Home() {
     loadItinerary();
   }, [selectedItineraryId]);
 
-  // whenever the active chat changes, clear all itinerary information on home page. 
+  // whenever the active chat changes, clear all itinerary information on home page.
   useEffect(() => {
     setSelectedItineraryId(null);
     setItineraryData(null);
@@ -244,7 +246,9 @@ export default function Home() {
   return (
     <div className="home-page">
       <Navbar page="home" firstName={firstName} />
-      <div className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}>
+      <div
+        className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
+      >
         {showFinishPopup && <FinishAccountPopup />}
 
         <PrevChatSideBar

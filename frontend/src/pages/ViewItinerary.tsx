@@ -9,14 +9,14 @@ import "../styles/Itinerary.css";
 
 export default function ViewItineraryPage() {
   const [days, setDays] = useState<DayItinerary[]>([]);
-  
+
   // Store metadata needed for saving
   const [itineraryMetadata, setItineraryMetadata] = useState({
     id: 6,
     startDate: "",
     endDate: "",
     title: "",
-    chatSessionId: null as number | null,
+    chatSessionId: null as number | null
   });
 
   const unassignedEvents: Event[] = [
@@ -44,7 +44,7 @@ export default function ViewItineraryPage() {
         itineraryMetadata.title,
         itineraryMetadata.chatSessionId
       );
-      
+
       const result = await saveItineraryChanges(apiPayload);
       console.log("Save successful! Itinerary ID:", result.id);
       alert("Itinerary saved successfully!");
@@ -57,10 +57,10 @@ export default function ViewItineraryPage() {
   useEffect(() => {
     async function load() {
       const itineraryId = 6; // <--itinerary ID for itinerary that is being fetched
-      
+
       // Fetch the full API response to get metadata
       const apiResponse = await apiItineraryDetails(itineraryId);
-      
+
       if (apiResponse.result) {
         // Store metadata
         setItineraryMetadata({
@@ -68,9 +68,9 @@ export default function ViewItineraryPage() {
           startDate: apiResponse.result.start_date,
           endDate: apiResponse.result.end_date,
           title: apiResponse.result.title,
-          chatSessionId: apiResponse.result.chat_session_id,
+          chatSessionId: apiResponse.result.chat_session_id
         });
-        
+
         // Transform and store days
         const data = await fetchItinerary(itineraryId);
         setDays(data);
@@ -82,8 +82,8 @@ export default function ViewItineraryPage() {
   return (
     <div className="view-page">
       <UnassignedEvents events={unassignedEvents} onDragStart={onDragStart} />
-      <Itinerary 
-        days={days} 
+      <Itinerary
+        days={days}
         onUpdate={handleItineraryUpdate}
         onSave={handleSave}
       />
