@@ -1,4 +1,6 @@
+import { useState } from "react";
 import "../styles/PrevChatSideBar.css";
+import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 
 interface PrevChatSideBarProps {
@@ -18,8 +20,29 @@ export default function PrevChatSideBar({
   onToggleSidebar,
   sidebarVisible
 }: PrevChatSideBarProps) {
-  // Filter chats that have at least one message (only show these in sidebar)
-  //const visibleChats = chats.filter((chat) => chat.messages && chat.messages.length > 0);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    chatId: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
+    e.stopPropagation();
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setContextMenu({
+      x: rect.right + 5,
+      y: rect.top,
+      chatId
+    });
+  };
+
+  const handleDelete = () => {
+    if (contextMenu) {
+      console.log("delete chat", contextMenu.chatId);
+      setContextMenu(null);
+    }
+  };
+
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="sidebar-top">
@@ -47,12 +70,27 @@ export default function PrevChatSideBar({
                   className={chat.id === activeChatId ? "active" : ""}
                   onClick={() => onSelectChat(chat.id)}
                 >
-                  {chat.title}
+                  <span className="chat-title">{chat.title}</span>
+                  <button
+                    className="chat-menu-btn"
+                    onClick={(e) => handleContextMenu(e, chat.id)}
+                  >
+                    ...
+                  </button>
                 </li>
               ))
             )}
           </ul>
         </>
+      )}
+
+      {contextMenu && (
+        <ContextWindow
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );
