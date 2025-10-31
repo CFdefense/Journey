@@ -131,7 +131,6 @@ export default function Home() {
         setItineraryTitle(apiResponse.result.title);
         }
 
-        console.log("Loaded itinerary data:", data);
       } catch (error) {
         console.error("Error loading itinerary:", error);
         setItineraryData(null);
@@ -242,6 +241,14 @@ export default function Home() {
     }
   };
 
+  const handleDeleteChat = (deletedChatId: number) => {
+  // Remove the deleted chat from the chats list
+  setChats((prevChats) => {
+    if (!prevChats) return prevChats;
+    return prevChats.filter((chat) => chat.id !== deletedChatId);
+  });
+};
+
   const handleToggleSidebar = () => {
     setSidebarVisible((prev) => !prev);
   };
@@ -266,6 +273,7 @@ export default function Home() {
           onSelectChat={setActiveChatId}
           onNewChat={handleNewChat}
           onToggleSidebar={handleToggleSidebar}
+          onDeleteChat={handleDeleteChat}
           sidebarVisible={sidebarVisible}
         />
 

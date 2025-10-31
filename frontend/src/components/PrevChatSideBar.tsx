@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles/PrevChatSideBar.css";
 import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
+import { apiDeleteChat } from "../api/home";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -9,6 +10,7 @@ interface PrevChatSideBarProps {
   onSelectChat: (id: number) => void;
   onNewChat: () => void;
   onToggleSidebar: () => void;
+  onDeleteChat: (id: number) => void;
   sidebarVisible: boolean;
 }
 
@@ -18,6 +20,7 @@ export default function PrevChatSideBar({
   onSelectChat,
   onNewChat,
   onToggleSidebar,
+  onDeleteChat,
   sidebarVisible
 }: PrevChatSideBarProps) {
   const [contextMenu, setContextMenu] = useState<{
@@ -36,9 +39,22 @@ export default function PrevChatSideBar({
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (contextMenu) {
-      console.log("delete chat", contextMenu.chatId);
+      const chatIdToDelete = contextMenu.chatId;
+      const response = await apiDeleteChat(chatIdToDelete);
+      
+      if (response.status === 200) {
+        // deleting an active chat causes us to just start a new chat
+        if (chatIdToDelete === activeChatId) {
+          onNewChat();
+        }
+        // need to tell Home.tsx what to delete, so the chat list can update properly
+        onDeleteChat(chatIdToDelete);
+      } else {
+        console.error("Failed to delete chat:", response.status);
+      }
+      
       setContextMenu(null);
     }
   };

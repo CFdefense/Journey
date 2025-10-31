@@ -32,8 +32,6 @@ export async function fetchItinerary(
 	try {
 		const apiResponse = await apiItineraryDetails(itineraryID);
 
-		console.log(apiResponse);
-
 		if (!apiResponse.result) {
 			throw new Error(
 				`Invalid itinerary result (status ${apiResponse.status})`
