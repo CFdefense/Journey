@@ -39,27 +39,31 @@ export async function apiItineraryDetails(
 	}
 }
 
-export async function saveItineraryChanges(payload: Itinerary): Promise<SaveResponse> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: import.meta.env.DEV ? "include" : "same-origin",
-      body: JSON.stringify(payload)
-    });
+export async function saveItineraryChanges(
+	payload: Itinerary
+): Promise<SaveResponse> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to save itinerary: ${response.status} ${errorText}`);
-    }
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(
+				`Failed to save itinerary: ${response.status} ${errorText}`
+			);
+		}
 
-    // Parse and return the SaveResponse
-    const data: SaveResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Save API error:", error);
-    throw error;
-  }
+		// Parse and return the SaveResponse
+		const data: SaveResponse = await response.json();
+		return data;
+	} catch (error) {
+		console.error("Save API error:", error);
+		throw error;
+	}
 }

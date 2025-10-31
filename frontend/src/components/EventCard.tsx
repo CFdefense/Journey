@@ -22,7 +22,7 @@ const EventCard: React.FC<EventCardProps> = ({
   address,
   draggable = false,
   onDragStart,
-  onDragEnd,
+  onDragEnd
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -30,7 +30,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const openModal = () => {
     if (!isDragging) setIsOpen(true);
   };
-  
+
   const closeModal = () => setIsOpen(false);
 
   const handleDragStart = (e: React.DragEvent) => {

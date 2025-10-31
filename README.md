@@ -1,4 +1,13 @@
-# Capping2025
+# Journey
+[![CI](https://github.com/CFdefense/Journey/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/CFdefense/Journey/actions/workflows/ci.yml)
+
+[Public Api Docs](https://cfdefense.github.io/Journey/)
+
+[Backend Code Cov](https://cfdefense.github.io/Journey/tarpaulin-report.html)
+
+[Frontend Code Cov](https://cfdefense.github.io/Journey/frontend-codecov/index.html)
+
+Travel agent that plans each day during your travel. The website creates an itinerary based on your location. Users may make changes or ask the agent to make changes to the itinerary.
 ## Team
 * Ellie Knapp - Project Manager
 * Christian Farrell - Software Engineer
@@ -9,21 +18,19 @@
 [click here](https://drive.google.com/drive/folders/1qaL4QgcQqS9PJ1wRcjRkr2MEaM80OV9i)
 ## Brightspace
 [click here](https://brightspace.marist.edu/d2l/home/57958)
-## Project Idea
-Travel agent that plans each day during your travel. The website creates an itinerary based on your location. Users may make changes or ask the agent to make changes to the itinerary.
 ## Build Project
 ### Environment Variables
-Make a `.env` in the root directory with these variables
+Make a `.env` in the root directory with these variables (example values are provided)
 ```
-POSTGRES_USER=""
-POSTGRES_PASSWORD=""
-POSTGRES_DB=""
-DATABASE_URL=""
-API_BASE_URL=""
-FRONTEND_URL=""
-BIND_ADDRESS=""
-OPENAI_API_KEY=""
-RUST_LOG=""
+POSTGRES_USER="user"
+POSTGRES_PASSWORD="password"
+POSTGRES_DB="travelagent"
+DATABASE_URL="postgres://user:password@localhost:5431/travelagent"
+API_BASE_URL="http://localhost:3001"
+FRONTEND_URL="http://localhost:5173"
+BIND_ADDRESS="0.0.0.0:3001"
+OPENAI_API_KEY="" # your key goes here
+RUST_LOG="warn,Capping2025=debug"
 ```
 Make a `.env` in the /frontend directory with these variables
 ```
@@ -49,7 +56,7 @@ Run migrations (in psql command line - should have prompt `travelagent=# `)
 Kill database (after you're done)
 ```sh
 # Windows
-# TODO
+# TODO: put windows command here
 
 # Linux
 sudo docker compose down db

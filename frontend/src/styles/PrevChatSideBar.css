@@ -1,6 +1,6 @@
 .sidebar {
-  background: #FFE3B3;
-  border-right: 1px solid #FFC872;
+  background: #ffe3b3;
+  border-right: 1px solid #ffc872;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -19,7 +19,7 @@
 /* When sidebar is closed */
 .sidebar.closed {
   width: 50px;
-  background: #FFE3B3;
+  background: #ffe3b3;
 }
 
 /* Top section with toggle button and optional title */
@@ -28,7 +28,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem;
-  border-bottom: 1px solid #FFC872;
+  border-bottom: 1px solid #ffc872;
   height: 50px;
   box-sizing: border-box;
 }
@@ -71,7 +71,7 @@
 /* New chat button wrapper */
 .new-chat-btn-wrapper {
   padding: 1rem;
-  border-bottom: 1px solid #FFC872;
+  border-bottom: 1px solid #ffc872;
 }
 
 .sidebar.closed .new-chat-btn-wrapper {
@@ -79,7 +79,7 @@
 }
 
 .new-chat-btn {
-  background: #006BBB;
+  background: #006bbb;
   color: white;
   border: none;
   border-radius: 6px;
@@ -92,7 +92,7 @@
 }
 
 .new-chat-btn:hover {
-  background: #30A0E0;
+  background: #30a0e0;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
 }
@@ -121,18 +121,18 @@
 }
 
 .chat-list::-webkit-scrollbar-thumb {
-  background: #FFC872;
+  background: #ffc872;
   border-radius: 4px;
 }
 
 .chat-list::-webkit-scrollbar-thumb:hover {
-  background: #FFB84D;
+  background: #ffb84d;
 }
 
 /* Firefox scrollbar */
 .chat-list {
   scrollbar-width: thin;
-  scrollbar-color: #FFC872 transparent;
+  scrollbar-color: #ffc872 transparent;
 }
 
 .sidebar.closed .chat-list {
@@ -143,7 +143,7 @@
   padding: 0.75rem;
   cursor: pointer;
   border-radius: 6px;
-  border: 1px solid #FFC872;
+  border: 1px solid #ffc872;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: #2c3e50;
@@ -151,23 +151,23 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: #FFC872;
+  background: #ffc872;
 }
 
 .chat-list li:hover {
-  background: #FFB84D;
-  border-color: #FFB84D;
+  background: #ffb84d;
+  border-color: #ffb84d;
 }
 
 .chat-list li.active {
-  background: #006BBB;
+  background: #006bbb;
   color: #ffffff;
   font-weight: 500;
-  border-color: #006BBB;
+  border-color: #006bbb;
 }
 
 .empty {
-  color: #8B6914;
+  color: #8b6914;
   font-size: 0.9rem;
   margin-top: 1rem;
   text-align: center;

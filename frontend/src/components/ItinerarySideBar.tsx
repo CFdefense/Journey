@@ -17,7 +17,7 @@ export default function ItinerarySideBar({
   selectedItineraryId
 }: ItinerarySideBarProps) {
   const navigate = useNavigate();
-  
+
   const handleSaveItinerary = () => {
     if (selectedItineraryId !== null) {
       console.log("Saving itinerary with ID:", selectedItineraryId);
@@ -29,35 +29,44 @@ export default function ItinerarySideBar({
   // TODO this will need to change but will be based on how ViewItinerary is set up
   const handleViewItinerary = () => {
     if (selectedItineraryId !== null) {
-      navigate('/view', { state: { itineraryId: selectedItineraryId } });
+      navigate("/view", { state: { itineraryId: selectedItineraryId } });
     }
   };
 
   return (
     <div className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="itinerary-sidebar-top">
-        {sidebarVisible && <div className="itinerary-sidebar-title">Itinerary</div>}
-        <button className="itinerary-sidebar-toggle-btn" onClick={onToggleSidebar}>
+        {sidebarVisible && (
+          <div className="itinerary-sidebar-title">Itinerary</div>
+        )}
+        <button
+          className="itinerary-sidebar-toggle-btn"
+          onClick={onToggleSidebar}
+        >
           ⋮
         </button>
       </div>
 
       {sidebarVisible && (
         <div className="itinerary-content">
-          <Itinerary 
-            key={itineraryData ? JSON.stringify(itineraryData[0]?.date) : 'no-itinerary'}
-            days={itineraryData ?? undefined} 
+          <Itinerary
+            key={
+              itineraryData
+                ? JSON.stringify(itineraryData[0]?.date)
+                : "no-itinerary"
+            }
+            days={itineraryData ?? undefined}
           />
-          
+
           <div className="itinerary-actions">
-            <button 
+            <button
               className="edit-itinerary-btn"
               onClick={handleViewItinerary}
               disabled={selectedItineraryId === null}
             >
               Edit
             </button>
-            <button 
+            <button
               className="save-itinerary-btn"
               onClick={handleSaveItinerary}
               disabled={selectedItineraryId === null}
