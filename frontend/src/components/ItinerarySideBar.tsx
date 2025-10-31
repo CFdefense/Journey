@@ -8,13 +8,15 @@ interface ItinerarySideBarProps {
   sidebarVisible: boolean;
   itineraryData: DayItinerary[] | null;
   selectedItineraryId: number | null;
+  itineraryTitle?: string;
 }
 
 export default function ItinerarySideBar({
   onToggleSidebar,
   sidebarVisible,
   itineraryData,
-  selectedItineraryId
+  selectedItineraryId,
+  itineraryTitle
 }: ItinerarySideBarProps) {
   const navigate = useNavigate();
 
@@ -49,13 +51,12 @@ export default function ItinerarySideBar({
 
       {sidebarVisible && (
         <div className="itinerary-content">
-          <Itinerary
-            key={
-              itineraryData
-                ? JSON.stringify(itineraryData[0]?.date)
-                : "no-itinerary"
-            }
-            days={itineraryData ?? undefined}
+          <Itinerary 
+            key={itineraryData ? JSON.stringify(itineraryData[0]?.date) : 'no-itinerary'}
+            days={itineraryData ?? undefined} 
+            compact={true}
+            title={itineraryTitle}
+            hideMenu={true}
           />
 
           <div className="itinerary-actions">

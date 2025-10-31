@@ -5,7 +5,7 @@ import type { GlobalState } from "./GlobalProvider";
 import userPfp from "../assets/user-pfp-temp.png";
 
 type NavbarProps = {
-  page: "login" | "signup" | "index" | "home";
+  page: "login" | "signup" | "index" | "home" | "view";
   firstName?: string;
 };
 
@@ -69,6 +69,15 @@ export default function Navbar({ page, firstName }: NavbarProps) {
             </Link>
           </div>
         );
+      case "view":
+        return (
+          <div className="auth-cta">
+            <Link to="/account" className="auth-cta-link user-profile-link">
+              <img src={userPfp} alt="User profile" className="user-profile-pic" />
+              <span className="user-first-name">{firstName || "User"}</span>
+            </Link>
+          </div>
+        )
       default:
         return null;
     }

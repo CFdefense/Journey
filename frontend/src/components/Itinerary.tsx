@@ -26,9 +26,14 @@ interface ItineraryProps {
   days?: DayItinerary[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
   onSave?: (updatedDays: DayItinerary[]) => Promise<void>;
+  editMode?: boolean;
+  onEditModeChange?: (editMode: boolean) => void;
+  title?: string;
+  compact?: boolean;
+  hideMenu?: boolean;
 }
 
-const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
+const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode: externalEditMode, onEditModeChange, title, compact = false, hideMenu = false }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,6 +45,13 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
       setLocalDays(days);
     }
   }, [days]);
+
+  // Sync edit mode with parent if controlled
+  useEffect(() => {
+    if (externalEditMode !== undefined) {
+      setEditMode(externalEditMode);
+    }
+  }, [externalEditMode]);
 
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id);
@@ -89,8 +101,13 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
   };
 
   const handleSave = async () => {
-    setEditMode(false);
+    const newEditMode = false;
+    setEditMode(newEditMode);
     setMenuOpen(false);
+    
+    if (onEditModeChange) {
+      onEditModeChange(newEditMode);
+    }
 
     console.log("Saving updated itinerary:", {
       day: localDays[selectedDayIndex].date,
@@ -113,18 +130,57 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
     }
   };
 
+  const handleCancel = () => {
+    const newEditMode = false;
+    setEditMode(newEditMode);
+    setMenuOpen(false);
+    
+    if (onEditModeChange) {
+      onEditModeChange(newEditMode);
+    }
+    
+    // Revert to original days
+    if (days) {
+      setLocalDays(days);
+    }
+  };
+
+  const handleEditClick = () => {
+    const newEditMode = true;
+    setEditMode(newEditMode);
+    setMenuOpen(false);
+    
+    if (onEditModeChange) {
+      onEditModeChange(newEditMode);
+    }
+  };
+
   if (!localDays || localDays.length === 0) {
     return <div className="itinerary-section">No itinerary data available</div>;
   }
 
   const currentDay = localDays[selectedDayIndex];
 
+  const getTimeRange = (timeLabel: string): string => {
+  switch (timeLabel) {
+    case "Morning":
+      return "6:00 AM - 12:00 PM";
+    case "Afternoon":
+      return "12:00 PM - 6:00 PM";
+    case "Evening":
+      return "6:00 PM - 12:00 AM";
+    default:
+      return "";
+    }
+  };
+
   return (
-    <div className="itinerary-section">
+    <div className={`itinerary-section ${compact ? 'compact' : ''}`}>
       {/* Header Row */}
       <div className="itinerary-header">
-        <h3>Itinerary</h3>
+        <h3>{title || "Itinerary"}</h3>
 
+      {!hideMenu && (
         <div className="menu-wrapper">
           <button
             className="menu-button"
@@ -138,22 +194,25 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
               {!editMode && (
                 <button
                   className="menu-item"
-                  onClick={() => {
-                    setEditMode(true);
-                    setMenuOpen(false);
-                  }}
+                  onClick={handleEditClick}
                 >
                   Edit
                 </button>
               )}
               {editMode && (
-                <button className="menu-item" onClick={handleSave}>
-                  Save
-                </button>
+                <>
+                  <button className="menu-item" onClick={handleSave}>
+                    Save
+                  </button>
+                  <button className="menu-item" onClick={handleCancel}>
+                    Cancel
+                  </button>
+                </>
               )}
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Day Tabs */}
@@ -178,7 +237,10 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
             onDrop={(e) => onDrop(e, timeIndex)}
             onDragOver={onDragOver}
           >
-            <div className="time-label">{block.time}</div>
+            <div className="time-label">
+              <span>{block.time}</span>
+              <span className="time-range">{getTimeRange(block.time)}</span>
+            </div>
             <div className="events-area">
               {block.events.map((event) => (
                 <EventCard
@@ -186,6 +248,9 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave }) => {
                   title={event.title}
                   desc={event.desc}
                   time={block.time}
+                  address={event.street_address}
+                  city={event.city}
+                  type={event.event_type}
                   draggable={editMode}
                   onDragStart={(e) => onDragStart(e, event, timeIndex)}
                 />
