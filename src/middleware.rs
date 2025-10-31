@@ -2,7 +2,13 @@ use crate::error::AppError;
 use axum::{extract::Request, middleware::Next, response::IntoResponse};
 use chrono::Utc;
 use sqlx::PgPool;
-use tower_cookies::{cookie::{time::{Duration, OffsetDateTime}, Cookie, Key, SameSite}, Cookies};
+use tower_cookies::{
+	Cookies,
+	cookie::{
+		Cookie, Key, SameSite,
+		time::{Duration, OffsetDateTime},
+	},
+};
 
 /// Inserted into request extensions on authenticated requests
 #[derive(Clone, Copy, Debug)]

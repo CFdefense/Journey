@@ -23,7 +23,7 @@ export default function ViewItineraryPage() {
     startDate: "",
     endDate: "",
     title: "",
-    chatSessionId: null as number | null,
+    chatSessionId: null as number | null
   });
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ViewItineraryPage() {
         itineraryMetadata.title,
         itineraryMetadata.chatSessionId
       );
-      
+
       const result = await saveItineraryChanges(apiPayload);
       console.log("Save result:", result);
       alert("Itinerary saved successfully!");
