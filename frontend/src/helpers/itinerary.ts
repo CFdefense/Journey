@@ -9,6 +9,8 @@ export interface Event {
   postal_code?: number;
   city?: string;
   event_type?: string;
+  hard_start?: Date;
+  hard_end?: Date;
 }
 
 export interface TimeBlock {
@@ -144,5 +146,7 @@ function convertEventToApi(event: Event): ApiEvent {
     postal_code: event.postal_code || 0,
     city: event.city || "",
     event_type: event.event_type || "",
+    hard_start: event.hard_start || null,
+    hard_end: event.hard_end || null
   };
 }
