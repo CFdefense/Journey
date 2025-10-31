@@ -54,6 +54,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.event_type,
 			e.event_description,
 			e.event_name
+			e.hard_start
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
 		WHERE el.itinerary_id = $1
