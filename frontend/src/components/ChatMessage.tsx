@@ -49,7 +49,7 @@ export default function ChatMessage({
       {!message.is_user && (
         <img src={aiPic} alt="AI Assistant" className="message-avatar" />
       )}
-      
+
       <div className="chat-message-content">
         <div className={`chat-message ${message.is_user ? "user" : "bot"}`}>
           <div className="message-text">
@@ -70,7 +70,7 @@ export default function ChatMessage({
             </div>
           )}
         </div>
-        
+
         <span className="timestamp">{formattedTimestamp}</span>
       </div>
     </div>

@@ -60,7 +60,11 @@ export default function Navbar({ page, firstName }: NavbarProps) {
         return (
           <div className="auth-cta">
             <Link to="/account" className="auth-cta-link user-profile-link">
-              <img src={userPfp} alt="User profile" className="user-profile-pic" />
+              <img
+                src={userPfp}
+                alt="User profile"
+                className="user-profile-pic"
+              />
               <span className="user-first-name">{firstName || "User"}</span>
             </Link>
           </div>

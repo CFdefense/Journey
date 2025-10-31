@@ -59,7 +59,9 @@
   font-size: 0.95rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .home-page .auth-cta-link:hover {
@@ -139,12 +141,12 @@
   .home-layout {
     padding: 0.5rem;
   }
-  
+
   .chat-window-wrapper {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  
+
   .home-page .auth-cta span {
     display: none;
   }

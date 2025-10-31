@@ -168,7 +168,7 @@
 
 /* Sent messages (user) */
 .chat-message.user {
-  background: #006BBB;
+  background: #006bbb;
   color: #ffffff;
   border-bottom-right-radius: 4px;
 }
@@ -277,7 +277,7 @@
 }
 
 .message-box:focus {
-  border-color: #006BBB;
+  border-color: #006bbb;
   outline: none;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.1);
