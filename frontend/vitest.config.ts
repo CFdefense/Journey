@@ -15,11 +15,11 @@ export default defineConfig({
 				"src/helpers/global.ts",
 				"src/models",
 				"**/*.d.ts",
-				"**/*.tsx" // if you want to test a react component, you should specifically include that file
+				"**/*.tsx", // if you want to test a react component, you should specifically include that file
+				"tests/testApi.ts" // Generated file, exclude from coverage
 			],
 			include: [
-				"src/**",
-				"tests/testApi.ts"
+				"src/**"
 			],
 			thresholds: {
 				lines: 80,
