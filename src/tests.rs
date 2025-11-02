@@ -1564,13 +1564,28 @@ async fn test_cookie_exp_extended() {
 
 	let cookie = signup_resp.res_cookie("auth-token").unwrap();
 	assert!(cookie.expires.unwrap() > SystemTime::now());
-	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
 
 	// Hit any protected route
 	let validate_resp = hc.do_get("/api/account/validate").await.unwrap();
 	assert_eq!(validate_resp.status().as_u16(), 200);
 
 	let cookie = validate_resp.res_cookie("auth-token").unwrap();
-	assert!(cookie.expires.unwrap() > SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
-	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(3600)).unwrap());
+	assert!(
+		cookie.expires.unwrap()
+			> SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(3600))
+				.unwrap()
+	);
 }

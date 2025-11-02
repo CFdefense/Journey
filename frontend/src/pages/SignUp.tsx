@@ -47,7 +47,9 @@ export default function Signup() {
       password
     });
     if (status === 409) {
-      setError("An account with this email already exists. Please log in instead.");
+      setError(
+        "An account with this email already exists. Please log in instead."
+      );
       return;
     }
     if (status !== 200) {

@@ -62,7 +62,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
 
   const onDrop = (e: React.DragEvent, targetTimeIndex: number) => {
     e.preventDefault();
-    
+
     const eventId = e.dataTransfer.getData("eventId");
     const title = e.dataTransfer.getData("eventTitle");
     const desc = e.dataTransfer.getData("eventDesc");
@@ -70,7 +70,9 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
 
     if (!eventId || !title) return;
 
-    const sourceTimeIndex = sourceTimeIndexStr ? parseInt(sourceTimeIndexStr) : -1;
+    const sourceTimeIndex = sourceTimeIndexStr
+      ? parseInt(sourceTimeIndexStr)
+      : -1;
     const draggedEvent: Event = { id: eventId, title, desc };
 
     // Create a copy of localDays
@@ -79,10 +81,9 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
 
     // Remove event from source time block if it exists
     if (sourceTimeIndex >= 0) {
-      currentDay.timeBlocks[sourceTimeIndex].events = 
-        currentDay.timeBlocks[sourceTimeIndex].events.filter(
-          (e) => e.id !== eventId
-        );
+      currentDay.timeBlocks[sourceTimeIndex].events = currentDay.timeBlocks[
+        sourceTimeIndex
+      ].events.filter((e) => e.id !== eventId);
     }
 
     // Add event to target time block if not already there
@@ -110,14 +111,14 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
 
     console.log("Saving updated itinerary:", {
       day: localDays[selectedDayIndex].date,
-      updatedTimeBlocks: localDays[selectedDayIndex].timeBlocks,
+      updatedTimeBlocks: localDays[selectedDayIndex].timeBlocks
     });
-    
+
     // Update parent state
     if (onUpdate) {
       onUpdate(localDays);
     }
-    
+
     // Call parent's save function (which handles API call)
     if (onSave) {
       try {
