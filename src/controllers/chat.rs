@@ -102,7 +102,8 @@ async fn send_message_to_llm(
 
 	// Check if DEPLOY_LLM is set, return dummy response if not
 	let ai_text = match env::var("DEPLOY_LLM") {
-		Ok(_) => {
+		#[cfg(not(tarpaulin_include))]
+		Ok(s) if s.as_str() == "1" => {
 			// DEPLOY_LLM is set, call the actual AI agent
 			let agent_guard = agent.lock().await;
 			agent_guard
@@ -112,12 +113,12 @@ async fn send_message_to_llm(
 				.await
 				.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
 		}
-		Err(_) => {
+		_ => {
 			// DEPLOY_LLM is not set, return dummy response
 			format!("This is a dummy response for testing. You said: \"{}\"", text)
 		}
 	};
-	
+
 	// Create dummy itinerary (always used when DEPLOY_LLM is not set)
 	let mut ai_itinerary = Itinerary {
 		id: 0,

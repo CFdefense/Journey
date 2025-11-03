@@ -8,8 +8,9 @@ mod http_models;
 mod log;
 mod middleware;
 mod sql_models;
-mod agent;
 
+#[cfg(not(tarpaulin_include))]
+mod agent;
 #[cfg(not(tarpaulin_include))]
 mod swagger;
 
