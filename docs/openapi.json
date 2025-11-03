@@ -1026,9 +1026,17 @@
           "city",
           "event_type",
           "event_description",
-          "event_name"
+          "event_name",
+          "user_created"
         ],
         "properties": {
+          "account_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
           "city": {
             "type": "string"
           },
@@ -1040,6 +1048,13 @@
           },
           "event_type": {
             "type": "string"
+          },
+          "hard_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "hard_start": {
             "type": [
@@ -1059,6 +1074,9 @@
           },
           "street_address": {
             "type": "string"
+          },
+          "user_created": {
+            "type": "boolean"
           }
         }
       },

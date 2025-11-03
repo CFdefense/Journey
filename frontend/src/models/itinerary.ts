@@ -28,6 +28,8 @@ export type Event = {
 	event_type: string;
 	event_description: string;
 	event_name: string;
+	user_created: boolean;
+	account_id: number | null;
 	hard_start: Date | null; /// for testing sake this is what will have the 13:00 value for phillies game
 	hard_end: Date | null;
 };

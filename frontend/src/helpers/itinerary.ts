@@ -13,6 +13,8 @@ export interface Event {
   postal_code?: number;
   city?: string;
   event_type?: string;
+  user_created?: boolean;
+  account_id?: number;
   hard_start?: Date;
   hard_end?: Date;
 }
@@ -163,6 +165,8 @@ function convertEventToApi(event: Event): ApiEvent {
     postal_code: event.postal_code || 0,
     city: event.city || "",
     event_type: event.event_type || "",
+	user_created: event.user_created || false,
+	account_id: event.account_id || null,
     hard_start: event.hard_start || null,
     hard_end: event.hard_end || null
   };
