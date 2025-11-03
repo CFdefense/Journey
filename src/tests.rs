@@ -990,11 +990,27 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
-	// Create a dummy agent for testing
-	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
-		agent::config::create_agent()
-			.expect("Failed to create test agent")
-	)));
+	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+				})
+			})
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
+	
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
 	
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
@@ -1206,6 +1222,27 @@ async fn test_endpoints() {
 	// Build app
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
+	
+	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+				})
+			})
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
+	
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
 	let chat_routes = controllers::chat::chat_routes();
@@ -1217,6 +1254,7 @@ async fn test_endpoints() {
 		.nest("/api", api_routes)
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
 		.layer(CookieManagerLayer::new());
 
 	// Bind to ephemeral port and spawn server
@@ -1530,13 +1568,28 @@ async fn test_cookie_exp_extended() {
 
 	let cookie = signup_resp.res_cookie("auth-token").unwrap();
 	assert!(cookie.expires.unwrap() > SystemTime::now());
-	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
 
 	// Hit any protected route
 	let validate_resp = hc.do_get("/api/account/validate").await.unwrap();
 	assert_eq!(validate_resp.status().as_u16(), 200);
 
 	let cookie = validate_resp.res_cookie("auth-token").unwrap();
-	assert!(cookie.expires.unwrap() > SystemTime::now().checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64)).unwrap());
-	assert!(cookie.expires.unwrap() < SystemTime::now().checked_add(Duration::from_secs(3600)).unwrap());
+	assert!(
+		cookie.expires.unwrap()
+			> SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(3600))
+				.unwrap()
+	);
 }

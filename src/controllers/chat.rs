@@ -5,6 +5,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
+use std::env;
 use utoipa::OpenApi;
 
 use crate::{
@@ -99,20 +100,26 @@ async fn send_message_to_llm(
 		None => None,
 	};
 
-	// Actually call the AI agent
-	let ai_response = {
-		let agent_guard = agent.lock().await;
-		agent_guard
-			.invoke(prompt_args! {
-				"input" => text,
-			})
-			.await
-			.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
+	// Check if DEPLOY_LLM == "1", return dummy response if not
+	let ai_text = match env::var("DEPLOY_LLM") {
+		#[cfg(not(tarpaulin_include))]
+		Ok(s) if s.as_str() == "1" => {
+			// DEPLOY_LLM is set, call the actual AI agent
+			let agent_guard = agent.lock().await;
+			agent_guard
+				.invoke(prompt_args! {
+					"input" => text,
+				})
+				.await
+				.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
+		}
+		_ => {
+			// DEPLOY_LLM != "1", return dummy response
+			format!("This is a dummy response for testing. You said: \"{}\"", text)
+		}
 	};
-	
-	let ai_text = ai_response;
-	
-	// Create dummy itinerary (will be replaced by AI-generated one later)
+
+	// Create dummy itinerary (always used when DEPLOY_LLM != "1")
 	let mut ai_itinerary = Itinerary {
 		id: 0,
 		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),

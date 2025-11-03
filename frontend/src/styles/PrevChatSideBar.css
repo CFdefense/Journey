@@ -164,10 +164,10 @@
 }
 
 .chat-list li.active {
-  background: #006BBB;
+  background: #006bbb;
   color: #ffffff;
   font-weight: 500;
-  border-color: #006BBB;
+  border-color: #006bbb;
 }
 
 .empty {

@@ -8,8 +8,9 @@ mod http_models;
 mod log;
 mod middleware;
 mod sql_models;
-mod agent;
 
+#[cfg(not(tarpaulin_include))]
+mod agent;
 #[cfg(not(tarpaulin_include))]
 mod swagger;
 
@@ -48,8 +49,24 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 	let pool = db::create_pool().await;
 
 	// Initialize the AI agent
-	let agent = agent::config::create_agent()
-		.expect("Failed to create agent");
+	// Note: Agent will only be used if DEPLOY_LLM=1 (checked at runtime in chat controller)
+	// If DEPLOY_LLM != "1", agent creation may fail if API key is missing, but that's OK
+	// since the agent won't be used. We attempt creation anyway as OpenAI may allow it.
+	let agent = match agent::config::create_agent() {
+		Ok(agent) => agent,
+		Err(e) => {
+			if env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
+				// DEPLOY_LLM=1 but agent creation failed - this is an error
+				panic!("DEPLOY_LLM=1 but agent creation failed: {}. Please check your OpenAI API key.", e);
+			} else {
+				// DEPLOY_LLM != "1" - agent creation failed but we'll use dummy responses anyway
+				// Try to create a minimal agent anyway - if OpenAI::default() works without a key,
+				// this will succeed. Otherwise, we'll need to handle this differently.
+				// For now, panic with a helpful message.
+				panic!("Agent creation failed: {}. The server requires an agent even when DEPLOY_LLM != 1 (dummy mode). Please set OPENAI_API_KEY environment variable, or the agent creation needs to be made optional.", e);
+			}
+		}
+	};
 
 	/*
 	/ Configure CORS
