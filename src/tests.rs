@@ -990,23 +990,25 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
-	// Skip test if DEPLOY_LLM is not set (agent creation would hang without it)
-	if std::env::var("DEPLOY_LLM").is_err() {
-		return;
-	}
-	
-	// Create agent for testing
-	let agent = tokio::time::timeout(
-		Duration::from_secs(5),
-		tokio::task::spawn_blocking(|| {
-			agent::config::create_agent().unwrap_or_else(|e| {
-				panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+	// Create agent for testing - use dummy agent if DEPLOY_LLM is not set
+	let agent = if std::env::var("DEPLOY_LLM").is_ok() {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+				})
 			})
-		})
-	)
-	.await
-	.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-	.expect("Agent creation task panicked");
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
 	
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
 	
@@ -1221,23 +1223,25 @@ async fn test_endpoints() {
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
 	
-	// Skip test if DEPLOY_LLM is not set (agent creation would hang without it)
-	if std::env::var("DEPLOY_LLM").is_err() {
-		return;
-	}
-	
-	// Create agent for tests
-	let agent = tokio::time::timeout(
-		Duration::from_secs(5),
-		tokio::task::spawn_blocking(|| {
-			agent::config::create_agent().unwrap_or_else(|e| {
-				panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+	// Create agent for tests - use dummy agent if DEPLOY_LLM is not set
+	let agent = if std::env::var("DEPLOY_LLM").is_ok() {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+				})
 			})
-		})
-	)
-	.await
-	.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-	.expect("Agent creation task panicked");
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
 	
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
