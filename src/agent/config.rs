@@ -27,7 +27,7 @@ pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> 
 	// Load environment variables
 	dotenvy::dotenv().ok();
 	
-	// Note: Even when DEPLOY_LLM is not set, we still need to create an agent
+	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
 	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
 
 	// Create memory
@@ -77,12 +77,12 @@ pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> 
 
 /// Creates a dummy agent for testing purposes.
 /// This agent will have an invalid API key and will panic if invoked,
-/// but when DEPLOY_LLM is not set, the agent is never invoked, so this is safe.
+/// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
 pub fn create_dummy_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
-	// The agent won't actually be used when DEPLOY_LLM is not set
+	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
 	unsafe {
 		std::env::set_var("OPENAI_API_KEY", "sk-dummy-key-for-testing-only");

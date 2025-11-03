@@ -990,8 +990,8 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
-	// Create agent for testing - use dummy agent if DEPLOY_LLM is not set
-	let agent = if std::env::var("DEPLOY_LLM").is_ok() {
+	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
@@ -1223,8 +1223,8 @@ async fn test_endpoints() {
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
 	
-	// Create agent for tests - use dummy agent if DEPLOY_LLM is not set
-	let agent = if std::env::var("DEPLOY_LLM").is_ok() {
+	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
