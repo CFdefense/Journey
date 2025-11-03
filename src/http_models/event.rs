@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::ToSchema;
@@ -15,6 +16,7 @@ pub struct Event {
 	pub event_type: String,
 	pub event_description: String,
 	pub event_name: String,
+	pub hard_start: Option<NaiveDateTime>,
 }
 
 impl From<&EventListJoinRow> for Event {
@@ -28,6 +30,7 @@ impl From<&EventListJoinRow> for Event {
 			event_type: value.event_type.clone(),
 			event_description: value.event_description.clone(),
 			event_name: value.event_name.clone(),
+			hard_start: value.hard_start.clone(),
 		}
 	}
 }

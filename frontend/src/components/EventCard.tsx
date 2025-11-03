@@ -10,6 +10,7 @@ interface EventCardProps {
   postal_code?: number;
   city?: string;
   type?: string;
+  hard_start?: Date;
 
   // Added handlers for drag logic
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
@@ -23,6 +24,7 @@ const EventCard: React.FC<EventCardProps> = ({
   address,
   city,
   type,
+  hard_start,
   draggable = false,
   onDragStart,
   onDragEnd
@@ -89,6 +91,11 @@ const EventCard: React.FC<EventCardProps> = ({
             {city && (
               <p>
                 <strong>City:</strong> {city}
+              </p>
+            )}
+            {hard_start && (
+              <p>
+                <strong>Start:</strong> {city}
               </p>
             )}
             {type && (

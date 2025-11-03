@@ -6,13 +6,15 @@ import type {
 import { apiItineraryDetails } from "../api/itinerary";
 
 export interface Event {
-	id: string;
-	title: string;
-	desc?: string;
-	street_address?: string;
-	postal_code?: number;
-	city?: string;
-	event_type?: string;
+  id: string;
+  title: string;
+  desc?: string;
+  street_address?: string;
+  postal_code?: number;
+  city?: string;
+  event_type?: string;
+  hard_start?: Date;
+  hard_end?: Date;
 }
 
 export interface TimeBlock {
@@ -153,13 +155,15 @@ export function convertToApiFormat(
 }
 
 function convertEventToApi(event: Event): ApiEvent {
-	return {
-		id: parseInt(event.id),
-		event_name: event.title,
-		event_description: event.desc || "",
-		street_address: event.street_address || "",
-		postal_code: event.postal_code || 0,
-		city: event.city || "",
-		event_type: event.event_type || ""
-	};
+  return {
+    id: parseInt(event.id),
+    event_name: event.title,
+    event_description: event.desc || "",
+    street_address: event.street_address || "",
+    postal_code: event.postal_code || 0,
+    city: event.city || "",
+    event_type: event.event_type || "",
+    hard_start: event.hard_start || null,
+    hard_end: event.hard_end || null
+  };
 }

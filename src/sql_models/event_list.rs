@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::sql_models::TimeOfDay;
@@ -25,4 +25,13 @@ pub struct EventListJoinRow {
 	pub event_description: String,
 	/// Event name
 	pub event_name: String,
+	/// User-Created
+	pub user_created: bool,
+	/// Account ID
+	pub account_id: Option<i32>,
+	/// Hard Start Time
+	pub hard_start: Option<NaiveDateTime>,
+	/// Hard End Time
+	pub hard_end: Option<NaiveDateTime>
+
 }
