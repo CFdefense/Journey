@@ -22,12 +22,6 @@ export default function Signup() {
     e.preventDefault();
 
     // sanitize user input
-    const emailError = logic.checkIfValidEmail(email);
-    if (emailError) {
-      setError(emailError);
-      return;
-    }
-
     const nameError = logic.checkIfValidName(firstName, lastName);
     if (nameError) {
       setError(nameError);
@@ -46,22 +40,27 @@ export default function Signup() {
       return;
     }
 
-    try {
-      await apiSignUp({
-        email,
-        first_name: firstName, // rust backend expects snake case as json variable
-        last_name: lastName,
-        password
-      });
-      setAuthorized(true);
-      console.log("Account creation successful");
-      setError("");
-      navigate("/home");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setAuthorized(false);
-      setError(err.message || "Sign Up failed.");
+    const { status } = await apiSignUp({
+      email,
+      first_name: firstName, // rust backend expects snake case as json variable
+      last_name: lastName,
+      password
+    });
+    if (status === 409) {
+      setError(
+        "An account with this email already exists. Please log in instead."
+      );
+      return;
     }
+    if (status !== 200) {
+      setAuthorized(false);
+      setError("Sign up failed.");
+      return;
+    }
+    setAuthorized(true);
+    console.log("Account creation successful");
+    setError("");
+    navigate("/home");
   };
 
   return (

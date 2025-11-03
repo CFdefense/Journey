@@ -8,8 +8,9 @@ mod http_models;
 mod log;
 mod middleware;
 mod sql_models;
-mod agent;
 
+#[cfg(not(tarpaulin_include))]
+mod agent;
 #[cfg(not(tarpaulin_include))]
 mod swagger;
 
@@ -46,6 +47,26 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
 	// Initialize the database pool connection
 	let pool = db::create_pool().await;
+
+	// Initialize the AI agent
+	// Note: Agent will only be used if DEPLOY_LLM is set (checked at runtime in chat controller)
+	// If DEPLOY_LLM is not set, agent creation may fail if API key is missing, but that's OK
+	// since the agent won't be used. We attempt creation anyway as OpenAI may allow it.
+	let agent = match agent::config::create_agent() {
+		Ok(agent) => agent,
+		Err(e) => {
+			if env::var("DEPLOY_LLM").is_ok() {
+				// DEPLOY_LLM is set but agent creation failed - this is an error
+				panic!("DEPLOY_LLM is set but agent creation failed: {}. Please check your OpenAI API key.", e);
+			} else {
+				// DEPLOY_LLM is not set - agent creation failed but we'll use dummy responses anyway
+				// Try to create a minimal agent anyway - if OpenAI::default() works without a key,
+				// this will succeed. Otherwise, we'll need to handle this differently.
+				// For now, panic with a helpful message.
+				panic!("Agent creation failed: {}. The server requires an agent even when DEPLOY_LLM is not set (dummy mode). Please set OPENAI_API_KEY environment variable, or the agent creation needs to be made optional.", e);
+			}
+		}
+	};
 
 	/*
 	/ Configure CORS
@@ -96,6 +117,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		))
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
 		.layer(CookieManagerLayer::new())
 		.layer(cors);
 

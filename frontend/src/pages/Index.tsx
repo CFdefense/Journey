@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useContext, type Context } from "react";
 // Link no longer used directly in this page after refactor
 import HeroSection from "../components/HeroSection";
 import AboutSection from "../components/AboutSection";
@@ -8,9 +8,29 @@ import DemoSection from "../components/DemoSection";
 import TeamSection from "../components/TeamSection";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { GlobalContext, bypassProtection } from "../helpers/global";
+import { apiValidate } from "../api/account";
+import type { GlobalState } from "../components/GlobalProvider";
 import "../styles/Index.css";
 
 export default function Index() {
+  const { authorized, setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
+
+  // Check auth status on mount if not already set
+  useEffect(() => {
+    if (!bypassProtection() && authorized === null) {
+      apiValidate()
+        .then(({ status }) => {
+          setAuthorized(status === 200);
+        })
+        .catch(() => {
+          setAuthorized(false);
+        });
+    }
+  }, [authorized, setAuthorized]);
+
   useEffect(() => {
     // Ensure all key elements participate in the reveal animation
     const ensureRevealOn = [

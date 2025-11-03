@@ -16,18 +16,16 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await apiLogin({ email, password });
-      setAuthorized(true);
-      console.log("Login successful");
-      setError("");
-      navigate("/home");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    const { status } = await apiLogin({ email, password });
+    if (status !== 200) {
       setAuthorized(false);
-      console.error(err);
-      setError(err.message || "Login failed.");
+      setError("Invalid email or password.");
+      return;
     }
+    setAuthorized(true);
+    console.log("Login successful");
+    setError("");
+    navigate("/home");
   };
 
   return (

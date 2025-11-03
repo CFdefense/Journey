@@ -1,5 +1,5 @@
 use crate::{
-	controllers, db,
+	controllers, db, agent,
 	global::*,
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
@@ -990,6 +990,26 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
+	// Skip test if DEPLOY_LLM is not set (agent creation would hang without it)
+	if std::env::var("DEPLOY_LLM").is_err() {
+		return;
+	}
+	
+	// Create agent for testing
+	let agent = tokio::time::timeout(
+		Duration::from_secs(5),
+		tokio::task::spawn_blocking(|| {
+			agent::config::create_agent().unwrap_or_else(|e| {
+				panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+			})
+		})
+	)
+	.await
+	.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+	.expect("Agent creation task panicked");
+	
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+	
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
 	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
@@ -1017,7 +1037,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			text: format!("Test msg {}", i),
 			itinerary_id: None,
 		});
-		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), json)
+		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap()
 			.user_message_id;
@@ -1031,7 +1051,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1046,7 +1066,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1112,7 +1132,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1127,7 +1147,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1141,7 +1161,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, pool.clone(), json)
+	_ = controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
@@ -1200,6 +1220,25 @@ async fn test_endpoints() {
 	// Build app
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
+	
+	// Skip test if DEPLOY_LLM is not set (agent creation would hang without it)
+	if std::env::var("DEPLOY_LLM").is_err() {
+		return;
+	}
+	
+	// Create agent for tests
+	let agent = tokio::time::timeout(
+		Duration::from_secs(5),
+		tokio::task::spawn_blocking(|| {
+			agent::config::create_agent().unwrap_or_else(|e| {
+				panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+			})
+		})
+	)
+	.await
+	.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+	.expect("Agent creation task panicked");
+	
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
 	let chat_routes = controllers::chat::chat_routes();
@@ -1211,6 +1250,7 @@ async fn test_endpoints() {
 		.nest("/api", api_routes)
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
 		.layer(CookieManagerLayer::new());
 
 	// Bind to ephemeral port and spawn server
@@ -1230,6 +1270,7 @@ async fn test_endpoints() {
 		test_validate_with_bad_and_good_cookie(),
 		test_get_itinerary_invalid_format(),
 		test_signup_logout(),
+		test_cookie_exp_extended(),
 		// just throw all the tests in here
 	);
 }
@@ -1498,5 +1539,53 @@ async fn test_signup_logout() {
 		validate_res.status().as_u16(),
 		401,
 		"Missing/invalid cookie should return 401"
+	);
+}
+
+async fn test_cookie_exp_extended() {
+	let hc = httpc_test::new_client(format!("http://localhost:{}", unsafe { PORT })).unwrap();
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_cookie_exp_extended+{}@example.com", unique);
+
+	// Signup user
+	let signup_resp = hc
+		.do_post(
+			"/api/account/signup",
+			json!({
+				"email": email,
+				"first_name": "Get",
+				"last_name": "Event",
+				"password": "Password123"
+			}),
+		)
+		.await
+		.unwrap();
+	assert_eq!(signup_resp.status().as_u16(), 200);
+
+	let cookie = signup_resp.res_cookie("auth-token").unwrap();
+	assert!(cookie.expires.unwrap() > SystemTime::now());
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
+
+	// Hit any protected route
+	let validate_resp = hc.do_get("/api/account/validate").await.unwrap();
+	assert_eq!(validate_resp.status().as_u16(), 200);
+
+	let cookie = validate_resp.res_cookie("auth-token").unwrap();
+	assert!(
+		cookie.expires.unwrap()
+			> SystemTime::now()
+				.checked_add(Duration::from_secs(TEST_COOKIE_EXP_SECONDS as u64))
+				.unwrap()
+	);
+	assert!(
+		cookie.expires.unwrap()
+			< SystemTime::now()
+				.checked_add(Duration::from_secs(3600))
+				.unwrap()
 	);
 }

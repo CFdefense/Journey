@@ -55,9 +55,11 @@ export default function App() {
         <Route
           path="/signup"
           element={
-            <AuthLayout variant="signup">
-              <Signup />
-            </AuthLayout>
+            <InverseProtectedRoute>
+              <AuthLayout variant="signup">
+                <Signup />
+              </AuthLayout>
+            </InverseProtectedRoute>
           }
         />
         <Route path="*" element={<NotFound />} />

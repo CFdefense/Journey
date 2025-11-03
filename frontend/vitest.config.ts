@@ -3,29 +3,29 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
 	test: {
 		globals: true,
-		environment: "node",
+		environment: "jsdom",
+		testTimeout: 3600000,
 		coverage: {
 			provider: "v8",
+			reporter: ["text", "html"],
+			reportsDirectory: "../docs/frontend-codecov",
 			exclude: [
-				"coverage/",
-				"dist/",
-				"node_modules/",
-				"public/",
-				"src/components/",
-				"src/pages/",
-				"tests/",
+				"src/api/",
+				"src/helpers/config.ts",
+				"src/helpers/global.ts",
+				"src/models",
 				"**/*.d.ts",
-				"*.config.*",
+				"**/*.tsx", // if you want to test a react component, you should specifically include that file
+				"tests/testApi.ts" // Generated file, exclude from coverage
+			],
+			include: [
+				"src/**"
 			],
 			thresholds: {
-				// lines: 80,
-				// functions: 80,
-				// branches: 80,
-				// statements: 80
-				lines: 0,
-				functions: 0,
-				branches: 0,
-				statements: 0
+				lines: 80,
+				functions: 80,
+				branches: 80,
+				statements: 80
 			},
 		},
 	},

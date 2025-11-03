@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Message } from "../models/chat";
 import type { Itinerary } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
+import aiPic from "../assets/ai-pic.png";
 
 export type ChatMessageParams = {
   message: Message;
@@ -44,29 +45,34 @@ export default function ChatMessage({
   });
 
   return (
-    <div
-      key={message.id}
-      className={`chat-message ${message.is_user ? "user" : "bot"}`}
-    >
-      <div className="message-text">
-        <p>{message.text}</p>
+    <div className={`chat-message-wrapper ${message.is_user ? "user" : "bot"}`}>
+      {!message.is_user && (
+        <img src={aiPic} alt="AI Assistant" className="message-avatar" />
+      )}
+
+      <div className="chat-message-content">
+        <div className={`chat-message ${message.is_user ? "user" : "bot"}`}>
+          <div className="message-text">
+            <p>{message.text}</p>
+          </div>
+
+          {!message.is_user && message.itinerary_id && (
+            <div className="itinerary-info">
+              <button
+                className="display-itinerary-button"
+                onClick={() => {
+                  console.log("Selected itinerary ID:", message.itinerary_id);
+                  onItinerarySelect(message.itinerary_id!);
+                }}
+              >
+                Itinerary: {itinerary?.title ?? "No title"}
+              </button>
+            </div>
+          )}
+        </div>
+
         <span className="timestamp">{formattedTimestamp}</span>
       </div>
-
-      {!message.is_user && message.itinerary_id && (
-        <div className="itinerary-info">
-          <button
-            className="display-itinerary-button"
-            onClick={() => {
-              console.log("Selected itinerary ID:", message.itinerary_id);
-              onItinerarySelect(message.itinerary_id!);
-            }}
-          >
-            Itinerary: {itinerary?.title ?? "No title"}
-            {/* Will display this fallback text only if the database does not have an itinerary title for this message */}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
