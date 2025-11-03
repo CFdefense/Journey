@@ -59,6 +59,10 @@ describe("Itinerary Helper Tests", () => {
               postal_code: 12345,
               city: "TestCity",
               event_type: "food",
+              user_created: false,
+              account_id: null,
+              hard_start: null,
+              hard_end: null
             },
           ],
           noon_events: [],
@@ -71,7 +75,7 @@ describe("Itinerary Helper Tests", () => {
     const result = populateItinerary(apiItinerary);
     expect(result).toHaveLength(1);
     expect(result[0].date).toBe("2025-01-01");
-    expect(result[0].timeBlocks[0].events[0].title).toBe("Breakfast");
+    expect(result[0].timeBlocks[0].events[0].event_name).toBe("Breakfast");
   });
 
   test("Test populateItinerary with empty event_days", () => {
@@ -88,45 +92,60 @@ describe("Itinerary Helper Tests", () => {
     expect(result[0].date).toBe("N/A");
   });
 
-  test("Test convertToApiFormat", () => {
-    const days = [
-      {
-        date: "2025-01-01",
-        timeBlocks: [
-          {
-            time: "Morning",
-            events: [
-              {
-                id: "1",
-                title: "Breakfast",
-                desc: "Morning meal",
-              },
-            ],
-          },
-          {
-            time: "Afternoon",
-            events: [],
-          },
-          {
-            time: "Evening",
-            events: [],
-          },
-        ],
-      },
-    ];
+ test("Test convertToApiFormat", () => {
+  const days = [
+    {
+      date: "2025-01-01",
+      timeBlocks: [
+        {
+          time: "Morning",
+          events: [
+            {
+              id: 1,
+              event_name: "Breakfast",
+              event_description: "Morning meal",
+              street_address: "123 Main St",
+              postal_code: 12345,
+              city: "New York",
+              event_type: "dining",
+              user_created: false,
+              account_id: null,
+              hard_start: null,
+              hard_end: null,
+            },
+          ],
+        },
+        {
+          time: "Afternoon",
+          events: [],
+        },
+        {
+          time: "Evening",
+          events: [],
+        },
+      ],
+    },
+  ];
 
-    const result = convertToApiFormat(
-      days,
-      1,
-      "2025-01-01",
-      "2025-01-01",
-      "Test Trip",
-      100
-    );
+  const result = convertToApiFormat(
+    days,
+    1,
+    "2025-01-01",
+    "2025-01-01",
+    "Test Trip",
+    100
+  );
 
-    expect(result.id).toBe(1);
-    expect(result.event_days[0].morning_events[0].event_name).toBe("Breakfast");
-  });
+  expect(result.id).toBe(1);
+  expect(result.start_date).toBe("2025-01-01");
+  expect(result.end_date).toBe("2025-01-01");
+  expect(result.title).toBe("Test Trip");
+  expect(result.chat_session_id).toBe(100);
+  expect(result.event_days[0].date).toBe("2025-01-01");
+  expect(result.event_days[0].morning_events[0].event_name).toBe("Breakfast");
+  expect(result.event_days[0].morning_events[0].event_description).toBe("Morning meal");
+  expect(result.event_days[0].morning_events[0].city).toBe("New York");
+});
 
   test("Test fetchItinerary success", async () => {
     const mockApiResponse = {
