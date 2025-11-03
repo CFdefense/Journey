@@ -1,5 +1,5 @@
 use crate::{
-	controllers, db,
+	controllers, db, agent,
 	global::*,
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
@@ -990,6 +990,28 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.await
 		.unwrap();
 
+	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+				})
+			})
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
+	
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+	
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
 	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
@@ -1017,7 +1039,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			text: format!("Test msg {}", i),
 			itinerary_id: None,
 		});
-		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), json)
+		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap()
 			.user_message_id;
@@ -1031,7 +1053,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1046,7 +1068,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), json)
+		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1112,7 +1134,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1127,7 +1149,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), json)
+		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1141,7 +1163,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, pool.clone(), json)
+	_ = controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
@@ -1200,6 +1222,27 @@ async fn test_endpoints() {
 	// Build app
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
+	
+	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
+	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
+		// Real agent - requires valid OPENAI_API_KEY
+		tokio::time::timeout(
+			Duration::from_secs(5),
+			tokio::task::spawn_blocking(|| {
+				agent::config::create_agent().unwrap_or_else(|e| {
+					panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+				})
+			})
+		)
+		.await
+		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
+		.expect("Agent creation task panicked")
+	} else {
+		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
+		agent::config::create_dummy_agent()
+			.expect("Dummy agent creation failed")
+	};
+	
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
 	let chat_routes = controllers::chat::chat_routes();
@@ -1211,6 +1254,7 @@ async fn test_endpoints() {
 		.nest("/api", api_routes)
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
 		.layer(CookieManagerLayer::new());
 
 	// Bind to ephemeral port and spawn server
