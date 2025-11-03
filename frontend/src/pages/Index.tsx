@@ -21,11 +21,13 @@ export default function Index() {
   // Check auth status on mount if not already set
   useEffect(() => {
     if (!bypassProtection() && authorized === null) {
-      apiValidate().then(({ status }) => {
-        setAuthorized(status === 200);
-      }).catch(() => {
-        setAuthorized(false);
-      });
+      apiValidate()
+        .then(({ status }) => {
+          setAuthorized(status === 200);
+        })
+        .catch(() => {
+          setAuthorized(false);
+        });
     }
   }, [authorized, setAuthorized]);
 

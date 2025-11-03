@@ -22,7 +22,9 @@ export default function ChatWindow({
         <img src={aiPic} alt="AI Assistant" className="chat-header-image" />
         <div className="chat-header-text">
           <div className="chat-header-title">Travel Assistant</div>
-          <div className="chat-header-subtitle">Ready to help with your next adventure</div>
+          <div className="chat-header-subtitle">
+            Ready to help with your next adventure
+          </div>
         </div>
       </div>
 
