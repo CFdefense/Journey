@@ -27,10 +27,8 @@ const EventCard: React.FC<EventCardProps> = ({
   address,
   city,
   type,
-  user_created = false,
-  account_id,
+  // maybe need to add back user created, hard start, and account id but for now not being used
   hard_start,
-  hard_end,
   draggable = false,
   onDragStart,
   onDragEnd
