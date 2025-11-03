@@ -1,3 +1,5 @@
+use std::ptr::null;
+
 use axum::{
 	Extension, Json,
 	extract::Path,
@@ -116,6 +118,7 @@ async fn send_message_to_llm(
 						"A beautiful stroll along a river in this cute small town.",
 					),
 					event_name: String::from("Family Walking Path"),
+					hard_start: None,
 				}],
 				noon_events: vec![Event {
 					id: 2,
@@ -127,6 +130,7 @@ async fn send_message_to_llm(
 						"Local Italian restaurant known for its authentic pasta and upscale dining.",
 					),
 					event_name: String::from("Cosimos"),
+					hard_start: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -138,6 +142,7 @@ async fn send_message_to_llm(
 						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
 					),
 					event_name: String::from("Museum of Modern Art- MoMA"),
+					hard_start: None,
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -149,6 +154,7 @@ async fn send_message_to_llm(
 						"Music center which hosts local and national bands.",
 					),
 					event_name: String::from("Jazz night at Broad Street"),
+					hard_start: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -163,6 +169,7 @@ async fn send_message_to_llm(
 						"A Phillies baseball game is a must-do for locals and visitors alike.",
 					),
 					event_name: String::from("Phillies Baseball Game"),
+					hard_start: None,
 				}],
 				noon_events: vec![Event {
 					id: 6,
@@ -174,6 +181,7 @@ async fn send_message_to_llm(
 						"Annual music festival with the biggest names in pop and indie scenes.",
 					),
 					event_name: String::from("LollaPalooza"),
+					hard_start: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -183,6 +191,7 @@ async fn send_message_to_llm(
 					event_type: String::from("Museum"),
 					event_description: String::from("Explore the beautiful landmark of Paris."),
 					event_name: String::from("Eiffel Tower"),
+					hard_start: None,
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -194,6 +203,7 @@ async fn send_message_to_llm(
 						"Wander the halls of the world famous art museum.",
 					),
 					event_name: String::from("le Louvre"),
+					hard_start: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},

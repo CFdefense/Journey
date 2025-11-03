@@ -10,6 +10,7 @@ interface Event {
   postal_code?: number;
   city?: string;
   event_type?: string;
+  hard_start?: Date;
 }
 
 interface TimeBlock {
@@ -251,6 +252,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
                   address={event.street_address}
                   city={event.city}
                   type={event.event_type}
+                  hard_start={event.hard_start}
                   draggable={editMode}
                   onDragStart={(e) => onDragStart(e, event, timeIndex)}
                 />

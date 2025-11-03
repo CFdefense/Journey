@@ -1041,6 +1041,13 @@
           "event_type": {
             "type": "string"
           },
+          "hard_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "id": {
             "type": "integer",
             "format": "int32",

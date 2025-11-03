@@ -122,7 +122,7 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'Hike', 'A beautiful stroll alo
 (2, '35 Campus Court', 12601, 'Poughkeepsie', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos', NULL),
 (3, '200 E 42nd St', 10017, 'New York', 'Museum', 'World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.', 'Museum of Modern Art- MoMA', NULL),
 (4, '1 S Broad St', 19107, 'Philadelphia', 'Concert', 'Music center which hosts local and national bands.', 'Jazz night at Broad Street', NULL),
-(5, '1 Citizens Bank Way', 19148, 'Philadelphia', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', '2025-12-01 13:00'),
+(5, '2 Citizens Bank Way', 19148, 'Philadelphia', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', '2025-12-01 13:00'),
 (6, '5250 S Park Dr', 60615, 'Chicago', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', NULL),
 (7, '1 Rue de la Seine', 00000, 'Paris', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', NULL),
 (8, '3 Rue de la Museu', 00000, 'Paris', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', NULL);
