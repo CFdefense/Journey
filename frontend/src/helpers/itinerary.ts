@@ -1,23 +1,9 @@
 import type {
 	Itinerary as ApiItinerary,
 	EventDay,
-	Event as ApiEvent
+	Event
 } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
-
-export interface Event {
-  id: string;
-  title: string;
-  desc?: string;
-  street_address?: string;
-  postal_code?: number;
-  city?: string;
-  event_type?: string;
-  user_created?: boolean;
-  account_id?: number;
-  hard_start?: Date;
-  hard_end?: Date;
-}
 
 export interface TimeBlock {
 	time: string;
@@ -79,39 +65,15 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 		timeBlocks: [
 			{
 				time: "Morning",
-				events: day.morning_events.map((ev) => ({
-					id: ev.id.toString(),
-					title: ev.event_name,
-					desc: ev.event_description,
-					street_address: ev.street_address,
-					postal_code: ev.postal_code,
-					city: ev.city,
-					event_type: ev.event_type
-				}))
+				events: day.morning_events
 			},
 			{
 				time: "Afternoon",
-				events: day.afternoon_events.map((ev) => ({
-					id: ev.id.toString(),
-					title: ev.event_name,
-					desc: ev.event_description,
-					street_address: ev.street_address,
-					postal_code: ev.postal_code,
-					city: ev.city,
-					event_type: ev.event_type
-				}))
+				events: day.afternoon_events
 			},
 			{
 				time: "Evening",
-				events: day.evening_events.map((ev) => ({
-					id: ev.id.toString(),
-					title: ev.event_name,
-					desc: ev.event_description,
-					street_address: ev.street_address,
-					postal_code: ev.postal_code,
-					city: ev.city,
-					event_type: ev.event_type
-				}))
+				events: day.evening_events
 			}
 		]
 	}));
@@ -144,30 +106,11 @@ export function convertToApiFormat(
 
 			return {
 				date: day.date,
-				morning_events:
-					morningBlock?.events.map(convertEventToApi) || [],
+				morning_events: morningBlock?.events || [],
 				noon_events: [], // Empty if not used
-				afternoon_events:
-					afternoonBlock?.events.map(convertEventToApi) || [],
-				evening_events:
-					eveningBlock?.events.map(convertEventToApi) || []
+				afternoon_events: afternoonBlock?.events || [],
+				evening_events: eveningBlock?.events || []
 			};
 		})
 	};
-}
-
-function convertEventToApi(event: Event): ApiEvent {
-  return {
-    id: parseInt(event.id),
-    event_name: event.title,
-    event_description: event.desc || "",
-    street_address: event.street_address || "",
-    postal_code: event.postal_code || 0,
-    city: event.city || "",
-    event_type: event.event_type || "",
-	user_created: event.user_created || false,
-	account_id: event.account_id || null,
-    hard_start: event.hard_start || null,
-    hard_end: event.hard_end || null
-  };
 }
