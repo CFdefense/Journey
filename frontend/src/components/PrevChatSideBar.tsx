@@ -33,8 +33,8 @@ export default function PrevChatSideBar({
     e.stopPropagation();
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setContextMenu({
-      x: rect.right + 5,
-      y: rect.top,
+      x: rect.left + 5,
+      y: rect.bottom + 7,
       chatId
     });
   };

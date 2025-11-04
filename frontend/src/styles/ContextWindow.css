@@ -12,18 +12,26 @@
 .context-menu-item {
   width: 100%;
   padding: 0.6rem 0.85rem;
-  background: transparent;
+  background: white;
   border: none;
   text-align: left;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #555;
+  color: #FA8072;
   border-radius: 6px;
   transition: all 0.2s;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .context-menu-item:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+  transform: translateY(-1px);
+}
+
+.context-menu-item:active {
+  background: linear-gradient(135deg, #e56b5d 0%, #FA8072 100%);
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
 }

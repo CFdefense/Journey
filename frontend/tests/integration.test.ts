@@ -5,7 +5,7 @@ import {
 	test_state,
 	apiSignUp, apiValidate, apiLogin, apiCurrent, apiLogout,
 	apiChats, apiNewChatId, apiSendMessage, apiMessages,
-	apiItineraryDetails,
+	apiItineraryDetails, apiDeleteChat,
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 
 describe("Integration Tests", () => {
@@ -171,5 +171,97 @@ describe("Integration Tests", () => {
 			itinerary_id: null 
 		});
 		expect(errorSend.status).toBeGreaterThanOrEqual(-1);
+	});
+
+	test("Delete Chat DEV", async () => {
+		test_state.dev_mode = true;
+		const unique: number = Date.now();
+		const email = `test${unique}@gmail.com`;
+
+		// Sign up and login
+		expect((await apiSignUp({
+			email: email,
+			first_name: "First",
+			last_name: "Last",
+			password: "Password123"
+		})).status).toBe(200);
+
+		expect((await apiLogin({
+			email: email,
+			password: "Password123"
+		})).status).toBe(200);
+
+		// Create a new chat
+		const newChatResult = await apiNewChatId();
+		expect(newChatResult.status).toBe(200);
+		const chatId = newChatResult.result!;
+
+		// Verify chat exists
+		const chatsBeforeDelete = await apiChats();
+		expect(chatsBeforeDelete.status).toBe(200);
+		expect(chatsBeforeDelete.result!.chat_sessions.length).toBe(1);
+		expect(chatsBeforeDelete.result!.chat_sessions[0].id).toBe(chatId);
+
+		// Delete the chat
+		const deleteResult = await apiDeleteChat(chatId);
+		expect(deleteResult.status).toBe(200);
+		expect(deleteResult.result).toBe(chatId);
+
+		// Verify chat is deleted
+		const chatsAfterDelete = await apiChats();
+		expect(chatsAfterDelete.status).toBe(200);
+		expect(chatsAfterDelete.result!.chat_sessions.length).toBe(0);
+
+		// Test deleting non-existent chat
+		const deleteNonExistent = await apiDeleteChat(99999);
+		expect(deleteNonExistent.status).toBeGreaterThanOrEqual(-1);
+
+		expect((await apiLogout()).status).toBe(200);
+	});
+
+	test("Delete Chat PROD", async () => {
+		test_state.dev_mode = false;
+		const unique: number = Date.now();
+		const email = `test${unique}@gmail.com`;
+
+		// Sign up and login
+		expect((await apiSignUp({
+			email: email,
+			first_name: "First",
+			last_name: "Last",
+			password: "Password123"
+		})).status).toBe(200);
+
+		expect((await apiLogin({
+			email: email,
+			password: "Password123"
+		})).status).toBe(200);
+
+		// Create a new chat
+		const newChatResult = await apiNewChatId();
+		expect(newChatResult.status).toBe(200);
+		const chatId = newChatResult.result!;
+
+		// Verify chat exists
+		const chatsBeforeDelete = await apiChats();
+		expect(chatsBeforeDelete.status).toBe(200);
+		expect(chatsBeforeDelete.result!.chat_sessions.length).toBe(1);
+		expect(chatsBeforeDelete.result!.chat_sessions[0].id).toBe(chatId);
+
+		// Delete the chat
+		const deleteResult = await apiDeleteChat(chatId);
+		expect(deleteResult.status).toBe(200);
+		expect(deleteResult.result).toBe(chatId);
+
+		// Verify chat is deleted
+		const chatsAfterDelete = await apiChats();
+		expect(chatsAfterDelete.status).toBe(200);
+		expect(chatsAfterDelete.result!.chat_sessions.length).toBe(0);
+
+		// Test deleting non-existent chat
+		const deleteNonExistent = await apiDeleteChat(99999);
+		expect(deleteNonExistent.status).toBeGreaterThanOrEqual(-1);
+
+		expect((await apiLogout()).status).toBe(200);
 	});
 });
