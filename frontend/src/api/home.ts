@@ -147,3 +147,34 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 		return { result: null, status: -1 };
 	}
 }
+
+/// Calls deleteChat
+///
+/// # Method
+/// Sends a `DELETE /api/chat/:id` to delete a specific chat session
+/// and its associated messages for the current authenticated user.
+///
+/// # Returns
+/// - On success: The numeric ID of the deleted chat session.
+/// - On failure: null with a non-200 status code
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiDeleteChat(payload: number): Promise<ApiResult<number>> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/chat/${payload}`, {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin",
+		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+		return { result: payload, status: response.status };
+	} catch (error) {
+		console.error("apiDeleteChat error:", error);
+		return { result: null, status: -1 };
+	}
+}

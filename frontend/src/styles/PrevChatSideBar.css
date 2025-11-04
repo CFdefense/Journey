@@ -151,10 +151,11 @@
   font-size: 0.95rem;
   color: #555;
   transition: all 0.2s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .chat-list li:hover {
@@ -168,6 +169,72 @@
   color: #ffffff;
   font-weight: 500;
   border-color: #006bbb;
+}
+
+.chat-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-menu-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  min-width: 24px;
+  height: 24px;
+}
+
+.chat-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.chat-list li.active .chat-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-menu-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  min-width: 24px;
+  height: 24px;
+}
+
+.chat-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.chat-list li.active .chat-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .empty {

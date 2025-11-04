@@ -1,5 +1,8 @@
+import { useState } from "react";
 import "../styles/PrevChatSideBar.css";
+import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
+import { apiDeleteChat } from "../api/home";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -7,6 +10,7 @@ interface PrevChatSideBarProps {
   onSelectChat: (id: number) => void;
   onNewChat: () => void;
   onToggleSidebar: () => void;
+  onDeleteChat: (id: number) => void;
   sidebarVisible: boolean;
 }
 
@@ -16,10 +20,45 @@ export default function PrevChatSideBar({
   onSelectChat,
   onNewChat,
   onToggleSidebar,
+  onDeleteChat,
   sidebarVisible
 }: PrevChatSideBarProps) {
-  // Filter chats that have at least one message (only show these in sidebar)
-  //const visibleChats = chats.filter((chat) => chat.messages && chat.messages.length > 0);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    chatId: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
+    e.stopPropagation();
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setContextMenu({
+      x: rect.left + 5,
+      y: rect.bottom + 7,
+      chatId
+    });
+  };
+
+  const handleDelete = async () => {
+    if (contextMenu) {
+      const chatIdToDelete = contextMenu.chatId;
+      const response = await apiDeleteChat(chatIdToDelete);
+      
+      if (response.status === 200) {
+        // deleting an active chat causes us to just start a new chat
+        if (chatIdToDelete === activeChatId) {
+          onNewChat();
+        }
+        // need to tell Home.tsx what to delete, so the chat list can update properly
+        onDeleteChat(chatIdToDelete);
+      } else {
+        console.error("Failed to delete chat:", response.status);
+      }
+      
+      setContextMenu(null);
+    }
+  };
+
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="sidebar-top">
@@ -47,12 +86,27 @@ export default function PrevChatSideBar({
                   className={chat.id === activeChatId ? "active" : ""}
                   onClick={() => onSelectChat(chat.id)}
                 >
-                  {chat.title}
+                  <span className="chat-title">{chat.title}</span>
+                  <button
+                    className="chat-menu-btn"
+                    onClick={(e) => handleContextMenu(e, chat.id)}
+                  >
+                    ...
+                  </button>
                 </li>
               ))
             )}
           </ul>
         </>
+      )}
+
+      {contextMenu && (
+        <ContextWindow
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );
