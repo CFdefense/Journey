@@ -1,3 +1,5 @@
+use std::ptr::null;
+
 use axum::{
 	Extension, Json,
 	extract::Path,
@@ -134,6 +136,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Hike"),
 					event_description: String::from("A beautiful stroll along a river in this cute small town."),
 					event_name: String::from("Family Walking Path"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				noon_events: vec![Event {
 					id: 2,
@@ -143,6 +149,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Restaurant"),
 					event_description: String::from("Local Italian restaurant known for its authentic pasta and upscale dining."),
 					event_name: String::from("Cosimos"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -152,6 +162,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Museum"),
 					event_description: String::from("World famous art museum with a focus on modern works, including Starry Starry Night by VanGough."),
 					event_name: String::from("Museum of Modern Art- MoMA"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -161,6 +175,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Concert"),
 					event_description: String::from("Music center which hosts local and national bands."),
 					event_name: String::from("Jazz night at Broad Street"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -173,6 +191,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Sports"),
 					event_description: String::from("A Phillies baseball game is a must-do for locals and visitors alike."),
 					event_name: String::from("Phillies Baseball Game"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				noon_events: vec![Event {
 					id: 6,
@@ -182,6 +204,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Festival"),
 					event_description: String::from("Annual music festival with the biggest names in pop and indie scenes."),
 					event_name: String::from("LollaPalooza"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -191,6 +217,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Museum"),
 					event_description: String::from("Explore the beautiful landmark of Paris."),
 					event_name: String::from("Eiffel Tower"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -200,6 +230,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Museum"),
 					event_description: String::from("Wander the halls of the world famous art museum."),
 					event_name: String::from("le Louvre"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},

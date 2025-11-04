@@ -2,14 +2,18 @@ import React, { useState } from "react";
 import "../styles/EventCard.css";
 
 interface EventCardProps {
-  title: string;
-  desc?: string;
+  event_name: string;
+  event_description?: string;
   draggable?: boolean;
   time?: string;
-  address?: string;
+  street_address?: string;
   postal_code?: number;
   city?: string;
-  type?: string;
+  event_type?: string;
+  user_created?: boolean;
+  account_id?: number | null;
+  hard_start?: Date | null;
+  hard_end?: Date | null;
 
   // Added handlers for drag logic
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
@@ -17,12 +21,16 @@ interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  title,
-  desc,
+  event_name,
+  event_description,
   time,
-  address,
+  street_address,
   city,
-  type,
+  event_type,
+  hard_start,
+  hard_end,
+  user_created,
+  //account_id,
   draggable = false,
   onDragStart,
   onDragEnd
@@ -39,7 +47,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     if (onDragStart) {
-      onDragStart(e, { title, desc, time });
+      onDragStart(e, { event_name, event_description, time });
     }
   };
 
@@ -47,6 +55,16 @@ const EventCard: React.FC<EventCardProps> = ({
     setIsDragging(false);
     if (onDragEnd) {
       onDragEnd(e);
+    }
+  };
+
+  const formatDateTime = (date: Date | null | undefined) => {
+    if (!date) return null;
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return dateObj.toLocaleString();
+    } catch {
+      return null;
     }
   };
 
@@ -59,13 +77,13 @@ const EventCard: React.FC<EventCardProps> = ({
         onDragEnd={handleDragEnd}
         onClick={openModal}
       >
-        <h3 className="event-title">{title}</h3>
-        {(address || city) && (
+        <h3 className="event-title">{event_name}</h3>
+        {(street_address || city) && (
           <p className="event-location">
-            {address && city ? `${address}, ${city}` : address || city}
+            {street_address && city ? `${street_address}, ${city}` : street_address || city}
           </p>
         )}
-        {type && <p className="event-type">{type}</p>}
+        {event_type && <p className="event-type">{event_type}</p>}
       </div>
 
       {isOpen && (
@@ -74,16 +92,16 @@ const EventCard: React.FC<EventCardProps> = ({
             <button className="close-button" onClick={closeModal}>
               ✕
             </button>
-            <h2>{title}</h2>
-            {desc && <p>{desc}</p>}
+            <h2>{event_name}</h2>
+            {event_description && <p>{event_description}</p>}
             {time && (
               <p>
                 <strong>Time:</strong> {time}
               </p>
             )}
-            {address && (
+            {street_address && (
               <p>
-                <strong>Address:</strong> {address}
+                <strong>Address:</strong> {street_address}
               </p>
             )}
             {city && (
@@ -91,9 +109,24 @@ const EventCard: React.FC<EventCardProps> = ({
                 <strong>City:</strong> {city}
               </p>
             )}
-            {type && (
+            {hard_start && (
               <p>
-                <strong>Type:</strong> {type}
+                <strong>Start:</strong> {formatDateTime(hard_start)}
+              </p>
+            )}
+            {hard_end && (
+              <p>
+                <strong>End:</strong> {formatDateTime(hard_end)}
+              </p>
+            )}
+            {event_type && (
+              <p>
+                <strong>Type:</strong> {event_type}
+              </p>
+            )}
+            {user_created && (
+              <p>
+                <strong>User Created:</strong> Yes
               </p>
             )}
           </div>

@@ -1026,9 +1026,17 @@
           "city",
           "event_type",
           "event_description",
-          "event_name"
+          "event_name",
+          "user_created"
         ],
         "properties": {
+          "account_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
           "city": {
             "type": "string"
           },
@@ -1041,6 +1049,20 @@
           "event_type": {
             "type": "string"
           },
+          "hard_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "hard_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "id": {
             "type": "integer",
             "format": "int32",
@@ -1052,6 +1074,9 @@
           },
           "street_address": {
             "type": "string"
+          },
+          "user_created": {
+            "type": "boolean"
           }
         }
       },
