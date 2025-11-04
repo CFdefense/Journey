@@ -27,7 +27,7 @@ export default function Home() {
     null
   );
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(true);
+  const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
   const [itineraryTitle, setItineraryTitle] = useState<string>("");
@@ -145,11 +145,13 @@ export default function Home() {
   useEffect(() => {
     setSelectedItineraryId(null);
     setItineraryData(null);
-     setItineraryTitle("");
+    setItineraryTitle("");
+    setItinerarySidebarVisible(false);
   }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
+    setItinerarySidebarVisible(true); // when an itinerary is selected, make sure the itinerary side bar also opens
   };
 
   const handleNewChat = async () => {
