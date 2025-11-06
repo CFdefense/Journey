@@ -29,7 +29,9 @@ export default function Home() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
-  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(null);
+  const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
+    null
+  );
   const [itineraryTitle, setItineraryTitle] = useState<string>("");
 
   useEffect(() => {
@@ -128,9 +130,8 @@ export default function Home() {
         const apiResponse = await apiItineraryDetails(itineraryId);
 
         if (apiResponse.result) {
-        setItineraryTitle(apiResponse.result.title);
+          setItineraryTitle(apiResponse.result.title);
         }
-
       } catch (error) {
         console.error("Error loading itinerary:", error);
         setItineraryData(null);
@@ -244,12 +245,12 @@ export default function Home() {
   };
 
   const handleDeleteChat = (deletedChatId: number) => {
-  // Remove the deleted chat from the chats list
-  setChats((prevChats) => {
-    if (!prevChats) return prevChats;
-    return prevChats.filter((chat) => chat.id !== deletedChatId);
-  });
-};
+    // Remove the deleted chat from the chats list
+    setChats((prevChats) => {
+      if (!prevChats) return prevChats;
+      return prevChats.filter((chat) => chat.id !== deletedChatId);
+    });
+  };
 
   const handleToggleSidebar = () => {
     setSidebarVisible((prev) => !prev);

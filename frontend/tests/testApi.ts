@@ -29,21 +29,23 @@ import type {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiLogin(payload: LoginRequest): Promise<ApiResult<void>> {
-    try {
-        const response = await customFetch(`${API_BASE_URL}/api/account/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: test_state.dev_mode ? "include" : "same-origin",
-            body: JSON.stringify(payload)
-        });
-        return { result: null, status: response.status };
-    } catch (error) {
-        console.error("Login API error: ", error);
-        return { result: null, status: -1 };
-    }
+export async function apiLogin(
+	payload: LoginRequest
+): Promise<ApiResult<void>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/account/login`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("Login API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
 
 /// Calls signup
@@ -58,21 +60,23 @@ export async function apiLogin(payload: LoginRequest): Promise<ApiResult<void>> 
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<void>> {
-    try {
-        const response = await customFetch(`${API_BASE_URL}/api/account/signup`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: test_state.dev_mode ? "include" : "same-origin",
-            body: JSON.stringify(payload)
-        });
-        return { result: null, status: response.status };
-    } catch (error) {
-        console.error("Sign Up API error: ", error);
-        return { result: null, status: -1 };
-    }
+export async function apiSignUp(
+	payload: SignUpRequest
+): Promise<ApiResult<void>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/account/signup`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("Sign Up API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
 
 /// Calls logout
@@ -88,19 +92,19 @@ export async function apiSignUp(payload: SignUpRequest): Promise<ApiResult<void>
 /// # Exceptions
 /// Never throws an exception
 export async function apiLogout(): Promise<ApiResult<void>> {
-    try {
-        const response = await customFetch(`${API_BASE_URL}/api/account/logout`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: test_state.dev_mode ? "include" : "same-origin"
-        });
-        return { result: null, status: response.status };
-    } catch (error) {
-        console.error("Logout Up API error: ", error);
-        return { result: null, status: -1 };
-    }
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/account/logout`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin"
+		});
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("Logout Up API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
 
 /// Calls validate
@@ -114,19 +118,19 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 /// # Exceptions
 /// Never throws an exception
 export async function apiValidate(): Promise<ApiResult<void>> {
-    try {
-        const response = await customFetch(`${API_BASE_URL}/api/account/validate`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: test_state.dev_mode ? "include" : "same-origin"
-        });
-        return { result: null, status: response.status };
-    } catch (error) {
-        console.error("Validate API error: ", error);
-        return { result: null, status: -1 };
-    }
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/account/validate`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin"
+		});
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("Validate API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
 
 /// Calls current
@@ -163,7 +167,7 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 
 
 
-import type { ChatsResponse } from "../src/models/chat";
+import type { ChatsResponse, RenameRequest } from "../src/models/chat";
 import type {
 	MessagePageRequest,
 	MessagePageResponse,
@@ -311,6 +315,77 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 	}
 }
 
+/// Calls deleteChat
+///
+/// # Method
+/// Sends a `DELETE /api/chat/:id` to delete a specific chat session
+/// and its associated messages for the current authenticated user.
+///
+/// # Returns
+/// - On success: The numeric ID of the deleted chat session.
+/// - On failure: null with a non-200 status code
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiDeleteChat(
+	payload: number
+): Promise<ApiResult<number>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/chat/${payload}`, {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin"
+		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+		return { result: payload, status: response.status };
+	} catch (error) {
+		console.error("apiDeleteChat error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+/// Renames a chat title
+///
+/// # Method
+/// Sends a `POST /api/chat/rename` request to rename that chat title
+/// of a specific chat session.
+///
+/// # Parameters
+/// - `payload`: A `RenameRequest` object containing chat session ID and new title.
+///
+/// # Returns
+/// - On success: Just a 200
+/// - On failure: Just a non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiRenameChat(
+	payload: RenameRequest
+): Promise<ApiResult<void>> {
+	// TODO: update chat title in cache
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/chat/rename`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("apiRenameChat error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
 
 
 import type { Itinerary, SaveResponse } from "../src/models/itinerary";
@@ -351,27 +426,31 @@ export async function apiItineraryDetails(
 	}
 }
 
-export async function saveItineraryChanges(payload: Itinerary): Promise<SaveResponse> {
-  try {
-    const response = await customFetch(`${API_BASE_URL}/api/itinerary/save`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: test_state.dev_mode ? "include" : "same-origin",
-      body: JSON.stringify(payload)
-    });
+export async function saveItineraryChanges(
+	payload: Itinerary
+): Promise<SaveResponse> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/itinerary/save`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to save itinerary: ${response.status} ${errorText}`);
-    }
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(
+				`Failed to save itinerary: ${response.status} ${errorText}`
+			);
+		}
 
-    // Parse and return the SaveResponse
-    const data: SaveResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Save API error:", error);
-    throw error;
-  }
+		// Parse and return the SaveResponse
+		const data: SaveResponse = await response.json();
+		return data;
+	} catch (error) {
+		console.error("Save API error:", error);
+		throw error;
+	}
 }
