@@ -601,9 +601,9 @@ pub async fn api_update_message(
 	}
 
 	// verify the message id belongs to this user
-	sqlx::query!(
+	let chat_session_id = sqlx::query!(
 		r#"
-		SELECT m.id
+		SELECT c.id
 		FROM messages m
 		INNER JOIN chat_sessions c
 		ON m.chat_session_id=c.id
@@ -615,19 +615,20 @@ pub async fn api_update_message(
 	.fetch_optional(&pool)
 	.await
 	.map_err(|e| AppError::from(e))?
-	.ok_or(AppError::NotFound)?;
+	.ok_or(AppError::NotFound)?
+	.id;
 
-	// delete future messages
+	// delete future messages in this chat session
 	sqlx::query!(
 		r#"
 		DELETE FROM messages
 		WHERE timestamp > (
 			SELECT timestamp
-			FROM messages
 			WHERE id=$1
-		);
+		) AND chat_session_id=$2;
 		"#,
-		message_id
+		message_id,
+		chat_session_id
 	)
 	.execute(&pool)
 	.await
