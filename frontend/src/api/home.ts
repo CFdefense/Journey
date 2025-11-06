@@ -1,11 +1,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
-import type { ChatsResponse } from "../models/chat";
 import type {
 	MessagePageRequest,
 	MessagePageResponse,
 	SendMessageRequest,
-	SendMessageResponse
+	SendMessageResponse,
+	ChatsResponse,
+	Message, 
+	UpdateMessageRequest
 } from "../models/chat";
 
 /// Calls chats
@@ -175,6 +177,47 @@ export async function apiDeleteChat(payload: number): Promise<ApiResult<number>>
 		return { result: payload, status: response.status };
 	} catch (error) {
 		console.error("apiDeleteChat error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+
+/// Calls sendMessage
+///
+/// # Method
+/// Sends a `POST /api/chat/updateMessage` request to update a user message,
+/// delete all subsequent messages, and receive a new AI-generated bot response.
+///
+/// # Parameters
+/// - `payload`: An `UpdateMessageRequest` object containing:
+///   - `message_id`: The ID of the message to update
+///   - `new_text`: The updated message text
+///   - `itinerary_id` (optional): Itinerary context for the LLM
+///
+/// # Returns
+/// - On success: `Message` object containing the bot's response with status 200
+/// - On failure: Returns null result with appropriate status code
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiUpdateMessage(
+	payload: UpdateMessageRequest
+): Promise<ApiResult<Message>> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/chat/updateMessage`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("apiUpdateMessage error:", error);
 		return { result: null, status: -1 };
 	}
 }

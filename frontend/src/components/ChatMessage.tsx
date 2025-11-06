@@ -3,6 +3,7 @@ import type { Message } from "../models/chat";
 import type { Itinerary } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
 import aiPic from "../assets/ai-pic.png";
+import UserMessageActions from "./UserMessageActions";
 
 export type ChatMessageParams = {
   message: Message;
@@ -33,6 +34,14 @@ export default function ChatMessage({
     getItinerary();
   }, [message.itinerary_id]);
 
+  const handleEdit = (messageId: number) => {
+    console.log("Edit message:", messageId);
+  };
+
+  const handleResend = (messageId: number) => {
+    console.log("Resend message:", messageId);
+  };
+
   const formattedTimestamp = new Date(
     message.timestamp.replace(" ", "T")
   ).toLocaleString("en-US", {
@@ -52,6 +61,14 @@ export default function ChatMessage({
 
       <div className="chat-message-content">
         <div className={`chat-message ${message.is_user ? "user" : "bot"}`}>
+          {message.is_user && (
+            <UserMessageActions
+              messageId={message.id}
+              onEdit={handleEdit}
+              onResend={handleResend}
+            />
+          )}
+
           <div className="message-text">
             <p>{message.text}</p>
           </div>
