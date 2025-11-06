@@ -3,6 +3,7 @@ import "../styles/PrevChatSideBar.css";
 import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 import { apiDeleteChat } from "../api/home";
+import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -84,7 +85,13 @@ export default function PrevChatSideBar({
                 <li
                   key={chat.id}
                   className={chat.id === activeChatId ? "active" : ""}
-                  onClick={() => onSelectChat(chat.id)}
+                  onClick={() => {
+                    onSelectChat(chat.id);
+                    sessionStorage.setItem(
+                      ACTIVE_CHAT_SESSION,
+                      chat.id.toString()
+                    );
+                  }}
                 >
                   <span className="chat-title">{chat.title}</span>
                   <button
