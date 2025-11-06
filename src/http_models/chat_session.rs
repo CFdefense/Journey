@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::{ToResponse, ToSchema};
 
 use crate::sql_models::message::ChatSessionRow;
@@ -15,4 +15,11 @@ pub struct ChatsResponse {
 pub struct NewChatResponse {
 	/// this chat session is guaranteed to not have any messages in it
 	pub chat_session_id: i32,
+}
+
+/// Request model for the `/api/chat/rename` endpoint
+#[derive(Deserialize, ToSchema)]
+pub struct RenameRequest {
+	pub new_title: String,
+	pub id: i32,
 }

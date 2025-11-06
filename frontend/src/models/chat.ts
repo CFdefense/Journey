@@ -65,3 +65,9 @@ export type NewChatResponse = {
 	/// this chat session is guaranteed to not have any messages in it
 	chat_session_id: number;
 };
+
+/// Request model for the `/api/chat/rename` endpoint
+export type RenameRequest = {
+	new_title: string;
+	id: number;
+};

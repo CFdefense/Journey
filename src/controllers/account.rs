@@ -231,7 +231,7 @@ pub async fn api_signup<C: CookieStore>(
 	let argon2 = Argon2::default();
 	let password_hash = argon2
 		.hash_password(payload.password.as_bytes(), &salt)
-		.map_err(|e| AppError::from(e))?
+		.map_err(AppError::from)?
 		.to_string();
 
 	// Insert new user into database
@@ -344,7 +344,7 @@ pub async fn api_login<C: CookieStore>(
 	match user_result {
 		Ok(result) => {
 			// Verify password
-			let parsed_hash = PasswordHash::new(&result.password).map_err(|e| AppError::from(e))?;
+			let parsed_hash = PasswordHash::new(&result.password).map_err(AppError::from)?;
 
 			// Attempt to match the password hashes
 			if let Err(_) =
@@ -472,7 +472,7 @@ pub async fn api_current(
 	)
 	.fetch_one(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	Ok(Json(account))
 }
@@ -567,7 +567,7 @@ pub async fn api_update(
 		Some(
 			argon2
 				.hash_password(pw.as_bytes(), &salt)
-				.map_err(|e| AppError::from(e))?
+				.map_err(AppError::from)?
 				.to_string(),
 		)
 	} else {
@@ -608,7 +608,7 @@ pub async fn api_update(
 	)
 	.fetch_one(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	Ok(Json(account))
 }

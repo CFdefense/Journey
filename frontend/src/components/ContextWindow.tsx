@@ -8,7 +8,12 @@ interface ContextWindowProps {
   onDelete: () => void;
 }
 
-export default function ContextWindow({ x, y, onClose, onDelete }: ContextWindowProps) {
+export default function ContextWindow({
+  x,
+  y,
+  onClose,
+  onDelete
+}: ContextWindowProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

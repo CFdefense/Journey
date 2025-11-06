@@ -67,7 +67,8 @@ CREATE TABLE events (
 
 CREATE TABLE chat_sessions (
 	id SERIAL PRIMARY KEY,
-	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE
+	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+	title VARCHAR(255) NOT NULL
 );
 
 -- Itineraries table
@@ -134,12 +135,10 @@ SELECT setval(
 );
 
 -- Create chat sessions
-INSERT INTO chat_sessions (account_id)
-SELECT id
-FROM accounts;
-INSERT INTO chat_sessions (account_id)
-SELECT id
-FROM accounts;
+INSERT INTO chat_sessions (account_id, title)
+SELECT id, 'Dummy Chat 1' FROM accounts;
+INSERT INTO chat_sessions (account_id, title)
+SELECT id, 'Dummy Chat 2' FROM accounts;
 
 -- Ensure the chat session id sequence matches the max(id)
 SELECT setval(

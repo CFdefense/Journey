@@ -319,10 +319,18 @@
                 },
                 "example": {
                   "chat_sessions": [
-                    3,
-                    15,
-                    16,
-                    84
+                    {
+                      "id": 5,
+                      "title": "Berlin, Germany"
+                    },
+                    {
+                      "id": 17,
+                      "title": "Shanghai, China"
+                    },
+                    {
+                      "id": 41,
+                      "title": "Miami, Florida, USA"
+                    }
                   ]
                 }
               }
@@ -558,6 +566,59 @@
           },
           "405": {
             "description": "Method Not Allowed - Must be GET"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
+    "/api/chat/rename": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Rename a chat session",
+        "description": "Renames a chat session that belongs to this user with the given ID to the given title.",
+        "operationId": "api_rename",
+        "requestBody": {
+          "description": "Chat session ID must belong to the user who sent the request. New Title must not be empty string.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameRequest"
+              },
+              "example": {
+                "id": 16,
+                "new_title": "Tokio, Japan (lmao)"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Chat renamed successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Chat session not found for this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
           },
           "408": {
             "description": "Request Timed Out"
@@ -1286,6 +1347,23 @@
             "type": "integer",
             "format": "int32",
             "description": "this chat session is guaranteed to not have any messages in it"
+          }
+        }
+      },
+      "RenameRequest": {
+        "type": "object",
+        "description": "Request model for the `/api/chat/rename` endpoint",
+        "required": [
+          "new_title",
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "new_title": {
+            "type": "string"
           }
         }
       },

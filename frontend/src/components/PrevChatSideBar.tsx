@@ -43,7 +43,7 @@ export default function PrevChatSideBar({
     if (contextMenu) {
       const chatIdToDelete = contextMenu.chatId;
       const response = await apiDeleteChat(chatIdToDelete);
-      
+
       if (response.status === 200) {
         // deleting an active chat causes us to just start a new chat
         if (chatIdToDelete === activeChatId) {
@@ -54,7 +54,7 @@ export default function PrevChatSideBar({
       } else {
         console.error("Failed to delete chat:", response.status);
       }
-      
+
       setContextMenu(null);
     }
   };

@@ -61,7 +61,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const formatDateTime = (date: Date | null | undefined) => {
     if (!date) return null;
     try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const dateObj = typeof date === "string" ? new Date(date) : date;
       return dateObj.toLocaleString();
     } catch {
       return null;
@@ -80,7 +80,9 @@ const EventCard: React.FC<EventCardProps> = ({
         <h3 className="event-title">{event_name}</h3>
         {(street_address || city) && (
           <p className="event-location">
-            {street_address && city ? `${street_address}, ${city}` : street_address || city}
+            {street_address && city
+              ? `${street_address}, ${city}`
+              : street_address || city}
           </p>
         )}
         {event_type && <p className="event-type">{event_type}</p>}
