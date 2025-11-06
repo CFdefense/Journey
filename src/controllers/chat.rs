@@ -624,6 +624,7 @@ pub async fn api_update_message(
 		DELETE FROM messages
 		WHERE timestamp > (
 			SELECT timestamp
+			FROM messages
 			WHERE id=$1
 		) AND chat_session_id=$2;
 		"#,
