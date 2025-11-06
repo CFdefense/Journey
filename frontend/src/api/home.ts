@@ -70,7 +70,11 @@ export async function apiMessages(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const pageRes: MessagePageResponse = await response.json();
+		for (const msg of pageRes.message_page) {
+			msg.timestamp += "Z";
+		}
+		return { result: pageRes, status: response.status };
 	} catch (error) {
 		console.error("apiMessages error:", error);
 		return { result: null, status: -1 };
@@ -107,7 +111,9 @@ export async function apiSendMessage(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const sendRes: SendMessageResponse = await response.json();
+		sendRes.bot_message.timestamp += "Z";
+		return { result: sendRes, status: response.status };
 	} catch (error) {
 		console.error("apiSendMessage error:", error);
 		return { result: null, status: -1 };

@@ -2,7 +2,7 @@ export type Message = {
 	id: number;
 	/// Whether this message was sent by the user or the LLM
 	is_user: boolean;
-	/// %Y-%m-%dT%H:%M:%S%.f
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	timestamp: string;
 	text: string;
 	itinerary_id: number | null;

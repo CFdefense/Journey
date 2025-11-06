@@ -8,9 +8,9 @@ pub struct ItineraryRow {
 	pub id: i32,
 	/// Owner account id (FK)
 	pub account_id: Option<i32>,
-	/// Start date for itinerary (UTC naive %Y-%m-%d)
+	/// Start date for itinerary (Destination's local timezone - naive %Y-%m-%d)
 	pub start_date: NaiveDate,
-	/// End date for itinerary (UTC naive %Y-%m-%d)
+	/// End date for itinerary (Destination's local timezone - naive %Y-%m-%d)
 	pub end_date: NaiveDate,
 	/// Possible chat session to link to if this itinerary is edited
 	pub chat_session_id: Option<i32>,

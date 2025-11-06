@@ -61,8 +61,8 @@ CREATE TABLE events (
     event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-    hard_start TIMESTAMP(0) WITHOUT TIME ZONE,
-    hard_end TIMESTAMP(0) WITHOUT TIME ZONE
+    hard_start TIMESTAMP WITHOUT TIME ZONE,
+    hard_end TIMESTAMP WITHOUT TIME ZONE
 );
 
 CREATE TABLE chat_sessions (
@@ -76,7 +76,9 @@ CREATE TABLE itineraries (
     id SERIAL PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    -- date of destination's local timezone
     start_date DATE NOT NULL,
+    -- date of destination's local timezone
     end_date DATE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL,
     saved BOOLEAN NOT NULL,
@@ -89,6 +91,7 @@ CREATE TABLE event_list (
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     time_of_day time_of_day NOT NULL,
+    -- date of destination's local timezone
     date DATE NOT NULL
 );
 
@@ -97,6 +100,7 @@ CREATE TABLE messages (
 	chat_session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
 	itinerary_id INTEGER REFERENCES itineraries(id) ON DELETE SET NULL,
 	is_user BOOLEAN NOT NULL,
+	-- UTC
 	timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	text TEXT NOT NULL
 );

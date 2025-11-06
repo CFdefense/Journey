@@ -1162,7 +1162,7 @@
           "date": {
             "type": "string",
             "format": "date",
-            "description": "The UTC date of this day within the range of itinerary start and end dates (%Y-%m-%d)"
+            "description": "The date of this day within the range of itinerary start and end dates (Destination's local timezone - %Y-%m-%d)"
           },
           "evening_events": {
             "type": "array",
