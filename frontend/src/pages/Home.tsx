@@ -19,6 +19,8 @@ import { fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
 
+export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
+
 export default function Home() {
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
@@ -78,13 +80,26 @@ export default function Home() {
         messages: [] // message loading handled at fetchMessagesForActiveChat
       }));
 
-      if (activeChatId === null) {
+      let chatSessionId = activeChatId;
+
+      // get MRU chat from session storage
+      const prevActiveChat: string | null =
+        sessionStorage.getItem(ACTIVE_CHAT_SESSION);
+      if (prevActiveChat !== null) {
+        const id = +prevActiveChat;
+        if (tempChats.find((chat) => chat.id === id) !== undefined) {
+          chatSessionId = id;
+          setActiveChatId(chatSessionId);
+        }
+      }
+
+      if (chatSessionId === null) {
         setChats(tempChats);
         return;
       }
       // get latest message page for this chat session
       const payload: MessagePageRequest = {
-        chat_session_id: activeChatId,
+        chat_session_id: chatSessionId,
         message_id: null
       };
       const messagePageResult = await apiMessages(payload);
@@ -102,7 +117,7 @@ export default function Home() {
       const messages = messagePageResult.result.message_page;
       setChats(
         tempChats.map((c) =>
-          c.id === activeChatId
+          c.id === chatSessionId
             ? { ...c, messages: [...c.messages, ...messages] }
             : c
         )
@@ -111,7 +126,7 @@ export default function Home() {
 
     fetchAccount();
     fetchChats();
-  }, [showFinishPopup, activeChatId]);
+  }, [showFinishPopup, activeChatId, setActiveChatId]);
 
   // Fetch itinerary data when selectedItineraryId changes
   useEffect(() => {
@@ -158,6 +173,7 @@ export default function Home() {
   const handleNewChat = async () => {
     // don't allow spamming new chats
     // instead, create the new chat once a message has been sent in it
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
     setActiveChatId(null);
     setItinerarySidebarVisible(false);
   };
@@ -192,6 +208,7 @@ export default function Home() {
       };
 
       setChats((prevChats) => [...(prevChats ?? []), newChat]);
+      sessionStorage.setItem(ACTIVE_CHAT_SESSION, newChat.id.toString());
       setActiveChatId(newChat.id);
       currChatId = newChat.id;
     }

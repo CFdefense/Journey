@@ -3,6 +3,7 @@ import { apiLogout } from "../api/account";
 import { useContext, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
+import { ACTIVE_CHAT_SESSION } from "./Home";
 
 export default function Account() {
   const { setAuthorized } = useContext<GlobalState>(
@@ -16,6 +17,7 @@ export default function Account() {
       console.error("Logout failed with status", status);
     }
     setAuthorized(false);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
   };
 
   return (
