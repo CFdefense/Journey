@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { 
   apiLogout, 
   apiUpdateAccount, 
@@ -8,6 +8,7 @@ import {
 import { useContext, useState, useEffect, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
+import Navbar from "../components/Navbar";
 import "../styles/Account.css";
 
 export default function Account() {
@@ -19,6 +20,7 @@ export default function Account() {
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState<string>("");
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function Account() {
         const data = await apiGetProfile();
         if (data.result) {
           setEmail(data.result.email || "");
+          setFirstName(data.result.first_name || "");
       } else {
         setStatusMessage({ 
           message: "Failed to load account details. Please log in again.", 
@@ -81,17 +84,7 @@ export default function Account() {
 
   return (
     <div className="auth-page auth-page--account">
-      <nav className="auth-navbar">
-        <div className="auth-navbar-content">
-          <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-            <Link to="/">Index</Link>
-            <span>|</span>
-            <Link to="/home">Home</Link>
-            <span>|</span>
-            <Link to="/view">View</Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar page="view" firstName={firstName} />
       
       <div className="auth-content">
         <div className="account-wrapper">

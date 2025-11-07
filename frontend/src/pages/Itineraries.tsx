@@ -1,6 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { apiGetSavedItineraries } from "../api/account";
+import { apiGetSavedItineraries, apiCurrent } from "../api/account";
+import Navbar from "../components/Navbar";
 import "../styles/Account.css";
 
 interface Event {
@@ -25,9 +26,19 @@ export default function Itineraries() {
   const [eventDays, setEventDays] = useState<EventDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState<string>("");
 
   useEffect(() => {
     fetchItineraries();
+    async function fetchAccount() {
+      const currentResult = await apiCurrent();
+      const account = currentResult.result;
+          
+      if (account && currentResult.status === 200) {
+        setFirstName(account.first_name || "");
+      }
+    }
+    fetchAccount();
   }, []);
 
   const fetchItineraries = async () => {
@@ -100,20 +111,9 @@ export default function Itineraries() {
   const handleCardClick = (date: string) => {
     navigate('/view', { state: { date } });
   };
-
-  return (
-    <div className="auth-page auth-page--account">
-      <nav className="auth-navbar">
-        <div className="auth-navbar-content">
-          <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-            <Link to="/">Index</Link>
-            <span>|</span>
-            <Link to="/home">Home</Link>
-            <span>|</span>
-            <Link to="/view">View</Link>
-          </div>
-        </div>
-      </nav>
+return (
+  <div className="auth-page auth-page--account">
+      <Navbar page="view" firstName={firstName} />
       
       <div className="auth-content">
         <div className="account-wrapper">

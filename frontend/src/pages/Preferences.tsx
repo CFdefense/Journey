@@ -1,11 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { 
   apiUpdateAccount, 
-  apiGetProfile, 
+  apiGetProfile,
+  apiCurrent, 
   type UpdateRequest 
 } from "../api/account";
 import { useState, useEffect } from "react";
 import "../styles/Account.css";
+import Navbar from "../components/Navbar";
 import {BudgetBucket, RiskTolerence} from "../models/account";
 
 type BudgetOption = 'VeryLowBudget' | 'LowBudget' | 'MediumBudget' | 'HighBudget' | 'LuxuryBudget';
@@ -43,7 +45,7 @@ export default function Preferences() {
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerence>(RiskTolerence.LightFun);
   const [disabilities, setDisabilities] = useState("");
   const [foodPreferences, setFoodPreferences] = useState("");
-
+  const [firstName, setFirstName] = useState<string>("");
   const budgetOptions: BudgetOption[] = ['VeryLowBudget', 'LowBudget', 'MediumBudget', 'HighBudget', 'LuxuryBudget'];
   const riskOptions: RiskOption[] = ['ChillVibes', 'LightFun', 'Adventurer', 'RiskTaker'];
 
@@ -67,7 +69,16 @@ export default function Preferences() {
         });
       }
     };
+    async function fetchAccount() {
+      const currentResult = await apiCurrent();
+      const account = currentResult.result;
+              
+      if (account && currentResult.status === 200) {
+        setFirstName(account.first_name || "");
+      }
+    }
 
+    fetchAccount();
     fetchProfile();
   }, []);
 
@@ -103,17 +114,7 @@ export default function Preferences() {
 
   return (
     <div className="auth-page auth-page--account">
-      <nav className="auth-navbar">
-        <div className="auth-navbar-content">
-          <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-            <Link to="/">Index</Link>
-            <span>|</span>
-            <Link to="/home">Home</Link>
-            <span>|</span>
-            <Link to="/view">View</Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar page="view" firstName={firstName} />
       
       <div className="auth-content">
         <div className="account-wrapper">
@@ -189,23 +190,15 @@ export default function Preferences() {
                           <label htmlFor="budget">Budget:</label>
                           <select
                               id="budget"
-                              // The 'value' prop uses the enum-to-string conversion
-                              // to correctly set the selected option based on the enum state.
-                              // NOTE: If your 'budget' state is a number (for numeric enums), 
-                              // you must ensure the 'value' prop of <option> also matches (string/number).
-                              // However, since we're using string options below, let's assume
-                              // the value prop needs a string representation of the current enum state:
-                              value={enumToString(BudgetBucket, budget)} // Using the previous helper for display
-                              
+                              value={enumToString(BudgetBucket, budget)}
                               onChange={(e) => {
                                   const selectedString = e.target.value;
                                   const newBudget = stringToEnum(BudgetBucket, selectedString);
                                   if (newBudget !== undefined) {
-                                      setBudget(newBudget as BudgetBucket); // Cast to BudgetBucket for type safety
+                                      setBudget(newBudget as BudgetBucket);
                                   }
                               }}
                           >
-                              {/* The options use the string key for both value and display */}
                               {budgetOptions.map((option) => (
                                   <option key={option} value={option}>{option}</option>
                               ))}
@@ -216,14 +209,12 @@ export default function Preferences() {
                           <label htmlFor="riskTolerance">Risk Tolerance:</label>
                           <select
                               id="riskTolerance"
-                              // Using the enum-to-string helper for the display value
                               value={enumToString(RiskTolerence, riskTolerance)}
-
                               onChange={(e) => {
                                   const selectedString = e.target.value;
                                   const newRisk = stringToEnum(RiskTolerence, selectedString);
                                   if (newRisk !== undefined) {
-                                      setRiskTolerance(newRisk as RiskTolerence); // Cast to RiskTolerence
+                                      setRiskTolerance(newRisk as RiskTolerence);
                                   }
                               }}
                           >

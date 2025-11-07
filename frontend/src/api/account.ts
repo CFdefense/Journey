@@ -185,7 +185,7 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 ///
 /// # Returns whether current user has filled out preferences or not.
 /// # Throws Error with message.
-export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
+export async function apiCheckIfPreferencesPopulated(): Promise<ApiResult<void>> {
 	console.log("Calling validate API");
 
 	try {
@@ -215,14 +215,14 @@ export async function apiCheckIfPreferencesPopulated(): Promise<boolean> {
 		
 		// check if any preferences were not yet filled out 
 		if(data.budget_preference === null || data.disabilities === null || data.food_allergies === null || data.risk_preference === null) {
-			return false;
+			return { result: null, status: -1 };
 		}
 
-		return true;
+		return { result: null, status: response.status };
 	
 	} catch (error) {
 		console.error("Current API error: ", error);
-		return false;
+		return { result: null, status: -1 };
 	}
 }
 /// Calls update account

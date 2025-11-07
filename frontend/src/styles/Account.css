@@ -63,6 +63,18 @@
   opacity: 0.7;
 }
 
+.auth-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-brand:hover {
+  color: #34495e;
+}
+
 .account-wrapper {
   display: flex;
   width: 100%;
@@ -76,10 +88,12 @@
   left: 24px;
   top: 120px;
   width: 44px;
-  background: transparent;
+  background: none; /* Match your page background color */
   transition: all 0.3s ease;
-  overflow: visible;
+  overflow: hidden;
   z-index: 10;
+  border: none; /* Make sure there's no border */
+  box-shadow: none; /* Make sure there's no shadow */
 }
 
 .sidebar:hover {
@@ -124,7 +138,7 @@
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: none; /* Change this from the original shadow */
   opacity: 0;
   transform: translateX(-10px);
   transition: all 0.3s ease;
