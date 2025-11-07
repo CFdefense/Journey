@@ -53,7 +53,11 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.city,
 			e.event_type,
 			e.event_description,
-			e.event_name
+			e.event_name,
+			e.user_created,
+			e.account_id,
+			e.hard_start,
+			e.hard_end
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
 		WHERE el.itinerary_id = $1
@@ -62,7 +66,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 	)
 	.fetch_all(pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	let mut event_days = Vec::with_capacity(event_list.len());
 	for event_day in event_list.chunk_by(|a, b| a.date == b.date) {
@@ -142,7 +146,7 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	)
 	.execute(pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	Ok(())
 }
@@ -213,7 +217,7 @@ pub async fn api_saved_itineraries(
 	)
 	.fetch_all(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	let mut res = Vec::with_capacity(itineraries.len());
 	for itinerary in itineraries.into_iter() {
@@ -299,7 +303,7 @@ pub async fn api_get_itinerary(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
 	Ok(Json(Itinerary {
@@ -398,7 +402,7 @@ pub async fn api_save(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.map(|record| record.id);
 
 	// if it doesn't exist, insert a new one
@@ -419,7 +423,7 @@ pub async fn api_save(
 			)
 			.fetch_one(&pool)
 			.await
-			.map_err(|e| AppError::from(e))?
+			.map_err(AppError::from)?
 			.id
 		}
 	};
@@ -434,7 +438,7 @@ pub async fn api_save(
 	)
 	.execute(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	insert_event_list(itinerary, &pool).await?;
 

@@ -13,10 +13,10 @@ export default function ViewItineraryPage() {
   const navigate = useNavigate();
   const [days, setDays] = useState<DayItinerary[]>([]);
   const [firstName, setFirstName] = useState<string>("");
-  
+
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
-  
+
   // Store metadata needed for saving
   const [itineraryMetadata, setItineraryMetadata] = useState({
     id: 0,
@@ -30,15 +30,15 @@ export default function ViewItineraryPage() {
     async function fetchAccount() {
       const currentResult = await apiCurrent();
       const account = currentResult.result;
-      
+
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
       }
     }
-    
+
     fetchAccount();
   }, []);
-  
+
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
     setDays(updatedDays);
   };
@@ -67,7 +67,7 @@ export default function ViewItineraryPage() {
     // Redirect back to home if no itinerary ID is provided
     if (!itineraryId) {
       console.error("No itinerary ID provided");
-      navigate('/');
+      navigate("/");
       return;
     }
 
@@ -75,7 +75,7 @@ export default function ViewItineraryPage() {
       try {
         // Fetch the full API response to get metadata
         const apiResponse = await apiItineraryDetails(itineraryId);
-        
+
         if (apiResponse.result) {
           // Store metadata
           setItineraryMetadata({
@@ -83,9 +83,9 @@ export default function ViewItineraryPage() {
             startDate: apiResponse.result.start_date,
             endDate: apiResponse.result.end_date,
             title: apiResponse.result.title,
-            chatSessionId: apiResponse.result.chat_session_id,
+            chatSessionId: apiResponse.result.chat_session_id
           });
-          
+
           // Transform and store days
           const data = await fetchItinerary(itineraryId);
           setDays(data);
@@ -93,18 +93,18 @@ export default function ViewItineraryPage() {
       } catch (error) {
         console.error("Failed to load itinerary:", error);
         alert("Failed to load itinerary. Redirecting to home.");
-        navigate('/');
+        navigate("/");
       }
     }
-    
+
     load();
   }, [itineraryId, navigate]);
 
   return (
     <div className="view-page">
       <Navbar page="view" firstName={firstName} />
-      <Itinerary 
-        days={days} 
+      <Itinerary
+        days={days}
         onUpdate={handleItineraryUpdate}
         onSave={handleSave}
         title={itineraryMetadata.title}

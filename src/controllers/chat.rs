@@ -14,7 +14,7 @@ use crate::{
 	error::{ApiResult, AppError},
 	global::MESSAGE_PAGE_LEN,
 	http_models::{
-		chat_session::{ChatsResponse, NewChatResponse},
+		chat_session::{ChatsResponse, NewChatResponse, RenameRequest},
 		event::Event,
 		itinerary::{EventDay, Itinerary},
 		message::{
@@ -26,7 +26,7 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
-use langchain_rust::{prompt_args, chain::Chain};
+use langchain_rust::{chain::Chain, prompt_args};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -36,7 +36,8 @@ use langchain_rust::{prompt_args, chain::Chain};
 		api_message_page,
 		api_send_message,
 		api_update_message,
-		api_delete_chat
+		api_delete_chat,
+		api_rename
 	),
 	modifiers(&SecurityAddon),
 	security(("set-cookie"=[])),
@@ -84,7 +85,7 @@ async fn send_message_to_llm(
 			)
 			.fetch_optional(pool)
 			.await
-			.map_err(|e| AppError::from(e))?
+			.map_err(AppError::from)?
 			.map(|record| record.itinerary_id.unwrap())
 		}
 	};
@@ -115,7 +116,10 @@ async fn send_message_to_llm(
 		}
 		_ => {
 			// DEPLOY_LLM != "1", return dummy response
-			format!("This is a dummy response for testing. You said: \"{}\"", text)
+			format!(
+				"This is a dummy response for testing. You said: \"{}\"",
+				text
+			)
 		}
 	};
 
@@ -132,8 +136,14 @@ async fn send_message_to_llm(
 					postal_code: 17013,
 					city: String::from("Carlisle"),
 					event_type: String::from("Hike"),
-					event_description: String::from("A beautiful stroll along a river in this cute small town."),
+					event_description: String::from(
+						"A beautiful stroll along a river in this cute small town.",
+					),
 					event_name: String::from("Family Walking Path"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				noon_events: vec![Event {
 					id: 2,
@@ -141,8 +151,14 @@ async fn send_message_to_llm(
 					postal_code: 12601,
 					city: String::from("Poughkeepsie"),
 					event_type: String::from("Restaurant"),
-					event_description: String::from("Local Italian restaurant known for its authentic pasta and upscale dining."),
+					event_description: String::from(
+						"Local Italian restaurant known for its authentic pasta and upscale dining.",
+					),
 					event_name: String::from("Cosimos"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -150,8 +166,14 @@ async fn send_message_to_llm(
 					postal_code: 10017,
 					city: String::from("New York"),
 					event_type: String::from("Museum"),
-					event_description: String::from("World famous art museum with a focus on modern works, including Starry Starry Night by VanGough."),
+					event_description: String::from(
+						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
+					),
 					event_name: String::from("Museum of Modern Art- MoMA"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -159,8 +181,14 @@ async fn send_message_to_llm(
 					postal_code: 19107,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Concert"),
-					event_description: String::from("Music center which hosts local and national bands."),
+					event_description: String::from(
+						"Music center which hosts local and national bands.",
+					),
 					event_name: String::from("Jazz night at Broad Street"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -171,8 +199,14 @@ async fn send_message_to_llm(
 					postal_code: 19148,
 					city: String::from("Philadelphia"),
 					event_type: String::from("Sports"),
-					event_description: String::from("A Phillies baseball game is a must-do for locals and visitors alike."),
+					event_description: String::from(
+						"A Phillies baseball game is a must-do for locals and visitors alike.",
+					),
 					event_name: String::from("Phillies Baseball Game"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				noon_events: vec![Event {
 					id: 6,
@@ -180,8 +214,14 @@ async fn send_message_to_llm(
 					postal_code: 60615,
 					city: String::from("Chicago"),
 					event_type: String::from("Festival"),
-					event_description: String::from("Annual music festival with the biggest names in pop and indie scenes."),
+					event_description: String::from(
+						"Annual music festival with the biggest names in pop and indie scenes.",
+					),
 					event_name: String::from("LollaPalooza"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -191,6 +231,10 @@ async fn send_message_to_llm(
 					event_type: String::from("Museum"),
 					event_description: String::from("Explore the beautiful landmark of Paris."),
 					event_name: String::from("Eiffel Tower"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -198,8 +242,14 @@ async fn send_message_to_llm(
 					postal_code: 0,
 					city: String::from("Paris"),
 					event_type: String::from("Museum"),
-					event_description: String::from("Wander the halls of the world famous art museum."),
+					event_description: String::from(
+						"Wander the halls of the world famous art museum.",
+					),
 					event_name: String::from("le Louvre"),
+					user_created: false,
+					account_id: None,
+					hard_start: None,
+					hard_end: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},
@@ -223,7 +273,7 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.id;
 
 	ai_itinerary.id = inserted_itinerary_id;
@@ -244,7 +294,7 @@ async fn send_message_to_llm(
 	)
 	.fetch_one(pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
 
@@ -284,7 +334,20 @@ async fn send_message_to_llm(
 			body=ChatsResponse,
 			content_type="application/json",
 			example=json!({
-				"chat_sessions": [3, 15, 16, 84]
+				"chat_sessions": [
+					{
+						"id": 5,
+						"title": "Berlin, Germany"
+					},
+					{
+						"id": 17,
+						"title": "Shanghai, China"
+					},
+					{
+						"id": 41,
+						"title": "Miami, Florida, USA"
+					}
+				]
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -301,22 +364,17 @@ pub async fn api_chats(
 	Extension(pool): Extension<PgPool>,
 ) -> ApiResult<Json<ChatsResponse>> {
 	Ok(Json(ChatsResponse {
-		chat_sessions: sqlx::query!(
+		chat_sessions: sqlx::query_as!(
+			ChatSessionRow,
 			r#"
-			SELECT id from chat_sessions
+			SELECT id, title from chat_sessions
 			WHERE account_id=$1;
 			"#,
 			user.id
 		)
 		.fetch_all(&pool)
 		.await
-		.map_err(|e| AppError::from(e))?
-		.into_iter()
-		.map(|record| ChatSessionRow {
-			id: record.id,
-			title: String::from("TODO: get chat title from db"),
-		})
-		.collect(),
+		.map_err(AppError::from)?,
 	}))
 }
 
@@ -463,7 +521,7 @@ pub async fn api_message_page(
 	)
 	.fetch_all(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.into_iter()
 	.rev()
 	.map(|msg_row| Message {
@@ -580,7 +638,7 @@ pub async fn api_update_message(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
 	// delete future messages
@@ -597,7 +655,7 @@ pub async fn api_update_message(
 	)
 	.execute(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	// update user message
 	let chat_session_id = sqlx::query!(
@@ -612,7 +670,7 @@ pub async fn api_update_message(
 	)
 	.fetch_one(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.chat_session_id;
 
 	// call llm and insert bot response into db
@@ -721,7 +779,7 @@ pub async fn api_send_message(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
 	// insert user message into db
@@ -736,12 +794,19 @@ pub async fn api_send_message(
 	)
 	.fetch_one(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.id;
 
 	// call llm and insert bot response into db
-	let bot_message =
-		send_message_to_llm(text.as_str(), user.id, chat_session_id, itinerary_id, &pool, &agent).await?;
+	let bot_message = send_message_to_llm(
+		text.as_str(),
+		user.id,
+		chat_session_id,
+		itinerary_id,
+		&pool,
+		&agent,
+	)
+	.await?;
 
 	Ok(Json(SendMessageResponse {
 		user_message_id,
@@ -815,7 +880,7 @@ pub async fn api_new_chat(
 	)
 	.fetch_all(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	let chat_session_id = match chat_sessions.first() {
 		Some(record) => record.id,
@@ -823,15 +888,15 @@ pub async fn api_new_chat(
 			// make a new chat session
 			sqlx::query!(
 				r#"
-				INSERT INTO chat_sessions (account_id)
-				VALUES ($1)
+				INSERT INTO chat_sessions (account_id, title)
+				VALUES ($1, 'New Chat')
 				RETURNING id
 				"#,
 				user.id
 			)
 			.fetch_one(&pool)
 			.await
-			.map_err(|e| AppError::from(e))?
+			.map_err(AppError::from)?
 			.id
 		}
 	};
@@ -893,7 +958,7 @@ pub async fn api_delete_chat(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?;
+	.map_err(AppError::from)?;
 
 	// messages will cascade
 	sqlx::query!(
@@ -907,8 +972,94 @@ pub async fn api_delete_chat(
 	)
 	.fetch_optional(&pool)
 	.await
-	.map_err(|e| AppError::from(e))?
+	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
+
+	Ok(())
+}
+
+/// Rename a chat session
+///
+/// # Method
+/// `POST /api/chat/rename`
+///
+/// # Request Body
+/// - [RenameRequest]
+///
+/// # Responses
+/// - `200 OK`
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided chat session id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/rename
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "new_title": "Tokio, Japan (lmao)",
+///         "id": 16
+///       }'
+/// ```
+#[utoipa::path(
+	post,
+	path="/rename",
+	summary="Rename a chat session",
+	description="Renames a chat session that belongs to this user with the given ID to the given title.",
+	request_body(
+		content=RenameRequest,
+		content_type="application/json",
+		description="Chat session ID must belong to the user who sent the request. New Title must not be empty string.",
+		example=json!({
+			"new_title": "Tokio, Japan (lmao)",
+			"id": 16
+		})
+	),
+	responses(
+		(status=200, description="Chat renamed successfully"),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Chat session not found for this user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
+pub async fn api_rename(
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
+	Json(RenameRequest { new_title, id }): Json<RenameRequest>,
+) -> ApiResult<()> {
+	// no empty titles
+	if new_title.is_empty() {
+		return Err(AppError::BadRequest(String::from(
+			"New title must not be empty",
+		)));
+	}
+
+	// verify chat session belongs to this user
+	sqlx::query!(
+		r#"SELECT id from chat_sessions WHERE id=$1 AND account_id=$2"#,
+		id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(AppError::from)?
+	.ok_or(AppError::NotFound)?;
+
+	//change name
+	sqlx::query!(
+		r#"UPDATE chat_sessions SET title=$1 WHERE id=$2"#,
+		new_title,
+		id
+	)
+	.execute(&pool)
+	.await
+	.map_err(AppError::from)?;
 
 	Ok(())
 }
@@ -922,6 +1073,7 @@ pub async fn api_delete_chat(
 /// - `POST /sendMessage` - Sends a user's message and waits for a bot reply (protected)
 /// - `GET /newChat` - Gets a chat session id for an empty chat (protected)
 /// - `DELETE /:id` - Delete a chat session and associated messages (protected)
+/// - `POST /rename` - Renames the title of a chat session (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -933,5 +1085,6 @@ pub fn chat_routes() -> AxumRouter {
 		.route("/sendMessage", post(api_send_message))
 		.route("/newChat", get(api_new_chat))
 		.route("/{id}", delete(api_delete_chat))
+		.route("/rename", post(api_rename))
 		.route_layer(axum::middleware::from_fn(middleware_auth))
 }

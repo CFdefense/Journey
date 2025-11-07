@@ -50,6 +50,7 @@ CREATE TABLE accounts (
     disabilities TEXT NOT NULL DEFAULT ''
 );
 
+-- Events table
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
     street_address VARCHAR(255) NOT NULL,
@@ -57,12 +58,17 @@ CREATE TABLE events (
     city VARCHAR(255) NOT NULL,
     event_type VARCHAR(255) NOT NULL,
     event_description TEXT NOT NULL,
-    event_name VARCHAR(255) NOT NULL
+    event_name VARCHAR(255) NOT NULL,
+    user_created BOOLEAN NOT NULL DEFAULT FALSE,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    hard_start TIMESTAMP WITHOUT TIME ZONE,
+    hard_end TIMESTAMP WITHOUT TIME ZONE
 );
 
 CREATE TABLE chat_sessions (
 	id SERIAL PRIMARY KEY,
-	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE
+	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+	title VARCHAR(255) NOT NULL
 );
 
 -- Itineraries table
@@ -70,7 +76,9 @@ CREATE TABLE itineraries (
     id SERIAL PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    -- date of destination's local timezone
     start_date DATE NOT NULL,
+    -- date of destination's local timezone
     end_date DATE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL,
     saved BOOLEAN NOT NULL,
@@ -83,6 +91,7 @@ CREATE TABLE event_list (
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     time_of_day time_of_day NOT NULL,
+    -- date of destination's local timezone
     date DATE NOT NULL
 );
 
@@ -91,6 +100,7 @@ CREATE TABLE messages (
 	chat_session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
 	itinerary_id INTEGER REFERENCES itineraries(id) ON DELETE SET NULL,
 	is_user BOOLEAN NOT NULL,
+	-- UTC
 	timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	text TEXT NOT NULL
 );
@@ -112,15 +122,15 @@ SELECT setval(
 );
 
 -- Events
-INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name)
-VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'Hike', 'A beautiful stroll along a river in this cute small town.', 'Family Walking Path'),
-(2, '35 Campus Court', 12601, 'Poughkeepsie', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos'),
-(3, '200 E 42nd St', 10017, 'New York', 'Museum', 'World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.', 'Museum of Modern Art- MoMA'),
-(4, '1 S Broad St', 19107, 'Philadelphia', 'Concert', 'Music center which hosts local and national bands.', 'Jazz night at Broad Street'),
-(5, '1 Citizens Bank Way', 19148, 'Philadelphia', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game'),
-(6, '5250 S Park Dr', 60615, 'Chicago', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza'),
-(7, '1 Rue de la Seine', 00000, 'Paris', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower'),
-(8, '3 Rue de la Museu', 00000, 'Paris', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre');
+INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name, user_created, account_id, hard_start, hard_end)
+VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'Hike', 'A beautiful stroll along a river in this cute small town.', 'Family Walking Path', FALSE, NULL, NULL, NULL),
+(2, '35 Campus Court', 12601, 'Poughkeepsie', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos', FALSE, NULL, NULL, NULL),
+(3, '200 E 42nd St', 10017, 'New York', 'Museum', 'World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.', 'Museum of Modern Art- MoMA', FALSE, NULL, NULL, NULL),
+(4, '1 S Broad St', 19107, 'Philadelphia', 'Concert', 'Music center which hosts local and national bands.', 'Jazz night at Broad Street', FALSE, NULL, NULL, NULL),
+(5, '2 Citizens Bank Way', 19148, 'Philadelphia', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', FALSE, NULL, '2025-12-01 13:00', '2025-12-01 16:00'),
+(6, '5250 S Park Dr', 60615, 'Chicago', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', FALSE, NULL, NULL, NULL),
+(7, '1 Rue de la Seine', 00000, 'Paris', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
+(8, '3 Rue de la Museu', 00000, 'Paris', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, NULL, NULL);
 
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
@@ -129,12 +139,10 @@ SELECT setval(
 );
 
 -- Create chat sessions
-INSERT INTO chat_sessions (account_id)
-SELECT id
-FROM accounts;
-INSERT INTO chat_sessions (account_id)
-SELECT id
-FROM accounts;
+INSERT INTO chat_sessions (account_id, title)
+SELECT id, 'Dummy Chat 1' FROM accounts;
+INSERT INTO chat_sessions (account_id, title)
+SELECT id, 'Dummy Chat 2' FROM accounts;
 
 -- Ensure the chat session id sequence matches the max(id)
 SELECT setval(

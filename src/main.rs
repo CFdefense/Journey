@@ -57,13 +57,19 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		Err(e) => {
 			if env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 				// DEPLOY_LLM=1 but agent creation failed - this is an error
-				panic!("DEPLOY_LLM=1 but agent creation failed: {}. Please check your OpenAI API key.", e);
+				panic!(
+					"DEPLOY_LLM=1 but agent creation failed: {}. Please check your OpenAI API key.",
+					e
+				);
 			} else {
 				// DEPLOY_LLM != "1" - agent creation failed but we'll use dummy responses anyway
 				// Try to create a minimal agent anyway - if OpenAI::default() works without a key,
 				// this will succeed. Otherwise, we'll need to handle this differently.
 				// For now, panic with a helpful message.
-				panic!("Agent creation failed: {}. The server requires an agent even when DEPLOY_LLM != 1 (dummy mode). Please set OPENAI_API_KEY environment variable, or the agent creation needs to be made optional.", e);
+				panic!(
+					"Agent creation failed: {}. The server requires an agent even when DEPLOY_LLM != 1 (dummy mode). Please set OPENAI_API_KEY environment variable, or the agent creation needs to be made optional.",
+					e
+				);
 			}
 		}
 	};
@@ -117,7 +123,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		))
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
-		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
+			agent,
+		))))
 		.layer(CookieManagerLayer::new())
 		.layer(cors);
 

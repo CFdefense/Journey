@@ -51,9 +51,13 @@ export default function ItinerarySideBar({
 
       {sidebarVisible && (
         <div className="itinerary-content">
-          <Itinerary 
-            key={itineraryData ? JSON.stringify(itineraryData[0]?.date) : 'no-itinerary'}
-            days={itineraryData ?? undefined} 
+          <Itinerary
+            key={
+              itineraryData
+                ? JSON.stringify(itineraryData[0]?.date)
+                : "no-itinerary"
+            }
+            days={itineraryData ?? undefined}
             compact={true}
             title={itineraryTitle}
             hideMenu={true}

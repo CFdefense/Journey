@@ -10,6 +10,7 @@ import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
+import { ACTIVE_CHAT_SESSION } from "./Home";
 
 export default function Account() {
   const { setAuthorized } = useContext<GlobalState>(
@@ -55,6 +56,7 @@ export default function Account() {
       console.error("Logout failed with status", status);
     }
     setAuthorized(false);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {

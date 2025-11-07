@@ -1,195 +1,155 @@
 /// These tests require an active connection to the server
 
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
 	test_state,
 	apiSignUp, apiValidate, apiLogin, apiCurrent, apiLogout,
 	apiChats, apiNewChatId, apiSendMessage, apiMessages,
-	apiItineraryDetails,
+	apiItineraryDetails, apiDeleteChat, apiRenameChat
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
+import { ChatSessionRow } from "../src/models/chat";
 
-// Check server availability - will be set before tests run
-let serverAvailable = false;
+async function test_flow() {
+	// sign up
+	const unique: number = Date.now();
+	const email = `test${unique}@gmail.com`;
+	expect((await apiSignUp({
+		email: email,
+		first_name: "First",
+		last_name: "Last",
+		password: "Password123"
+	})).status).toBe(200);
+
+	// validate cookie
+	expect((await apiValidate()).status === 200).toBe(true);
+
+	// login
+	expect((await apiLogin({
+		email: email,
+		password: "Password123"
+	})).status).toBe(200);
+
+	// get account info
+	expect(await apiCurrent()).toStrictEqual({
+		result: {
+			email: email,
+			first_name: "First",
+			last_name: "Last",
+			budget_preference: null,
+			risk_preference: null,
+			food_allergies: "",
+			disabilities: ""
+		},
+		status: 200
+	});
+
+	// get chat session ids
+	expect(await apiChats()).toStrictEqual({
+		result: {
+			chat_sessions: []
+		},
+		status: 200
+	});
+
+	// create new chat
+	const newChatResult = await apiNewChatId();
+	expect(newChatResult.status).toBe(200);
+	const newChatId = newChatResult.result!;
+
+	// send message
+	const messageResult = await apiSendMessage({
+		chat_session_id: newChatId,
+		text: "test message",
+		itinerary_id: null
+	});
+	expect(messageResult.status).toBe(200);
+	const messageId = messageResult.result!.user_message_id;
+	const botMessage = messageResult.result!.bot_message;
+	expect(botMessage.itinerary_id === null).toBe(false);
+
+	// get itinerary info
+	const itineraryResult = await apiItineraryDetails(botMessage.itinerary_id!);
+	expect(itineraryResult.status).toBe(200);
+
+	// get messages from chat
+	const pageResult = await apiMessages({
+		chat_session_id: newChatId,
+		message_id: null
+	});
+	expect(pageResult.status).toBe(200);
+	expect(pageResult.result!.prev_message_id).toBe(null);
+	expect(pageResult.result!.message_page[0].id).toBe(messageId);
+	expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
+
+	// Rename the chat
+	const renameResult = await apiRenameChat({ new_title: "Updated Title", id: newChatId });
+	expect(renameResult.status).toBe(200);
+	const chatsAfterRename = await apiChats();
+	expect(chatsAfterRename.status).toBe(200);
+	const expectedChat: ChatSessionRow = { id: newChatId, title: "Updated Title" };
+	expect(
+		chatsAfterRename
+			.result!
+			.chat_sessions
+			.find((chat) => chat.id === expectedChat.id)!
+			.title
+	).toBe(expectedChat.title);
+
+	// Delete the chat
+	const deleteResult = await apiDeleteChat(newChatId);
+	expect(deleteResult.status).toBe(200);
+	expect(deleteResult.result).toBe(newChatId);
+
+	// Verify chat is deleted
+	const chatsAfterDelete = await apiChats();
+	expect(chatsAfterDelete.status).toBe(200);
+	expect(chatsAfterDelete.result!.chat_sessions.length).toBe(0);
+
+	// Test deleting non-existent chat
+	const deleteNonExistent = await apiDeleteChat(99999);
+	expect(deleteNonExistent.status).toBeGreaterThanOrEqual(-1);
+
+	// logout
+	expect((await apiLogout()).status).toBe(200);
+
+	// should have invalid cookie
+	expect((await apiValidate()).status !== 200).toBe(true);
+}
 
 describe("Integration Tests", () => {
-	// Check server availability before running tests
-	beforeAll(async () => {
-		try {
-			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 1000);
-			const response = await fetch("http://localhost:3001/api/account/validate", {
-				method: "GET",
-				credentials: "include",
-				signal: controller.signal
-			});
-			clearTimeout(timeoutId);
-			serverAvailable = response.status !== -1;
-		} catch {
-			serverAvailable = false;
-		}
-	});
-
-	test.skipIf(() => !serverAvailable)("Journey Flow DEV", async () => {
+	test("Journey Flow DEV", async () => {
 		test_state.dev_mode = true;
-		const unique: number = Date.now();
-		const email = `test${unique}@gmail.com`
-	expect((await apiSignUp({
-		email: email,
-		first_name: "First",
-		last_name: "Last",
-		password: "Password123"
-	})).status).toBe(200);
-
-	expect((await apiValidate()).status === 200).toBe(true);
-
-	expect((await apiLogin({
-		email: email,
-		password: "Password123"
-	})).status).toBe(200);
-
-		expect(await apiCurrent()).toStrictEqual({
-			result: {
-				email: email,
-				first_name: "First",
-				last_name: "Last",
-			budget_preference: null,
-			risk_preference: null,
-			food_allergies: "",
-			disabilities: ""
-			},
-			status: 200
-		});
-
-		expect(await apiChats()).toStrictEqual({
-			result: {
-				chat_sessions: []
-			},
-			status: 200
-		});
-
-		const newChatResult = await apiNewChatId();
-		expect(newChatResult.status).toBe(200);
-		const newChatId = newChatResult.result!;
-
-		const messageResult = await apiSendMessage({
-			chat_session_id: newChatId,
-			text: "test message",
-			itinerary_id: null
-		});
-		expect(messageResult.status).toBe(200);
-		const messageId = messageResult.result!.user_message_id;
-		const botMessage = messageResult.result!.bot_message;
-		expect(botMessage.itinerary_id === null).toBe(false);
-
-		const itineraryResult = await apiItineraryDetails(botMessage.itinerary_id!);
-		expect(itineraryResult.status).toBe(200);
-
-		const pageResult = await apiMessages({
-			chat_session_id: newChatId,
-			message_id: null
-		});
-		expect(pageResult.status).toBe(200);
-		expect(pageResult.result!.prev_message_id).toBe(null);
-		expect(pageResult.result!.message_page[0].id).toBe(messageId);
-		expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
-
-	expect((await apiLogout()).status).toBe(200);
-
-	expect((await apiValidate()).status !== 200).toBe(true);
+		await test_flow();
 	});
-	
-	test.skipIf(() => !serverAvailable)("Journey Flow PROD", async () => {
+
+	test("Journey Flow PROD", async () => {
 		test_state.dev_mode = false;
-		const unique: number = Date.now();
-		const email = `test${unique}@gmail.com`
-	expect((await apiSignUp({
-		email: email,
-		first_name: "First",
-		last_name: "Last",
-		password: "Password123"
-	})).status).toBe(200);
-
-	expect((await apiValidate()).status === 200).toBe(true);
-
-	expect((await apiLogin({
-		email: email,
-		password: "Password123"
-	})).status).toBe(200);
-
-		expect(await apiCurrent()).toStrictEqual({
-			result: {
-				email: email,
-				first_name: "First",
-				last_name: "Last",
-			budget_preference: null,
-			risk_preference: null,
-			food_allergies: "",
-			disabilities: ""
-			},
-			status: 200
-		});
-
-		expect(await apiChats()).toStrictEqual({
-			result: {
-				chat_sessions: []
-			},
-			status: 200
-		});
-
-		const newChatResult = await apiNewChatId();
-		expect(newChatResult.status).toBe(200);
-		const newChatId = newChatResult.result!;
-
-		const messageResult = await apiSendMessage({
-			chat_session_id: newChatId,
-			text: "test message",
-			itinerary_id: null
-		});
-		expect(messageResult.status).toBe(200);
-		const messageId = messageResult.result!.user_message_id;
-		const botMessage = messageResult.result!.bot_message;
-		expect(botMessage.itinerary_id === null).toBe(false);
-
-		const itineraryResult = await apiItineraryDetails(botMessage.itinerary_id!);
-		expect(itineraryResult.status).toBe(200);
-
-		const pageResult = await apiMessages({
-			chat_session_id: newChatId,
-			message_id: null
-		});
-		expect(pageResult.status).toBe(200);
-		expect(pageResult.result!.prev_message_id).toBe(null);
-		expect(pageResult.result!.message_page[0].id).toBe(messageId);
-		expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
-
-	expect((await apiLogout()).status).toBe(200);
-
-	expect((await apiValidate()).status !== 200).toBe(true);
+		await test_flow();
 	});
 
-	test.skipIf(() => !serverAvailable)("Error handling coverage", async () => {
+	test("Error handling coverage", async () => {
 		test_state.dev_mode = true;
-		
+
 		// Test error handling paths
 		const errorResult = await apiCurrent();
 		expect(errorResult.status).toBeGreaterThanOrEqual(-1);
-		
+
 		const errorChats = await apiChats();
 		expect(errorChats.status).toBeGreaterThanOrEqual(-1);
-		
+
 		const errorChatId = await apiNewChatId();
 		expect(errorChatId.status).toBeGreaterThanOrEqual(-1);
-		
+
 		const errorItinerary = await apiItineraryDetails(99999);
 		expect(errorItinerary.status).toBeGreaterThanOrEqual(-1);
-		
+
 		const errorMessages = await apiMessages({ chat_session_id: 99999, message_id: null });
 		expect(errorMessages.status).toBeGreaterThanOrEqual(-1);
-		
-		const errorSend = await apiSendMessage({ 
-			chat_session_id: 99999, 
-			text: "test", 
-			itinerary_id: null 
+
+		const errorSend = await apiSendMessage({
+			chat_session_id: 99999,
+			text: "test",
+			itinerary_id: null
 		});
 		expect(errorSend.status).toBeGreaterThanOrEqual(-1);
 	});

@@ -2,9 +2,9 @@ name: Issue Manager
 
 on:
   schedule:
-    # switch these on November 2 at 2:00 am
-    - cron: "45 3 * * *"   # 3:45 UTC == 11:45 PM New York (DST)
-    # - cron: "45 4 * * *"   # 4:45 UTC == 11:45 PM New York (Standard Time)
+    # switch these on November 2, 2025 at 2:00 am (DONE)
+    # - cron: "45 3 * * *"   # 3:45 UTC == 11:45 PM New York (EDT)
+    - cron: "45 4 * * *"   # 4:45 UTC == 11:45 PM New York (EST)
   workflow_dispatch:
 
 jobs:
@@ -135,7 +135,7 @@ jobs:
               ISSUE_ID=$(           echo "$row" | jq -r '.issueId')
               MILESTONE_ID=$(       echo "$row" | jq -r '.milestoneId')
 
-              if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ]; then
+              if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ] && [ -z "$MILESTONE_ID" ]; then
                 gh api graphql -f query='
                 mutation($sId:ID!, $mId:ID!) {
                   updateIssue(input:{

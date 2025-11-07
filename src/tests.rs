@@ -1,8 +1,9 @@
 use crate::{
-	controllers, db, agent,
+	agent, controllers, db,
 	global::*,
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
+		chat_session::RenameRequest,
 		itinerary::Itinerary,
 		message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest},
 	},
@@ -997,21 +998,23 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(|| {
 				agent::config::create_agent().unwrap_or_else(|e| {
-					panic!("Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.", e);
+					panic!(
+						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
+						e
+					);
 				})
-			})
+			}),
 		)
 		.await
 		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
 		.expect("Agent creation task panicked")
 	} else {
 		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::config::create_dummy_agent()
-			.expect("Dummy agent creation failed")
+		agent::config::create_dummy_agent().expect("Dummy agent creation failed")
 	};
-	
+
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
-	
+
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
 	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
@@ -1039,10 +1042,11 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			text: format!("Test msg {}", i),
 			itinerary_id: None,
 		});
-		message_ids[i] = controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
-			.await
-			.unwrap()
-			.user_message_id;
+		message_ids[i] =
+			controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+				.await
+				.unwrap()
+				.user_message_id;
 		assert_ne!(message_ids[i], 0);
 	}
 
@@ -1176,6 +1180,39 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	assert_eq!(latest_page.prev_message_id, None);
 	assert_eq!(latest_page.message_page.len(), 2);
 
+	//rename chat empty string
+	let json = Json(RenameRequest {
+		new_title: String::from(""),
+		id: chat_session.id,
+	});
+	assert_eq!(
+		controllers::chat::api_rename(user, pool.clone(), json)
+			.await
+			.unwrap_err()
+			.status_code()
+			.as_u16(),
+		400
+	);
+
+	//rename chat
+	let new_title = String::from("Updated Title");
+	let json = Json(RenameRequest {
+		new_title: new_title.clone(),
+		id: chat_session.id,
+	});
+	controllers::chat::api_rename(user, pool.clone(), json)
+		.await
+		.unwrap();
+	let Json(chats) = controllers::chat::api_chats(user, pool.clone())
+		.await
+		.unwrap();
+	assert!(
+		chats
+			.chat_sessions
+			.iter()
+			.any(move |chat| chat.id == chat_session.id && chat.title == new_title)
+	);
+
 	//delete chat session
 	controllers::chat::api_delete_chat(user, pool.clone(), axum::extract::Path(chat_session_id))
 		.await
@@ -1222,7 +1259,7 @@ async fn test_endpoints() {
 	// Build app
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
-	
+
 	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
@@ -1230,19 +1267,21 @@ async fn test_endpoints() {
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(|| {
 				agent::config::create_agent().unwrap_or_else(|e| {
-					panic!("Agent creation failed in test: {}. Check your OPENAI_API_KEY.", e);
+					panic!(
+						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
+						e
+					);
 				})
-			})
+			}),
 		)
 		.await
 		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
 		.expect("Agent creation task panicked")
 	} else {
 		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::config::create_dummy_agent()
-			.expect("Dummy agent creation failed")
+		agent::config::create_dummy_agent().expect("Dummy agent creation failed")
 	};
-	
+
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
 	let chat_routes = controllers::chat::chat_routes();
@@ -1254,7 +1293,9 @@ async fn test_endpoints() {
 		.nest("/api", api_routes)
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
-		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
+		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
+			agent,
+		))))
 		.layer(CookieManagerLayer::new());
 
 	// Bind to ephemeral port and spawn server
@@ -1344,6 +1385,10 @@ async fn test_auth_for_all_required() {
 		"chat_session_id": 1,
 		"text": "test"
 	});
+	let chat_rename_payload = json!({
+		"new_title": "Updated Title",
+		"id": 1
+	});
 	let itinerary_save_payload = json!({
 		"id": 1,
 		"start_date": "2025-11-05 00:00:00",
@@ -1378,6 +1423,7 @@ async fn test_auth_for_all_required() {
 		hc.do_post("/api/chat/messagePage", chat_message_page_payload),
 		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
 		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
+		hc.do_post("/api/chat/rename", chat_rename_payload),
 		hc.do_post("/api/itinerary/save", itinerary_save_payload),
 	])
 	.await
