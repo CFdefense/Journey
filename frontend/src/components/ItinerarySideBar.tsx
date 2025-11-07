@@ -61,6 +61,7 @@ export default function ItinerarySideBar({
             compact={true}
             title={itineraryTitle}
             hideMenu={true}
+            editMode={false}
           />
 
           <div className="itinerary-actions">
