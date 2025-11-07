@@ -60,7 +60,6 @@ export default function ItinerarySideBar({
             days={itineraryData ?? undefined}
             compact={true}
             title={itineraryTitle}
-            hideMenu={true}
             editMode={false}
           />
 
