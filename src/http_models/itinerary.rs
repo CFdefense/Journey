@@ -43,7 +43,7 @@ pub struct EventDay {
 	pub afternoon_events: Vec<Event>,
 	/// All the events taking place in the evening
 	pub evening_events: Vec<Event>,
-	/// The UTC date of this day within the range of itinerary start and end dates (%Y-%m-%d)
+	/// The date of this day within the range of itinerary start and end dates (Destination's local timezone - %Y-%m-%d)
 	pub date: NaiveDate,
 }
 
