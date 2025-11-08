@@ -261,7 +261,9 @@ export async function apiUpdateMessage(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const updateRes: Message = await response.json();
+		updateRes.timestamp += "Z";  // Add this line to match other API functions
+		return { result: updateRes, status: response.status };
 	} catch (error) {
 		console.error("apiUpdateMessage error:", error);
 		return { result: null, status: -1 };

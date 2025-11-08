@@ -41,7 +41,7 @@ export default function ChatMessage({
     getItinerary();
   }, [message.itinerary_id]);
 
-  const handleEdit = (messageId: number) => {
+  const handleEdit = () => {
     setIsEditing(true);
     setEditText(message.text);
   };
