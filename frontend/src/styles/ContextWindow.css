@@ -17,20 +17,40 @@
   text-align: left;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #fa8072;
   border-radius: 6px;
   transition: all 0.2s;
   font-weight: 600;
 }
 
-.context-menu-item:hover {
+.context-menu-item.rename {
+  color: #30A0E0;
+}
+
+.context-menu-item.rename:hover {
+  background: linear-gradient(135deg, #30A0E0 0%, #4db3ed 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(48, 160, 224, 0.2);
+  transform: translateY(-1px);
+}
+
+.context-menu-item.rename:active {
+  background: linear-gradient(135deg, #2a8fc7 0%, #30A0E0 100%);
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(48, 160, 224, 0.2);
+}
+
+.context-menu-item.delete {
+  color: #fa8072;
+}
+
+.context-menu-item.delete:hover {
   background: linear-gradient(135deg, #fa8072 0%, #ff9b8a 100%);
   color: white;
   box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
   transform: translateY(-1px);
 }
 
-.context-menu-item:active {
+.context-menu-item.delete:active {
   background: linear-gradient(135deg, #e56b5d 0%, #fa8072 100%);
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);

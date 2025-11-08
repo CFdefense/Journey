@@ -269,6 +269,16 @@ export default function Home() {
     });
   };
 
+  const handleRenameChat = (chatId: number, newTitle: string) => {
+    // Update the chat title in the chats list
+    setChats((prevChats) => {
+      if (!prevChats) return prevChats;
+      return prevChats.map((chat) =>
+        chat.id === chatId ? { ...chat, title: newTitle } : chat
+      );
+    });
+  };
+
   const handleToggleSidebar = () => {
     setSidebarVisible((prev) => !prev);
   };
@@ -294,6 +304,7 @@ export default function Home() {
           onNewChat={handleNewChat}
           onToggleSidebar={handleToggleSidebar}
           onDeleteChat={handleDeleteChat}
+          onRenameChat={handleRenameChat}
           sidebarVisible={sidebarVisible}
         />
 
