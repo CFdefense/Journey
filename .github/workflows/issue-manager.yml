@@ -135,7 +135,7 @@ jobs:
               ISSUE_ID=$(           echo "$row" | jq -r '.issueId')
               MILESTONE_ID=$(       echo "$row" | jq -r '.milestoneId')
 
-              if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" != "$PARENT_MILESTONE_ID" ] && [ -z "$MILESTONE_ID" ]; then
+              if [ -n "$PARENT_MILESTONE_ID" ] && [ "$MILESTONE_ID" == "null" ]; then
                 gh api graphql -f query='
                 mutation($sId:ID!, $mId:ID!) {
                   updateIssue(input:{
