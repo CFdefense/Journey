@@ -1,46 +1,29 @@
-.user-message-actions {
-  display: flex;
-  gap: 8px;
-  padding: 4px;
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: absolute;
-  bottom: -12px;
-  right: 0;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  z-index: 5;
-}
-
-.chat-message-wrapper.user:hover .user-message-actions {
-  opacity: 1;
-  visibility: visible;
-}
-
-.action-button {
+/* UserMessageActions.css */
+.edit-button {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   color: white;
-  transition: all 0.2s;
-}
-
-.action-button svg {
-  flex-shrink: 0;
-}
-
-.edit-button {
   background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
   box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+  transition: all 0.2s;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.chat-message-wrapper.user:hover .edit-button {
+  opacity: 1;
+  visibility: visible;
+}
+
+.edit-button svg {
+  flex-shrink: 0;
 }
 
 .edit-button:hover {
@@ -52,20 +35,4 @@
 .edit-button:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
-}
-
-.resend-button {
-  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
-  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
-}
-
-.resend-button:hover {
-  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
-  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
-  transform: translateY(-1px);
-}
-
-.resend-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
 }

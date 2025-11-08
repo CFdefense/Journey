@@ -1,3 +1,4 @@
+// Home.tsx
 import { useState, useEffect } from "react";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
@@ -9,9 +10,10 @@ import {
   apiChats,
   apiMessages,
   apiNewChatId,
-  apiSendMessage
+  apiSendMessage,
+  apiUpdateMessage
 } from "../api/home";
-import type { MessagePageRequest, SendMessageRequest } from "../models/chat";
+import type { MessagePageRequest, SendMessageRequest, UpdateMessageRequest } from "../models/chat";
 import type { ChatSession } from "../models/home";
 import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
@@ -261,6 +263,64 @@ export default function Home() {
     }
   };
 
+  const handleEditMessage = async (messageId: number, newText: string) => {
+    if (activeChatId === null) return;
+
+    const payload: UpdateMessageRequest = {
+      message_id: messageId,
+      new_text: newText,
+      itinerary_id: selectedItineraryId
+    };
+
+    // Optimistically update the UI - update the message text
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) =>
+        c.id === activeChatId
+          ? {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId
+                  ? { ...m, text: newText, timestamp: new Date().toISOString() }
+                  : m
+              )
+            }
+          : c
+      )
+    );
+
+    const updateResult = await apiUpdateMessage(payload);
+    // TODO: 401 -> navigate to /login
+
+    if (updateResult.result === null || updateResult.status !== 200) {
+      // TODO: handle and display error, revert optimistic update
+      return;
+    }
+
+    const botMessage = updateResult.result;
+
+    // Remove all messages after the edited message, then add the new bot response
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) => {
+        if (c.id !== activeChatId) return c;
+
+        const editedMessageIndex = c.messages.findIndex((m) => m.id === messageId);
+        if (editedMessageIndex === -1) return c;
+
+        // Keep messages up to and including the edited message, then add bot response
+        const updatedMessages = c.messages.slice(0, editedMessageIndex + 1);
+        return {
+          ...c,
+          messages: [...updatedMessages, botMessage]
+        };
+      })
+    );
+
+    if (botMessage.itinerary_id !== null) {
+      setSelectedItineraryId(botMessage.itinerary_id);
+      setItinerarySidebarVisible(true);
+    }
+  };
+
   const handleDeleteChat = (deletedChatId: number) => {
     // Remove the deleted chat from the chats list
     setChats((prevChats) => {
@@ -302,6 +362,7 @@ export default function Home() {
             messages={activeChat?.messages ?? []}
             onSend={handleSendMessage}
             onItinerarySelect={handleItinerarySelect}
+            onEditMessage={handleEditMessage}
           />
         </div>
 

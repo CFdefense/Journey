@@ -1,0 +1,128 @@
+/* ChatMessage.css */
+
+/* Timestamp and actions container */
+.timestamp-and-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* User message actions positioning */
+.chat-message-wrapper.user .edit-button {
+  align-self: flex-end;
+}
+
+/* Expand message content when editing */
+.chat-message-wrapper.user .chat-message-content.editing {
+  max-width: 75%;
+}
+
+/* Edit message container */
+.edit-message-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 400px;
+}
+
+/* Edit message textarea */
+.edit-message-input {
+  width: 100%;
+  min-height: 80px;
+  max-height: 400px;
+  padding: 0.75rem;
+  border: 2px solid #006bbb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  background: white;
+  color: #333;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for edit textarea */
+.edit-message-input::-webkit-scrollbar {
+  width: 8px;
+}
+
+.edit-message-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.edit-message-input::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 4px;
+}
+
+.edit-message-input::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Firefox scrollbar */
+.edit-message-input {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 transparent;
+}
+
+.edit-message-input:focus {
+  outline: none;
+  border-color: #005a9e;
+  box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.1);
+}
+
+/* Edit message action buttons */
+.edit-message-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.edit-cancel-btn,
+.edit-save-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-cancel-btn {
+  background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+}
+
+.edit-cancel-btn:hover {
+  background: linear-gradient(135deg, #e56b5d 0%, #FA8072 100%);
+  box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
+  transform: translateY(-1px);
+}
+
+.edit-cancel-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
+}
+
+.edit-save-btn {
+  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+}
+
+.edit-save-btn:hover {
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
+  transform: translateY(-1px);
+}
+
+.edit-save-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
+}
