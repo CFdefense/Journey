@@ -15,29 +15,27 @@ interface DayItinerary {
 
 interface ItineraryProps {
   days?: DayItinerary[];
+  unassigned?: Event[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
   onSave?: (updatedDays: DayItinerary[]) => Promise<void>;
   editMode?: boolean;
-  onEditModeChange?: (editMode: boolean) => void;
   title?: string;
   compact?: boolean;
-  hideMenu?: boolean;
 }
 
 const Itinerary: React.FC<ItineraryProps> = ({
   days,
+  unassigned,
   onUpdate,
   onSave,
-  editMode: externalEditMode,
-  onEditModeChange,
+  editMode,
   title,
-  compact = false,
-  hideMenu = false
+  compact = false
 }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [editMode, setEditMode] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [localDays, setLocalDays] = useState<DayItinerary[]>(days || []);
+  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
+  const [buttonsDisabled, setButtonsDisabled] = useState<boolean>(true);
 
   // Sync local state with props when days change
   useEffect(() => {
@@ -45,13 +43,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setLocalDays(days);
     }
   }, [days]);
-
-  // Sync edit mode with parent if controlled
   useEffect(() => {
-    if (externalEditMode !== undefined) {
-      setEditMode(externalEditMode);
-    }
-  }, [externalEditMode]);
+    setUnassignedEvents(unassigned || []);
+  }, [unassigned]);
 
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id.toString());
@@ -78,21 +72,26 @@ const Itinerary: React.FC<ItineraryProps> = ({
     // Create a copy of localDays
     const updatedDays = JSON.parse(JSON.stringify(localDays)) as DayItinerary[];
     const currentDay = updatedDays[selectedDayIndex];
+    let unassigned_events = JSON.parse(
+      JSON.stringify(unassignedEvents)
+    ) as Event[];
 
     // Remove event from source time block if it exists
     if (sourceTimeIndex >= 0) {
       currentDay.timeBlocks[sourceTimeIndex].events = currentDay.timeBlocks[
         sourceTimeIndex
       ].events.filter((e) => e.id !== eventId);
+    } else {
+      unassigned_events = unassigned_events.filter((e) => e.id !== eventId);
     }
 
     // Find the full event object from the source
-    let draggedEvent: Event | undefined;
-    if (sourceTimeIndex >= 0) {
-      draggedEvent = localDays[selectedDayIndex].timeBlocks[
-        sourceTimeIndex
-      ].events.find((e) => e.id === eventId);
-    }
+    let draggedEvent: Event | undefined =
+      sourceTimeIndex >= 0
+        ? localDays[selectedDayIndex].timeBlocks[sourceTimeIndex].events.find(
+            (e) => e.id === eventId
+          )
+        : unassignedEvents.find((e) => e.id === eventId);
 
     if (!draggedEvent) {
       // Fallback if we can't find the full event
@@ -112,13 +111,19 @@ const Itinerary: React.FC<ItineraryProps> = ({
     }
 
     // Add event to target time block if not already there
-    const targetBlock = currentDay.timeBlocks[targetTimeIndex];
-    if (!targetBlock.events.some((e) => e.id === eventId)) {
-      targetBlock.events.push(draggedEvent);
+    if (targetTimeIndex >= 0) {
+      const targetBlock = currentDay.timeBlocks[targetTimeIndex];
+      if (!targetBlock.events.some((e) => e.id === eventId)) {
+        targetBlock.events.push(draggedEvent);
+      }
+    } else if (!unassigned_events.some((e) => e.id === eventId)) {
+      unassigned_events.push(draggedEvent);
     }
 
     // Update local state immediately for UI responsiveness
     setLocalDays(updatedDays);
+    setUnassignedEvents(unassigned_events);
+    setButtonsDisabled(false);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -126,14 +131,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const handleSave = async () => {
-    const newEditMode = false;
-    setEditMode(newEditMode);
-    setMenuOpen(false);
-
-    if (onEditModeChange) {
-      onEditModeChange(newEditMode);
-    }
-
     console.log("Saving updated itinerary:", {
       day: localDays[selectedDayIndex].date,
       updatedTimeBlocks: localDays[selectedDayIndex].timeBlocks
@@ -150,34 +147,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
         await onSave(localDays);
       } catch (error) {
         console.error("Save failed:", error);
-        // Optionally re-enable edit mode or show error
+        // show error
       }
     }
+
+    setButtonsDisabled(true);
   };
 
   const handleCancel = () => {
-    const newEditMode = false;
-    setEditMode(newEditMode);
-    setMenuOpen(false);
-
-    if (onEditModeChange) {
-      onEditModeChange(newEditMode);
-    }
-
     // Revert to original days
     if (days) {
       setLocalDays(days);
     }
-  };
-
-  const handleEditClick = () => {
-    const newEditMode = true;
-    setEditMode(newEditMode);
-    setMenuOpen(false);
-
-    if (onEditModeChange) {
-      onEditModeChange(newEditMode);
-    }
+    setUnassignedEvents(unassigned || []);
+    setButtonsDisabled(true);
   };
 
   if (!localDays || localDays.length === 0) {
@@ -205,37 +188,57 @@ const Itinerary: React.FC<ItineraryProps> = ({
       <div className="itinerary-header">
         <h3>{title || "Itinerary"}</h3>
 
-        {!hideMenu && (
-          <div className="menu-wrapper">
+        {editMode && (
+          <div className="edit-buttons-container">
             <button
-              className="menu-button"
-              onClick={() => setMenuOpen((prev) => !prev)}
+              className="edit-button"
+              id="itinerary-save"
+              onClick={handleSave}
+              disabled={buttonsDisabled}
             >
-              ⋯
+              Save
             </button>
-
-            {menuOpen && (
-              <div className="menu-dropdown">
-                {!editMode && (
-                  <button className="menu-item" onClick={handleEditClick}>
-                    Edit
-                  </button>
-                )}
-                {editMode && (
-                  <>
-                    <button className="menu-item" onClick={handleSave}>
-                      Save
-                    </button>
-                    <button className="menu-item" onClick={handleCancel}>
-                      Cancel
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+            <button
+              className="edit-button"
+              id="itinerary-cancel"
+              onClick={handleCancel}
+              disabled={buttonsDisabled}
+            >
+              Cancel
+            </button>
           </div>
         )}
       </div>
+
+      {/* Unassigned Events */}
+      {editMode && (
+        <div className="unassigned-events">
+          <div
+            className={"time-block editable"}
+            onDrop={(e) => onDrop(e, -1)}
+            onDragOver={onDragOver}
+          >
+            <div className="events-area">
+              {unassignedEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event_name={event.event_name}
+                  event_description={event.event_description}
+                  street_address={event.street_address}
+                  city={event.city}
+                  event_type={event.event_type}
+                  user_created={event.user_created}
+                  account_id={event.account_id}
+                  hard_start={event.hard_start}
+                  hard_end={event.hard_end}
+                  draggable={editMode}
+                  onDragStart={(e) => onDragStart(e, event, -1)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Day Tabs */}
       <div className="day-tabs">
