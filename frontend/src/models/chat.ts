@@ -2,7 +2,7 @@ export type Message = {
 	id: number;
 	/// Whether this message was sent by the user or the LLM
 	is_user: boolean;
-	/// %Y-%m-%dT%H:%M:%S%.f
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	timestamp: string;
 	text: string;
 	itinerary_id: number | null;
@@ -64,4 +64,10 @@ export type SendMessageResponse = {
 export type NewChatResponse = {
 	/// this chat session is guaranteed to not have any messages in it
 	chat_session_id: number;
+};
+
+/// Request model for the `/api/chat/rename` endpoint
+export type RenameRequest = {
+	new_title: string;
+	id: number;
 };

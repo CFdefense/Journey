@@ -7,7 +7,8 @@ import type {
 	SendMessageResponse,
 	ChatsResponse,
 	Message, 
-	UpdateMessageRequest
+	UpdateMessageRequest,
+	RenameRequest
 } from "../models/chat";
 
 /// Calls chats
@@ -72,7 +73,11 @@ export async function apiMessages(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const pageRes: MessagePageResponse = await response.json();
+		for (const msg of pageRes.message_page) {
+			msg.timestamp += "Z";
+		}
+		return { result: pageRes, status: response.status };
 	} catch (error) {
 		console.error("apiMessages error:", error);
 		return { result: null, status: -1 };
@@ -109,7 +114,9 @@ export async function apiSendMessage(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const sendRes: SendMessageResponse = await response.json();
+		sendRes.bot_message.timestamp += "Z";
+		return { result: sendRes, status: response.status };
 	} catch (error) {
 		console.error("apiSendMessage error:", error);
 		return { result: null, status: -1 };
@@ -162,14 +169,16 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiDeleteChat(payload: number): Promise<ApiResult<number>> {
+export async function apiDeleteChat(
+	payload: number
+): Promise<ApiResult<number>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/${payload}`, {
 			method: "DELETE",
 			headers: {
 				"Content-Type": "application/json"
 			},
-			credentials: import.meta.env.DEV ? "include" : "same-origin",
+			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		if (!response.ok) {
 			return { result: null, status: response.status };
@@ -181,30 +190,27 @@ export async function apiDeleteChat(payload: number): Promise<ApiResult<number>>
 	}
 }
 
-
-/// Calls sendMessage
+/// Renames a chat title
 ///
 /// # Method
-/// Sends a `POST /api/chat/updateMessage` request to update a user message,
-/// delete all subsequent messages, and receive a new AI-generated bot response.
+/// Sends a `POST /api/chat/rename` request to rename that chat title
+/// of a specific chat session.
 ///
 /// # Parameters
-/// - `payload`: An `UpdateMessageRequest` object containing:
-///   - `message_id`: The ID of the message to update
-///   - `new_text`: The updated message text
-///   - `itinerary_id` (optional): Itinerary context for the LLM
+/// - `payload`: A `RenameRequest` object containing chat session ID and new title.
 ///
 /// # Returns
-/// - On success: `Message` object containing the bot's response with status 200
-/// - On failure: Returns null result with appropriate status code
+/// - On success: Just a 200
+/// - On failure: Just a non-200 status code.
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiUpdateMessage(
-	payload: UpdateMessageRequest
-): Promise<ApiResult<Message>> {
+export async function apiRenameChat(
+	payload: RenameRequest
+): Promise<ApiResult<void>> {
+	// TODO: update chat title in cache
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/chat/updateMessage`, {
+		const response = await fetch(`${API_BASE_URL}/api/chat/rename`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -215,9 +221,9 @@ export async function apiUpdateMessage(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		return { result: null, status: response.status };
 	} catch (error) {
-		console.error("apiUpdateMessage error:", error);
+		console.error("apiRenameChat error:", error);
 		return { result: null, status: -1 };
 	}
 }

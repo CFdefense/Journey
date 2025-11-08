@@ -7,11 +7,10 @@
  *   Store Agent Configuration
  */
 
-
 use std::sync::Arc;
 
 use langchain_rust::{
-	agent::{AgentExecutor, ConversationalAgentBuilder, ConversationalAgent, AgentError},
+	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
 	llm::openai::{OpenAI, OpenAIModel},
 	memory::SimpleMemory,
@@ -21,12 +20,16 @@ use langchain_rust::{
 use crate::agent::tools::GreetingTool;
 
 // Use a type alias for the agent type to make it easier to use
-pub type AgentType = Arc<tokio::sync::Mutex<langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>>>;
+pub type AgentType = Arc<
+	tokio::sync::Mutex<
+		langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>,
+	>,
+>;
 
 pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
-	
+
 	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
 	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
 
@@ -54,20 +57,20 @@ pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> 
 		Travel Type: {} \
 		Travel Style: {} \
 		Travel Budget: {} \
-	",  "christian", 
-		"Philadelphia", 
-		"Adventurous", 
-		"Cheap", 
-		"August 1st - August 8th", 
-		"Vacation", 
-		"Adventurous", 
-		"Cheap");
-	
+	",
+		"christian",
+		"Philadelphia",
+		"Adventurous",
+		"Cheap",
+		"August 1st - August 8th",
+		"Vacation",
+		"Adventurous",
+		"Cheap"
+	);
+
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[
-			Arc::new(greeting_tool),
-		])
+		.tools(&[Arc::new(greeting_tool)])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -87,28 +90,26 @@ pub fn create_dummy_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentE
 	unsafe {
 		std::env::set_var("OPENAI_API_KEY", "sk-dummy-key-for-testing-only");
 	}
-	
+
 	// Create memory
 	let memory = SimpleMemory::new();
-	
+
 	// Get tools
 	let greeting_tool = GreetingTool;
-	
+
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
-	
+
 	// Create agent with system prompt and tools
 	let system_prompt = "You are a helpful AI assistant for planning travel itineraries.";
-	
+
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[
-			Arc::new(greeting_tool),
-		])
+		.tools(&[Arc::new(greeting_tool)])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
-	
+
 	// Restore original key if it existed
 	unsafe {
 		if let Some(key) = original_key {
@@ -117,6 +118,6 @@ pub fn create_dummy_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentE
 			std::env::remove_var("OPENAI_API_KEY");
 		}
 	}
-	
+
 	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }

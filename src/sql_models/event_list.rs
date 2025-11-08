@@ -32,6 +32,5 @@ pub struct EventListJoinRow {
 	/// Hard Start Time
 	pub hard_start: Option<NaiveDateTime>,
 	/// Hard End Time
-	pub hard_end: Option<NaiveDateTime>
-
+	pub hard_end: Option<NaiveDateTime>,
 }

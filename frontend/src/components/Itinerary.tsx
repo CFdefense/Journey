@@ -24,7 +24,16 @@ interface ItineraryProps {
   hideMenu?: boolean;
 }
 
-const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode: externalEditMode, onEditModeChange, title, compact = false, hideMenu = false }) => {
+const Itinerary: React.FC<ItineraryProps> = ({
+  days,
+  onUpdate,
+  onSave,
+  editMode: externalEditMode,
+  onEditModeChange,
+  title,
+  compact = false,
+  hideMenu = false
+}) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -80,9 +89,9 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
     // Find the full event object from the source
     let draggedEvent: Event | undefined;
     if (sourceTimeIndex >= 0) {
-      draggedEvent = localDays[selectedDayIndex].timeBlocks[sourceTimeIndex].events.find(
-        (e) => e.id === eventId
-      );
+      draggedEvent = localDays[selectedDayIndex].timeBlocks[
+        sourceTimeIndex
+      ].events.find((e) => e.id === eventId);
     }
 
     if (!draggedEvent) {
@@ -120,7 +129,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
     const newEditMode = false;
     setEditMode(newEditMode);
     setMenuOpen(false);
-    
+
     if (onEditModeChange) {
       onEditModeChange(newEditMode);
     }
@@ -150,11 +159,11 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
     const newEditMode = false;
     setEditMode(newEditMode);
     setMenuOpen(false);
-    
+
     if (onEditModeChange) {
       onEditModeChange(newEditMode);
     }
-    
+
     // Revert to original days
     if (days) {
       setLocalDays(days);
@@ -165,7 +174,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
     const newEditMode = true;
     setEditMode(newEditMode);
     setMenuOpen(false);
-    
+
     if (onEditModeChange) {
       onEditModeChange(newEditMode);
     }
@@ -191,7 +200,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
   };
 
   return (
-    <div className={`itinerary-section ${compact ? 'compact' : ''}`}>
+    <div className={`itinerary-section ${compact ? "compact" : ""}`}>
       {/* Header Row */}
       <div className="itinerary-header">
         <h3>{title || "Itinerary"}</h3>
@@ -208,10 +217,7 @@ const Itinerary: React.FC<ItineraryProps> = ({ days, onUpdate, onSave, editMode:
             {menuOpen && (
               <div className="menu-dropdown">
                 {!editMode && (
-                  <button
-                    className="menu-item"
-                    onClick={handleEditClick}
-                  >
+                  <button className="menu-item" onClick={handleEditClick}>
                     Edit
                   </button>
                 )}

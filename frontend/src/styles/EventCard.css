@@ -21,20 +21,20 @@
 }
 
 .event-card:hover {
-  background-color: #FFE3B3;
-  border-color: #FFC872;
+  background-color: #ffe3b3;
+  border-color: #ffc872;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
 .event-card.draggable {
   cursor: grab;
-  border: 2px dashed #30A0E0;
+  border: 2px dashed #30a0e0;
   background-color: #f0f7ff;
 }
 
 .event-card.draggable:hover {
-  border-color: #006BBB;
+  border-color: #006bbb;
   background-color: #e8f2ff;
 }
 
@@ -42,7 +42,7 @@
   cursor: grabbing;
   opacity: 0.8;
   transform: scale(0.98);
-  border-color: #006BBB;
+  border-color: #006bbb;
 }
 
 /* Event title */
@@ -85,7 +85,7 @@
 }
 
 .event-card:hover .event-title {
-  color: #006BBB;
+  color: #006bbb;
 }
 
 /* Modal overlay */
@@ -115,7 +115,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease;
   position: relative;
-  border-top: 4px solid #006BBB;
+  border-top: 4px solid #006bbb;
 }
 
 .event-modal h2 {
@@ -156,7 +156,7 @@
 }
 
 .close-button:hover {
-  background: #FA8072;
+  background: #fa8072;
   color: white;
   transform: rotate(90deg);
 }

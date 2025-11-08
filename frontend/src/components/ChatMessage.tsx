@@ -34,6 +34,7 @@ export default function ChatMessage({
     getItinerary();
   }, [message.itinerary_id]);
 
+
   const handleEdit = (messageId: number) => {
     console.log("Edit message:", messageId);
   };
@@ -42,16 +43,17 @@ export default function ChatMessage({
     console.log("Resend message:", messageId);
   };
 
-  const formattedTimestamp = new Date(
-    message.timestamp.replace(" ", "T")
-  ).toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
+  const formattedTimestamp = new Date(message.timestamp).toLocaleString(
+    "en-US",
+    {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    }
+  );
 
   return (
     <div className={`chat-message-wrapper ${message.is_user ? "user" : "bot"}`}>
