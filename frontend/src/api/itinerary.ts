@@ -85,17 +85,6 @@ export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerari
 			},
 			credentials: "include"
 		});
-
-		if (!response.ok) {
-			if (response.status === 401) {
-				throw new Error("Not authenticated.");
-			} else if (response.status === 500) {
-				throw new Error("Server error.");
-			} else {
-				throw new Error(`Unexpected error: ${response.status}`);
-			}
-		}
-
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("Get Saved Itineraries API error: ", error);

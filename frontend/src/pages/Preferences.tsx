@@ -50,57 +50,49 @@ export default function Preferences() {
 
   // Fetch user profile on component mount
   useEffect(() => { 
-    const fetchProfile = async () => {
-      try {
-        const { result, status } = await apiCurrent();
+  const fetchProfile = async () => {
+    const { result, status } = await apiCurrent();
 
-        if (status === 200 && result) {
-          setFirstName(result.first_name || "");
-          setBudget((result.budget_preference as BudgetBucket) || BudgetBucket.MediumBudget);
-          setRiskTolerance((result.risk_preference as RiskTolerence) || RiskTolerence.LightFun);
-          setDisabilities(result.disabilities || "");
-          setFoodPreferences(result.food_allergies || "");
-        } else {
-          setStatusMessage({ 
-            message: "Failed to load preferences. Please try again.", 
-            type: 'error' 
-          });
-        }
-      } catch (e) {
-        console.error("Failed to load profile:", e);
-        setStatusMessage({ 
-          message: "Failed to load preferences. Please try again.", 
-          type: 'error' 
-        });
-      }
-    };
-    
-    
-    async function fetchAccount() {
-      const currentResult = await apiCurrent();
-      const account = currentResult.result;
-              
-      if (account && currentResult.status === 200) {
-        setFirstName(account.first_name || "");
-      }
+    if (status === 200 && result) {
+      setFirstName(result.first_name || "");
+      setBudget(result.budget_preference as BudgetBucket);
+      setRiskTolerance(result.risk_preference as RiskTolerence);
+      setDisabilities(result.disabilities || "");
+      setFoodPreferences(result.food_allergies || "");
+    } else {
+      setStatusMessage({ 
+        message: "Failed to load preferences. Please try again.", 
+        type: 'error' 
+      });
     }
+  };
 
-    fetchAccount();
-    fetchProfile();
-  }, []);
+  const fetchAccount = async () => {
+    const currentResult = await apiCurrent();
+    const account = currentResult.result;
+            
+    if (account && currentResult.status === 200) {
+      setFirstName(account.first_name || "");
+    }
+  };
+
+  fetchAccount();
+  fetchProfile();
+}, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusMessage(null);
 
     const payload: UpdateRequest = {
-      budget_preference: budget,
-      risk_preference: riskTolerance,
+      budget_preference: enumToString(BudgetBucket, budget),   // string
+      risk_preference: enumToString(RiskTolerence, riskTolerance),
       disabilities: disabilities,
       food_allergies: foodPreferences,
     };
 
     try {
+      console.log("Updating account with payload:", payload);
       await apiUpdateAccount(payload);
       setStatusMessage({ 
         message: "Preferences updated successfully!", 

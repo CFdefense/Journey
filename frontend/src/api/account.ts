@@ -144,19 +144,6 @@ export async function apiUpdateAccount(payload: UpdateRequest): Promise<ApiResul
             credentials: "include",
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            if (response.status === 400) {
-                throw new Error("Invalid input data.");
-            } else if (response.status === 401) {
-                throw new Error("Not authenticated.");
-            } else if (response.status === 500) {
-                throw new Error("Server error.");
-            } else {
-                throw new Error(`Unexpected error: ${response.status}`);
-            }
-        }
-
         return { result: await response.json(), status: response.status };
     } catch (error) {
         console.error("Update Account API error: ", error);
