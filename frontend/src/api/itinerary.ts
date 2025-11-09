@@ -1,6 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
-import type { Itinerary, SaveResponse, SavedItinerariesResponse } from "../models/itinerary";
+import type {
+	Itinerary,
+	SaveResponse,
+	SavedItinerariesResponse
+} from "../models/itinerary";
 
 /// Calls itinerary details
 ///
@@ -72,7 +76,9 @@ export async function saveItineraryChanges(
 ///
 /// # Returns list of saved itineraries if successful.
 /// # Throws Error with message to be displayed.
-export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerariesResponse>> {
+export async function apiGetSavedItineraries(): Promise<
+	ApiResult<SavedItinerariesResponse>
+> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
 			method: "GET",

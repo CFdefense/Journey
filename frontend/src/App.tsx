@@ -3,10 +3,10 @@ import Index from "./pages/Index";
 import Home from "./pages/Home";
 import ViewItinerary from "./pages/ViewItinerary";
 import Account from "./pages/Account";
-import Preferences from './pages/Preferences';
+import Preferences from "./pages/Preferences";
 import Login from "./pages/Login";
 import Signup from "./pages/SignUp";
-import Itineraries from './pages/Itineraries';
+import Itineraries from "./pages/Itineraries";
 import NotFound from "./pages/NotFound";
 import "./App.css";
 import {
@@ -64,22 +64,21 @@ export default function App() {
             </InverseProtectedRoute>
           }
         />
-        <Route 
-          path="/account/preferences" 
+        <Route
+          path="/account/preferences"
           element={
             <ProtectedRoute>
               <Preferences />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/account/itineraries" 
+        <Route
+          path="/account/itineraries"
           element={
             <ProtectedRoute>
               <Itineraries />
             </ProtectedRoute>
-            
-          } 
+          }
         />
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -8,8 +8,6 @@ import type {
 	UpdateRequest
 } from "../models/account";
 
-
-
 /// Calls login
 ///
 /// # Method
@@ -100,7 +98,6 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 	}
 }
 
-
 /// Calls validate
 ///
 /// # Method
@@ -134,23 +131,24 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 ///
 /// # Returns updated account information if successful.
 /// # Throws Error with message to be displayed.
-export async function apiUpdateAccount(payload: UpdateRequest): Promise<ApiResult<CurrentResponse>> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/account/update`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify(payload)
-        });
-        return { result: await response.json(), status: response.status };
-    } catch (error) {
-        console.error("Update Account API error: ", error);
-        return { result: null, status: -1 };
-    }
+export async function apiUpdateAccount(
+	payload: UpdateRequest
+): Promise<ApiResult<CurrentResponse>> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/account/update`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: "include",
+			body: JSON.stringify(payload)
+		});
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("Update Account API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
-
 
 /// Calls current
 ///

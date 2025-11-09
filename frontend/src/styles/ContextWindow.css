@@ -23,18 +23,18 @@
 }
 
 .context-menu-item.rename {
-  color: #30A0E0;
+  color: #30a0e0;
 }
 
 .context-menu-item.rename:hover {
-  background: linear-gradient(135deg, #30A0E0 0%, #4db3ed 100%);
+  background: linear-gradient(135deg, #30a0e0 0%, #4db3ed 100%);
   color: white;
   box-shadow: 0 2px 4px rgba(48, 160, 224, 0.2);
   transform: translateY(-1px);
 }
 
 .context-menu-item.rename:active {
-  background: linear-gradient(135deg, #2a8fc7 0%, #30A0E0 100%);
+  background: linear-gradient(135deg, #2a8fc7 0%, #30a0e0 100%);
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(48, 160, 224, 0.2);
 }

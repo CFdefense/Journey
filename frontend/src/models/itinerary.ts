@@ -11,7 +11,6 @@ export type Itinerary = {
 	title: string;
 };
 
-
 export type EventDay = {
 	morning_events: Event[];
 	noon_events: Event[];
@@ -50,5 +49,5 @@ export type SaveResponse = {
 
 // The API returns event days directly, not full itinerary objects
 export interface SavedItinerariesResponse {
-    itineraries: Itinerary[];
+	itineraries: Itinerary[];
 }

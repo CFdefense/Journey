@@ -285,7 +285,9 @@
   font-size: 1rem;
   color: #0b1220;
   background-color: #ffffff;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   box-sizing: border-box;
 }
 
@@ -339,7 +341,9 @@
   font-weight: 700;
   font-size: 1.05rem;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
 }
 
 .btn-primary {

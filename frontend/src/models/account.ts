@@ -13,26 +13,26 @@ export type SignUpRequest = {
 };
 
 export type UpdateRequest = {
-		/// Optional new email
-		email: string | null;
-		/// Optional new first name
-		first_name: string | null;
-		/// Optional new last name
-		last_name: string | null;
-		/// Optional new plaintext password
-		password: string | null;
-		/// Current password (required if password is being updated)
-		current_password: string | null;
-		/// Optional new budget enum
-		budget_preference: BudgetBucket | null;
-		/// Optional new risk enum
-		risk_preference: RiskTolerence | null;
-		/// Optional new food and allergies preferences
-		/// * String is a comma-separated list of preferences
-		food_allergies: string | null;
-		/// Optional new disabilites
-		/// * String is a comma-separated list of preferences
-		disabilities: string | null;
+	/// Optional new email
+	email: string | null;
+	/// Optional new first name
+	first_name: string | null;
+	/// Optional new last name
+	last_name: string | null;
+	/// Optional new plaintext password
+	password: string | null;
+	/// Current password (required if password is being updated)
+	current_password: string | null;
+	/// Optional new budget enum
+	budget_preference: BudgetBucket | null;
+	/// Optional new risk enum
+	risk_preference: RiskTolerence | null;
+	/// Optional new food and allergies preferences
+	/// * String is a comma-separated list of preferences
+	food_allergies: string | null;
+	/// Optional new disabilites
+	/// * String is a comma-separated list of preferences
+	disabilities: string | null;
 };
 
 /// API route response for POST `/api/account/update`.
