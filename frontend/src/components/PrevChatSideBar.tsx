@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "../styles/PrevChatSideBar.css";
 import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
-import { apiDeleteChat } from "../api/home";
+import { apiDeleteChat, apiRenameChat } from "../api/home";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 
 interface PrevChatSideBarProps {
@@ -12,6 +12,7 @@ interface PrevChatSideBarProps {
   onNewChat: () => void;
   onToggleSidebar: () => void;
   onDeleteChat: (id: number) => void;
+  onRenameChat: (id: number, newTitle: string) => void;
   sidebarVisible: boolean;
 }
 
@@ -22,6 +23,7 @@ export default function PrevChatSideBar({
   onNewChat,
   onToggleSidebar,
   onDeleteChat,
+  onRenameChat,
   sidebarVisible
 }: PrevChatSideBarProps) {
   const [contextMenu, setContextMenu] = useState<{
@@ -29,6 +31,16 @@ export default function PrevChatSideBar({
     y: number;
     chatId: number;
   } | null>(null);
+  const [editingChatId, setEditingChatId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingChatId !== null && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingChatId]);
 
   const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
     e.stopPropagation();
@@ -60,6 +72,59 @@ export default function PrevChatSideBar({
     }
   };
 
+  const handleRename = () => {
+    if (contextMenu) {
+      const chatIdToRename = contextMenu.chatId;
+      const chat = chats?.find((c) => c.id === chatIdToRename);
+      
+      if (!chat) {
+        setContextMenu(null);
+        return;
+      }
+
+      setEditingChatId(chatIdToRename);
+      setEditingTitle(chat.title);
+      setContextMenu(null);
+    }
+  };
+
+  const handleTitleSubmit = async (chatId: number) => {
+    const trimmedTitle = editingTitle.trim();
+    
+    if (trimmedTitle === "") {
+      // Don't allow empty titles, revert to original
+      setEditingChatId(null);
+      setEditingTitle("");
+      return;
+    }
+
+    const chat = chats?.find((c) => c.id === chatId);
+    if (chat && trimmedTitle !== chat.title) {
+      const response = await apiRenameChat({
+        id: chatId,
+        new_title: trimmedTitle
+      });
+
+      if (response.status === 200) {
+        onRenameChat(chatId, trimmedTitle);
+      } else {
+        console.error("Failed to rename chat:", response.status);
+      }
+    }
+
+    setEditingChatId(null);
+    setEditingTitle("");
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent, chatId: number) => {
+    if (e.key === "Enter") {
+      handleTitleSubmit(chatId);
+    } else if (e.key === "Escape") {
+      setEditingChatId(null);
+      setEditingTitle("");
+    }
+  };
+
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="sidebar-top">
@@ -86,14 +151,29 @@ export default function PrevChatSideBar({
                   key={chat.id}
                   className={chat.id === activeChatId ? "active" : ""}
                   onClick={() => {
-                    onSelectChat(chat.id);
-                    sessionStorage.setItem(
-                      ACTIVE_CHAT_SESSION,
-                      chat.id.toString()
-                    );
+                    if (editingChatId !== chat.id) {
+                      onSelectChat(chat.id);
+                      sessionStorage.setItem(
+                        ACTIVE_CHAT_SESSION,
+                        chat.id.toString()
+                      );
+                    }
                   }}
                 >
-                  <span className="chat-title">{chat.title}</span>
+                  {editingChatId === chat.id ? (
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      className="chat-title-input"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => handleTitleSubmit(chat.id)}
+                      onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="chat-title">{chat.title}</span>
+                  )}
                   <button
                     className="chat-menu-btn"
                     onClick={(e) => handleContextMenu(e, chat.id)}
@@ -113,6 +193,7 @@ export default function PrevChatSideBar({
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
           onDelete={handleDelete}
+          onRename={handleRename}
         />
       )}
     </div>
