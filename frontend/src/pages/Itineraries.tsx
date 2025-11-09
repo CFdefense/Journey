@@ -4,32 +4,7 @@ import { apiCurrent } from "../api/account";
 import { apiGetSavedItineraries} from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
-
-interface Event {
-  city: string;
-  event_description: string;
-  event_name: string;
-  event_type: string;
-  postal_code: number;
-  street_address: string;
-}
-
-interface EventDay {
-  date: string;
-  morning_events: Event[];
-  noon_events: Event[];
-  afternoon_events: Event[];
-  evening_events: Event[];
-}
-
-interface Itinerary {
-  id: number;
-  title: string;
-  start_date: string;
-  end_date: string;
-  event_days: EventDay[];
-  chat_session_id: number;
-}
+import type { EventDay, Itinerary } from "../models/itinerary";
 
 export default function Itineraries() {
   const navigate = useNavigate();
@@ -43,7 +18,7 @@ export default function Itineraries() {
     async function fetchAccount() {
       const currentResult = await apiCurrent();
       const account = currentResult.result;
-          
+
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
       }
@@ -57,12 +32,12 @@ export default function Itineraries() {
       const data = result.result;
       if (data && data.itineraries){ // Check for the itineraries array
         console.log("Fetched itineraries:", data.itineraries);
-        
+
         // --- THIS IS THE KEY CHANGE ---
         // Don't flatten the array, just set the itineraries
         setItineraries(data.itineraries as Itinerary[]);
         // -----------------------------
-        
+
       }
     } catch (err) {
       console.error('Error fetching itineraries:', err);
@@ -80,9 +55,9 @@ export default function Itineraries() {
       ...(day.morning_events || []),
       ...(day.noon_events || [])
     ];
-    
+
     console.log("All events for location:", allEvents);
-    
+
     if (allEvents.length > 0 && allEvents[0]?.city) {
       return allEvents[0].city;
     }
@@ -107,10 +82,10 @@ export default function Itineraries() {
       ...(day.morning_events || []),
       ...(day.noon_events || [])
     ];
-    
+
     console.log("All events for name:", allEvents);
     console.log("date:", day);
-    
+
     if (allEvents.length > 0 && allEvents[0]?.event_name) {
       return allEvents[0].event_name;
     }
@@ -192,7 +167,7 @@ return (
 									<p style={{ fontSize: '0.9rem', marginTop: '8px', marginBottom: '16px' }}>
 										Your saved travel plans will appear here
 									</p>
-									<button 
+									<button
 										className="btn-primary"
 										onClick={() => navigate('/home')}
 									>

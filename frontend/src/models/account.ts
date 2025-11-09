@@ -54,7 +54,6 @@ export type UpdateResponse = {
 	/// Optional disabilites
 	/// * String is a comma-separated list of preferences
 	disabilities: string | null;
-	id: number;
 };
 
 /// API route response for GET `/api/account/current`.
