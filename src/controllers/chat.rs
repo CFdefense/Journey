@@ -643,22 +643,6 @@ pub async fn api_update_message(
 	let chat_session_id = message_info.chat_session_id;
 	let message_timestamp = message_info.timestamp;
 
-	sqlx::query!(
-		r#"
-		SELECT id, chat_session_id, timestamp, text
-		FROM messages
-		WHERE chat_session_id = $1
-		  AND timestamp > $2
-		  AND id != $3;
-		"#,
-		chat_session_id,
-		message_timestamp,
-		message_id
-	)
-	.fetch_all(&pool)
-	.await
-	.map_err(AppError::from)?;
-
 	// Delete future messages in this chat session only
 	sqlx::query!(
 		r#"
