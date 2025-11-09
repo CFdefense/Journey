@@ -14,8 +14,11 @@ import { customFetch } from "./customFetch";
 import type {
 	CurrentResponse,
 	LoginRequest,
-	SignUpRequest
+	SignUpRequest,
+	UpdateRequest
 } from "../src/models/account";
+
+
 
 /// Calls login
 ///
@@ -107,6 +110,7 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 	}
 }
 
+
 /// Calls validate
 ///
 /// # Method
@@ -132,6 +136,31 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 		return { result: null, status: -1 };
 	}
 }
+
+/// Calls update account
+///
+/// # Method
+/// Sends a `POST /api/account/update` request to update user account details.
+///
+/// # Returns updated account information if successful.
+/// # Throws Error with message to be displayed.
+export async function apiUpdateAccount(payload: UpdateRequest): Promise<ApiResult<CurrentResponse>> {
+    try {
+        const response = await customFetch(`${API_BASE_URL}/api/account/update`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        return { result: await response.json(), status: response.status };
+    } catch (error) {
+        console.error("Update Account API error: ", error);
+        return { result: null, status: -1 };
+    }
+}
+
 
 /// Calls current
 ///
@@ -166,14 +195,13 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 }
 
 
-
 import type {
 	MessagePageRequest,
 	MessagePageResponse,
 	SendMessageRequest,
 	SendMessageResponse,
 	ChatsResponse,
-	Message, 
+	Message,
 	UpdateMessageRequest,
 	RenameRequest
 } from "../src/models/chat";
@@ -429,7 +457,7 @@ export async function apiUpdateMessage(
 			return { result: null, status: response.status };
 		}
 		const updateRes: Message = await response.json();
-		updateRes.timestamp += "Z";  // Add this line to match other API functions
+		updateRes.timestamp += "Z"; // Add this line to match other API functions
 		return { result: updateRes, status: response.status };
 	} catch (error) {
 		console.error("apiUpdateMessage error:", error);
@@ -439,7 +467,7 @@ export async function apiUpdateMessage(
 
 
 
-import type { Itinerary, SaveResponse } from "../src/models/itinerary";
+import type { Itinerary, SaveResponse, SavedItinerariesResponse } from "../src/models/itinerary";
 
 /// Calls itinerary details
 ///
@@ -503,5 +531,25 @@ export async function saveItineraryChanges(
 	} catch (error) {
 		console.error("Save API error:", error);
 		throw error;
+	}
+}
+
+/// Sends a `GET /api/itinerary/saved` request to fetch all saved itineraries.
+///
+/// # Returns list of saved itineraries if successful.
+/// # Throws Error with message to be displayed.
+export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerariesResponse>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/itinerary/saved`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: "include"
+		});
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("Get Saved Itineraries API error: ", error);
+		return { result: null, status: -1 };
 	}
 }

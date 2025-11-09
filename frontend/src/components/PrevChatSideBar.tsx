@@ -76,7 +76,7 @@ export default function PrevChatSideBar({
     if (contextMenu) {
       const chatIdToRename = contextMenu.chatId;
       const chat = chats?.find((c) => c.id === chatIdToRename);
-      
+
       if (!chat) {
         setContextMenu(null);
         return;
@@ -90,7 +90,7 @@ export default function PrevChatSideBar({
 
   const handleTitleSubmit = async (chatId: number) => {
     const trimmedTitle = editingTitle.trim();
-    
+
     if (trimmedTitle === "") {
       // Don't allow empty titles, revert to original
       setEditingChatId(null);

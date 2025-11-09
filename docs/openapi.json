@@ -1521,6 +1521,13 @@
               }
             ]
           },
+          "current_password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Current password (required if password is being updated)"
+          },
           "disabilities": {
             "type": [
               "string",
