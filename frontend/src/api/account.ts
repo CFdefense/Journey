@@ -46,11 +46,6 @@ export interface EventDay {
     evening_events: Event[];
 }
 
-// The API returns event days directly, not full itinerary objects
-export interface SavedItinerariesResponse {
-    itineraries: EventDay[];
-}
-
 export interface Itinerary {
     id: number;
     chat_session_id: number;
@@ -60,6 +55,10 @@ export interface Itinerary {
     event_days: EventDay[];
 }
 
+// The API returns event days directly, not full itinerary objects
+export interface SavedItinerariesResponse {
+    itineraries: Itinerary[];
+}
 
 /// Calls login
 ///

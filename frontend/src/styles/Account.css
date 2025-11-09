@@ -82,25 +82,25 @@
   position: relative;
 }
 
-/* Sidebar Navigation */
-.sidebar {
+/* Sidebar Navigation - Scoped to account-wrapper */
+.account-wrapper .sidebar {
   position: fixed;
   left: 24px;
   top: 120px;
   width: 44px;
-  background: none; /* Match your page background color */
+  background: none;
   transition: all 0.3s ease;
   overflow: hidden;
   z-index: 10;
   border: none; /* Make sure there's no border */
-  box-shadow: none; /* Make sure there's no shadow */
+  box-shadow: none;
 }
 
-.sidebar:hover {
+.account-wrapper .sidebar:hover {
   width: 240px;
 }
 
-.sidebar-toggle {
+.account-wrapper .sidebar-toggle {
   width: 44px;
   height: 44px;
   display: flex;
@@ -117,12 +117,12 @@
   margin-bottom: 12px;
 }
 
-.sidebar-toggle:hover {
+.account-wrapper .sidebar-toggle:hover {
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.sidebar-toggle span {
+.account-wrapper .sidebar-toggle span {
   width: 24px;
   height: 2px;
   background: #999;
@@ -130,15 +130,15 @@
   transition: all 0.3s ease;
 }
 
-.sidebar:hover .sidebar-toggle span {
+.account-wrapper .sidebar:hover .sidebar-toggle span {
   background: #666;
 }
 
-.sidebar-content {
+.account-wrapper .sidebar-content {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  box-shadow: none; /* Change this from the original shadow */
+  box-shadow: none;
   opacity: 0;
   transform: translateX(-10px);
   transition: all 0.3s ease;
@@ -147,13 +147,13 @@
   width: 240px;
 }
 
-.sidebar:hover .sidebar-content {
+.account-wrapper .sidebar:hover .sidebar-content {
   opacity: 1;
   transform: translateX(0);
   pointer-events: all;
 }
 
-.sidebar-item {
+.account-wrapper .sidebar-item {
   display: flex;
   align-items: center;
   padding: 12px 16px;
@@ -171,12 +171,12 @@
   margin-bottom: 2px;
 }
 
-.sidebar-item:hover {
+.account-wrapper .sidebar-item:hover {
   background: rgba(216, 127, 117, 0.1);
   color: #d87f75;
 }
 
-.sidebar-icon {
+.account-wrapper .sidebar-icon {
   width: 18px;
   min-width: 18px;
   height: 18px;
@@ -186,12 +186,12 @@
   margin-right: 12px;
 }
 
-.sidebar-icon svg {
+.account-wrapper .sidebar-icon svg {
   width: 18px;
   height: 18px;
 }
 
-.sidebar-label {
+.account-wrapper .sidebar-label {
   font-weight: 500;
 }
 
@@ -410,37 +410,41 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .sidebar {
+  .account-wrapper .sidebar {
     width: 100%;
     height: auto;
     position: relative;
     top: 0;
+    left: 0;
   }
 
-  .sidebar:hover {
+  .account-wrapper .sidebar:hover {
     width: 100%;
   }
 
-  .sidebar-content {
+  .account-wrapper .sidebar-content {
     display: flex;
     overflow-x: auto;
     padding: 12px;
     width: 100%;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
   }
 
-  .sidebar-item {
+  .account-wrapper .sidebar-item {
     flex-direction: column;
     padding: 12px;
     min-width: 100px;
     text-align: center;
   }
 
-  .sidebar-icon {
+  .account-wrapper .sidebar-icon {
     margin-right: 0;
     margin-bottom: 8px;
   }
 
-  .sidebar-label {
+  .account-wrapper .sidebar-label {
     opacity: 1;
     font-size: 0.85rem;
   }
