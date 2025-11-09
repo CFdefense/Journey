@@ -90,6 +90,7 @@
   min-height: 100vh;
   padding: 2rem;
   padding-top: clamp(0px, 1vh, 8px);
+  padding-bottom: clamp(150px, 25vh, 250px);
 }
 
 .reveal {
@@ -176,6 +177,7 @@
     background 200ms ease;
   z-index: 10;
   margin-top: 1.5rem;
+  margin-bottom: clamp(120px, 20vh, 180px);
   position: relative;
   overflow: hidden;
   -webkit-backdrop-filter: saturate(140%);
@@ -229,14 +231,13 @@
 
 .earth-container {
   position: absolute;
-  top: 64%;
+  top: calc(60% + max(0px, 450px - 60vh));
   left: 50%;
   transform: translate(-50%, -50%);
   width: clamp(400px, 60vw, 700px);
   aspect-ratio: 1 / 1;
   z-index: 1;
   pointer-events: none;
-
   overflow: visible;
 }
 
@@ -322,11 +323,19 @@
     margin-bottom: 1.75rem;
   }
   .earth-container {
-    top: 72%;
+    top: clamp(450px, 72%, 75%);
+  }
+
+  .index-content {
+    padding-bottom: clamp(120px, 22vh, 220px);
   }
 
   .hero-title {
     margin-top: 0;
+  }
+
+  .cta-button {
+    margin-bottom: clamp(100px, 18vh, 160px);
   }
 }
 
