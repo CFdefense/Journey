@@ -46,3 +46,59 @@ export type SaveResponse = {
 	/// * May be the same as the itinerary id passed in the request
 	id: number;
 };
+
+/// A user-created event. It must have a name, and all other fields are optional.
+export type UserEventRequest = {
+	/// If id is provided, it updates the user-event with that id. Otherwise it creates the event.
+	id: number | null,
+	street_address: string | null,
+	postal_code: number | null,
+	city: string | null,
+	event_type: string | null,
+	event_description: string | null,
+	event_name: string,
+	hard_start: string | null,
+	hard_end: string | null,
+};
+
+export type UserEventResponse = {
+	id: number
+};
+
+/// A set of query filters to search for an event in the DB.
+///
+/// ## Example
+/// If event_name is provided, it will query the DB with something like this:
+/// ```sql
+/// SELECT * FROM events
+/// WHERE name LIKE $1
+/// LIMIT 10;
+/// ```
+export type SearchEventRequest = {
+	/// Search where id=...
+	id: number | null,
+	/// Search where street_address like ...
+	street_address: string | null,
+	/// Search where postal_code=...
+	postal_code: number | null,
+	/// Search where city like ...
+	city: string | null,
+	/// Search where event_type like ...
+	event_type: string | null,
+	/// Search where event_description like ...
+	event_description: string | null,
+	/// Search where event_name like ...
+	event_name: string | null,
+	/// Search where hard_start < ...
+	hard_start_before: string | null,
+	/// Search where hard_start > ...
+	hard_start_after: string | null,
+	/// Search where hard_end < ...
+	hard_end_before: string | null,
+	/// Search where hard_end > ...
+	hard_end_after: string | null,
+};
+
+export type SearchEventResponse = {
+	events: Event[]
+};

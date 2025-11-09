@@ -609,6 +609,9 @@ async fn test_controllers() {
 		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
 		test_save_itineraries(cookies.clone(), key.clone(), pool.clone()),
 		test_chat_flow(cookies.clone(), key.clone(), pool.clone()),
+		test_user_event_create(cookies.clone(), key.clone(), pool.clone()),
+		test_user_event_update(cookies.clone(), key.clone(), pool.clone()),
+		test_search_event(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
 
@@ -1228,6 +1231,31 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	assert_eq!(latest_page.message_page.len(), 0);
 }
 
+
+async fn test_user_event_create(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>
+) {
+	todo!()
+}
+
+async fn test_user_event_update(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>
+) {
+	todo!()
+}
+
+async fn test_search_event(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>
+) {
+	todo!()
+}
+
 // INTEGRATION TESTS
 
 static mut PORT: u16 = 0;
@@ -1398,6 +1426,12 @@ async fn test_auth_for_all_required() {
 		"afternoon_events": [],
 		"evening_events": []
 	});
+	let itinerary_user_event_payload = json!({
+		"event_name": "Test Event"
+	});
+	let itinerary_search_event_payload = json!({
+		"event_description": "test"
+	});
 
 	for res in futures::future::join_all([
 		hc.do_get("/api/account/current"),
@@ -1425,6 +1459,8 @@ async fn test_auth_for_all_required() {
 		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
 		hc.do_post("/api/chat/rename", chat_rename_payload),
 		hc.do_post("/api/itinerary/save", itinerary_save_payload),
+		hc.do_post("/api/itinerary/userEvent", itinerary_user_event_payload),
+		hc.do_post("/api/itinerary/searchEvent", itinerary_search_event_payload),
 	])
 	.await
 	.iter()

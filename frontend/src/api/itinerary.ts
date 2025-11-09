@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
-import type { Itinerary, SaveResponse } from "../models/itinerary";
+import type { Itinerary, SaveResponse, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse } from "../models/itinerary";
 
 /// Calls itinerary details
 ///
@@ -65,5 +65,81 @@ export async function saveItineraryChanges(
 	} catch (error) {
 		console.error("Save API error:", error);
 		throw error;
+	}
+}
+
+/// Inserts or updates a user-created event
+///
+/// # Method
+/// Sends a `POST /api/itinerary/userEvent` request to insert or
+/// update a user-created event in the db
+///
+/// # Body
+/// - `UserEventRequest`: If the id is specified, it will try to update that event.
+/// Otherwise it will insert a new one. Event name is always required.
+///
+/// # Returns
+/// - On success: The `UserEventResponse` object returned by the backend.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiUserEvent(
+	userEvent: UserEventRequest
+): Promise<ApiResult<UserEventResponse>> {
+	try {
+		const response = await fetch(
+			`${API_BASE_URL}/api/itinerary/userEvent`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: import.meta.env.DEV ? "include" : "same-origin",
+				body: JSON.stringify(userEvent)
+			}
+		);
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("apiUserEvent error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+/// Searches the db for events based on the search filters
+///
+/// # Method
+/// Sends a `POST /api/itinerary/searchEvent` request to fetch a list
+/// of events that match the query parameters.
+///
+/// # Body
+/// - `SearchEventRequest`: Optional search parameters to query with.
+///
+/// # Returns
+/// - On success: The `SearchEventResponse` object returned by the backend.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiSearchEvent(
+	query: SearchEventRequest
+): Promise<ApiResult<SearchEventResponse>> {
+	// TODO: get events from cache if possible
+	try {
+		const response = await fetch(
+			`${API_BASE_URL}/api/itinerary/searchEvent`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: import.meta.env.DEV ? "include" : "same-origin",
+				body: JSON.stringify(query)
+			}
+		);
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("apiSearchEvent error:", error);
+		return { result: null, status: -1 };
 	}
 }

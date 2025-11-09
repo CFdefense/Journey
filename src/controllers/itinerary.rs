@@ -15,6 +15,8 @@ use utoipa::OpenApi;
 
 use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
+use crate::global::EVENT_SEARCH_RESULT_LEN;
+use crate::http_models::event::{Event, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse};
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::sql_models::TimeOfDay;
@@ -27,7 +29,9 @@ use crate::swagger::SecurityAddon;
 	paths(
 		api_get_itinerary,
 		api_saved_itineraries,
-		api_save
+		api_save,
+		api_user_event,
+		api_search_event
 	),
 	modifiers(&SecurityAddon),
 	security(("set-cookie"=[])),
@@ -445,12 +449,315 @@ pub async fn api_save(
 	Ok(Json(SaveResponse { id }))
 }
 
+/// Insert or update a user-created custom event
+///
+/// # Method
+/// `POST /api/itinerary/userEvent`
+///
+/// # Request Body
+/// - [UserEventRequest]
+///
+/// # Responses
+/// - `200 OK` - with body: [UserEventResponse] - event id that was just inserted or updated
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided event id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/itinerary/userEvent
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "event_name": "Custom Event",
+///	        "event_description": "I want to do something and it's easier to make a custom event than to tell the LLM exactly how I want it."
+///       }'
+/// ```
+#[utoipa::path(
+	post,
+	path="/userEvent",
+	summary="Insert or update a user-created custom event",
+	description="Insert a new or updates an existing user-created event with the values passed in the request, returning the event id.",
+	request_body(
+		content=UserEventRequest,
+		content_type="application/json",
+		description="If id is provided, the event will be updated, otherwise it is inserted. The event name is required.",
+		example=json!({
+			"event_name": "Custom Event",
+			"event_description": "I want to do something and it's easier to make a custom event than to tell the LLM exactly how I want it."
+		})
+	),
+	responses(
+		(
+			status=200,
+			description="Contains the id of the event that was just inserted or updated.",
+			body=UserEventResponse,
+			content_type="application/json",
+			example=json!({
+				"id": 43
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="User-event not found for this user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Itinerary"
+)]
+pub async fn api_user_event(
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
+	Json(event): Json<UserEventRequest>
+) -> ApiResult<Json<UserEventResponse>> {
+	if event.event_name.is_empty() {
+		return Err(AppError::BadRequest(String::from("Event name must not be empty")))
+	}
+	let id = if let Some(id) = event.id {
+		sqlx::query!(
+			r#"
+			UPDATE events
+			SET
+				street_address    = COALESCE($1, street_address),
+				postal_code       = COALESCE($2, postal_code),
+				city              = COALESCE($3, city),
+				event_type        = COALESCE($4, event_type),
+				event_description = COALESCE($5, event_description),
+				event_name        = $6,
+				user_created      = TRUE,
+				account_id        = $7,
+				hard_start        = COALESCE($8, hard_start),
+				hard_end          = COALESCE($9, hard_end)
+			WHERE id=$10 AND user_created=TRUE AND account_id=$7
+			RETURNING id
+			"#,
+			event.street_address,
+			event.postal_code,
+			event.city,
+			event.event_type,
+			event.event_description,
+			event.event_name,
+			user.id,
+			event.hard_start,
+			event.hard_end,
+			id
+		)
+		.fetch_optional(&pool)
+		.await
+		.map_err(AppError::from)?
+		.ok_or(AppError::NotFound)?;
+		id
+	} else {
+		sqlx::query!(
+			r#"
+			INSERT INTO events(
+				street_address, postal_code, city,
+				event_type, event_description, event_name,
+				user_created, account_id, hard_start, hard_end
+			)
+			VALUES($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $9)
+			RETURNING id
+			"#,
+			event.street_address,
+			event.postal_code,
+			event.city,
+			event.event_type,
+			event.event_description,
+			event.event_name,
+			user.id,
+			event.hard_start,
+			event.hard_end,
+		)
+		.fetch_one(&pool)
+		.await
+		.map_err(AppError::from)?
+		.id
+	};
+	Ok(Json(UserEventResponse {id}))
+}
+
+/// Searches for events that match the filter and returns a list of possible events
+///
+/// # Method
+/// `POST /api/itinerary/searchEvent`
+///
+/// # Request Body
+/// - [SearchEventRequest]
+///   - Example filters:
+///     - `event_name`: Partial name of the event (case-insensitive)
+///     - `city`: Partial city name
+///     - `event_type`: Type of event
+///     - `hard_start_after`: ISO 8601 timestamp to filter events starting after this time
+///     - `hard_start_before`: ISO 8601 timestamp to filter events starting before this time
+///
+/// # Responses
+/// - `200 OK` - with body: [SearchEventResponse] - the best matching events for the query
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Example Request
+/// ```bash
+/// curl -X POST http://localhost:3001/api/itinerary/searchEvent \
+///   -H "Content-Type: application/json" \
+///   -d '{
+///         "event_name": "Music Festival",
+///         "city": "New York",
+///         "event_type": "Concert",
+///         "hard_start_after": "2025-11-01T00:00:00",
+///         "hard_start_before": "2025-11-30T23:59:59"
+///       }'
+/// ```
+///
+/// # Example Response
+/// ```json
+/// {
+///   "events": [
+///     {
+///       "id": 1,
+///       "street_address": "123 Main St",
+///       "postal_code": 10001,
+///       "city": "New York",
+///       "event_type": "Concert",
+///       "event_description": "Annual music festival in the park",
+///       "event_name": "NY Music Festival",
+///       "user_created": false,
+///       "account_id": 2,
+///       "hard_start": "2025-11-15T18:00:00",
+///       "hard_end": "2025-11-15T23:00:00"
+///     },
+///     {
+///       "id": 2,
+///       "street_address": "456 Broadway",
+///       "postal_code": 10002,
+///       "city": "New York",
+///       "event_type": "Concert",
+///       "event_description": "Indie music showcase",
+///       "event_name": "Indie Night",
+///       "user_created": true,
+///       "account_id": 3,
+///       "hard_start": "2025-11-20T19:00:00",
+///       "hard_end": "2025-11-20T22:00:00"
+///     }
+///   ]
+/// }
+/// ```
+#[utoipa::path(
+    post,
+    path="/searchEvent",
+    summary="Search for events with the given filters and return a list of the best matching events",
+    description="Returns a limited number of events that best match the filters provided in the request.",
+    request_body(
+        content=SearchEventRequest,
+        content_type="application/json",
+        description="Uses the filters, if provided, to search for the best matching events.",
+        example=json!({
+            "event_name": "Music Festival",
+            "city": "New York",
+            "event_type": "Concert",
+            "hard_start_after": "2025-11-01T00:00:00",
+            "hard_start_before": "2025-11-30T23:59:59"
+        })
+    ),
+    responses(
+        (
+            status=200,
+            description="A list of the best matching events for the given filters.",
+            body=SearchEventResponse,
+            content_type="application/json",
+            example=json!({
+                "events": [
+                    {
+                        "id": 1,
+                        "street_address": "123 Main St",
+                        "postal_code": 10001,
+                        "city": "New York",
+                        "event_type": "Concert",
+                        "event_description": "Annual music festival in the park",
+                        "event_name": "NY Music Festival",
+                        "user_created": false,
+                        "account_id": 2,
+                        "hard_start": "2025-11-15T18:00:00",
+                        "hard_end": "2025-11-15T23:00:00"
+                    },
+                    {
+                        "id": 2,
+                        "street_address": "456 Broadway",
+                        "postal_code": 10002,
+                        "city": "New York",
+                        "event_type": "Concert",
+                        "event_description": "Indie music showcase",
+                        "event_name": "Indie Night",
+                        "user_created": true,
+                        "account_id": 3,
+                        "hard_start": "2025-11-20T19:00:00",
+                        "hard_end": "2025-11-20T22:00:00"
+                    }
+                ]
+            })
+        ),
+        (status=400, description="Bad Request"),
+        (status=401, description="User has an invalid cookie/no cookie"),
+        (status=405, description="Method Not Allowed - Must be POST"),
+        (status=408, description="Request Timed Out"),
+        (status=500, description="Internal Server Error")
+    ),
+    security(("set-cookie"=[])),
+    tag="Itinerary"
+)]
+pub async fn api_search_event(
+	Extension(pool): Extension<PgPool>,
+	Json(query): Json<SearchEventRequest>
+) -> ApiResult<Json<SearchEventResponse>> {
+	let mut qb = sqlx::QueryBuilder::new("SELECT * FROM events WHERE 1=1");
+	// Dynamically add filters if present
+    if let Some(id) = query.id {
+        qb.push(" AND id = ").push_bind(id);
+    }
+    if let Some(street_address) = query.street_address {
+        qb.push(" AND street_address ILIKE ").push_bind(format!("%{}%", street_address));
+    }
+    if let Some(postal_code) = query.postal_code {
+        qb.push(" AND postal_code = ").push_bind(postal_code);
+    }
+    if let Some(city) = query.city {
+        qb.push(" AND city ILIKE ").push_bind(format!("%{}%", city));
+    }
+    if let Some(event_type) = query.event_type {
+        qb.push(" AND event_type ILIKE ").push_bind(format!("%{}%", event_type));
+    }
+    if let Some(event_description) = query.event_description {
+        qb.push(" AND event_description ILIKE ").push_bind(format!("%{}%", event_description));
+    }
+    if let Some(event_name) = query.event_name {
+        qb.push(" AND event_name ILIKE ").push_bind(format!("%{}%", event_name));
+    }
+    if let Some(hard_start_before) = query.hard_start_before {
+        qb.push(" AND hard_start < ").push_bind(hard_start_before);
+    }
+    if let Some(hard_start_after) = query.hard_start_after {
+        qb.push(" AND hard_start > ").push_bind(hard_start_after);
+    }
+    if let Some(hard_end_before) = query.hard_end_before {
+        qb.push(" AND hard_end < ").push_bind(hard_end_before);
+    }
+    if let Some(hard_end_after) = query.hard_end_after {
+        qb.push(" AND hard_end > ").push_bind(hard_end_after);
+    }
+    qb.push(" ORDER BY hard_start ASC LIMIT ").push_bind(EVENT_SEARCH_RESULT_LEN);
+    Ok(Json(SearchEventResponse { events: qb.build_query_as().fetch_all(&pool).await? }))
+}
+
 /// Create the itinerary routes with authentication middleware.
 ///
 /// # Routes
 /// - `GET /saved` - Get user's saved itineraries (protected)
 /// - `POST /save` - Inserts into or updates the user's itinerary in the db (protected)
 /// - `GET /{id}` - Get single itinerary metadata (protected)
+/// - `POST /userEvent` - Insert or update a user-created custom event (protected)
+/// - `POST /searchEvent` - queries the DB for an event that matches the provided filters (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -459,5 +766,7 @@ pub fn itinerary_routes() -> AxumRouter {
 		.route("/saved", get(api_saved_itineraries))
 		.route("/save", post(api_save))
 		.route("/{id}", get(api_get_itinerary))
+		.route("/userEvent", post(api_user_event))
+		.route("/searchEvent", post(api_search_event))
 		.route_layer(axum::middleware::from_fn(middleware_auth))
 }
