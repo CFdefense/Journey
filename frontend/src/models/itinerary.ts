@@ -47,3 +47,8 @@ export type SaveResponse = {
 	/// * May be the same as the itinerary id passed in the request
 	id: number;
 };
+
+// The API returns event days directly, not full itinerary objects
+export interface SavedItinerariesResponse {
+    itineraries: Itinerary[];
+}

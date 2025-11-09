@@ -85,27 +85,35 @@ export default function Preferences() {
     setStatusMessage(null);
 
     const payload: UpdateRequest = {
-      budget_preference: enumToString(BudgetBucket, budget),   // string
-      risk_preference: enumToString(RiskTolerence, riskTolerance),
-      disabilities: disabilities,
-      food_allergies: foodPreferences,
+      budget_preference: budget as BudgetBucket,
+      risk_preference: riskTolerance as RiskTolerence,
+      disabilities: disabilities || null,
+      food_allergies: foodPreferences || null,// string
+      email: null,
+      first_name: null,
+      last_name: null,
+      password: null,
     };
 
-    try {
-      console.log("Updating account with payload:", payload);
-      await apiUpdateAccount(payload);
+    console.log("Updating account with payload:", payload);
+    const updateResult = await apiUpdateAccount(payload);
+    
+    if (updateResult.status !== 200) {
+      console.error(
+        "API call to /api/account/update failed with status: ",
+        updateResult.status
+      );
       setStatusMessage({ 
-        message: "Preferences updated successfully!", 
-        type: 'success' 
-      });
-    } catch (error) {
-      console.error("Update failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during update.";
-      setStatusMessage({ 
-        message: `Update failed: ${errorMessage}`, 
+        message: "Update failed. Please try again.", 
         type: 'error' 
       });
+      return;
     }
+
+    setStatusMessage({ 
+      message: "Preferences updated successfully!", 
+      type: 'success' 
+    });
   };
 
   return (

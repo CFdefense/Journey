@@ -1,11 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
-import type { Itinerary, SaveResponse } from "../models/itinerary";
+import type { Itinerary, SaveResponse, SavedItinerariesResponse } from "../models/itinerary";
 
-// The API returns event days directly, not full itinerary objects
-export interface SavedItinerariesResponse {
-    itineraries: Itinerary[];
-}
 /// Calls itinerary details
 ///
 /// # Method

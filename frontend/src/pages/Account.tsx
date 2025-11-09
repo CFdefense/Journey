@@ -25,31 +25,29 @@ export default function Account() {
 
   // Fetch user profile on component mount
   useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const { result, status } = await apiCurrent();
+    async function fetchProfile() {
+      const currentResult = await apiCurrent();
+      // TODO 401 -> navigate to /login
 
-      if (status === 200 && result) {
-        setEmail(result.email || "");
-        setFirstName(result.first_name || "");
-      } else {
+      const account = currentResult.result;
+      if (account === null || currentResult.status !== 200) {
+        console.error(
+          "API call to /api/account/current failed with status: ",
+          currentResult.status
+        );
         setStatusMessage({ 
           message: "Failed to load account details. Please log in again.", 
           type: 'error' 
         });
+        return;
       }
 
-    } catch (e) {
-      console.error("Failed to load profile:", e);
-      setStatusMessage({ 
-        message: "Failed to load account details. Please log in again.", 
-        type: 'error' 
-      });
+      setEmail(account.email || "");
+      setFirstName(account.first_name || "");
     }
-  };
 
-  fetchProfile();
-}, []);
+    fetchProfile();
+  }, []);
   const onLogout = async () => {
     console.log("Logging out");
     const { status } = await apiLogout();
@@ -65,7 +63,14 @@ export default function Account() {
     setStatusMessage(null);
 
     const payload: UpdateRequest = {
-      ...(password && { password: password })
+      email: null,
+      first_name: null,
+      last_name: null,
+      password: password || null,
+      budget_preference: null,
+      risk_preference: null,
+      food_allergies: null,
+      disabilities: null,
     };
 
     try {
