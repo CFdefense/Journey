@@ -188,10 +188,16 @@ return (
 								</div>
 							) : itineraries.length === 0 ? (
 								<div className="empty-state">
-									<p>No saved itineraries yet</p>
-									<p style={{ fontSize: '0.9rem', marginTop: '8px' }}>
+									<p>No saved itineraries found</p>
+									<p style={{ fontSize: '0.9rem', marginTop: '8px', marginBottom: '16px' }}>
 										Your saved travel plans will appear here
 									</p>
+									<button 
+										className="btn-primary"
+										onClick={() => navigate('/home')}
+									>
+										Create Itinerary
+									</button>
 								</div>
 							) : (
 								<div className="itineraries-list">
