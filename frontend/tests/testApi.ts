@@ -201,7 +201,7 @@ import type {
 	SendMessageRequest,
 	SendMessageResponse,
 	ChatsResponse,
-	Message, 
+	Message,
 	UpdateMessageRequest,
 	RenameRequest
 } from "../src/models/chat";
@@ -457,7 +457,7 @@ export async function apiUpdateMessage(
 			return { result: null, status: response.status };
 		}
 		const updateRes: Message = await response.json();
-		updateRes.timestamp += "Z";  // Add this line to match other API functions
+		updateRes.timestamp += "Z"; // Add this line to match other API functions
 		return { result: updateRes, status: response.status };
 	} catch (error) {
 		console.error("apiUpdateMessage error:", error);
