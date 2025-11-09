@@ -108,6 +108,7 @@ export default function ViewItineraryPage() {
         onUpdate={handleItineraryUpdate}
         onSave={handleSave}
         title={itineraryMetadata.title}
+        editMode={true}
       />
       <button className="edit-ai-button">Edit with AI</button>
     </div>
