@@ -79,12 +79,24 @@
 .auth-cta-link {
   text-decoration: none;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .auth-page--signup .auth-cta-link {
   color: #000000;
   font-weight: 700;
   text-decoration: none;
+}
+
+.auth-cta-link .arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.auth-cta-link:hover .arrow {
+  transform: translateX(4px);
 }
 
 .login-container {

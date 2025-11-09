@@ -20,7 +20,7 @@ export default function Navbar({ page, firstName }: NavbarProps) {
           <div className="auth-cta">
             <span>Don't have an account?</span>
             <Link to="/signup" className="auth-cta-link">
-              Sign up →
+              Sign up <span className="arrow">→</span>
             </Link>
           </div>
         );
@@ -29,7 +29,7 @@ export default function Navbar({ page, firstName }: NavbarProps) {
           <div className="auth-cta">
             <span>Have an account?</span>
             <Link to="/login" className="auth-cta-link">
-              Log in →
+              Log in <span className="arrow">→</span>
             </Link>
           </div>
         );
