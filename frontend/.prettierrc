@@ -8,7 +8,7 @@
       "files": "*.ts",
       "options": {
         "tabWidth": 4,
-        "useTabs": true,
+        "useTabs": true
       }
     }
   ]
