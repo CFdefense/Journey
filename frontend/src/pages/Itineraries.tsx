@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { apiGetSavedItineraries, apiCurrent } from "../api/account";
+import { apiCurrent } from "../api/account";
+import { apiGetSavedItineraries} from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
 

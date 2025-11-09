@@ -2,12 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { 
   apiLogout, 
   apiUpdateAccount, 
-  apiGetProfile, 
-  type UpdateRequest 
+  apiCurrent
 } from "../api/account";
 import { useContext, useState, useEffect, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
+import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
 import { ACTIVE_CHAT_SESSION } from "./Home";
@@ -25,30 +25,31 @@ export default function Account() {
 
   // Fetch user profile on component mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await apiGetProfile();
-        if (data.result) {
-          setEmail(data.result.email || "");
-          setFirstName(data.result.first_name || "");
+  const fetchProfile = async () => {
+    try {
+      const { result, status } = await apiCurrent();
+
+      if (status === 200 && result) {
+        setEmail(result.email || "");
+        setFirstName(result.first_name || "");
       } else {
         setStatusMessage({ 
           message: "Failed to load account details. Please log in again.", 
           type: 'error' 
         });
       }
-      } catch (e) {
-        console.error("Failed to load profile:", e);
-        setStatusMessage({ 
-          message: "Failed to load account details. Please log in again.", 
-          type: 'error' 
-        });
-      }
-    };
 
-    fetchProfile();
-  }, []);
+    } catch (e) {
+      console.error("Failed to load profile:", e);
+      setStatusMessage({ 
+        message: "Failed to load account details. Please log in again.", 
+        type: 'error' 
+      });
+    }
+  };
 
+  fetchProfile();
+}, []);
   const onLogout = async () => {
     console.log("Logging out");
     const { status } = await apiLogout();

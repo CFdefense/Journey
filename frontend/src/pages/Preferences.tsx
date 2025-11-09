@@ -1,11 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { 
   apiUpdateAccount, 
-  apiGetProfile,
-  apiCurrent, 
-  type UpdateRequest 
+  apiCurrent
 } from "../api/account";
 import { useState, useEffect } from "react";
+import type { UpdateRequest } from "../models/account";
 import "../styles/Account.css";
 import Navbar from "../components/Navbar";
 import {BudgetBucket, RiskTolerence} from "../models/account";
@@ -50,16 +49,22 @@ export default function Preferences() {
   const riskOptions: RiskOption[] = ['ChillVibes', 'LightFun', 'Adventurer', 'RiskTaker'];
 
   // Fetch user profile on component mount
-  useEffect(() => {
+  useEffect(() => { 
     const fetchProfile = async () => {
       try {
-        const result = await apiGetProfile();
-        const data = result.result;
-        if (data){
-          setBudget((data.budget_preference as BudgetBucket) || BudgetBucket.MediumBudget);
-          setRiskTolerance((data.risk_preference as RiskTolerence) || RiskTolerence.LightFun);
-          setDisabilities(data.disabilities || "");
-          setFoodPreferences(data.food_allergies || "");
+        const { result, status } = await apiCurrent();
+
+        if (status === 200 && result) {
+          setFirstName(result.first_name || "");
+          setBudget((result.budget_preference as BudgetBucket) || BudgetBucket.MediumBudget);
+          setRiskTolerance((result.risk_preference as RiskTolerence) || RiskTolerence.LightFun);
+          setDisabilities(result.disabilities || "");
+          setFoodPreferences(result.food_allergies || "");
+        } else {
+          setStatusMessage({ 
+            message: "Failed to load preferences. Please try again.", 
+            type: 'error' 
+          });
         }
       } catch (e) {
         console.error("Failed to load profile:", e);
@@ -69,6 +74,8 @@ export default function Preferences() {
         });
       }
     };
+    
+    
     async function fetchAccount() {
       const currentResult = await apiCurrent();
       const account = currentResult.result;
@@ -86,12 +93,9 @@ export default function Preferences() {
     e.preventDefault();
     setStatusMessage(null);
 
-    const budgetString = enumToString(BudgetBucket, budget);
-    const riskString = enumToString(RiskTolerence, riskTolerance);
-
     const payload: UpdateRequest = {
-      budget_preference: budgetString,
-      risk_preference: riskString,
+      budget_preference: budget,
+      risk_preference: riskTolerance,
       disabilities: disabilities,
       food_allergies: foodPreferences,
     };

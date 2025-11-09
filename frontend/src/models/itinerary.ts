@@ -11,6 +11,7 @@ export type Itinerary = {
 	title: string;
 };
 
+
 export type EventDay = {
 	morning_events: Event[];
 	noon_events: Event[];

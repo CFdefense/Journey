@@ -2,6 +2,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import type { ApiResult } from "../helpers/global";
 import type { Itinerary, SaveResponse } from "../models/itinerary";
 
+// The API returns event days directly, not full itinerary objects
+export interface SavedItinerariesResponse {
+    itineraries: Itinerary[];
+}
 /// Calls itinerary details
 ///
 /// # Method
@@ -65,5 +69,36 @@ export async function saveItineraryChanges(
 	} catch (error) {
 		console.error("Save API error:", error);
 		throw error;
+	}
+}
+
+/// Sends a `GET /api/itinerary/saved` request to fetch all saved itineraries.
+///
+/// # Returns list of saved itineraries if successful.
+/// # Throws Error with message to be displayed.
+export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerariesResponse>> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: "include"
+		});
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				throw new Error("Not authenticated.");
+			} else if (response.status === 500) {
+				throw new Error("Server error.");
+			} else {
+				throw new Error(`Unexpected error: ${response.status}`);
+			}
+		}
+
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("Get Saved Itineraries API error: ", error);
+		return { result: null, status: -1 };
 	}
 }
