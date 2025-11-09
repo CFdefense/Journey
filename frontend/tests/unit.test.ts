@@ -329,14 +329,14 @@ describe("testApi Unit Tests", () => {
 
 	test("apiUpdateAccount success", async () => {
 		vi.mocked(customFetch).mockResolvedValue({ status: 200, ok: true, json: async () => mockCurrentResponse } as Response);
-		const result = await apiUpdateAccount({ email: null, first_name: null, last_name: null, password: null, budget_preference: null, risk_preference: null, food_allergies: null, disabilities: null });
+		const result = await apiUpdateAccount({ email: null, first_name: null, last_name: null, password: null, current_password: null, budget_preference: null, risk_preference: null, food_allergies: null, disabilities: null });
 		expect(result.status).toBe(200);
 		expect(result.result).toEqual(mockCurrentResponse);
 	});
 
 	test("apiUpdateAccount error", async () => {
 		vi.mocked(customFetch).mockRejectedValue(new Error("Network error"));
-		const result = await apiUpdateAccount({ email: null, first_name: null, last_name: null, password: null, budget_preference: null, risk_preference: null, food_allergies: null, disabilities: null });
+		const result = await apiUpdateAccount({ email: null, first_name: null, last_name: null, password: null, current_password: null, budget_preference: null, risk_preference: null, food_allergies: null, disabilities: null });
 		expect(result.status).toBe(-1);
 	});
 

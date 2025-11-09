@@ -315,6 +315,16 @@
   font-size: 0.85rem;
 }
 
+.field-group small.error-message {
+  color: #dc3545;
+}
+
+.field-group small.helper-text {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+}
+
 /* Buttons */
 .btn-primary,
 .btn-danger {

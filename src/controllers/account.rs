@@ -463,8 +463,8 @@ pub async fn api_current(
             last_name,
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
-            food_allergies,
-            disabilities
+            COALESCE(food_allergies, '') as "food_allergies!: String",
+            COALESCE(disabilities, '') as "disabilities!: String"
         FROM accounts
         WHERE id = $1
         "#,
@@ -559,6 +559,28 @@ pub async fn api_update(
 		"HANDLER ->> /api/account/update 'api_update' - User ID: {} Payload: {:?}",
 		user.id, payload
 	);
+
+	// If password is being updated, verify current password first
+	if let Some(_) = &payload.password {
+		if let Some(current_pw) = &payload.current_password {
+			// Get current password hash from database
+			let account_row = sqlx::query!(
+				r#"SELECT password FROM accounts WHERE id = $1"#,
+				user.id
+			)
+			.fetch_one(&pool)
+			.await
+			.map_err(AppError::from)?;
+
+			// Verify current password
+			let parsed_hash = PasswordHash::new(&account_row.password).map_err(AppError::from)?;
+			if let Err(_) = Argon2::default().verify_password(current_pw.as_bytes(), &parsed_hash) {
+				return Err(AppError::BadRequest("Current password is incorrect".to_string()));
+			}
+		} else {
+			return Err(AppError::BadRequest("Current password is required to change password".to_string()));
+		}
+	}
 
 	// If password provided, hash it before update
 	let hashed_password: Option<String> = if let Some(pw) = &payload.password {

@@ -21,6 +21,8 @@ export type UpdateRequest = {
 		last_name: string | null;
 		/// Optional new plaintext password
 		password: string | null;
+		/// Current password (required if password is being updated)
+		current_password: string | null;
 		/// Optional new budget enum
 		budget_preference: BudgetBucket | null;
 		/// Optional new risk enum

@@ -11,6 +11,7 @@ import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
 import { ACTIVE_CHAT_SESSION } from "./Home";
+import { checkIfValidPassword, checkIfPasswordsMatch } from "../helpers/account";
 
 export default function Account() {
   const { setAuthorized } = useContext<GlobalState>(
@@ -20,8 +21,12 @@ export default function Account() {
   
   const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordErrors, setPasswordErrors] = useState<{current?: string, new?: string, confirm?: string}>({});
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -44,6 +49,7 @@ export default function Account() {
 
       setEmail(account.email || "");
       setFirstName(account.first_name || "");
+      setLastName(account.last_name || "");
     }
 
     fetchProfile();
@@ -61,33 +67,103 @@ export default function Account() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusMessage(null);
+    setPasswordErrors({});
+
+    // Check if user is trying to change password
+    const isChangingPassword = currentPassword || newPassword || confirmPassword;
+
+    if (isChangingPassword) {
+      // Validate current password is provided
+      if (!currentPassword) {
+        setPasswordErrors({ current: "Current password is required to change your password." });
+        setStatusMessage({ 
+          message: "Please provide your current password to change it.", 
+          type: 'error' 
+        });
+        return;
+      }
+
+      // Validate new password is provided
+      if (!newPassword) {
+        setPasswordErrors({ new: "New password is required." });
+        setStatusMessage({ 
+          message: "Please enter a new password.", 
+          type: 'error' 
+        });
+        return;
+      }
+
+      // Validate new password meets requirements
+      const passwordValidationError = checkIfValidPassword(newPassword);
+      if (passwordValidationError) {
+        setPasswordErrors({ new: passwordValidationError });
+        setStatusMessage({ 
+          message: passwordValidationError, 
+          type: 'error' 
+        });
+        return;
+      }
+
+      // Validate passwords match
+      const matchError = checkIfPasswordsMatch(newPassword, confirmPassword);
+      if (matchError) {
+        setPasswordErrors({ confirm: matchError });
+        setStatusMessage({ 
+          message: matchError, 
+          type: 'error' 
+        });
+        return;
+      }
+    }
 
     const payload: UpdateRequest = {
       email: null,
       first_name: null,
       last_name: null,
-      password: password || null,
+      password: isChangingPassword ? newPassword : null,
+      current_password: isChangingPassword ? currentPassword : null,
       budget_preference: null,
       risk_preference: null,
       food_allergies: null,
       disabilities: null,
     };
 
-    try {
-      await apiUpdateAccount(payload);
-      setStatusMessage({ 
-        message: "Account settings updated successfully!", 
-        type: 'success' 
-      });
-      setPassword("");
-    } catch (error) {
-      console.error("Update failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during update.";
-      setStatusMessage({ 
-        message: `Update failed: ${errorMessage}`, 
-        type: 'error' 
-      });
+    const updateResult = await apiUpdateAccount(payload);
+    
+    if (updateResult.status !== 200) {
+      console.error(
+        "API call to /api/account/update failed with status: ",
+        updateResult.status
+      );
+      
+      // Handle password-related errors (400 Bad Request)
+      if (updateResult.status === 400 && isChangingPassword) {
+        setStatusMessage({ 
+          message: "Current password is incorrect. Please try again.", 
+          type: 'error' 
+        });
+        setPasswordErrors({ current: "Current password is incorrect." });
+      } else {
+        setStatusMessage({ 
+          message: "Update failed. Please try again.", 
+          type: 'error' 
+        });
+      }
+      return;
     }
+
+    setStatusMessage({ 
+      message: isChangingPassword 
+        ? "Password updated successfully!" 
+        : "Account settings updated successfully!", 
+      type: 'success' 
+    });
+    
+    // Clear password fields
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordErrors({});
   };
 
   return (
@@ -164,8 +240,30 @@ export default function Account() {
 
                 <form onSubmit={handleUpdate}>
                   <div className="settings-section">
-                    <h2>Login Details</h2>
+                    <h2>Account Information</h2>
                     
+                    <div className="field-group">
+                      <label htmlFor="firstName">First Name:</label>
+                      <input
+                        type="text"
+                        id="firstName"
+                        value={firstName}
+                        readOnly 
+                        className="input-readonly"
+                      />
+                    </div>
+
+                    <div className="field-group">
+                      <label htmlFor="lastName">Last Name:</label>
+                      <input
+                        type="text"
+                        id="lastName"
+                        value={lastName}
+                        readOnly 
+                        className="input-readonly"
+                      />
+                    </div>
+
                     <div className="field-group">
                       <label htmlFor="email">Username (Email):</label>
                       <input
@@ -177,18 +275,59 @@ export default function Account() {
                       />
                       <small>Your username is linked to your email and cannot be changed here.</small>
                     </div>
+                  </div>
 
+                  <div className="settings-section">
+                    <h2>Change Password</h2>
+                    
                     <div className="field-group">
-                      <label htmlFor="password">New Password (Leave blank to keep current):</label>
+                      <label htmlFor="currentPassword">Current Password:</label>
                       <input
                         type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        id="currentPassword"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter your current password"
+                      />
+                      {passwordErrors.current && (
+                        <small className="error-message">{passwordErrors.current}</small>
+                      )}
+                    </div>
+
+                    <div className="field-group">
+                      <label htmlFor="newPassword">New Password:</label>
+                      <input
+                        type="password"
+                        id="newPassword"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter new password"
                       />
-                      <small>Only enter a password if you wish to change it.</small>
+                      {passwordErrors.new && (
+                        <small className="error-message">{passwordErrors.new}</small>
+                      )}
+                      {!passwordErrors.new && newPassword && (
+                        <small className="helper-text">Password must be 8-128 characters, contain uppercase, lowercase, and a number.</small>
+                      )}
                     </div>
+
+                    <div className="field-group">
+                      <label htmlFor="confirmPassword">Confirm New Password:</label>
+                      <input
+                        type="password"
+                        id="confirmPassword"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                      />
+                      {passwordErrors.confirm && (
+                        <small className="error-message">{passwordErrors.confirm}</small>
+                      )}
+                    </div>
+
+                    <small className="helper-text">
+                      Leave password fields blank if you don't want to change your password.
+                    </small>
                   </div>
 
                   <button type="submit" className="btn-primary">

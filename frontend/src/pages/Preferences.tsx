@@ -93,6 +93,7 @@ export default function Preferences() {
       first_name: null,
       last_name: null,
       password: null,
+      current_password: null,
     };
 
     console.log("Updating account with payload:", payload);
