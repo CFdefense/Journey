@@ -167,12 +167,15 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 
 
 
-import type { ChatsResponse, RenameRequest } from "../src/models/chat";
 import type {
 	MessagePageRequest,
 	MessagePageResponse,
 	SendMessageRequest,
-	SendMessageResponse
+	SendMessageResponse,
+	ChatsResponse,
+	Message, 
+	UpdateMessageRequest,
+	RenameRequest
 } from "../src/models/chat";
 
 /// Calls chats
@@ -237,7 +240,11 @@ export async function apiMessages(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const pageRes: MessagePageResponse = await response.json();
+		for (const msg of pageRes.message_page) {
+			msg.timestamp += "Z";
+		}
+		return { result: pageRes, status: response.status };
 	} catch (error) {
 		console.error("apiMessages error:", error);
 		return { result: null, status: -1 };
@@ -274,7 +281,9 @@ export async function apiSendMessage(
 		if (!response.ok) {
 			return { result: null, status: response.status };
 		}
-		return { result: await response.json(), status: response.status };
+		const sendRes: SendMessageResponse = await response.json();
+		sendRes.bot_message.timestamp += "Z";
+		return { result: sendRes, status: response.status };
 	} catch (error) {
 		console.error("apiSendMessage error:", error);
 		return { result: null, status: -1 };
@@ -382,6 +391,48 @@ export async function apiRenameChat(
 		return { result: null, status: response.status };
 	} catch (error) {
 		console.error("apiRenameChat error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+/// Updates an existing message with new text and receives a new AI response
+///
+/// # Method
+/// Sends a `POST /api/chat/updateMessage` request to update a user message,
+/// delete all subsequent messages, and receive a new AI-generated bot response.
+///
+/// # Parameters
+/// - `payload`: An `UpdateMessageRequest` object containing:
+///   - `message_id`: The ID of the message to update
+///   - `new_text`: The updated message text
+///   - `itinerary_id` (optional): Itinerary context for the LLM
+///
+/// # Returns
+/// - On success: `Message` object containing the bot's response with status 200
+/// - On failure: Returns null result with appropriate status code:
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiUpdateMessage(
+	payload: UpdateMessageRequest
+): Promise<ApiResult<Message>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/chat/updateMessage`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+		const updateRes: Message = await response.json();
+		updateRes.timestamp += "Z";  // Add this line to match other API functions
+		return { result: updateRes, status: response.status };
+	} catch (error) {
+		console.error("apiUpdateMessage error:", error);
 		return { result: null, status: -1 };
 	}
 }
