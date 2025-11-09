@@ -1,3 +1,4 @@
+// ChatWindow.tsx
 import MessageInput from "./MessageInput";
 import "../styles/ChatWindow.css";
 import type { Message } from "../models/chat";
@@ -8,12 +9,14 @@ interface ChatWindowProps {
   messages: Message[];
   onSend: (text: string) => void;
   onItinerarySelect: (itineraryId: number) => void;
+  onEditMessage: (messageId: number, newText: string) => void;
 }
 
 export default function ChatWindow({
   messages,
   onSend,
-  onItinerarySelect
+  onItinerarySelect,
+  onEditMessage
 }: ChatWindowProps) {
   return (
     <div className="chat-container">
@@ -40,6 +43,7 @@ export default function ChatWindow({
                 key={i}
                 message={msg}
                 onItinerarySelect={onItinerarySelect}
+                onEditMessage={onEditMessage}
               />
             );
           })

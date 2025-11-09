@@ -6,13 +6,15 @@ interface ContextWindowProps {
   y: number;
   onClose: () => void;
   onDelete: () => void;
+  onRename: () => void;
 }
 
 export default function ContextWindow({
   x,
   y,
   onClose,
-  onDelete
+  onDelete,
+  onRename
 }: ContextWindowProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +46,10 @@ export default function ContextWindow({
       className="context-window"
       style={{ top: `${y}px`, left: `${x}px` }}
     >
-      <button className="context-menu-item" onClick={onDelete}>
+      <button className="context-menu-item rename" onClick={onRename}>
+        Rename
+      </button>
+      <button className="context-menu-item delete" onClick={onDelete}>
         Delete
       </button>
     </div>

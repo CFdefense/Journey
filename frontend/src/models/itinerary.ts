@@ -102,3 +102,8 @@ export type SearchEventRequest = {
 export type SearchEventResponse = {
 	events: Event[]
 };
+
+// The API returns event days directly, not full itinerary objects
+export type SavedItinerariesResponse = {
+	itineraries: Itinerary[];
+}
