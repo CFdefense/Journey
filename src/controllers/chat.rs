@@ -642,8 +642,8 @@ pub async fn api_update_message(
 
 	let chat_session_id = message_info.chat_session_id;
 	let message_timestamp = message_info.timestamp;
-	
-	let to_delete = sqlx::query!(
+
+	sqlx::query!(
 		r#"
 		SELECT id, chat_session_id, timestamp, text
 		FROM messages
@@ -658,15 +658,9 @@ pub async fn api_update_message(
 	.fetch_all(&pool)
 	.await
 	.map_err(AppError::from)?;
-	
-	eprintln!("About to delete {} messages:", to_delete.len());
-	for msg in &to_delete {
-		eprintln!("  - ID: {}, Chat: {}, Timestamp: {:?}, Text: {}", 
-			msg.id, msg.chat_session_id, msg.timestamp, msg.text);
-	}
 
 	// Delete future messages in this chat session only
-	let delete_result = sqlx::query!(
+	sqlx::query!(
 		r#"
 		DELETE FROM messages
 		WHERE chat_session_id = $1
@@ -680,9 +674,6 @@ pub async fn api_update_message(
 	.execute(&pool)
 	.await
 	.map_err(AppError::from)?;
-	
-	eprintln!("Deleted {} messages", delete_result.rows_affected());
-	eprintln!("=========================");
 
 	// Update the user message
 	sqlx::query!(

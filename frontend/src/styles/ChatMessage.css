@@ -94,13 +94,13 @@
 }
 
 .edit-cancel-btn {
-  background: linear-gradient(135deg, #FA8072 0%, #FF9B8A 100%);
+  background: linear-gradient(135deg, #fa8072 0%, #ff9b8a 100%);
   color: white;
   box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
 }
 
 .edit-cancel-btn:hover {
-  background: linear-gradient(135deg, #e56b5d 0%, #FA8072 100%);
+  background: linear-gradient(135deg, #e56b5d 0%, #fa8072 100%);
   box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
   transform: translateY(-1px);
 }
@@ -111,7 +111,7 @@
 }
 
 .edit-save-btn {
-  background: linear-gradient(135deg, #006BBB 0%, #30A0E0 100%);
+  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
   color: white;
   box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
 }

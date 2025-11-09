@@ -13,7 +13,11 @@ import {
   apiSendMessage,
   apiUpdateMessage
 } from "../api/home";
-import type { MessagePageRequest, SendMessageRequest, UpdateMessageRequest } from "../models/chat";
+import type {
+  MessagePageRequest,
+  SendMessageRequest,
+  UpdateMessageRequest
+} from "../models/chat";
 import type { ChatSession } from "../models/home";
 import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
@@ -303,7 +307,9 @@ export default function Home() {
       (prevChats ?? []).map((c) => {
         if (c.id !== activeChatId) return c;
 
-        const editedMessageIndex = c.messages.findIndex((m) => m.id === messageId);
+        const editedMessageIndex = c.messages.findIndex(
+          (m) => m.id === messageId
+        );
         if (editedMessageIndex === -1) return c;
 
         // Keep messages up to and including the edited message, then add bot response

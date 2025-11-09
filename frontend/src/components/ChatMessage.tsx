@@ -54,7 +54,7 @@ export default function ChatMessage({
   const handleSaveEdit = () => {
     const trimmedText = editText.trim();
     if (trimmedText === "") return;
-    
+
     onEditMessage(message.id, trimmedText);
     setIsEditing(false);
   };
@@ -100,10 +100,7 @@ export default function ChatMessage({
                   >
                     Cancel
                   </button>
-                  <button
-                    className="edit-save-btn"
-                    onClick={handleSaveEdit}
-                  >
+                  <button className="edit-save-btn" onClick={handleSaveEdit}>
                     Save
                   </button>
                 </div>
@@ -131,10 +128,7 @@ export default function ChatMessage({
         <div className="timestamp-and-actions">
           <span className="timestamp">{formattedTimestamp}</span>
           {message.is_user && !isEditing && (
-            <UserMessageActions
-              messageId={message.id}
-              onEdit={handleEdit}
-            />
+            <UserMessageActions messageId={message.id} onEdit={handleEdit} />
           )}
         </div>
       </div>
