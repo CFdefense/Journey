@@ -5,7 +5,7 @@ import {
 	test_state,
 	apiSignUp, apiValidate, apiLogin, apiCurrent, apiLogout,
 	apiChats, apiNewChatId, apiSendMessage, apiMessages,
-	apiItineraryDetails, apiDeleteChat, apiRenameChat
+	apiItineraryDetails, apiDeleteChat, apiRenameChat, apiUpdateMessage
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 import { ChatSessionRow } from "../src/models/chat";
 
@@ -81,7 +81,27 @@ async function test_flow() {
 	expect(pageResult.result!.message_page[0].id).toBe(messageId);
 	expect(pageResult.result!.message_page[1]).toStrictEqual(botMessage);
 
-	// Rename the chat
+	// update the message
+	const updateResult = await apiUpdateMessage({
+		message_id: messageId,
+		new_text: "updated test message",
+		itinerary_id: null
+	});
+	expect(updateResult.status).toBe(200);
+	expect(updateResult.result).not.toBe(null);
+	const updatedBotMessage = updateResult.result!;
+	expect(updatedBotMessage.itinerary_id === null).toBe(false);
+
+	// verify updated messages in chat
+	const updatedPageResult = await apiMessages({
+		chat_session_id: newChatId,
+		message_id: null
+	});
+	expect(updatedPageResult.status).toBe(200);
+	expect(updatedPageResult.result!.message_page[0].text).toBe("updated test message");
+	expect(updatedPageResult.result!.message_page[1]).toStrictEqual(updatedBotMessage);
+
+	// rename the chat
 	const renameResult = await apiRenameChat({ new_title: "Updated Title", id: newChatId });
 	expect(renameResult.status).toBe(200);
 	const chatsAfterRename = await apiChats();
@@ -152,5 +172,12 @@ describe("Integration Tests", () => {
 			itinerary_id: null
 		});
 		expect(errorSend.status).toBeGreaterThanOrEqual(-1);
+
+		const errorUpdate = await apiUpdateMessage({
+			message_id: 99999,
+			new_text: "test",
+			itinerary_id: null
+		});
+		expect(errorUpdate.status).toBeGreaterThanOrEqual(-1);
 	});
 });

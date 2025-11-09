@@ -40,7 +40,7 @@ pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> 
 	let greeting_tool = GreetingTool;
 
 	// Select model (will read key from environment variable)
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
 	// Create agent with system prompt and tools
 	let system_prompt = format!(

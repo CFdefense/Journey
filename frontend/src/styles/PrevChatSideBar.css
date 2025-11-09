@@ -244,3 +244,22 @@
   text-align: center;
   padding: 0 1rem;
 }
+
+.chat-title-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #30a0e0;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  outline: none;
+  width: 100%;
+  box-shadow: 0 0 0 3px rgba(48, 160, 224, 0.1);
+}
+
+.chat-title-input:focus {
+  border-color: #2a8fc7;
+  box-shadow: 0 0 0 3px rgba(48, 160, 224, 0.2);
+}

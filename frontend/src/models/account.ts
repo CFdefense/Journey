@@ -21,6 +21,8 @@ export type UpdateRequest = {
 	last_name: string | null;
 	/// Optional new plaintext password
 	password: string | null;
+	/// Current password (required if password is being updated)
+	current_password: string | null;
 	/// Optional new budget enum
 	budget_preference: BudgetBucket | null;
 	/// Optional new risk enum
@@ -74,20 +76,16 @@ export type CurrentResponse = {
 };
 
 export enum BudgetBucket {
-	VeryLowBudget,
-	LowBudget,
-	MediumBudget,
-	HighBudget,
-	LuxuryBudget
+	VeryLowBudget = "VeryLowBudget",
+	LowBudget = "LowBudget",
+	MediumBudget = "MediumBudget",
+	HighBudget = "HighBudget",
+	LuxuryBudget = "LuxuryBudget"
 }
 
-/// Risk tolerance enum mapped to Postgres `risk_tolerence`.
-/// Used in account preferences and returned by account APIs.
-/// - Fields:
-///   - Enum variants representing risk appetite
 export enum RiskTolerence {
-	ChillVibes,
-	LightFun,
-	Adventurer,
-	RiskTaker
+	ChillVibes = "ChillVibes",
+	LightFun = "LightFun",
+	Adventurer = "Adventurer",
+	RiskTaker = "RiskTaker"
 }

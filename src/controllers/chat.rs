@@ -624,14 +624,13 @@ pub async fn api_update_message(
 		return Err(AppError::BadRequest(String::from("Text cannot be empty")));
 	}
 
-	// verify the message id belongs to this user
-	sqlx::query!(
+	// Get the message and verify ownership in one query
+	let message_info = sqlx::query!(
 		r#"
-		SELECT m.id
+		SELECT m.chat_session_id, m.timestamp
 		FROM messages m
-		INNER JOIN chat_sessions c
-		ON m.chat_session_id=c.id
-		WHERE m.id=$1 AND c.account_id=$2 AND m.is_user=TRUE;
+		INNER JOIN chat_sessions c ON m.chat_session_id = c.id
+		WHERE m.id = $1 AND c.account_id = $2 AND m.is_user = TRUE;
 		"#,
 		message_id,
 		user.id
@@ -641,39 +640,40 @@ pub async fn api_update_message(
 	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
-	// delete future messages
+	let chat_session_id = message_info.chat_session_id;
+	let message_timestamp = message_info.timestamp;
+
+	// Delete future messages in this chat session only
 	sqlx::query!(
 		r#"
 		DELETE FROM messages
-		WHERE timestamp > (
-			SELECT timestamp
-			FROM messages
-			WHERE id=$1
-		);
+		WHERE chat_session_id = $1
+		  AND timestamp > $2
+		  AND id != $3;
 		"#,
+		chat_session_id,
+		message_timestamp,
 		message_id
 	)
 	.execute(&pool)
 	.await
 	.map_err(AppError::from)?;
 
-	// update user message
-	let chat_session_id = sqlx::query!(
+	// Update the user message
+	sqlx::query!(
 		r#"
 		UPDATE messages
-		SET text=$1, timestamp=NOW()
-		WHERE is_user=TRUE AND id=$2
-		RETURNING chat_session_id;
+		SET text = $1, timestamp = NOW()
+		WHERE id = $2;
 		"#,
 		new_text,
 		message_id
 	)
-	.fetch_one(&pool)
+	.execute(&pool)
 	.await
-	.map_err(AppError::from)?
-	.chat_session_id;
+	.map_err(AppError::from)?;
 
-	// call llm and insert bot response into db
+	// Call LLM and insert bot response
 	let bot_message = send_message_to_llm(
 		new_text.as_str(),
 		user.id,

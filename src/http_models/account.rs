@@ -45,6 +45,8 @@ pub struct UpdateRequest {
 	pub last_name: Option<String>,
 	/// Optional new plaintext password
 	pub password: Option<String>,
+	/// Current password (required if password is being updated)
+	pub current_password: Option<String>,
 	/// Optional new budget enum
 	pub budget_preference: Option<BudgetBucket>,
 	/// Optional new risk enum
