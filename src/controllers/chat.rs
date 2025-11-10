@@ -135,6 +135,7 @@ async fn send_message_to_llm(
 					street_address: String::from("1114 Shannon Ln"),
 					postal_code: 17013,
 					city: String::from("Carlisle"),
+					country: String::from("USA"),
 					event_type: String::from("Hike"),
 					event_description: String::from(
 						"A beautiful stroll along a river in this cute small town.",
@@ -145,26 +146,12 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 				}],
-				noon_events: vec![Event {
-					id: 2,
-					street_address: String::from("35 Campus Court"),
-					postal_code: 12601,
-					city: String::from("Poughkeepsie"),
-					event_type: String::from("Restaurant"),
-					event_description: String::from(
-						"Local Italian restaurant known for its authentic pasta and upscale dining.",
-					),
-					event_name: String::from("Cosimos"),
-					user_created: false,
-					account_id: None,
-					hard_start: None,
-					hard_end: None,
-				}],
 				afternoon_events: vec![Event {
 					id: 3,
 					street_address: String::from("200 E 42nd St"),
 					postal_code: 10017,
 					city: String::from("New York"),
+					country: String::from("USA"),
 					event_type: String::from("Museum"),
 					event_description: String::from(
 						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
@@ -180,6 +167,7 @@ async fn send_message_to_llm(
 					street_address: String::from("1 S Broad St"),
 					postal_code: 19107,
 					city: String::from("Philadelphia"),
+					country: String::from("USA"),
 					event_type: String::from("Concert"),
 					event_description: String::from(
 						"Music center which hosts local and national bands.",
@@ -198,6 +186,7 @@ async fn send_message_to_llm(
 					street_address: String::from("1 Citizens Bank Way"),
 					postal_code: 19148,
 					city: String::from("Philadelphia"),
+					country: String::from("USA"),
 					event_type: String::from("Sports"),
 					event_description: String::from(
 						"A Phillies baseball game is a must-do for locals and visitors alike.",
@@ -208,26 +197,12 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 				}],
-				noon_events: vec![Event {
-					id: 6,
-					street_address: String::from("5250 S Park Dr"),
-					postal_code: 60615,
-					city: String::from("Chicago"),
-					event_type: String::from("Festival"),
-					event_description: String::from(
-						"Annual music festival with the biggest names in pop and indie scenes.",
-					),
-					event_name: String::from("LollaPalooza"),
-					user_created: false,
-					account_id: None,
-					hard_start: None,
-					hard_end: None,
-				}],
 				afternoon_events: vec![Event {
 					id: 7,
 					street_address: String::from("1 Rue de la Seine"),
 					postal_code: 0,
 					city: String::from("Paris"),
+					country: String::from("France"),
 					event_type: String::from("Museum"),
 					event_description: String::from("Explore the beautiful landmark of Paris."),
 					event_name: String::from("Eiffel Tower"),
@@ -241,6 +216,7 @@ async fn send_message_to_llm(
 					street_address: String::from("3 Rue de la Museu"),
 					postal_code: 0,
 					city: String::from("Paris"),
+					country: String::from("France"),
 					event_type: String::from("Museum"),
 					event_description: String::from(
 						"Wander the halls of the world famous art museum.",

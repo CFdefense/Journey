@@ -13,7 +13,6 @@ export type Itinerary = {
 
 export type EventDay = {
 	morning_events: Event[];
-	noon_events: Event[];
 	afternoon_events: Event[];
 	evening_events: Event[];
 	/// Destination's local timezone - %Y-%m-%d
@@ -25,6 +24,7 @@ export type Event = {
 	street_address: string;
 	postal_code: number;
 	city: string;
+	country: string;
 	event_type: string;
 	event_description: string;
 	event_name: string;
@@ -50,19 +50,19 @@ export type SaveResponse = {
 /// A user-created event. It must have a name, and all other fields are optional.
 export type UserEventRequest = {
 	/// If id is provided, it updates the user-event with that id. Otherwise it creates the event.
-	id: number | null,
-	street_address: string | null,
-	postal_code: number | null,
-	city: string | null,
-	event_type: string | null,
-	event_description: string | null,
-	event_name: string,
-	hard_start: string | null,
-	hard_end: string | null,
+	id: number | null;
+	street_address: string | null;
+	postal_code: number | null;
+	city: string | null;
+	event_type: string | null;
+	event_description: string | null;
+	event_name: string;
+	hard_start: string | null;
+	hard_end: string | null;
 };
 
 export type UserEventResponse = {
-	id: number
+	id: number;
 };
 
 /// A set of query filters to search for an event in the DB.
@@ -76,34 +76,34 @@ export type UserEventResponse = {
 /// ```
 export type SearchEventRequest = {
 	/// Search where id=...
-	id: number | null,
+	id: number | null;
 	/// Search where street_address like ...
-	street_address: string | null,
+	street_address: string | null;
 	/// Search where postal_code=...
-	postal_code: number | null,
+	postal_code: number | null;
 	/// Search where city like ...
-	city: string | null,
+	city: string | null;
 	/// Search where event_type like ...
-	event_type: string | null,
+	event_type: string | null;
 	/// Search where event_description like ...
-	event_description: string | null,
+	event_description: string | null;
 	/// Search where event_name like ...
-	event_name: string | null,
+	event_name: string | null;
 	/// Search where hard_start < ...
-	hard_start_before: string | null,
+	hard_start_before: string | null;
 	/// Search where hard_start > ...
-	hard_start_after: string | null,
+	hard_start_after: string | null;
 	/// Search where hard_end < ...
-	hard_end_before: string | null,
+	hard_end_before: string | null;
 	/// Search where hard_end > ...
-	hard_end_after: string | null,
+	hard_end_after: string | null;
 };
 
 export type SearchEventResponse = {
-	events: Event[]
+	events: Event[];
 };
 
 // The API returns event days directly, not full itinerary objects
 export type SavedItinerariesResponse = {
 	itineraries: Itinerary[];
-}
+};

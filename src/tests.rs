@@ -1234,11 +1234,10 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	assert_eq!(latest_page.message_page.len(), 0);
 }
 
-
 async fn test_user_event_create(
 	mut cookies: CookieJar,
 	key: Extension<Key>,
-	pool: Extension<PgPool>
+	pool: Extension<PgPool>,
 ) {
 	todo!()
 }
@@ -1246,16 +1245,12 @@ async fn test_user_event_create(
 async fn test_user_event_update(
 	mut cookies: CookieJar,
 	key: Extension<Key>,
-	pool: Extension<PgPool>
+	pool: Extension<PgPool>,
 ) {
 	todo!()
 }
 
-async fn test_search_event(
-	mut cookies: CookieJar,
-	key: Extension<Key>,
-	pool: Extension<PgPool>
-) {
+async fn test_search_event(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {
 	todo!()
 }
 

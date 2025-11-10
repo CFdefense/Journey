@@ -16,7 +16,9 @@ use utoipa::OpenApi;
 use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
 use crate::global::EVENT_SEARCH_RESULT_LEN;
-use crate::http_models::event::{Event, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse};
+use crate::http_models::event::{
+	SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse,
+};
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
 use crate::sql_models::TimeOfDay;
@@ -55,6 +57,7 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.street_address,
 			e.postal_code,
 			e.city,
+			e.country,
 			e.event_type,
 			e.event_description,
 			e.event_name,
@@ -75,14 +78,12 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 	let mut event_days = Vec::with_capacity(event_list.len());
 	for event_day in event_list.chunk_by(|a, b| a.date == b.date) {
 		let mut morning_events = Vec::with_capacity(event_list.len());
-		let mut noon_events = Vec::with_capacity(event_list.len());
 		let mut afternoon_events = Vec::with_capacity(event_list.len());
 		let mut evening_events = Vec::with_capacity(event_list.len());
 
 		for event in event_day.into_iter() {
 			match event.time_of_day {
 				TimeOfDay::Morning => morning_events.push(event.into()),
-				TimeOfDay::Noon => noon_events.push(event.into()),
 				TimeOfDay::Afternoon => afternoon_events.push(event.into()),
 				TimeOfDay::Evening => evening_events.push(event.into()),
 			}
@@ -91,7 +92,6 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 		if let Some(event) = event_day.first() {
 			event_days.push(EventDay {
 				morning_events,
-				noon_events,
 				afternoon_events,
 				evening_events,
 				date: event.date,
@@ -109,7 +109,6 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	let mut cap = 0;
 	for day in itinerary.event_days.iter() {
 		cap += day.morning_events.len();
-		cap += day.noon_events.len();
 		cap += day.afternoon_events.len();
 		cap += day.evening_events.len();
 	}
@@ -119,20 +118,17 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	let mut events = Vec::with_capacity(cap);
 	for day in itinerary.event_days.into_iter() {
 		let morning_len = day.morning_events.len();
-		let noon_len = day.noon_events.len();
 		let afternoon_len = day.afternoon_events.len();
 		let evening_len = day.evening_events.len();
-		let len = morning_len + noon_len + afternoon_len + evening_len;
+		let len = morning_len + afternoon_len + evening_len;
 
 		times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
-		times.extend(std::iter::repeat_n(TimeOfDay::Noon, noon_len));
 		times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
 		times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
 
 		dates.extend(std::iter::repeat_n(day.date, len));
 
 		events.extend(day.morning_events.into_iter().map(|event| event.id));
-		events.extend(day.noon_events.into_iter().map(|event| event.id));
 		events.extend(day.afternoon_events.into_iter().map(|event| event.id));
 		events.extend(day.evening_events.into_iter().map(|event| event.id));
 	}
@@ -345,7 +341,7 @@ pub async fn api_get_itinerary(
 ///         "event_days": [
 ///           {
 ///             "morning_events": [],
-///             "noon_events": [
+///             "afternoon_events": [
 ///               {
 ///                 "id": 4,
 ///                 "street_address": "3399 North Rd",
@@ -356,7 +352,6 @@ pub async fn api_get_itinerary(
 ///                 "event_name": "Marist University"
 ///               }
 ///             ],
-///             "afternoon_events": [],
 ///             "evening_events": [],
 ///             "date": "2025-07-21"
 ///           }
@@ -510,10 +505,12 @@ pub async fn api_save(
 pub async fn api_user_event(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
-	Json(event): Json<UserEventRequest>
+	Json(event): Json<UserEventRequest>,
 ) -> ApiResult<Json<UserEventResponse>> {
 	if event.event_name.is_empty() {
-		return Err(AppError::BadRequest(String::from("Event name must not be empty")))
+		return Err(AppError::BadRequest(String::from(
+			"Event name must not be empty",
+		)));
 	}
 	let id = if let Some(id) = event.id {
 		sqlx::query!(
@@ -575,7 +572,7 @@ pub async fn api_user_event(
 		.map_err(AppError::from)?
 		.id
 	};
-	Ok(Json(UserEventResponse {id}))
+	Ok(Json(UserEventResponse { id }))
 }
 
 /// Searches for events that match the filter and returns a list of possible events
@@ -709,45 +706,52 @@ pub async fn api_user_event(
 )]
 pub async fn api_search_event(
 	Extension(pool): Extension<PgPool>,
-	Json(query): Json<SearchEventRequest>
+	Json(query): Json<SearchEventRequest>,
 ) -> ApiResult<Json<SearchEventResponse>> {
 	let mut qb = sqlx::QueryBuilder::new("SELECT * FROM events WHERE 1=1");
 	// Dynamically add filters if present
-    if let Some(id) = query.id {
-        qb.push(" AND id = ").push_bind(id);
-    }
-    if let Some(street_address) = query.street_address {
-        qb.push(" AND street_address ILIKE ").push_bind(format!("%{}%", street_address));
-    }
-    if let Some(postal_code) = query.postal_code {
-        qb.push(" AND postal_code = ").push_bind(postal_code);
-    }
-    if let Some(city) = query.city {
-        qb.push(" AND city ILIKE ").push_bind(format!("%{}%", city));
-    }
-    if let Some(event_type) = query.event_type {
-        qb.push(" AND event_type ILIKE ").push_bind(format!("%{}%", event_type));
-    }
-    if let Some(event_description) = query.event_description {
-        qb.push(" AND event_description ILIKE ").push_bind(format!("%{}%", event_description));
-    }
-    if let Some(event_name) = query.event_name {
-        qb.push(" AND event_name ILIKE ").push_bind(format!("%{}%", event_name));
-    }
-    if let Some(hard_start_before) = query.hard_start_before {
-        qb.push(" AND hard_start < ").push_bind(hard_start_before);
-    }
-    if let Some(hard_start_after) = query.hard_start_after {
-        qb.push(" AND hard_start > ").push_bind(hard_start_after);
-    }
-    if let Some(hard_end_before) = query.hard_end_before {
-        qb.push(" AND hard_end < ").push_bind(hard_end_before);
-    }
-    if let Some(hard_end_after) = query.hard_end_after {
-        qb.push(" AND hard_end > ").push_bind(hard_end_after);
-    }
-    qb.push(" ORDER BY hard_start ASC LIMIT ").push_bind(EVENT_SEARCH_RESULT_LEN);
-    Ok(Json(SearchEventResponse { events: qb.build_query_as().fetch_all(&pool).await? }))
+	if let Some(id) = query.id {
+		qb.push(" AND id = ").push_bind(id);
+	}
+	if let Some(street_address) = query.street_address {
+		qb.push(" AND street_address ILIKE ")
+			.push_bind(format!("%{}%", street_address));
+	}
+	if let Some(postal_code) = query.postal_code {
+		qb.push(" AND postal_code = ").push_bind(postal_code);
+	}
+	if let Some(city) = query.city {
+		qb.push(" AND city ILIKE ").push_bind(format!("%{}%", city));
+	}
+	if let Some(event_type) = query.event_type {
+		qb.push(" AND event_type ILIKE ")
+			.push_bind(format!("%{}%", event_type));
+	}
+	if let Some(event_description) = query.event_description {
+		qb.push(" AND event_description ILIKE ")
+			.push_bind(format!("%{}%", event_description));
+	}
+	if let Some(event_name) = query.event_name {
+		qb.push(" AND event_name ILIKE ")
+			.push_bind(format!("%{}%", event_name));
+	}
+	if let Some(hard_start_before) = query.hard_start_before {
+		qb.push(" AND hard_start < ").push_bind(hard_start_before);
+	}
+	if let Some(hard_start_after) = query.hard_start_after {
+		qb.push(" AND hard_start > ").push_bind(hard_start_after);
+	}
+	if let Some(hard_end_before) = query.hard_end_before {
+		qb.push(" AND hard_end < ").push_bind(hard_end_before);
+	}
+	if let Some(hard_end_after) = query.hard_end_after {
+		qb.push(" AND hard_end > ").push_bind(hard_end_after);
+	}
+	qb.push(" ORDER BY hard_start ASC LIMIT ")
+		.push_bind(EVENT_SEARCH_RESULT_LEN);
+	Ok(Json(SearchEventResponse {
+		events: qb.build_query_as().fetch_all(&pool).await?,
+	}))
 }
 
 /// Create the itinerary routes with authentication middleware.

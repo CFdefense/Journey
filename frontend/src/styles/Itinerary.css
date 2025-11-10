@@ -114,17 +114,17 @@
 }
 
 /* Edit Buttons */
-.edit-buttons-container {
+.itinerary-edit-buttons-container {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 40px;
 }
 
-.edit-button {
+.itinerary-edit-button {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 14px;
+  padding: 10px 4px;
   background: none;
   border: 2px solid #555;
   text-align: center;
@@ -134,19 +134,29 @@
   transition: background 0.15s ease;
 }
 
-.edit-button:disabled {
+.itinerary-edit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+.itinerary-edit-button:not(:disabled):hover {
+  color: #333;
+}
+
+#itinerary-create:hover {
+  background-color: var(--light-blue);
+}
+
+#itinerary-search:hover {
+  background-color: var(--gold);
+}
+
 #itinerary-save:not(:disabled):hover {
   background-color: var(--pale-yellow);
-  color: #333;
 }
 
 #itinerary-cancel:not(:disabled):hover {
   background-color: var(--salmon);
-  color: #333;
 }
 
 /* Day tabs */
@@ -398,6 +408,138 @@
 
 .view-page > button:active {
   transform: translateY(0);
+}
+
+.user-event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.user-event-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  border-top: 4px solid #006bbb;
+  color: black;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.icon-button:hover {
+  background: #eee;
+}
+
+.user-event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-event-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.user-event-form input,
+.user-event-form textarea {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.user-event-form input:focus,
+.user-event-form textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.location-grid label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.location-grid input {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-save-button {
+  position: absolute;
+  top: 20px;
+  right: 60px;
+  background: #f0f0f0;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.card-save-button:hover {
+  background: var(--light-blue);
+  color: white;
 }
 
 /* Responsive design */

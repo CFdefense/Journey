@@ -136,6 +136,24 @@
   font-weight: 600;
 }
 
+.card-edit-button {
+  position: absolute;
+  top: 20px;
+  right: 80px;
+  background: #f0f0f0;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
 /* Close button */
 .close-button {
   position: absolute;

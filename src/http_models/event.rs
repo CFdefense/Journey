@@ -13,6 +13,7 @@ pub struct Event {
 	pub street_address: String,
 	pub postal_code: i32,
 	pub city: String,
+	pub country: String,
 	pub event_type: String,
 	pub event_description: String,
 	pub event_name: String,
@@ -30,6 +31,7 @@ impl From<&EventListJoinRow> for Event {
 			street_address: value.street_address.clone(),
 			postal_code: value.postal_code,
 			city: value.city.clone(),
+			country: value.country.clone(),
 			event_type: value.event_type.clone(),
 			event_description: value.event_description.clone(),
 			event_name: value.event_name.clone(),
@@ -49,6 +51,7 @@ pub struct UserEventRequest {
 	pub street_address: Option<String>,
 	pub postal_code: Option<i32>,
 	pub city: Option<String>,
+	pub country: Option<String>,
 	pub event_type: Option<String>,
 	pub event_description: Option<String>,
 	pub event_name: String,
@@ -58,7 +61,7 @@ pub struct UserEventRequest {
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct UserEventResponse {
-	pub id: i32
+	pub id: i32,
 }
 
 /// A set of query filters to search for an event in the DB.
@@ -80,6 +83,8 @@ pub struct SearchEventRequest {
 	pub postal_code: Option<i32>,
 	/// Search where city like ...
 	pub city: Option<String>,
+	/// Search where countr like ...
+	pub country: Option<String>,
 	/// Search where event_type like ...
 	pub event_type: Option<String>,
 	/// Search where event_description like ...
@@ -93,10 +98,10 @@ pub struct SearchEventRequest {
 	/// Search where hard_end < ...
 	pub hard_end_before: Option<NaiveDateTime>,
 	/// Search where hard_end > ...
-	pub hard_end_after: Option<NaiveDateTime>
+	pub hard_end_after: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct SearchEventResponse {
-	pub events: Vec<Event>
+	pub events: Vec<Event>,
 }

@@ -19,6 +19,8 @@ pub struct EventListJoinRow {
 	pub postal_code: i32,
 	/// Event City
 	pub city: String,
+	/// Event Country
+	pub country: String,
 	/// Event type
 	pub event_type: String,
 	/// Event description

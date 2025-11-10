@@ -36,6 +36,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [localDays, setLocalDays] = useState<DayItinerary[]>(days || []);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [buttonsDisabled, setButtonsDisabled] = useState<boolean>(true);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Sync local state with props when days change
   useEffect(() => {
@@ -102,6 +104,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         street_address: "",
         postal_code: 0,
         city: "",
+        country: "",
         event_type: "",
         user_created: false,
         account_id: null,
@@ -182,6 +185,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
     }
   };
 
+  const onCreateEvent = () => setCreateModalOpen(true);
+  const closeCreateModal = () => setCreateModalOpen(false);
+  const onSaveUserEvent = () => { alert("TODO"); };
+
+  const onSearchEvents = () => setSearchModalOpen(true);
+  const closeSearchModal = () => setSearchModalOpen(false);
+  const onSearchSend = () => { alert("TODO"); };
+
   return (
     <div className={`itinerary-section ${compact ? "compact" : ""}`}>
       {/* Header Row */}
@@ -189,23 +200,29 @@ const Itinerary: React.FC<ItineraryProps> = ({
         <h3>{title || "Itinerary"}</h3>
 
         {editMode && (
-          <div className="edit-buttons-container">
+          <div className="itinerary-edit-buttons-container">
             <button
-              className="edit-button"
+              className="itinerary-edit-button"
+              id="itinerary-create"
+              onClick={onCreateEvent}
+            >Create Event</button>
+            <button
+              className="itinerary-edit-button"
+              id="itinerary-search"
+              onClick={onSearchEvents}
+            >Search Events</button>
+            <button
+              className="itinerary-edit-button"
               id="itinerary-save"
               onClick={handleSave}
               disabled={buttonsDisabled}
-            >
-              Save
-            </button>
+            >Save</button>
             <button
-              className="edit-button"
+              className="itinerary-edit-button"
               id="itinerary-cancel"
               onClick={handleCancel}
               disabled={buttonsDisabled}
-            >
-              Cancel
-            </button>
+            >Cancel</button>
           </div>
         )}
       </div>
@@ -275,6 +292,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   time={block.time}
                   street_address={event.street_address}
                   city={event.city}
+                  country={event.country}
+                  postal_code={event.postal_code}
                   event_type={event.event_type}
                   user_created={event.user_created}
                   account_id={event.account_id}
@@ -288,6 +307,168 @@ const Itinerary: React.FC<ItineraryProps> = ({
           </div>
         ))}
       </div>
+
+      {createModalOpen && (
+        <div className="user-event-modal-overlay" onClick={closeCreateModal}>
+          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create a custom event</h2>
+              <div className="modal-actions">
+                <button className="card-save-button" onClick={onSaveUserEvent} title="Save">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z"/>
+                    <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z"/>
+                  </svg>
+                </button>
+                <button className="close-button" onClick={closeCreateModal} title="Close">✕</button>
+              </div>
+            </div>
+
+            <form className="user-event-form">
+              <label>
+                Name
+                <input required />
+              </label>
+
+              <label>
+                Description
+                <textarea rows={4} />
+              </label>
+
+              <label>
+                Type of Event
+                <input />
+              </label>
+
+              <div className="location-grid">
+                <label>
+                  Address
+                  <input />
+                </label>
+
+                <label>
+                  City
+                  <input />
+                </label>
+
+                <label>
+                  Country
+                  <input />
+                </label>
+
+                <label>
+                  Postal Code
+                  <input type="number" maxLength={5} />
+                </label>
+
+                <label>
+                  Start Time
+                  <input type="datetime-local" />
+                </label>
+
+                <label>
+                  End Time
+                  <input type="datetime-local" />
+                </label>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {searchModalOpen && (
+        <div className="user-event-modal-overlay" onClick={closeSearchModal}>
+          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Search for an event</h2>
+              <div className="modal-actions">
+                <button className="card-save-button" onClick={onSearchSend} title="Search">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M10 2a8 8 0 1 0 5.293 14.293l4.707 4.707 1.414-1.414-4.707-4.707A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12A6 6 0 0 1 10 4z"/>
+                  </svg>
+                </button>
+                <button className="close-button" onClick={closeSearchModal} title="Close">✕</button>
+              </div>
+            </div>
+
+            <form className="user-event-form">
+              <div className="location-grid">
+                <label>
+                  Name
+                  <input/>
+                </label>
+
+                <label>
+                  Description
+                  <input/>
+                </label>
+
+                <label>
+                  ID
+                  <input />
+                </label>
+
+                <label>
+                  Type of Event
+                  <input />
+                </label>
+
+                <label>
+                  Address
+                  <input />
+                </label>
+
+                <label>
+                  City
+                  <input />
+                </label>
+
+                <label>
+                  Country
+                  <input />
+                </label>
+
+                <label>
+                  Postal Code
+                  <input type="number" maxLength={5} />
+                </label>
+
+                <label>
+                  Starts Before
+                  <input type="datetime-local" />
+                </label>
+
+                <label>
+                  Starts After
+                  <input type="datetime-local" />
+                </label>
+
+                <label>
+                  Ends Before
+                  <input type="datetime-local" />
+                </label>
+
+                <label>
+                  Ends After
+                  <input type="datetime-local" />
+                </label>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

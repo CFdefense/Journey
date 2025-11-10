@@ -32,7 +32,6 @@ CREATE TYPE budget_bucket AS ENUM (
 
 CREATE TYPE time_of_day AS ENUM (
     'Morning',
-    'Noon',
     'Afternoon',
     'Evening'
 );
@@ -53,10 +52,11 @@ CREATE TABLE accounts (
 -- Events table
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
-    street_address VARCHAR(255),
-    postal_code INTEGER,
-    city VARCHAR(255),
-    event_type VARCHAR(255) NOT NULL,
+    street_address VARCHAR(255) NOT NULL DEFAULT '',
+    postal_code INTEGER NOT NULL DEFAULT -1,
+    city VARCHAR(255) NOT NULL DEFAULT '',
+    country VARCHAR(255) NOT NULL DEFAULT '',
+    event_type VARCHAR(255) NOT NULL DEFAULT '',
     event_description TEXT NOT NULL DEFAULT '',
     event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
@@ -122,15 +122,15 @@ SELECT setval(
 );
 
 -- Events
-INSERT INTO events (id, street_address, postal_code, city, event_type, event_description, event_name, user_created, account_id, hard_start, hard_end)
-VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'Hike', 'A beautiful stroll along a river in this cute small town.', 'Family Walking Path', FALSE, NULL, NULL, NULL),
-(2, '35 Campus Court', 12601, 'Poughkeepsie', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos', FALSE, NULL, NULL, NULL),
-(3, '200 E 42nd St', 10017, 'New York', 'Museum', 'World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.', 'Museum of Modern Art- MoMA', FALSE, NULL, NULL, NULL),
-(4, '1 S Broad St', 19107, 'Philadelphia', 'Concert', 'Music center which hosts local and national bands.', 'Jazz night at Broad Street', FALSE, NULL, NULL, NULL),
-(5, '2 Citizens Bank Way', 19148, 'Philadelphia', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', FALSE, NULL, '2025-12-01 13:00', '2025-12-01 16:00'),
-(6, '5250 S Park Dr', 60615, 'Chicago', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', FALSE, NULL, NULL, NULL),
-(7, '1 Rue de la Seine', 00000, 'Paris', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
-(8, '3 Rue de la Museu', 00000, 'Paris', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, NULL, NULL);
+INSERT INTO events (id, street_address, postal_code, city, country, event_type, event_description, event_name, user_created, account_id, hard_start, hard_end)
+VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful stroll along a river in this cute small town.', 'Family Walking Path', FALSE, NULL, NULL, NULL),
+(2, '35 Campus Court', 12601, 'Poughkeepsie', 'USA', 'Restaurant', 'Local Italian restaurant known for its authentic pasta and upscale dining.', 'Cosimos', FALSE, NULL, NULL, NULL),
+(3, '200 E 42nd St', 10017, 'New York', 'USA', 'Museum', 'World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.', 'Museum of Modern Art- MoMA', FALSE, NULL, NULL, NULL),
+(4, '1 S Broad St', 19107, 'Philadelphia', 'USA', 'Concert', 'Music center which hosts local and national bands.', 'Jazz night at Broad Street', FALSE, NULL, NULL, NULL),
+(5, '2 Citizens Bank Way', 19148, 'Philadelphia', 'USA', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', FALSE, NULL, '2025-12-01 13:00', '2025-12-01 16:00'),
+(6, '5250 S Park Dr', 60615, 'Chicago', 'USA', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', FALSE, NULL, NULL, NULL),
+(7, '1 Rue de la Seine', 00000, 'Paris', 'France', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
+(8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, NULL, NULL);
 
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
@@ -175,7 +175,7 @@ VALUES (1, 2, 3, 'Morning', '2025-11-05'), -- MoMA
 (4, 3, 5, 'Afternoon', '2025-12-01'), -- Phillies Game
 (5, 3, 4, 'Evening', '2025-12-01'), -- Jazz
 -- Itinerary 4 (Ethan at Lollapalooza)
-(6, 4, 6, 'Noon', '2025-07-15'), --Lolla
+(6, 4, 6, 'Afternoon', '2025-07-15'), --Lolla
 --Itinerary 5 (peter in paris)
 (7, 5, 7, 'Morning', '2025-08-15'), --Eiffel Tower
 (8, 5, 8, 'Afternoon', '2025-08-15'); --Lourve
