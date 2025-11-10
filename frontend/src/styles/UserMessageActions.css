@@ -1,38 +1,33 @@
 /* UserMessageActions.css */
-.edit-button {
-  display: flex;
+.chat-edit-button {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
+  justify-content: center;
+  padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, #fa8072 0%, #ff9b8a 100%);
-  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
-  transition: all 0.2s;
+  background: transparent;
+  color: #777; /* icon near timestamp */
   opacity: 0;
   visibility: hidden;
+  transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
 }
 
-.chat-message-wrapper.user:hover .edit-button {
+/* Reveal alongside timestamp on hover */
+.chat-message-wrapper.user:hover .chat-edit-button {
   opacity: 1;
   visibility: visible;
 }
 
-.edit-button svg {
-  flex-shrink: 0;
+.chat-edit-button:hover {
+  color: #444;
+  background: rgba(0, 0, 0, 0.04);
 }
 
-.edit-button:hover {
-  background: linear-gradient(135deg, #e56b5d 0%, #fa8072 100%);
-  box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
-  transform: translateY(-1px);
-}
-
-.edit-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
+.chat-edit-button svg {
+  width: 16px;
+  height: 16px;
 }
