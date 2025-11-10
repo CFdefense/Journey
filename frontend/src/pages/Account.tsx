@@ -1,11 +1,8 @@
-import { apiLogout, apiUpdateAccount, apiCurrent } from "../api/account";
-import { useContext, useState, useEffect, type Context } from "react";
-import { GlobalContext } from "../helpers/global";
-import type { GlobalState } from "../components/GlobalProvider";
+import { apiUpdateAccount, apiCurrent } from "../api/account";
+import { useState, useEffect } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
-import { ACTIVE_CHAT_SESSION } from "./Home";
 import userPfp from "../assets/user-pfp-temp.png";
 import {
   checkIfValidPassword,
@@ -14,9 +11,6 @@ import {
 } from "../helpers/account";
 
 export default function Account() {
-  const { setAuthorized } = useContext<GlobalState>(
-    GlobalContext as Context<GlobalState>
-  );
 
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
@@ -88,16 +82,6 @@ export default function Account() {
 
     fetchProfile();
   }, []);
-  const onLogout = async () => {
-    console.log("Logging out");
-    const { status } = await apiLogout();
-    if (status !== 200) {
-      console.error("Logout failed with status", status);
-    }
-    setAuthorized(false);
-    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
-  };
-
   // Core submit/update logic used by form submit and inline "Done" buttons
   const submitUpdate = async () => {
     setStatusMessage(null);
@@ -442,11 +426,6 @@ export default function Account() {
                   </div>
                 </form>
 
-                <div className="logout-section">
-                  <button onClick={onLogout} className="btn-danger">
-                    Logout
-                  </button>
-                </div>
               </div>
             </div>
           </main>

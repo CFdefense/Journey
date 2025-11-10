@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
-import { useContext, type Context } from "react";
+import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
 import userPfp from "../assets/user-pfp-temp.png";
+import { apiLogout, apiCurrent } from "../api/account";
+import { ACTIVE_CHAT_SESSION } from "../pages/Home";
+import "../styles/Navbar.css";
 
 type NavbarProps = {
   page: "login" | "signup" | "index" | "home" | "view";
@@ -10,9 +13,82 @@ type NavbarProps = {
 };
 
 export default function Navbar({ page, firstName }: NavbarProps) {
-  const { authorized } = useContext<GlobalState>(
+  const { authorized, setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [displayName, setDisplayName] = useState<string>(firstName || "");
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    // Prefer explicit prop when provided
+    if (firstName && firstName.trim().length > 0) {
+      setDisplayName(firstName);
+      return;
+    }
+    // Fallback: when authorized, fetch current user's first name
+    if (authorized) {
+      apiCurrent()
+        .then((res) => {
+          const name = (res?.result?.first_name as string) || "";
+          setDisplayName(name);
+        })
+        .catch(() => {
+          setDisplayName("");
+        });
+    } else {
+      setDisplayName("");
+    }
+  }, [authorized, firstName]);
+
+  const onLogout = async () => {
+    const { status } = await apiLogout();
+    if (status !== 200) {
+      console.error("Logout failed with status", status);
+    }
+    setAuthorized(false);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
+    setMenuOpen(false);
+  };
+
+  const UserMenu = () => {
+    return (
+      <div className="user-menu" ref={menuRef}>
+        <button
+          type="button"
+          className="user-menu-button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+        >
+          <span
+            className={`user-menu-name ${displayName ? "ready" : "pending"}`}
+          >
+            {displayName || ""}
+          </span>
+          <img src={userPfp} alt="User profile" className="user-menu-avatar" />
+        </button>
+        <div className={`user-menu-dropdown ${menuOpen ? "open" : ""}`} role="menu" aria-hidden={!menuOpen}>
+          <Link to="/account" className="user-menu-item" role="menuitem" onClick={() => setMenuOpen(false)}>
+            Account
+          </Link>
+          <button type="button" className="user-menu-item user-menu-item--danger" role="menuitem" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
+      </div>
+    );
+  };
   const renderCTA = () => {
     switch (page) {
       case "login":
@@ -40,11 +116,13 @@ export default function Navbar({ page, firstName }: NavbarProps) {
               <Link to="/home" className="auth-cta-link">
                 Create
               </Link>
-              <Link to="/account" className="profile-pic-link">
-                {/* Empty profile picture placeholder for now until we have a way to get the user's profile picture */}
-              </Link>
+              <UserMenu />
             </div>
           );
+        }
+        if (authorized === null) {
+          // Reserve space to avoid flashing between login/signup and user menu
+          return <div className="auth-cta auth-cta--pending" aria-hidden="true" />;
         }
         return (
           <div className="auth-cta">
@@ -57,31 +135,9 @@ export default function Navbar({ page, firstName }: NavbarProps) {
           </div>
         );
       case "home":
-        return (
-          <div className="auth-cta">
-            <Link to="/account" className="auth-cta-link user-profile-link">
-              <img
-                src={userPfp}
-                alt="User profile"
-                className="user-profile-pic"
-              />
-              <span className="user-first-name">{firstName || "User"}</span>
-            </Link>
-          </div>
-        );
+        return <div className="auth-cta"><UserMenu /></div>;
       case "view":
-        return (
-          <div className="auth-cta">
-            <Link to="/account" className="auth-cta-link user-profile-link">
-              <img
-                src={userPfp}
-                alt="User profile"
-                className="user-profile-pic"
-              />
-              <span className="user-first-name">{firstName || "User"}</span>
-            </Link>
-          </div>
-        );
+        return <div className="auth-cta"><UserMenu /></div>;
       default:
         return null;
     }
