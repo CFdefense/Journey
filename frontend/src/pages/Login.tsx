@@ -33,12 +33,14 @@ export default function Login() {
     <div className="auth-content">
       <div className="login-container">
         <div className="login-box">
-          <h1>Log in to your account</h1>
+          <h1 className="fade-in" style={{ animationDelay: "0ms" }}>
+            Log in to your account
+          </h1>
           <form onSubmit={handleSubmit}>
             <label className="sr-only" htmlFor="email">
               Email
             </label>
-            <div className="field">
+            <div className="field fade-in" style={{ animationDelay: "50ms" }}>
               <span className="field__icon" aria-hidden>
                 <svg
                   width="20"
@@ -66,7 +68,10 @@ export default function Login() {
             <label className="sr-only" htmlFor="password">
               Password
             </label>
-            <div className="field field--password">
+            <div
+              className="field field--password fade-in"
+              style={{ animationDelay: "100ms" }}
+            >
               <span className="field__icon" aria-hidden>
                 <svg
                   width="20"
@@ -128,10 +133,19 @@ export default function Login() {
                 )}
               </button>
             </div>
-            <div className="forgot-password">
+            <div
+              className="forgot-password fade-in"
+              style={{ animationDelay: "150ms" }}
+            >
               <Link to="/forgot">Don't remember your password?</Link>
             </div>
-            <button type="submit">Log In</button>
+            <button
+              type="submit"
+              className="fade-in"
+              style={{ animationDelay: "200ms" }}
+            >
+              Log In
+            </button>
           </form>
           {error && <p>{error}</p>}
         </div>

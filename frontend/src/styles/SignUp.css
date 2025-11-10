@@ -9,6 +9,34 @@
   overflow-x: hidden;
 }
 
+/* Fade-in utility */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fadeInUp 500ms ease forwards;
+  animation-delay: var(--fade-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .auth-page--signup {
   background:
     linear-gradient(
@@ -44,13 +72,18 @@
   width: 100%;
   background: transparent;
   padding: 16px 24px;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
   z-index: 2;
   box-sizing: border-box;
 }
 
 .auth-navbar .auth-navbar-content {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: flex-end;

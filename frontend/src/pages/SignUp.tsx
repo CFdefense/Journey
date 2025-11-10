@@ -70,15 +70,25 @@ export default function Signup() {
       <div className="login-container">
         <div className="signup-page-content">
           <section className="signup-marketing">
-            <Link to="/home" className="signup-brand">
+            <Link
+              to="/home"
+              className="signup-brand fade-in"
+              style={{ animationDelay: "0ms" }}
+            >
               Journey
             </Link>
-            <p className="signup-sub">
+            <p
+              className="signup-sub fade-in"
+              style={{ animationDelay: "50ms" }}
+            >
               Create your account to start planning your next journey with the
               help of our team of intelligent AI agents.
             </p>
             <div className="signup-bullets">
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "100ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">Personalized AI Planning</div>
                   <div className="bullet-desc">
@@ -89,7 +99,10 @@ export default function Signup() {
                   </div>
                 </div>
               </div>
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "150ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">
                     Tailor itineraries together with collaborative chat
@@ -102,7 +115,10 @@ export default function Signup() {
                   </div>
                 </div>
               </div>
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "200ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">
                     Save and share your itineraries
@@ -118,12 +134,14 @@ export default function Signup() {
             </div>
           </section>
           <div className="signup-box signup-form-panel">
-            <h1>Create your account</h1>
+            <h1 className="fade-in" style={{ animationDelay: "250ms" }}>
+              Create your account
+            </h1>
             <form onSubmit={handleSubmit}>
               <label className="sr-only" htmlFor="firstName">
                 First Name
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "300ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -151,7 +169,7 @@ export default function Signup() {
               <label className="sr-only" htmlFor="lastName">
                 Last Name
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "350ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -179,7 +197,7 @@ export default function Signup() {
               <label className="sr-only" htmlFor="email">
                 Email
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "400ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -204,7 +222,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="password">
                 Password
               </label>
-              <div className="field field--password">
+              <div
+                className="field field--password fade-in"
+                style={{ animationDelay: "450ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -270,7 +291,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="confirmPassword">
                 Re-Enter Password
               </label>
-              <div className="field field--password">
+              <div
+                className="field field--password fade-in"
+                style={{ animationDelay: "500ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -337,7 +361,13 @@ export default function Signup() {
                 </button>
               </div>
 
-              <button type="submit">Get Started</button>
+              <button
+                type="submit"
+                className="fade-in"
+                style={{ animationDelay: "550ms" }}
+              >
+                Get Started
+              </button>
             </form>
             {error && <p>{error}</p>}
           </div>
