@@ -609,8 +609,7 @@ async fn test_controllers() {
 		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
 		test_save_itineraries(cookies.clone(), key.clone(), pool.clone()),
 		test_chat_flow(cookies.clone(), key.clone(), pool.clone()),
-		test_user_event_create(cookies.clone(), key.clone(), pool.clone()),
-		test_user_event_update(cookies.clone(), key.clone(), pool.clone()),
+		test_user_event_flow(cookies.clone(), key.clone(), pool.clone()),
 		test_search_event(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
@@ -1234,20 +1233,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	assert_eq!(latest_page.message_page.len(), 0);
 }
 
-async fn test_user_event_create(
+async fn test_user_event_flow(
 	mut cookies: CookieJar,
 	key: Extension<Key>,
 	pool: Extension<PgPool>,
 ) {
-	todo!()
-}
-
-async fn test_user_event_update(
-	mut cookies: CookieJar,
-	key: Extension<Key>,
-	pool: Extension<PgPool>,
-) {
-	todo!()
+	todo!("create events");
+	todo!("update events");
+	todo!("delete events");
 }
 
 async fn test_search_event(mut cookies: CookieJar, key: Extension<Key>, pool: Extension<PgPool>) {

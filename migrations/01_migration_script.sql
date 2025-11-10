@@ -52,12 +52,12 @@ CREATE TABLE accounts (
 -- Events table
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
-    street_address VARCHAR(255) NOT NULL DEFAULT '',
-    postal_code INTEGER NOT NULL DEFAULT -1,
-    city VARCHAR(255) NOT NULL DEFAULT '',
-    country VARCHAR(255) NOT NULL DEFAULT '',
-    event_type VARCHAR(255) NOT NULL DEFAULT '',
-    event_description TEXT NOT NULL DEFAULT '',
+    street_address VARCHAR(255),
+    postal_code INTEGER,
+    city VARCHAR(255),
+    country VARCHAR(255),
+    event_type VARCHAR(255),
+    event_description TEXT,
     event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,

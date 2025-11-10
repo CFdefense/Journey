@@ -439,16 +439,25 @@
   color: black;
 }
 
+.search-event-modal {
+  display: flex;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  border-top: 4px solid #006bbb;
+  color: black;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .icon-button {
@@ -497,7 +506,7 @@
 
 .location-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -520,9 +529,6 @@
 }
 
 .card-save-button {
-  position: absolute;
-  top: 20px;
-  right: 60px;
   background: #f0f0f0;
   border: none;
   width: 32px;
@@ -540,6 +546,51 @@
 .card-save-button:hover {
   background: var(--light-blue);
   color: white;
+}
+
+.searchContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+}
+
+.searchFilters {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.searchResults {
+  flex: 1.5;
+  padding-left: 16px;
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.resultCard {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+  transition: background 0.2s;
+}
+
+.resultCard:hover {
+  background: #f0f8ff;
+}
+
+.resultCard h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.resultCard p {
+  font-size: 0.9rem;
+  color: #555;
 }
 
 /* Responsive design */
@@ -579,5 +630,22 @@
 
   .time-block {
     padding: 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .searchContainer {
+    flex-direction: column;
+  }
+
+  .searchFilters {
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+
+  .searchResults {
+    padding-left: 0;
   }
 }

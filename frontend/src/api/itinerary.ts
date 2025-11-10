@@ -34,9 +34,6 @@ export async function apiItineraryDetails(
 			`${API_BASE_URL}/api/itinerary/${itinerary_id}`,
 			{
 				method: "GET",
-				headers: {
-					"Content-Type": "application/json"
-				},
 				credentials: import.meta.env.DEV ? "include" : "same-origin"
 			}
 		);
@@ -152,6 +149,37 @@ export async function apiSearchEvent(
 	}
 }
 
+/// Deletes a user-created event from the db
+///
+/// # Method
+/// Sends a `DELETE /api/itinerary/userEvent/{id}` request to delete the event
+/// with the provided id.
+///
+/// # Returns
+/// - On success: 200 status code.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiDeleteUserEvent(
+	id: number
+): Promise<ApiResult<void>> {
+	//TODO remove event from cache
+	try {
+		const response = await fetch(
+			`${API_BASE_URL}/api/itinerary/userEvent/${id}`,
+			{
+				method: "DELETE",
+				credentials: import.meta.env.DEV ? "include" : "same-origin",
+			}
+		);
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("apiDeleteUserEvent error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
 /// Sends a `GET /api/itinerary/saved` request to fetch all saved itineraries.
 ///
 /// # Returns list of saved itineraries if successful.
@@ -162,9 +190,6 @@ export async function apiGetSavedItineraries(): Promise<
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/itinerary/saved`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: "include"
 		});
 		return { result: await response.json(), status: response.status };

@@ -7,7 +7,7 @@
  *   Serve Itinerary Related API Requests
  */
 
-use axum::routing::post;
+use axum::routing::{delete, post};
 use axum::{Extension, Json, extract::Path, routing::get};
 use sqlx::PgPool;
 use tracing::debug;
@@ -33,7 +33,8 @@ use crate::swagger::SecurityAddon;
 		api_saved_itineraries,
 		api_save,
 		api_user_event,
-		api_search_event
+		api_search_event,
+		api_delete_user_event
 	),
 	modifiers(&SecurityAddon),
 	security(("set-cookie"=[])),
@@ -62,7 +63,6 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.event_description,
 			e.event_name,
 			e.user_created,
-			e.account_id,
 			e.hard_start,
 			e.hard_end
 		FROM event_list el
@@ -520,19 +520,21 @@ pub async fn api_user_event(
 				street_address    = COALESCE($1, street_address),
 				postal_code       = COALESCE($2, postal_code),
 				city              = COALESCE($3, city),
-				event_type        = COALESCE($4, event_type),
-				event_description = COALESCE($5, event_description),
-				event_name        = $6,
+				country           = COALESCE($4, city),
+				event_type        = COALESCE($5, event_type),
+				event_description = COALESCE($6, event_description),
+				event_name        = $7,
 				user_created      = TRUE,
-				account_id        = $7,
-				hard_start        = COALESCE($8, hard_start),
-				hard_end          = COALESCE($9, hard_end)
-			WHERE id=$10 AND user_created=TRUE AND account_id=$7
+				account_id        = $8,
+				hard_start        = COALESCE($9, hard_start),
+				hard_end          = COALESCE($10, hard_end)
+			WHERE id=$11 AND user_created=TRUE AND account_id=$8
 			RETURNING id
 			"#,
 			event.street_address,
 			event.postal_code,
 			event.city,
+			event.country,
 			event.event_type,
 			event.event_description,
 			event.event_name,
@@ -550,16 +552,17 @@ pub async fn api_user_event(
 		sqlx::query!(
 			r#"
 			INSERT INTO events(
-				street_address, postal_code, city,
+				street_address, postal_code, city, country,
 				event_type, event_description, event_name,
 				user_created, account_id, hard_start, hard_end
 			)
-			VALUES($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $9)
+			VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10)
 			RETURNING id
 			"#,
 			event.street_address,
 			event.postal_code,
 			event.city,
+			event.country,
 			event.event_type,
 			event.event_description,
 			event.event_name,
@@ -705,10 +708,12 @@ pub async fn api_user_event(
     tag="Itinerary"
 )]
 pub async fn api_search_event(
+	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
 	Json(query): Json<SearchEventRequest>,
 ) -> ApiResult<Json<SearchEventResponse>> {
-	let mut qb = sqlx::QueryBuilder::new("SELECT * FROM events WHERE 1=1");
+	let mut qb = sqlx::QueryBuilder::new("SELECT * FROM events WHERE (user_created=FALSE OR account_id=");
+	qb.push_bind(user.id).push(")");
 	// Dynamically add filters if present
 	if let Some(id) = query.id {
 		qb.push(" AND id = ").push_bind(id);
@@ -754,6 +759,64 @@ pub async fn api_search_event(
 	}))
 }
 
+/// Deletes a user-created event from the db
+///
+/// # Method
+/// `DELETE /api/itinerary/userEvent/:id`
+///
+/// # Responses
+/// - `200 OK` - User-created event deleted successfully
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `404 NOT_FOUND` - User-created event was not found or does not belong to this user (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Example Request
+/// ```bash
+/// curl -X DELETE http://localhost:3001/api/itinerary/userEvent/:14 \
+///   -H "Content-Type: application/json" \
+/// ```
+#[utoipa::path(
+    delete,
+    path="/userEvent/{id}",
+    summary="Deletes a user-event from the DB",
+    description="Deletes the user-created event from the DB using the provided event ID. Event must have been created by this user.",
+    responses(
+        (status=200, description="User-created event successfully deleted"),
+        (status=400, description="Bad Request"),
+        (status=401, description="User has an invalid cookie/no cookie"),
+        (status=404, description="User-event not found or does not belong to this user"),
+        (status=405, description="Method Not Allowed - Must be POST"),
+        (status=408, description="Request Timed Out"),
+        (status=500, description="Internal Server Error")
+    ),
+    security(("set-cookie"=[])),
+    tag="Itinerary"
+)]
+pub async fn api_delete_user_event(
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
+	Path(event_id): Path<i32>,
+) -> ApiResult<()> {
+	sqlx::query!(
+		r#"
+		DELETE FROM events
+		WHERE
+			id=$1 AND
+			account_id=$2 AND
+			user_created=TRUE
+		RETURNING id;
+		"#,
+		event_id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(AppError::from)?
+	.ok_or(AppError::NotFound)?;
+	Ok(())
+}
+
 /// Create the itinerary routes with authentication middleware.
 ///
 /// # Routes
@@ -762,6 +825,7 @@ pub async fn api_search_event(
 /// - `GET /{id}` - Get single itinerary metadata (protected)
 /// - `POST /userEvent` - Insert or update a user-created custom event (protected)
 /// - `POST /searchEvent` - queries the DB for an event that matches the provided filters (protected)
+/// - `DELETE /userEvent/{id}` - Deletes the user-created event from the db (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -772,5 +836,6 @@ pub fn itinerary_routes() -> AxumRouter {
 		.route("/{id}", get(api_get_itinerary))
 		.route("/userEvent", post(api_user_event))
 		.route("/searchEvent", post(api_search_event))
+		.route("/userEvent/{id}", delete(api_delete_user_event))
 		.route_layer(axum::middleware::from_fn(middleware_auth))
 }

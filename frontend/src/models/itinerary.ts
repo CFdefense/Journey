@@ -21,15 +21,14 @@ export type EventDay = {
 
 export type Event = {
 	id: number;
-	street_address: string;
-	postal_code: number;
-	city: string;
-	country: string;
-	event_type: string;
-	event_description: string;
+	street_address: string | null;
+	postal_code: number | null;
+	city: string | null;
+	country: string | null;
+	event_type: string | null;
+	event_description: string | null;
 	event_name: string;
 	user_created: boolean;
-	account_id: number | null;
 	/// Destination's local timezone - %Y-%m-%d
 	hard_start: Date | null; /// for testing sake this is what will have the 13:00 value for phillies game
 	/// Destination's local timezone - %Y-%m-%d
@@ -54,6 +53,7 @@ export type UserEventRequest = {
 	street_address: string | null;
 	postal_code: number | null;
 	city: string | null;
+	country: string | null;
 	event_type: string | null;
 	event_description: string | null;
 	event_name: string;
@@ -83,6 +83,8 @@ export type SearchEventRequest = {
 	postal_code: number | null;
 	/// Search where city like ...
 	city: string | null;
+	/// Search where country like ...
+	country: string | null;
 	/// Search where event_type like ...
 	event_type: string | null;
 	/// Search where event_description like ...

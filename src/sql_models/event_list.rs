@@ -14,23 +14,21 @@ pub struct EventListJoinRow {
 	/// UTC date within itinerary date range (%Y-%m-%d)
 	pub date: NaiveDate,
 	/// Event address
-	pub street_address: String,
+	pub street_address: Option<String>,
 	/// Event post code
-	pub postal_code: i32,
+	pub postal_code: Option<i32>,
 	/// Event City
-	pub city: String,
+	pub city: Option<String>,
 	/// Event Country
-	pub country: String,
+	pub country: Option<String>,
 	/// Event type
-	pub event_type: String,
+	pub event_type: Option<String>,
 	/// Event description
-	pub event_description: String,
+	pub event_description: Option<String>,
 	/// Event name
 	pub event_name: String,
 	/// User-Created
 	pub user_created: bool,
-	/// Account ID
-	pub account_id: Option<i32>,
 	/// Hard Start Time
 	pub hard_start: Option<NaiveDateTime>,
 	/// Hard End Time

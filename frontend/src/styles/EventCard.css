@@ -107,7 +107,8 @@
 .event-modal {
   background: #ffffff;
   border-radius: 16px;
-  padding: 32px;
+  padding: 16px;
+  padding-bottom: 32px;
   max-width: 500px;
   width: 90%;
   max-height: 80vh;
@@ -136,10 +137,13 @@
   font-weight: 600;
 }
 
+.event-card-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .card-edit-button {
-  position: absolute;
-  top: 20px;
-  right: 80px;
   background: #f0f0f0;
   border: none;
   width: 32px;
@@ -154,11 +158,13 @@
   transition: all 0.2s ease;
 }
 
+.card-edit-button:hover {
+  background: var(--light-blue);
+  color: white;
+}
+
 /* Close button */
 .close-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   background: #f0f0f0;
   border: none;
   width: 32px;

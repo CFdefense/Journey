@@ -1125,6 +1125,55 @@
           }
         ]
       }
+    },
+    "/api/itinerary/userEvent/{id}": {
+      "delete": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Deletes a user-event from the DB",
+        "description": "Deletes the user-created event from the DB using the provided event ID. Event must have been created by this user.",
+        "operationId": "api_delete_user_event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User-created event successfully deleted"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "User-event not found or does not belong to this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1235,37 +1284,36 @@
         "description": "A single event without context from an itinerary",
         "required": [
           "id",
-          "street_address",
-          "postal_code",
-          "city",
-          "country",
-          "event_type",
-          "event_description",
           "event_name",
           "user_created"
         ],
         "properties": {
-          "account_id": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
-          },
           "city": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "country": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "event_description": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "event_name": {
             "type": "string"
           },
           "event_type": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "hard_end": {
             "type": [
@@ -1287,11 +1335,17 @@
             "description": "Primary key"
           },
           "postal_code": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32"
           },
           "street_address": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "user_created": {
             "type": "boolean"

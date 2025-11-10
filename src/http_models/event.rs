@@ -10,15 +10,14 @@ use crate::sql_models::event_list::EventListJoinRow;
 pub struct Event {
 	/// Primary key
 	pub id: i32,
-	pub street_address: String,
-	pub postal_code: i32,
-	pub city: String,
-	pub country: String,
-	pub event_type: String,
-	pub event_description: String,
+	pub street_address: Option<String>,
+	pub postal_code: Option<i32>,
+	pub city: Option<String>,
+	pub country: Option<String>,
+	pub event_type: Option<String>,
+	pub event_description: Option<String>,
 	pub event_name: String,
 	pub user_created: bool,
-	pub account_id: Option<i32>,
 	pub hard_start: Option<NaiveDateTime>,
 	pub hard_end: Option<NaiveDateTime>,
 }
@@ -36,7 +35,6 @@ impl From<&EventListJoinRow> for Event {
 			event_description: value.event_description.clone(),
 			event_name: value.event_name.clone(),
 			user_created: value.user_created.clone(),
-			account_id: value.account_id.clone(),
 			hard_start: value.hard_start.clone(),
 			hard_end: value.hard_end.clone(),
 		}
