@@ -127,64 +127,96 @@ export default function PrevChatSideBar({
 
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
-      <div className="sidebar-top">
-        {sidebarVisible && <div className="sidebar-title">Chat History</div>}
-        <button className="sidebar-toggle-btn" onClick={onToggleSidebar}>
-          ☰
+      <div className="sidebar-actions">
+        <button
+          className={`action-btn ${sidebarVisible ? "expanded" : "icon-only"}`}
+          onClick={onToggleSidebar}
+          aria-label="Toggle menu"
+          title="Menu"
+        >
+          <span className="action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </span>
+          <span className="action-label">Menu</span>
+        </button>
+
+        <button
+          className={`action-btn primary ${sidebarVisible ? "expanded" : "icon-only"}`}
+          onClick={onNewChat}
+          aria-label="New chat"
+          title="New chat"
+        >
+          <span className="action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </span>
+          <span className="action-label">New chat</span>
+        </button>
+
+        <button
+          className={`action-btn ${sidebarVisible ? "expanded" : "icon-only"}`}
+          aria-label="Search chats"
+          title="Search chats"
+        >
+          <span className="action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2"/>
+              <path d="M16.5 16.5L20 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </span>
+          <span className="action-label">Search chats</span>
         </button>
       </div>
 
       {sidebarVisible && (
-        <>
-          <div className="new-chat-btn-wrapper">
-            <button className="new-chat-btn" onClick={onNewChat}>
-              + New Chat
-            </button>
-          </div>
-
-          <ul className="chat-list">
-            {chats === null || chats.length === 0 ? (
-              <p className="empty">No previous chats yet</p>
-            ) : (
-              chats.map((chat) => (
-                <li
-                  key={chat.id}
-                  className={chat.id === activeChatId ? "active" : ""}
-                  onClick={() => {
-                    if (editingChatId !== chat.id) {
-                      onSelectChat(chat.id);
-                      sessionStorage.setItem(
-                        ACTIVE_CHAT_SESSION,
-                        chat.id.toString()
-                      );
-                    }
-                  }}
+        <ul className="chat-list">
+          {chats === null || chats.length === 0 ? (
+            <p className="empty">No previous chats yet</p>
+          ) : (
+            chats.map((chat) => (
+              <li
+                key={chat.id}
+                className={chat.id === activeChatId ? "active" : ""}
+                onClick={() => {
+                  if (editingChatId !== chat.id) {
+                    onSelectChat(chat.id);
+                    sessionStorage.setItem(
+                      ACTIVE_CHAT_SESSION,
+                      chat.id.toString()
+                    );
+                  }
+                }}
+              >
+                {editingChatId === chat.id ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="chat-title-input"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={() => handleTitleSubmit(chat.id)}
+                    onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className="chat-title">{chat.title}</span>
+                )}
+                <button
+                  className="chat-menu-btn"
+                  onClick={(e) => handleContextMenu(e, chat.id)}
                 >
-                  {editingChatId === chat.id ? (
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      className="chat-title-input"
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      onBlur={() => handleTitleSubmit(chat.id)}
-                      onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span className="chat-title">{chat.title}</span>
-                  )}
-                  <button
-                    className="chat-menu-btn"
-                    onClick={(e) => handleContextMenu(e, chat.id)}
-                  >
-                    ...
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </>
+                  ...
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
       )}
 
       {contextMenu && (

@@ -3,16 +3,15 @@ import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
 import userPfp from "../assets/user-pfp-temp.png";
-import { apiLogout, apiCurrent } from "../api/account";
+import { apiLogout } from "../api/account";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 import "../styles/Navbar.css";
 
 type NavbarProps = {
   page: "login" | "signup" | "index" | "home" | "view";
-  firstName?: string;
 };
 
-export default function Navbar({ page, firstName }: NavbarProps) {
+export default function Navbar({ page }: NavbarProps) {
   const location = useLocation();
   const isAccountRoute = location.pathname.startsWith("/account");
   const { authorized, setAuthorized } = useContext<GlobalState>(
@@ -20,8 +19,6 @@ export default function Navbar({ page, firstName }: NavbarProps) {
   );
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [displayName, setDisplayName] = useState<string>(firstName || "");
-  const nameReady = (displayName || "").trim().length > 0;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -34,25 +31,8 @@ export default function Navbar({ page, firstName }: NavbarProps) {
   }, []);
 
   useEffect(() => {
-    // Prefer explicit prop when provided
-    if (firstName && firstName.trim().length > 0) {
-      setDisplayName(firstName);
-      return;
-    }
-    // Fallback: when authorized, fetch current user's first name
-    if (authorized) {
-      apiCurrent()
-        .then((res) => {
-          const name = (res?.result?.first_name as string) || "";
-          setDisplayName(name);
-        })
-        .catch(() => {
-          setDisplayName("");
-        });
-    } else {
-      setDisplayName("");
-    }
-  }, [authorized, firstName]);
+    // No-op: user menu no longer displays name
+  }, [authorized]);
 
   const onLogout = async () => {
     const { status } = await apiLogout();
@@ -69,16 +49,11 @@ export default function Navbar({ page, firstName }: NavbarProps) {
       <div className="user-menu" ref={menuRef}>
         <button
           type="button"
-          className={`user-menu-button ${nameReady ? "ready" : "pending"}`}
+          className="user-menu-button"
           onClick={() => setMenuOpen((v) => !v)}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
         >
-          <span
-            className={`user-menu-name ${displayName ? "ready" : "pending"}`}
-          >
-            {displayName || ""}
-          </span>
           <img src={userPfp} alt="User profile" className="user-menu-avatar" />
         </button>
         <div className={`user-menu-dropdown ${menuOpen ? "open" : ""}`} role="menu" aria-hidden={!menuOpen}>
@@ -143,7 +118,7 @@ export default function Navbar({ page, firstName }: NavbarProps) {
         return (
           <div className="auth-cta">
             {isAccountRoute && (
-              <Link to="/home" className={`auth-cta-link ${nameReady ? "" : "pending"}`}>
+              <Link to="/home" className="auth-cta-link">
                 Create
               </Link>
             )}

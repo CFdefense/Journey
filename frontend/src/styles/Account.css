@@ -34,15 +34,15 @@
   top: 0;
   width: 100%;
   background: transparent;
-  padding: 16px 24px;
+  padding: 16px clamp(16px, 4vw, 56px);
   z-index: 2;
 }
 
 .auth-page--account .auth-navbar .auth-navbar-content {
-  max-width: 1200px;
   width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;

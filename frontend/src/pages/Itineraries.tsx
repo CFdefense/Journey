@@ -125,7 +125,7 @@ export default function Itineraries() {
   };
   return (
     <div className="auth-page auth-page--account">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" />
       <div className="auth-content">
         <div className="account-wrapper">
           {/* Collapsible Sidebar ... (all your sidebar code is fine) ... */}

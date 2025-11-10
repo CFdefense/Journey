@@ -217,7 +217,7 @@ export default function Account() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" />
 
       <div className="auth-content">
         {loaded && (

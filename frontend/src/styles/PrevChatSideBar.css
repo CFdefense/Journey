@@ -6,7 +6,7 @@
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
-  transition: width 0.3s ease;
+  transition: width 0.45s ease-in-out;
   align-self: stretch;
   box-sizing: border-box;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
@@ -19,55 +19,119 @@
 
 /* When sidebar is closed */
 .sidebar.closed {
-  width: 50px;
+  width: 56px;
   background: #ffffff;
 }
 
-/* Top section with toggle button and optional title */
-.sidebar-top {
+/* Actions area (menu, new chat, search) */
+.sidebar-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem;
+  gap: 8px;
+  padding: 8px;
   border-bottom: 1px solid #e0e0e0;
-  height: 50px;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
 }
 
-.sidebar.closed .sidebar-top {
-  justify-content: center;
-  padding: 0;
+.sidebar.open .sidebar-actions {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
-.sidebar-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  white-space: nowrap;
+.sidebar.closed .sidebar-actions {
+  flex-direction: column;
+  align-items: flex-start; /* keep buttons pinned to the left edge */
+  justify-content: flex-start;
+  padding: 8px; /* keep same left padding so edge doesn't jump */
 }
 
-.sidebar.closed .sidebar-title {
-  display: none;
-}
-
-.sidebar-toggle-btn {
-  background: transparent;
-  border: none;
-  color: #666;
-  font-size: 1.3rem;
+.action-btn {
+  border: 1px solid #e0e0e0;
+  background: #f7f7f8;
+  color: #0b1220;
+  border-radius: 10px;
   cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  border-radius: 4px;
-  flex-shrink: 0;
+  justify-content: flex-start; /* keep icon pinned left while shrinking */
+  gap: 8px;
+  font-weight: 600;
+  transition:
+    width 0.4s ease-in-out,
+    padding 0.4s ease-in-out,
+    gap 0.3s ease-in-out,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  overflow: hidden; /* allow label to be clipped from the right */
 }
 
-.sidebar-toggle-btn:hover {
-  background: #f0f0f0;
-  color: #333;
+.action-btn:hover {
+  background: #f0f0f2;
+  border-color: #d7d7db;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+}
+
+.action-btn.expanded {
+  padding: 10px 12px;
+  min-height: 40px;
+  width: 100%;
+  text-align: left;
+}
+
+.action-btn.icon-only {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  padding: 9px; /* keep consistent left padding so icon does not recentre visually */
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.action-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.action-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.action-label {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  opacity: 1;
+  max-width: 240px;
+  overflow: hidden;
+  transition: opacity 0.25s ease, max-width 0.35s ease-in-out;
+  transform-origin: left; /* collapse from right to left */
+}
+
+.sidebar.closed .action-label {
+  opacity: 0;
+  max-width: 0;
+}
+
+/* When sidebar is closed, reduce spacing so label area collapses smoothly */
+.sidebar.closed .action-btn {
+  gap: 0;
 }
 
 /* New chat button wrapper */

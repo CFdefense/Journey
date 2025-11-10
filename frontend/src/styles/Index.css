@@ -229,6 +229,15 @@
   transform: translateY(-1px) scale(0.99);
 }
 
+.cta-button .arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+.cta-button:hover .arrow,
+.cta-button:focus-visible .arrow {
+  transform: translateX(6px);
+}
+
 .earth-container {
   position: absolute;
   top: calc(50% + max(0px, 1000px - 90vh));
