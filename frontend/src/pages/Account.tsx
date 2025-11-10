@@ -1,4 +1,5 @@
 import { apiUpdateAccount, apiCurrent } from "../api/account";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
@@ -12,6 +13,8 @@ import {
 
 export default function Account() {
 
+  const navigate = useNavigate();
+  const location = useLocation();
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
     message: string;
@@ -430,6 +433,32 @@ export default function Account() {
             </div>
           </main>
         </div>
+        {/* Bottom tab bar */}
+        <footer className="account-bottom-bar">
+          <div className="account-bottom-inner">
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname === "/account" ? "active" : ""}`}
+              onClick={() => navigate("/account")}
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/preferences") ? "active" : ""}`}
+              onClick={() => navigate("/account/preferences")}
+            >
+              Preferences
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/itineraries") ? "active" : ""}`}
+              onClick={() => navigate("/account/itineraries")}
+            >
+              Itineraries
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );

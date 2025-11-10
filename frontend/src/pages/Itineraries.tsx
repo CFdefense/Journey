@@ -3,15 +3,22 @@ import { useState, useEffect } from "react";
 import { apiCurrent } from "../api/account";
 import { apiGetSavedItineraries } from "../api/itinerary";
 import Navbar from "../components/Navbar";
+import { useLocation } from "react-router-dom";
 import "../styles/Account.css";
 import type { EventDay, Itinerary } from "../models/itinerary";
+import userPfp from "../assets/user-pfp-temp.png";
 
 export default function Itineraries() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
+  const navbarAvatarUrl = userPfp;
+  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
+  const [accountCreated, setAccountCreated] = useState<string | null>(null);
 
   useEffect(() => {
     fetchItineraries();
@@ -21,6 +28,22 @@ export default function Itineraries() {
 
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
+        const maybeTrips = (account as any).trips_planned;
+        setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
+        const maybeCreated = (account as any).created_at;
+        setAccountCreated(
+          maybeCreated
+            ? new Date(maybeCreated).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              })
+            : new Date().toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              })
+        );
       }
     }
     fetchAccount();
@@ -167,7 +190,36 @@ export default function Itineraries() {
           <main className="main-content">
             <div className="account-container">
               <div className="account-box" style={{ maxWidth: "800px" }}>
-                <h1>Saved Itineraries</h1>
+                <div className="hs-hero-card">
+                  <div className="profile-header">
+                    <div className="avatar-wrapper">
+                      <img
+                        src={profileImageUrl}
+                        alt={`${firstName || "User"}`}
+                        className="avatar"
+                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                      />
+                    </div>
+                    <div className="profile-meta">
+                      <h1 className="profile-name">
+                        {firstName || "Your Name"}
+                      </h1>
+                      <p className="profile-email">Saved Itineraries</p>
+                    </div>
+                  </div>
+                  <div className="hs-stats">
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {tripsPlanned ?? 5}
+                      </div>
+                      <div className="hs-stat__label">Trips planned</div>
+                    </div>
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">{accountCreated}</div>
+                      <div className="hs-stat__label">Account created</div>
+                    </div>
+                  </div>
+                </div>
 
                 {loading ? (
                   <div className="empty-state">
@@ -239,6 +291,32 @@ export default function Itineraries() {
             </div>
           </main>
         </div>
+        {/* Bottom tab bar */}
+        <footer className="account-bottom-bar">
+          <div className="account-bottom-inner">
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname === "/account" ? "active" : ""}`}
+              onClick={() => navigate("/account")}
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/preferences") ? "active" : ""}`}
+              onClick={() => navigate("/account/preferences")}
+            >
+              Preferences
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/itineraries") ? "active" : ""}`}
+              onClick={() => navigate("/account/itineraries")}
+            >
+              Itineraries
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );

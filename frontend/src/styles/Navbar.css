@@ -59,23 +59,20 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
   padding: 6px;
   z-index: 30;
-  opacity: 0;
-  transform: translateY(-4px);
-  pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
-  will-change: opacity, transform;
-  transform-origin: top right;
+  display: none;
 }
 
 .user-menu-dropdown.open {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+  display: block; 
 }
 
 .user-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
   text-align: left;
   padding: 10px 12px;
   border: none;
@@ -84,10 +81,10 @@
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  font-family: inherit;
   cursor: pointer;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: opacity 150ms ease, transform 150ms ease, background 150ms ease;
 }
 .user-menu-item:hover {
   background: rgba(11, 18, 32, 0.05);
@@ -98,21 +95,3 @@
 .user-menu-item--danger:hover {
   background: rgba(178, 58, 48, 0.08);
 }
-
-.user-menu-dropdown.open .user-menu-item {
-  opacity: 1;
-  transform: translateY(0);
-}
-.user-menu-dropdown.open .user-menu-item:nth-child(2) {
-  transition-delay: 40ms;
-}
-
-/* Optional: fade-in the name once loaded to avoid pop-in */
-.user-menu-name {
-  transition: opacity 150ms ease;
-}
-.user-menu-name.pending {
-  opacity: 0;
-}
-
-

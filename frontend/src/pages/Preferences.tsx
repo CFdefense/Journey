@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import type { UpdateRequest } from "../models/account";
 import "../styles/Account.css";
 import Navbar from "../components/Navbar";
+import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
+import userPfp from "../assets/user-pfp-temp.png";
 
 type BudgetOption =
   | "VeryLowBudget"
@@ -48,6 +50,7 @@ function stringToEnum<T extends object>(
 
 export default function Preferences() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
@@ -60,6 +63,10 @@ export default function Preferences() {
   const [disabilities, setDisabilities] = useState("");
   const [foodPreferences, setFoodPreferences] = useState("");
   const [firstName, setFirstName] = useState<string>("");
+  const navbarAvatarUrl = userPfp;
+  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
+  const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const budgetOptions: BudgetOption[] = [
     "VeryLowBudget",
     "LowBudget",
@@ -74,6 +81,16 @@ export default function Preferences() {
     "RiskTaker"
   ];
 
+  const formatDate = (dateInput: string | number | Date): string => {
+    const date = new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  };
+
   // Fetch user profile on component mount
   useEffect(() => {
     const fetchProfile = async () => {
@@ -85,6 +102,12 @@ export default function Preferences() {
         setRiskTolerance(result.risk_preference as RiskTolerence);
         setDisabilities(result.disabilities || "");
         setFoodPreferences(result.food_allergies || "");
+        const maybeTrips = (result as any).trips_planned;
+        setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
+        const maybeCreated = (result as any).created_at;
+        setAccountCreated(
+          maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
+        );
       } else {
         setStatusMessage({
           message: "Failed to load preferences. Please try again.",
@@ -99,6 +122,12 @@ export default function Preferences() {
 
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
+        const maybeTrips = (account as any).trips_planned;
+        setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
+        const maybeCreated = (account as any).created_at;
+        setAccountCreated(
+          maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
+        );
       }
     };
 
@@ -221,7 +250,38 @@ export default function Preferences() {
           <main className="main-content">
             <div className="account-container">
               <div className="account-box">
-                <h1>Account Preferences</h1>
+                <div className="hs-hero-card">
+                  <div className="profile-header">
+                    <div className="avatar-wrapper">
+                      <img
+                        src={profileImageUrl}
+                        alt={`${firstName || "User"}`}
+                        className="avatar"
+                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                      />
+                    </div>
+                    <div className="profile-meta">
+                      <h1 className="profile-name">
+                        {firstName || "Your Name"}
+                      </h1>
+                      <p className="profile-email">Account Preferences</p>
+                    </div>
+                  </div>
+                  <div className="hs-stats">
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {tripsPlanned ?? 5}
+                      </div>
+                      <div className="hs-stat__label">Trips planned</div>
+                    </div>
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {accountCreated ?? formatDate(new Date())}
+                      </div>
+                      <div className="hs-stat__label">Account created</div>
+                    </div>
+                  </div>
+                </div>
 
                 {statusMessage && (
                   <div
@@ -314,6 +374,32 @@ export default function Preferences() {
             </div>
           </main>
         </div>
+        {/* Bottom tab bar */}
+        <footer className="account-bottom-bar">
+          <div className="account-bottom-inner">
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname === "/account" ? "active" : ""}`}
+              onClick={() => navigate("/account")}
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/preferences") ? "active" : ""}`}
+              onClick={() => navigate("/account/preferences")}
+            >
+              Preferences
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/itineraries") ? "active" : ""}`}
+              onClick={() => navigate("/account/itineraries")}
+            >
+              Itineraries
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );
