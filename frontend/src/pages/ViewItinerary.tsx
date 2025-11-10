@@ -63,6 +63,17 @@ export default function ViewItineraryPage() {
     }
   };
 
+  const handleEditWithAI = () => {
+    // Navigate to home with both the itinerary ID and chat session ID
+    navigate("/home", { 
+      state: { 
+        selectedItineraryId: itineraryMetadata.id,
+        chatSessionId: itineraryMetadata.chatSessionId,
+        openItinerarySidebar: true
+      } 
+    });
+  };
+
   useEffect(() => {
     // Redirect back to home if no itinerary ID is provided
     if (!itineraryId) {
@@ -110,7 +121,9 @@ export default function ViewItineraryPage() {
         title={itineraryMetadata.title}
         editMode={true}
       />
-      <button className="edit-ai-button">Edit with AI</button>
+      <button className="edit-ai-button" onClick={handleEditWithAI}>
+        Edit with AI
+      </button>
     </div>
   );
 }

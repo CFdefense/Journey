@@ -1,5 +1,6 @@
 // Home.tsx
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
@@ -28,6 +29,9 @@ import { apiItineraryDetails } from "../api/itinerary";
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
@@ -41,6 +45,35 @@ export default function Home() {
     null
   );
   const [itineraryTitle, setItineraryTitle] = useState<string>("");
+  const [initialStateProcessed, setInitialStateProcessed] = useState(false);
+
+  // Handle navigation state from ViewItinerary
+  useEffect(() => {
+    if (location.state && !initialStateProcessed) {
+      const { selectedItineraryId, chatSessionId, openItinerarySidebar } = location.state;
+      
+      if (chatSessionId !== undefined && chatSessionId !== null) {
+        setActiveChatId(chatSessionId);
+        sessionStorage.setItem(ACTIVE_CHAT_SESSION, chatSessionId.toString());
+      }
+      
+      if (openItinerarySidebar !== undefined) {
+        setItinerarySidebarVisible(openItinerarySidebar);
+      }
+      
+      // Set itinerary ID last and trigger a load
+      if (selectedItineraryId !== undefined) {
+        setSelectedItineraryId(selectedItineraryId);
+        // Manually load itinerary data since we're setting the ID in initial state
+        loadItineraryData(selectedItineraryId);
+      }
+      
+      setInitialStateProcessed(true);
+      
+      // Clear navigation state after processing
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, initialStateProcessed, navigate, location.pathname]);
 
   useEffect(() => {
     async function fetchAccount() {
@@ -88,14 +121,16 @@ export default function Home() {
 
       let chatSessionId = activeChatId;
 
-      // get MRU chat from session storage
-      const prevActiveChat: string | null =
-        sessionStorage.getItem(ACTIVE_CHAT_SESSION);
-      if (prevActiveChat !== null) {
-        const id = +prevActiveChat;
-        if (tempChats.find((chat) => chat.id === id) !== undefined) {
-          chatSessionId = id;
-          setActiveChatId(chatSessionId);
+      // get MRU chat from session storage only if not already set by navigation state
+      if (chatSessionId === null) {
+        const prevActiveChat: string | null =
+          sessionStorage.getItem(ACTIVE_CHAT_SESSION);
+        if (prevActiveChat !== null) {
+          const id = +prevActiveChat;
+          if (tempChats.find((chat) => chat.id === id) !== undefined) {
+            chatSessionId = id;
+            setActiveChatId(chatSessionId);
+          }
         }
       }
 
@@ -136,40 +171,41 @@ export default function Home() {
 
   // Fetch itinerary data when selectedItineraryId changes
   useEffect(() => {
-    async function loadItinerary() {
-      const itineraryId = selectedItineraryId;
-
-      // if no current itinerary is selected, do not try and populate it
-      if (itineraryId === null) {
-        return;
-      }
-
-      try {
-        const data = await fetchItinerary(itineraryId);
-        setItineraryData(data);
-
-        const apiResponse = await apiItineraryDetails(itineraryId);
-
-        if (apiResponse.result) {
-          setItineraryTitle(apiResponse.result.title);
-        }
-      } catch (error) {
-        console.error("Error loading itinerary:", error);
-        setItineraryData(null);
-        setItineraryTitle("");
-      }
+    if (selectedItineraryId !== null) {
+      loadItineraryData(selectedItineraryId);
     }
-
-    loadItinerary();
   }, [selectedItineraryId]);
 
-  // whenever the active chat changes, clear all itinerary information on home page.
+  // Helper function to load itinerary data
+  const loadItineraryData = async (itineraryId: number) => {
+    try {
+      const data = await fetchItinerary(itineraryId);
+      setItineraryData(data);
+
+      const apiResponse = await apiItineraryDetails(itineraryId);
+
+      if (apiResponse.result) {
+        setItineraryTitle(apiResponse.result.title);
+      }
+
+      setItinerarySidebarVisible(true); // whenever itinerary data is loaded successfully, make sure the side bar opens
+    } catch (error) {
+      console.error("Error loading itinerary:", error);
+      setItineraryData(null);
+      setItineraryTitle("");
+    }
+  };
+
+  // whenever the active chat changes (excluding initial navigation state), clear all itinerary information on home page.
   useEffect(() => {
-    setSelectedItineraryId(null);
-    setItineraryData(null);
-    setItineraryTitle("");
-    setItinerarySidebarVisible(false);
-  }, [activeChatId]);
+    // Don't clear itinerary if we're coming from ViewItinerary
+    if (!initialStateProcessed || !location.state?.selectedItineraryId) {
+      setSelectedItineraryId(null);
+      setItineraryData(null);
+      setItineraryTitle("");
+      setItinerarySidebarVisible(false);
+    }
+  }, [activeChatId, initialStateProcessed, location.state]);
 
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
