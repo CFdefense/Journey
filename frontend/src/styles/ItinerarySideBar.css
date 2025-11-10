@@ -6,17 +6,16 @@
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
-  transition: width 0.3s ease;
+  transition: width 0.45s ease-in-out;
+  will-change: width;
   align-self: stretch;
   box-sizing: border-box;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
-/* When sidebar is open - 30% of viewport width */
 .itinerary-sidebar.open {
-  width: 30%;
-  min-width: 300px;
-  max-width: 500px;
+  /* Smooth width without min/max jumps */
+  width: 380px;
 }
 
 /* When sidebar is closed */
@@ -37,8 +36,8 @@
 }
 
 .itinerary-sidebar.closed .itinerary-sidebar-top {
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end; /* keep toggle pinned to the right */
+  padding: 0.75rem; /* avoid layout jump when collapsing */
 }
 
 .itinerary-sidebar-title {
@@ -46,6 +45,16 @@
   font-weight: 600;
   color: #2c3e50;
   white-space: nowrap;
+  /* fade-up baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms ease, transform 260ms ease;
+}
+
+.itinerary-sidebar.open .itinerary-sidebar-title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 480ms; /* after panel width animation */
 }
 
 .itinerary-sidebar.closed .itinerary-sidebar-title {
@@ -80,6 +89,9 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  /* default hidden; will fade in after width animation completes */
+  opacity: 0;
+  transition: opacity 220ms ease 0ms;
 }
 
 /* Custom scrollbar for itinerary content */
@@ -106,8 +118,33 @@
   scrollbar-color: #d0d0d0 transparent;
 }
 
+.itinerary-sidebar.open .itinerary-content {
+  opacity: 1;
+  /* delay fade-in to follow the 0.45s width transition */
+  transition: opacity 220ms ease 450ms;
+}
+
 .itinerary-sidebar.closed .itinerary-content {
-  display: none;
+  pointer-events: none;
+}
+
+/* Fade-up children after panel opens */
+.itinerary-content > * {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms ease, transform 260ms ease;
+}
+
+.itinerary-sidebar.open .itinerary-content > * {
+  opacity: 1;
+  transform: translateY(0);
+  /* start after the width transition completes (450ms) and container fades in */
+  transition-delay: 480ms;
+}
+
+/* slight stagger for second block (e.g., actions) */
+.itinerary-sidebar.open .itinerary-content > :nth-child(2) {
+  transition-delay: 520ms;
 }
 
 /* Action buttons container at the bottom of itinerary sidebar */
@@ -177,14 +214,12 @@
 
 @media (max-width: 1200px) {
   .itinerary-sidebar.open {
-    width: 35%;
-    min-width: 280px;
+    width: 340px;
   }
 }
 
 @media (max-width: 768px) {
   .itinerary-sidebar.open {
-    width: 40%;
-    min-width: 250px;
+    width: 300px;
   }
 }

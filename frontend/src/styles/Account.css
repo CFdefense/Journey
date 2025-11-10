@@ -32,14 +32,12 @@
 .auth-navbar {
   position: sticky;
   top: 0;
-  width: 100%;
   background: transparent;
-  padding: 16px clamp(16px, 4vw, 56px);
   z-index: 2;
+  padding: 16px clamp(16px, 4vw, 56px) !important;
 }
 
 .auth-page--account .auth-navbar .auth-navbar-content {
-  width: 100%;
   max-width: none;
   margin: 0;
   padding: 0;
@@ -73,14 +71,10 @@
   transition: color 0.2s;
 }
 
-.auth-brand:hover {
-  color: #34495e;
-}
-
 .auth-page--account .auth-brand {
   color: #ffffff;
 }
-.auth-page--account .auth-brand:hover {
+.auth-page--account{
   color: #ffffff;
   opacity: 0.9;
 }
@@ -95,7 +89,7 @@
   text-decoration: none;
   font-weight: 700;
 }
-.auth-page--account .auth-cta-link:hover {
+.auth-page--account{
   opacity: 0.8;
 }
 

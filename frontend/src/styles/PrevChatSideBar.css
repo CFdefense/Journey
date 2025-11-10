@@ -60,6 +60,8 @@
   justify-content: flex-start; /* keep icon pinned left while shrinking */
   gap: 8px;
   font-weight: 600;
+  height: 36px; /* lock total height */
+  box-sizing: border-box; /* include padding/border in height */
   transition:
     width 0.4s ease-in-out,
     padding 0.4s ease-in-out,
@@ -88,7 +90,6 @@
 
 .action-btn.expanded {
   padding: 10px 12px;
-  min-height: 40px;
   width: 100%;
   text-align: left;
 }
@@ -176,6 +177,10 @@
   margin: 0;
   overflow-y: auto;
   flex: 1;
+  /* fade baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 220ms ease, transform 260ms ease;
 }
 
 /* Custom scrollbar for chat list */
@@ -202,8 +207,11 @@
   scrollbar-color: #d0d0d0 transparent;
 }
 
-.sidebar.closed .chat-list {
-  display: none;
+.sidebar.open .chat-list {
+  opacity: 1;
+  transform: translateY(0);
+  /* follow the 0.45s width animation of the sidebar */
+  transition-delay: 450ms;
 }
 
 .chat-list li {
@@ -220,6 +228,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  /* child fade baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 200ms ease,
+    transform 260ms ease,
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.sidebar.open .chat-list li {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 480ms; /* a touch after the list container fades */
 }
 
 .chat-list li:hover {

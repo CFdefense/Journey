@@ -49,38 +49,36 @@ export default function ItinerarySideBar({
         </button>
       </div>
 
-      {sidebarVisible && (
-        <div className="itinerary-content">
-          <Itinerary
-            key={
-              itineraryData
-                ? JSON.stringify(itineraryData[0]?.date)
-                : "no-itinerary"
-            }
-            days={itineraryData ?? undefined}
-            compact={true}
-            title={itineraryTitle}
-            editMode={false}
-          />
+      <div className="itinerary-content">
+        <Itinerary
+          key={
+            itineraryData
+              ? JSON.stringify(itineraryData[0]?.date)
+              : "no-itinerary"
+          }
+          days={itineraryData ?? undefined}
+          compact={true}
+          title={itineraryTitle}
+          editMode={false}
+        />
 
-          <div className="itinerary-actions">
-            <button
-              className="edit-itinerary-btn"
-              onClick={handleViewItinerary}
-              disabled={selectedItineraryId === null}
-            >
-              Edit
-            </button>
-            <button
-              className="save-itinerary-btn"
-              onClick={handleSaveItinerary}
-              disabled={selectedItineraryId === null}
-            >
-              Save
-            </button>
-          </div>
+        <div className="itinerary-actions">
+          <button
+            className="edit-itinerary-btn"
+            onClick={handleViewItinerary}
+            disabled={selectedItineraryId === null}
+          >
+            Edit
+          </button>
+          <button
+            className="save-itinerary-btn"
+            onClick={handleSaveItinerary}
+            disabled={selectedItineraryId === null}
+          >
+            Save
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

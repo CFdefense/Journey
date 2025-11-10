@@ -174,50 +174,61 @@ export default function PrevChatSideBar({
         </button>
       </div>
 
-      {sidebarVisible && (
-        <ul className="chat-list">
-          {chats === null || chats.length === 0 ? (
-            <p className="empty">No previous chats yet</p>
-          ) : (
-            chats.map((chat) => (
-              <li
-                key={chat.id}
-                className={chat.id === activeChatId ? "active" : ""}
-                onClick={() => {
-                  if (editingChatId !== chat.id) {
-                    onSelectChat(chat.id);
-                    sessionStorage.setItem(
-                      ACTIVE_CHAT_SESSION,
-                      chat.id.toString()
-                    );
-                  }
-                }}
+      <ul className="chat-list">
+        {chats === null || chats.length === 0 ? (
+          <p className="empty">No previous chats yet</p>
+        ) : (
+          chats.map((chat) => (
+            <li
+              key={chat.id}
+              className={chat.id === activeChatId ? "active" : ""}
+              onClick={() => {
+                if (editingChatId !== chat.id) {
+                  onSelectChat(chat.id);
+                  sessionStorage.setItem(
+                    ACTIVE_CHAT_SESSION,
+                    chat.id.toString()
+                  );
+                }
+              }}
+            >
+              {editingChatId === chat.id ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="chat-title-input"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onBlur={() => handleTitleSubmit(chat.id)}
+                  onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="chat-title">{chat.title}</span>
+              )}
+              <button
+                className="chat-menu-btn"
+                aria-label="More options"
+                title="More options"
+                onClick={(e) => handleContextMenu(e, chat.id)}
               >
-                {editingChatId === chat.id ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="chat-title-input"
-                    value={editingTitle}
-                    onChange={(e) => setEditingTitle(e.target.value)}
-                    onBlur={() => handleTitleSubmit(chat.id)}
-                    onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <span className="chat-title">{chat.title}</span>
-                )}
-                <button
-                  className="chat-menu-btn"
-                  onClick={(e) => handleContextMenu(e, chat.id)}
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  aria-hidden="true"
                 >
-                  ...
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
 
       {contextMenu && (
         <ContextWindow
