@@ -180,12 +180,6 @@ export default function Preferences() {
         <div className="account-wrapper">
           {/* Collapsible Sidebar */}
           <aside className="sidebar">
-            <div className="sidebar-toggle">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-
             <div className="sidebar-content">
               <button
                 className="sidebar-item"
