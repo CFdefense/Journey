@@ -15,10 +15,12 @@ export default function Itineraries() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     fetchItineraries();
@@ -28,6 +30,7 @@ export default function Itineraries() {
 
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
+        setLastName(account.last_name || "");
         const maybeTrips = (account as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (account as any).created_at;
@@ -44,6 +47,7 @@ export default function Itineraries() {
                 year: "numeric"
               })
         );
+        setLoaded(true);
       }
     }
     fetchAccount();
@@ -188,7 +192,8 @@ export default function Itineraries() {
           </aside>
 
           <main className="main-content">
-            <div className="account-container">
+            {loaded && (
+            <div className="account-container fade-in">
               <div className="account-box" style={{ maxWidth: "800px" }}>
                 <div className="hs-hero-card">
                   <div className="profile-header">
@@ -202,7 +207,7 @@ export default function Itineraries() {
                     </div>
                     <div className="profile-meta">
                       <h1 className="profile-name">
-                        {firstName || "Your Name"}
+                        {`${firstName || ""} ${lastName || ""}`.trim() || "Your Name"}
                       </h1>
                       <p className="profile-email">Saved Itineraries</p>
                     </div>
@@ -289,6 +294,7 @@ export default function Itineraries() {
                 )}
               </div>
             </div>
+            )}
           </main>
         </div>
         {/* Bottom tab bar */}

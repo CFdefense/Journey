@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
@@ -13,12 +13,15 @@ type NavbarProps = {
 };
 
 export default function Navbar({ page, firstName }: NavbarProps) {
+  const location = useLocation();
+  const isAccountRoute = location.pathname.startsWith("/account");
   const { authorized, setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [displayName, setDisplayName] = useState<string>(firstName || "");
+  const nameReady = (displayName || "").trim().length > 0;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -66,7 +69,7 @@ export default function Navbar({ page, firstName }: NavbarProps) {
       <div className="user-menu" ref={menuRef}>
         <button
           type="button"
-          className="user-menu-button"
+          className={`user-menu-button ${nameReady ? "ready" : "pending"}`}
           onClick={() => setMenuOpen((v) => !v)}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
@@ -137,7 +140,16 @@ export default function Navbar({ page, firstName }: NavbarProps) {
       case "home":
         return <div className="auth-cta"><UserMenu /></div>;
       case "view":
-        return <div className="auth-cta"><UserMenu /></div>;
+        return (
+          <div className="auth-cta">
+            {isAccountRoute && (
+              <Link to="/home" className={`auth-cta-link ${nameReady ? "" : "pending"}`}>
+                Create
+              </Link>
+            )}
+            <UserMenu />
+          </div>
+        );
       default:
         return null;
     }

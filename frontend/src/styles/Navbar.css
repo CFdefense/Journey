@@ -23,6 +23,29 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 700;
+  min-width: 12ch;
+  transition: opacity 150ms ease;
+}
+
+.user-menu-name.pending {
+  opacity: 0;
+}
+
+.user-menu-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: block;
+  transition: opacity 150ms ease;
+}
+
+.user-menu-button.pending .user-menu-avatar {
+  opacity: 0;
+}
+
+.auth-cta-link.pending {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .user-menu-avatar {

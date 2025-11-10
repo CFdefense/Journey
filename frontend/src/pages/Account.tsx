@@ -39,6 +39,7 @@ export default function Account() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<boolean>(false);
 
   const formatDate = (dateInput: string | number | Date): string => {
     const date = new Date(dateInput);
@@ -81,6 +82,7 @@ export default function Account() {
       setAccountCreated(
         maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
       );
+      setLoaded(true);
     }
 
     fetchProfile();
@@ -214,11 +216,12 @@ export default function Account() {
   };
 
   return (
-    <div className="auth-page auth-page--account">
+    <div className="auth-page auth-page--account auth-page--no-scroll">
       <Navbar page="view" firstName={firstName} />
 
       <div className="auth-content">
-        <div className="account-wrapper">
+        {loaded && (
+        <div className="account-wrapper fade-in">
           {/* Main Content */}
           <main className="main-content">
             <div className="account-container">
@@ -433,6 +436,7 @@ export default function Account() {
             </div>
           </main>
         </div>
+        )}
         {/* Bottom tab bar */}
         <footer className="account-bottom-bar">
           <div className="account-bottom-inner">
