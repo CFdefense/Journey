@@ -156,7 +156,7 @@
   text-decoration: underline;
 }
 
-.login-box button {
+.login-box button[type="submit"] {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -174,7 +174,7 @@
     transform 0.1s;
 }
 
-.login-box button:hover {
+.login-box button[type="submit"]:hover {
   background: #1a1a1a;
   transform: translateY(-1px);
 }
@@ -212,6 +212,10 @@
     border-color 0.2s,
     background-color 0.2s;
   border-radius: 12px;
+}
+
+.field.field--password {
+  grid-template-columns: 48px 1fr auto;
 }
 
 .field__icon {
@@ -263,6 +267,10 @@
   background-color: transparent !important;
 }
 
+.field.field--password input {
+  padding-right: 44px;
+}
+
 .field:focus-within {
   background: #eef3f9;
   box-shadow: none;
@@ -271,6 +279,36 @@
 .field:focus-within .field__icon {
   color: #2a90cb;
   background: inherit;
+}
+
+/* Password visibility toggle button */
+.password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: transparent !important;
+  border: none;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.65);
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.password-toggle:hover,
+.password-toggle:focus {
+  outline: none;
+  color: #2a90cb;
+  background: transparent !important;
 }
 
 @media (max-width: 1100px) {

@@ -171,6 +171,10 @@
   border-radius: 12px;
 }
 
+.signup-box .field--password {
+  grid-template-columns: 48px 1fr auto;
+}
+
 .signup-box .field__icon {
   height: 48px;
   width: 48px;
@@ -202,6 +206,10 @@
   box-sizing: border-box;
 }
 
+.signup-box .field--password input {
+  padding-right: 44px;
+}
+
 .signup-box .field input:-webkit-autofill {
   -webkit-text-fill-color: #0b1220 !important;
   -webkit-box-shadow: 0 0 0 1000px #f3f6fb inset !important;
@@ -227,7 +235,37 @@
   background: inherit;
 }
 
-.signup-box button {
+/* Password visibility toggle */
+.password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: transparent !important;
+  border: none;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.65);
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.password-toggle:hover,
+.password-toggle:focus {
+  outline: none;
+  color: #2a90cb;
+  background: transparent !important;
+}
+
+.signup-box button[type="submit"] {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -246,7 +284,7 @@
   box-sizing: border-box;
 }
 
-.signup-box button:hover {
+.signup-box button[type="submit"]:hover {
   background: #1a1a1a;
   transform: translateY(-1px);
 }
