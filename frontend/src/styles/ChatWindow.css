@@ -5,15 +5,13 @@
   justify-content: space-between;
   height: 100%;
   width: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: transparent;
   border-radius: 8px;
   padding: 0;
-  box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
-  border: 1px solid rgba(216, 127, 117, 0.2);
   min-height: 0;
   opacity: 1;
   transform-origin: center center;
+  position: relative;
 }
 
 /* Empty state container - full height, centered higher */
@@ -30,10 +28,9 @@
 
 /* Chat Header */
 .chat-header {
-  background: #fafafa;
-  border-bottom: 1px solid #e0e0e0;
+  background: transparent;
+  border-bottom: none;
   padding: 1rem 1.5rem;
-  border-radius: 8px 8px 0 0;
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
@@ -45,7 +42,7 @@
 }
 
 .chat-container.expanding .chat-header {
-  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
 }
 
 .chat-container:not(.chat-container-empty):not(.expanding) .chat-header {
@@ -104,12 +101,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: #ffffff;
+  background: transparent;
   opacity: 0;
 }
 
 .chat-container.expanding .chat-messages {
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.65s forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
 }
 
 .chat-container:not(.chat-container-empty):not(.expanding) .chat-messages {
@@ -157,7 +154,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 768px;
+  max-width: 850px;
   margin: 0 auto;
   gap: 2rem;
   padding: 2rem;
@@ -165,6 +162,8 @@
   transform: translateY(30px);
   animation: fadeUpIn 0.6s ease forwards;
   transition: opacity 0.4s ease, transform 0.4s ease;
+  position: relative;
+  min-height: 200px;
 }
 
 .chat-container:not(.chat-container-empty) .chat-empty-state {
@@ -183,40 +182,20 @@
 
 /* When container is transitioning from empty to full */
 .chat-container.expanding {
-  animation: expandFromCenter 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: expandFromCenter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes expandFromCenter {
   0% {
-    background: transparent;
-    border: none;
-    box-shadow: none;
     padding: 2rem;
     padding-top: 15vh;
     justify-content: flex-start;
     align-items: center;
-    transform: scale(0.85);
-    opacity: 0.9;
-  }
-  60% {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(216, 127, 117, 0.2);
-    box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
-    padding: 0;
-    justify-content: space-between;
-    align-items: stretch;
-    transform: scale(1);
-    opacity: 1;
   }
   100% {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(216, 127, 117, 0.2);
-    box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
     padding: 0;
     justify-content: space-between;
     align-items: stretch;
-    transform: scale(1);
-    opacity: 1;
   }
 }
 
@@ -243,6 +222,7 @@
   word-break: keep-all;
   hyphens: none;
   padding: 0 1rem;
+  padding-left: calc(1rem + 44px);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -276,13 +256,57 @@
   border-radius: 28px;
   padding: 1rem 1.25rem;
   box-shadow: 0 4px 16px rgba(216, 127, 117, 0.15);
-  transition: all 0.3s ease;
+  margin: 0 auto;
+  z-index: 10;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.chat-empty-search:focus-within {
+/* In empty state - positioned in flow with title, centered */
+.chat-container-empty .chat-empty-state .chat-empty-search {
+  position: relative;
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 850px;
+  align-self: center;
+}
+
+/* When search bar is in expanded chat view (MessageInput component) */
+.chat-container:not(.chat-container-empty) .chat-empty-search {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+
+/* During expansion - search bar in empty state moves to bottom */
+.chat-container.expanding .chat-empty-state .chat-empty-search {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-container:not(.chat-container-empty):not(.expanding) .chat-empty-search {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+
+.chat-container-empty .chat-empty-state .chat-empty-search:focus-within {
   border-color: #d87f75;
   box-shadow: 0 4px 20px rgba(216, 127, 117, 0.25);
   transform: translateY(-2px);
+}
+
+.chat-container:not(.chat-container-empty) .chat-empty-search:focus-within {
+  border-color: #d87f75;
+  box-shadow: 0 4px 20px rgba(216, 127, 117, 0.25);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 /* Search input */

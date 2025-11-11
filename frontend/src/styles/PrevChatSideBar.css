@@ -185,7 +185,7 @@
   /* fade baseline */
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 220ms ease, transform 260ms ease;
+  transition: opacity 220ms ease, transform 260ms ease, padding 0.45s ease-in-out;
 }
 
 /* Custom scrollbar for chat list */
@@ -215,6 +215,8 @@
 .sidebar.open .chat-list {
   opacity: 1;
   transform: translateY(0);
+  padding-left: 1rem;
+  padding-right: 1rem;
   /* follow the 0.45s width animation of the sidebar */
   transition-delay: 450ms;
 }
@@ -478,6 +480,7 @@
   transform: translateY(0);
   height: auto;
   padding: 0;
+  margin-right: 0.5rem;
   width: auto;
   transition: 
     opacity 200ms ease 450ms,
