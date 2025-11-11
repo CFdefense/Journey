@@ -1,11 +1,11 @@
 import { describe, expect, test,  vi, beforeEach } from "vitest";
 import { checkIfValidName, checkIfValidPassword, checkIfPasswordsMatch } from "../src/helpers/account";
-import { 
-  fetchItinerary, 
-  populateItinerary, 
-  convertToApiFormat 
+import {
+  fetchItinerary,
+  populateItinerary,
+  convertToApiFormat
 } from "../src/helpers/itinerary";
-import type { Itinerary as ApiItinerary } from "../src/models/itinerary";
+import type { Itinerary as ApiItinerary, DayItinerary } from "../src/models/itinerary";
 import * as itineraryApi from "../src/api/itinerary";
 import {
 	apiLogin,
@@ -82,14 +82,13 @@ describe("Itinerary Helper Tests", () => {
               street_address: "123 Main St",
               postal_code: 12345,
               city: "TestCity",
+              country: "TestCountry",
               event_type: "food",
               user_created: false,
-              account_id: null,
               hard_start: null,
               hard_end: null
             },
           ],
-          noon_events: [],
           afternoon_events: [],
           evening_events: [],
         },
@@ -113,11 +112,11 @@ describe("Itinerary Helper Tests", () => {
     };
 
     const result = populateItinerary(apiItinerary);
-    expect(result[0].date).toBe("N/A");
+    expect(result[0].date).toBe("");
   });
 
  test("Test convertToApiFormat", () => {
-  const days = [
+  const days: DayItinerary[] = [
     {
       date: "2025-01-01",
       timeBlocks: [
@@ -131,9 +130,9 @@ describe("Itinerary Helper Tests", () => {
               street_address: "123 Main St",
               postal_code: 12345,
               city: "New York",
+              country: "USA",
               event_type: "dining",
               user_created: false,
-              account_id: null,
               hard_start: null,
               hard_end: null,
             },
@@ -207,14 +206,14 @@ describe("Itinerary Helper Tests", () => {
     vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue(mockApiResponse);
 
     const result = await fetchItinerary(1);
-    expect(result[0].date).toBe("N/A");
+    expect(result[0].date).toBe("");
   });
 
   test("Test fetchItinerary with error", async () => {
     vi.mocked(itineraryApi.apiItineraryDetails).mockRejectedValue(new Error("Network error"));
 
     const result = await fetchItinerary(1);
-    expect(result[0].date).toBe("N/A");
+    expect(result[0].date).toBe("");
   });
 });
 
