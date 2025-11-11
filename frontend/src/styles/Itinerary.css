@@ -563,6 +563,7 @@
 .searchResults {
   flex: 1.5;
   padding-left: 16px;
+  overflow-y: auto;
 }
 
 .resultsGrid {

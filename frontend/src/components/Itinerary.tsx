@@ -471,7 +471,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Name
                 <input
-                  value={userEventForm.name}
                   onChange={(e) => setUserEventForm({ ...userEventForm, name: e.target.value })}
                   required
                 />
@@ -480,7 +479,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Description
                 <textarea
-                  value={userEventForm.description}
                   onChange={(e) => setUserEventForm({ ...userEventForm, description: e.target.value })}
                   rows={4}
                 />
@@ -489,7 +487,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Type of Event
                 <input
-                  value={userEventForm.type}
                   onChange={(e) => setUserEventForm({ ...userEventForm, type: e.target.value })}
                 />
               </label>
@@ -498,7 +495,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 <label>
                   Address
                   <input
-                    value={userEventForm.address}
                     onChange={(e) => setUserEventForm({ ...userEventForm, address: e.target.value })}
                   />
                 </label>
@@ -506,7 +502,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 <label>
                   City
                   <input
-                    value={userEventForm.city}
                     onChange={(e) => setUserEventForm({ ...userEventForm, city: e.target.value })}
                   />
                 </label>
@@ -514,7 +509,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 <label>
                   Country
                   <input
-                    value={userEventForm.country}
                     onChange={(e) => setUserEventForm({ ...userEventForm, country: e.target.value })}
                   />
                 </label>
@@ -522,7 +516,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 <label>
                   Postal Code
                   <input
-                    value={userEventForm.postalCode}
                     onChange={(e) => setUserEventForm({ ...userEventForm, postalCode: e.target.value })}
                     type="number"
                     maxLength={5}
@@ -530,7 +523,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 </label>
 
                 <label>
-                  Start Time (UTC)
+                  {/*NOTICE! Input elements must use the browser's timezone*/}
+                  Start Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                   <input
                     onChange={(e) => setUserEventForm({ ...userEventForm, start: new Date(e.target.value).toISOString() })}
                     type="datetime-local"
@@ -538,7 +532,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 </label>
 
                 <label>
-                  End Time (UTC)
+                  {/*NOTICE! Input elements must use the browser's timezone*/}
+                  End Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                   <input
                     onChange={(e) => setUserEventForm({ ...userEventForm, end: new Date(e.target.value).toISOString() })}
                     type="datetime-local"
@@ -578,7 +573,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Name
                       <input
-                        value={searchEventForm.name}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, name: e.target.value })}
                       />
                     </label>
@@ -586,7 +580,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Description
                       <input
-                        value={searchEventForm.description}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, description: e.target.value })}
                       />
                     </label>
@@ -594,7 +587,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       ID
                       <input
-                        value={searchEventForm.id}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, id: e.target.value })}
                         type="number"
                       />
@@ -603,7 +595,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Type of Event
                       <input
-                        value={searchEventForm.type}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, type: e.target.value })}
                       />
                     </label>
@@ -611,7 +602,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Address
                       <input
-                        value={searchEventForm.address}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, address: e.target.value })}
                       />
                     </label>
@@ -619,7 +609,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       City
                       <input
-                        value={searchEventForm.city}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, city: e.target.value })}
                       />
                     </label>
@@ -627,7 +616,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Country
                       <input
-                        value={searchEventForm.country}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, country: e.target.value })}
                       />
                     </label>
@@ -635,7 +623,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Postal Code
                       <input
-                        value={searchEventForm.postalCode}
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, postalCode: e.target.value })}
                         type="number"
                         maxLength={5}
@@ -643,7 +630,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     </label>
 
                     <label>
-                      Starts Before (UTC)
+                      {/*NOTICE! Input elements must use the browser's timezone*/}
+                      Starts Before ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, startsBefore: new Date(e.target.value).toISOString() })}
                         type="datetime-local"
@@ -651,7 +639,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     </label>
 
                     <label>
-                      Starts After (UTC)
+                      {/*NOTICE! Input elements must use the browser's timezone*/}
+                      Starts After ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, startsAfter: new Date(e.target.value).toISOString() })}
                         type="datetime-local"
@@ -659,7 +648,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     </label>
 
                     <label>
-                      Ends Before (UTC)
+                      {/*NOTICE! Input elements must use the browser's timezone*/}
+                      Ends Before ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, endsBefore: new Date(e.target.value).toISOString() })}
                         type="datetime-local"
@@ -667,7 +657,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     </label>
 
                     <label>
-                      Ends After (UTC)
+                      {/*NOTICE! Input elements must use the browser's timezone*/}
+                      Ends After ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
                         onChange={(e) => setSearchEventForm({ ...searchEventForm, endsAfter: new Date(e.target.value).toISOString() })}
                         type="datetime-local"

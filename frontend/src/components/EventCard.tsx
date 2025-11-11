@@ -136,11 +136,7 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("Error updaing user-event - TODO: handle error properly");
       return;
     }
-    // const event = userEvent as Event;
-    // unassignedEvents.push(event);
-    // setUnassignedEvents(unassignedEvents);
-    // setCreateModalOpen(false);
-    alert("TODO: does anything need to happen here?");
+    setIsOpen(false);
   };
 
   const onDeleteUserEvent = async () => {
@@ -161,6 +157,7 @@ const EventCard: React.FC<EventCardProps> = ({
       };
     });
     setLocalDays(localDays);
+    setIsOpen(false);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -276,15 +273,29 @@ const EventCard: React.FC<EventCardProps> = ({
             {user_created ? (
               <>
                 <p>
+                  {/*NOTICE! Input elements must use the browser's timezone*/}
                   <strong>Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
                   <input
+                    value={eventData.hard_start
+                      ? new Date(eventData.hard_start.substring(0, 19) + "Z")
+                        .toLocaleString("sv-SE", { timeZoneName: "short" })
+                        .slice(0, 16)
+                      : ""
+                    }
                     type="datetime-local"
                     onChange={e => setEventField("hard_start", new Date(e.target.value).toISOString())}
                   />
                 </p>
                 <p>
+                  {/*NOTICE! Input elements must use the browser's timezone*/}
                   <strong>End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
                   <input
+                    value={eventData.hard_end
+                      ? new Date(eventData.hard_end.substring(0, 19) + "Z")
+                        .toLocaleString("sv-SE", { timeZoneName: "short" })
+                        .slice(0, 16)
+                      : ""
+                    }
                     type="datetime-local"
                     onChange={e => setEventField("hard_end", new Date(e.target.value).toISOString())}
                   />
