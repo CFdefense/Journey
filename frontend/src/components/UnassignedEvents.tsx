@@ -27,11 +27,20 @@ const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
             city={event.city}
             event_type={event.event_type}
             user_created={event.user_created}
-            account_id={event.account_id}
             hard_start={event.hard_start}
             hard_end={event.hard_end}
             draggable
             onDragStart={(e) => onDragStart(e, event)}
+            event_id={0}
+            country={null}
+            localDays={[]}
+            setLocalDays={function (): void {
+                throw new Error("Function not implemented.");
+            } }
+            unassignedEvents={[]}
+            setUnassignedEvents={function (): void {
+                throw new Error("Function not implemented.");
+            } }
           />
         ))}
       </div>

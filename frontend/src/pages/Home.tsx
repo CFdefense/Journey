@@ -22,7 +22,7 @@ import type { ChatSession } from "../models/home";
 import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
 import { fetchItinerary } from "../helpers/itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";

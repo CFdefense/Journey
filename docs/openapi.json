@@ -1320,14 +1320,16 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "UTC"
           },
           "hard_start": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "UTC"
           },
           "id": {
             "type": "integer",
@@ -1990,14 +1992,16 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "UTC"
           },
           "hard_start": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "UTC"
           },
           "id": {
             "type": [

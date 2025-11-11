@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 
 interface ItinerarySideBarProps {
   onToggleSidebar: () => void;

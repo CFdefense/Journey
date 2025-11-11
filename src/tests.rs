@@ -1462,6 +1462,20 @@ async fn test_auth_for_all_required() {
 			"Protected route should require authentication"
 		);
 	}
+
+	for res in futures::future::join_all([
+		hc.do_delete("/userEvent/1"),
+		hc.do_delete("/api/chat/1"),
+	])
+	.await
+	.iter()
+	{
+		assert_eq!(
+			res.as_ref().unwrap().status().as_u16(),
+			401,
+			"Protected route should require authentication"
+		);
+	}
 }
 
 async fn test_http_signup_and_login_flow() {

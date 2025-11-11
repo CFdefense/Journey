@@ -1,20 +1,10 @@
 import React, { useEffect, useState } from "react";
 import EventCard from "./EventCard";
-import type { Event, SearchEventRequest, UserEventRequest } from "../models/itinerary";
+import type { DayItinerary, Event, SearchEventRequest, UserEventRequest } from "../models/itinerary";
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
 import { sanitize } from "../helpers/itinerary";
-
-interface TimeBlock {
-  time: string;
-  events: Event[];
-}
-
-interface DayItinerary {
-  date: Date;
-  timeBlocks: TimeBlock[];
-}
 
 interface ItineraryProps {
   days?: DayItinerary[];

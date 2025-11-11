@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import "../styles/EventCard.css";
 import { apiDeleteUserEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import { sanitize, type DayItinerary } from "../helpers/itinerary";
-import type { Event, UserEventRequest } from "../models/itinerary";
+import { sanitize } from "../helpers/itinerary";
+import type { Event, UserEventRequest, DayItinerary } from "../models/itinerary";
 
 interface EventCardProps {
   event_id: number;

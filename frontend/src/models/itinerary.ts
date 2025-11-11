@@ -109,3 +109,13 @@ export type SearchEventResponse = {
 export type SavedItinerariesResponse = {
 	itineraries: Itinerary[];
 };
+
+export type TimeBlock = {
+	time: string;
+	events: Event[];
+}
+
+export type DayItinerary = {
+	date: string;
+	timeBlocks: TimeBlock[];
+}
