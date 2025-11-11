@@ -38,9 +38,7 @@ export default function ItinerarySideBar({
   return (
     <div className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="itinerary-sidebar-top">
-        {sidebarVisible && (
-          <div className="itinerary-sidebar-title">Itinerary</div>
-        )}
+        <div className="itinerary-sidebar-title">Itinerary</div>
         <button
           className="itinerary-sidebar-toggle-btn"
           onClick={onToggleSidebar}

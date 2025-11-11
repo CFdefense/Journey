@@ -343,6 +343,7 @@ export default function Account() {
                           type="button"
                           className="pill-button pill-button--disabled"
                           disabled
+                          title="Cannot edit email associated with your account"
                         >
                           Edit
                         </button>

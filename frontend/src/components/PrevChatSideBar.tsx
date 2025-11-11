@@ -178,10 +178,13 @@ export default function PrevChatSideBar({
         {chats === null || chats.length === 0 ? (
           <p className="empty">No previous chats yet</p>
         ) : (
-          chats.map((chat) => (
+          chats.map((chat, index) => (
             <li
               key={chat.id}
               className={chat.id === activeChatId ? "active" : ""}
+              style={{
+                transitionDelay: `${480 + index * 60}ms`
+              }}
               onClick={() => {
                 if (editingChatId !== chat.id) {
                   onSelectChat(chat.id);

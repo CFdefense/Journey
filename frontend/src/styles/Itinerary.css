@@ -94,6 +94,7 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
   box-sizing: border-box;
+  color: #000000;
 }
 
 /* Header with title and menu */

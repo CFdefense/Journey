@@ -45,20 +45,37 @@
   font-weight: 600;
   color: #2c3e50;
   white-space: nowrap;
-  /* fade-up baseline */
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 200ms ease, transform 260ms ease;
+  visibility: hidden;
+  max-width: 0;
+  overflow: hidden;
+  transition: 
+    opacity 200ms ease,
+    transform 260ms ease,
+    visibility 0ms ease 200ms,
+    max-width 0ms ease 200ms;
 }
 
 .itinerary-sidebar.open .itinerary-sidebar-title {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 480ms; /* after panel width animation */
+  visibility: visible;
+  max-width: 200px;
+  transition-delay: 480ms;
+  transition: 
+    opacity 200ms ease 480ms,
+    transform 260ms ease 480ms,
+    visibility 0ms ease 480ms,
+    max-width 0ms ease 480ms;
 }
 
 .itinerary-sidebar.closed .itinerary-sidebar-title {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  max-width: 0;
+  transform: translateY(6px);
+  transition-delay: 0ms;
 }
 
 .itinerary-sidebar-toggle-btn {

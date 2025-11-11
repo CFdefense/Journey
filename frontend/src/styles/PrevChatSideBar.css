@@ -242,7 +242,6 @@
 .sidebar.open .chat-list li {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 480ms; /* a touch after the list container fades */
 }
 
 .chat-list li:hover {
