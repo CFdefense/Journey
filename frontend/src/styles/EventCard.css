@@ -56,6 +56,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   width: 100%;
 }
@@ -183,6 +184,11 @@
   background: #fa8072;
   color: white;
   transform: rotate(90deg);
+}
+
+.event-modal input, .event-modal textarea {
+  background: var(--pale-yellow);
+  color: #333;
 }
 
 /* Animations */

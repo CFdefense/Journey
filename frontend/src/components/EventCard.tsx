@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import "../styles/EventCard.css";
-import { apiDeleteUserEvent } from "../api/itinerary";
+import { apiDeleteUserEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import type { DayItinerary } from "../helpers/itinerary";
-import type { Event } from "../models/itinerary";
+import { sanitize, type DayItinerary } from "../helpers/itinerary";
+import type { Event, UserEventRequest } from "../models/itinerary";
 
 interface EventCardProps {
   event_id: number;
@@ -17,8 +17,8 @@ interface EventCardProps {
   country: string | null;
   event_type: string | null;
   user_created: boolean;
-  hard_start: Date | null;
-  hard_end: Date | null;
+  hard_start: string | null;
+  hard_end: string | null;
 
   localDays: DayItinerary[];
   setLocalDays: React.Dispatch<React.SetStateAction<DayItinerary[]>>;
@@ -54,6 +54,17 @@ const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [eventData, setEventData] = useState({
+    event_name,
+    event_description,
+    event_type,
+    street_address,
+    city,
+    country,
+    postal_code,
+    hard_start,
+    hard_end,
+  })
 
   const navigate = useNavigate();
 
@@ -66,7 +77,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     if (onDragStart) {
-      onDragStart(e, { event_name, event_description, time });
+      onDragStart(e, { event_name: eventData.event_name, event_description: eventData.event_description, time });
     }
   };
 
@@ -77,36 +88,26 @@ const EventCard: React.FC<EventCardProps> = ({
     }
   };
 
-  const formatDateTime = (date: Date | null | undefined) => {
-    if (!date) return null;
-    try {
-      const dateObj = typeof date === "string" ? new Date(date) : date;
-      return dateObj.toLocaleString();
-    } catch {
-      return null;
-    }
-  };
-
   const formatAddress = () => {
     let addr = "";
     //nested 'if' hell
-    if (street_address) {
-      addr += street_address;
-      if (city || country) {
+    if (eventData.street_address) {
+      addr += eventData.street_address;
+      if (eventData.city || eventData.country) {
         addr += ", ";
       }
     }
-    if (city) {
-      addr += city;
-      if (country) {
+    if (eventData.city) {
+      addr += eventData.city;
+      if (eventData.country) {
         addr += ", ";
       }
     }
-    if (country) {
-      addr += country;
+    if (eventData.country) {
+      addr += eventData.country;
     }
-    if (postal_code) {
-      addr = (addr + " " + postal_code).trim();
+    if (eventData.postal_code) {
+      addr = (addr + " " + eventData.postal_code).trim();
     }
     if (addr === "") {
       addr = "N/A";
@@ -115,7 +116,31 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const onSaveUserEvent = async () => {
-    alert("TODO");
+    const userEvent: UserEventRequest = {
+      id: event_id,
+      event_name: sanitize(eventData.event_name) ?? "", //TODO: name must not be null or empty, so we could handle the error before sending the request
+      event_description: sanitize(eventData.event_description),
+      event_type: sanitize(eventData.event_type),
+      street_address: sanitize(eventData.street_address),
+      city: sanitize(eventData.city),
+      country: sanitize(eventData.country),
+      postal_code: eventData.postal_code,
+      hard_start: eventData.hard_start?.substring(0, 19) ?? null,
+      hard_end: eventData.hard_end?.substring(0, 19) ?? null,
+    };
+    const result = await apiUserEvent(userEvent);
+    if (result.status === 401) {
+      navigate("/login");
+      return;
+    } else if (result.result === null || result.status !== 200) {
+      alert("Error updaing user-event - TODO: handle error properly");
+      return;
+    }
+    // const event = userEvent as Event;
+    // unassignedEvents.push(event);
+    // setUnassignedEvents(unassignedEvents);
+    // setCreateModalOpen(false);
+    alert("TODO: does anything need to happen here?");
   };
 
   const onDeleteUserEvent = async () => {
@@ -138,6 +163,11 @@ const EventCard: React.FC<EventCardProps> = ({
     setLocalDays(localDays);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const setEventField = (key: string, value: any) => {
+    setEventData((prev) => ({ ...prev, [key]: value }));
+  };
+
   return (
     <>
       <div
@@ -147,13 +177,13 @@ const EventCard: React.FC<EventCardProps> = ({
         onDragEnd={handleDragEnd}
         onClick={openModal}
       >
-        <h3 className="event-title">{event_name}</h3>
-        {(street_address || city || country || postal_code) && (
+        <h3 className="event-title">{eventData.event_name}</h3>
+        {(eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
           <p className="event-location">
             {formatAddress()}
           </p>
         )}
-        {event_type && <p className="event-type">{event_type}</p>}
+        {eventData.event_type && <p className="event-type">{eventData.event_type}</p>}
       </div>
 
       {isOpen && (
@@ -187,32 +217,92 @@ const EventCard: React.FC<EventCardProps> = ({
                 ✕
               </button>
             </div>
-            <h2>{event_name}</h2>
-            {event_description && <p>{event_description}</p>}
-            {event_type && (
-              <p>
-                <strong>Type:</strong> {event_type}
-              </p>
+            <h2>
+              {user_created ? (
+                <input
+                  type="text"
+                  value={eventData.event_name}
+                  onChange={(e) => setEventField("event_name", e.target.value)}
+                />
+              ) : (
+                eventData.event_name
+              )}
+            </h2>
+
+            {user_created ? (
+              <textarea
+                value={eventData.event_description || ""}
+                onChange={(e) => setEventField("event_description", e.target.value)}
+                placeholder="Description"
+              />
+            ) : (
+              eventData.event_description && <p>{eventData.event_description}</p>
             )}
-            {time && (
+
+            {user_created ? (
               <p>
-                <strong>Time:</strong> {time}
+                <strong>Type:</strong>{" "}
+                <input
+                  type="text"
+                  value={eventData.event_type || ""}
+                  onChange={(e) => setEventField("event_type", e.target.value)}
+                />
               </p>
+            ) : (
+              eventData.event_type && (
+                <p>
+                  <strong>Type:</strong> {eventData.event_type}
+                </p>
+              )
             )}
-            {(street_address || city || country || postal_code) && (
+
+            {user_created ? (
               <p>
-                <strong>Location:</strong> {formatAddress()}
+                <strong>Address:</strong>{" "}
+                <input
+                  type="text"
+                  value={eventData.street_address || ""}
+                  onChange={(e) => setEventField("street_address", e.target.value)}
+                />
               </p>
+            ) : (
+              (eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
+                <p>
+                  <strong>Location:</strong> {formatAddress()}
+                </p>
+              )
             )}
-            {hard_start && (
-              <p>
-                <strong>Start:</strong> {formatDateTime(hard_start)}
-              </p>
-            )}
-            {hard_end && (
-              <p>
-                <strong>End:</strong> {formatDateTime(hard_end)}
-              </p>
+
+            {user_created ? (
+              <>
+                <p>
+                  <strong>Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                  <input
+                    type="datetime-local"
+                    onChange={e => setEventField("hard_start", new Date(e.target.value).toISOString())}
+                  />
+                </p>
+                <p>
+                  <strong>End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                  <input
+                    type="datetime-local"
+                    onChange={e => setEventField("hard_end", new Date(e.target.value).toISOString())}
+                  />
+                </p>
+              </>
+            ) : (
+              <>
+                {eventData.hard_start && (
+                  <p>
+                    <strong>Start (UTC):</strong> {eventData.hard_start}
+                  </p>
+                )}
+                {eventData.hard_end && (
+                  <p>
+                    <strong>End (UTC):</strong> {eventData.hard_end}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

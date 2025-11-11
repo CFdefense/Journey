@@ -61,7 +61,9 @@ CREATE TABLE events (
     event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    --UTC
     hard_start TIMESTAMP WITHOUT TIME ZONE,
+    --UTC
     hard_end TIMESTAMP WITHOUT TIME ZONE
 );
 

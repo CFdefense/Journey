@@ -18,7 +18,9 @@ pub struct Event {
 	pub event_description: Option<String>,
 	pub event_name: String,
 	pub user_created: bool,
+	/// UTC
 	pub hard_start: Option<NaiveDateTime>,
+	/// UTC
 	pub hard_end: Option<NaiveDateTime>,
 }
 
@@ -53,7 +55,9 @@ pub struct UserEventRequest {
 	pub event_type: Option<String>,
 	pub event_description: Option<String>,
 	pub event_name: String,
+	/// UTC
 	pub hard_start: Option<NaiveDateTime>,
+	/// UTC
 	pub hard_end: Option<NaiveDateTime>,
 }
 

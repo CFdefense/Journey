@@ -30,9 +30,9 @@ export type Event = {
 	event_name: string;
 	user_created: boolean;
 	/// Destination's local timezone - %Y-%m-%d
-	hard_start: Date | null; /// for testing sake this is what will have the 13:00 value for phillies game
+	hard_start: string | null; /// for testing sake this is what will have the 13:00 value for phillies game
 	/// Destination's local timezone - %Y-%m-%d
-	hard_end: Date | null;
+	hard_end: string | null;
 };
 
 export type SavedResponse = {

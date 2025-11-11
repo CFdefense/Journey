@@ -11,7 +11,7 @@ export interface TimeBlock {
 }
 
 export interface DayItinerary {
-	date: string;
+	date: Date;
 	timeBlocks: TimeBlock[];
 }
 
@@ -33,7 +33,7 @@ export async function fetchItinerary(
 		console.log("Error", err);
 		return [
 			{
-				date: "N/A",
+				date: new Date(),
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -48,7 +48,7 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 	if (!apiItinerary.event_days || apiItinerary.event_days.length === 0) {
 		return [
 			{
-				date: "N/A",
+				date: new Date(),
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -80,8 +80,8 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 export function convertToApiFormat(
 	days: DayItinerary[],
 	itineraryId: number,
-	startDate: string,
-	endDate: string,
+	startDate: Date,
+	endDate: Date,
 	title: string,
 	chatSessionId: number | null = null
 ): ApiItinerary {
@@ -111,4 +111,9 @@ export function convertToApiFormat(
 			};
 		})
 	};
+}
+
+
+export function sanitize(v: string | null): string | null {
+	return v && v.trim() !== "" ? v : null;
 }
