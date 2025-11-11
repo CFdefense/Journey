@@ -147,21 +147,57 @@ export default function PrevChatSideBar({
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
       <div className="sidebar-actions">
-        <button
-          className={`action-btn ${sidebarVisible ? "expanded" : "icon-only"}`}
-          onClick={onToggleSidebar}
-          aria-label="Toggle menu"
-          title="Menu"
-        >
-          <span className="action-icon" aria-hidden="true">
+        <div className="sidebar-header-top">
+          <Link
+            to="/"
+            className={`action-btn menu-toggle-btn logo-link ${sidebarVisible ? "visible" : "hidden"}`}
+            aria-label="Go to home"
+            title="Home"
+          >
+            <img 
+              src="/placeholder-logo.png" 
+              alt="Journey Logo" 
+              className="sidebar-logo"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback && fallback.classList.contains('sidebar-logo-fallback')) {
+                  target.style.display = 'none';
+                  fallback.style.display = 'flex';
+                }
+              }}
+            />
+            <div className="sidebar-logo-fallback">
+              J
+            </div>
+          </Link>
+          <button
+            className={`action-btn menu-toggle-btn hamburger-btn ${sidebarVisible ? "hidden" : "visible"}`}
+            onClick={onToggleSidebar}
+            aria-label="Toggle menu"
+            title="Menu"
+          >
+            <span className="action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 12H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 18H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </span>
+          </button>
+          <button
+            className="action-btn menu-close-btn"
+            onClick={onToggleSidebar}
+            aria-label="Close menu"
+            title="Close menu"
+          >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 6H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 12H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 18H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-          </span>
-          <span className="action-label">Menu</span>
-        </button>
+          </button>
+        </div>
 
         <button
           className={`action-btn primary ${sidebarVisible ? "expanded" : "icon-only"}`}
