@@ -11,6 +11,7 @@ interface ChatWindowProps {
   onSend: (text: string) => void;
   onItinerarySelect: (itineraryId: number) => void;
   onEditMessage: (messageId: number, newText: string) => void;
+  hasActiveChat?: boolean;
 }
 
 const BASE_TEXT = "What are your ";
@@ -25,15 +26,33 @@ export default function ChatWindow({
   messages,
   onSend,
   onItinerarySelect,
-  onEditMessage
+  onEditMessage,
+  hasActiveChat = false
 }: ChatWindowProps) {
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
+  const [isExpanding, setIsExpanding] = useState(false);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const deleteIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const prevMessagesLengthRef = useRef<number>(0);
 
   useEffect(() => {
+    const wasEmpty = prevMessagesLengthRef.current === 0;
+    const nowHasMessages = messages.length > 0;
+    
+    // Only trigger expansion when transitioning from empty (0 messages) to having messages
+    // Not when switching between chats that already have messages (prevMessagesLengthRef > 0)
+    // The key is: wasEmpty means we had 0 messages before, so this is a new chat, not a switch
+    if (nowHasMessages && wasEmpty) {
+      // Start expansion animation when first message arrives from empty state
+      setIsExpanding(true);
+      // Reset expanding state after animation completes
+      setTimeout(() => setIsExpanding(false), 800);
+    } else {
+      setIsExpanding(false);
+    }
+
     if (messages.length > 0) {
       // Reset when messages appear
       setDisplayedText("");
@@ -46,7 +65,10 @@ export default function ChatWindow({
       if (deleteIntervalRef.current) {
         clearInterval(deleteIntervalRef.current);
       }
+      prevMessagesLengthRef.current = messages.length;
       return;
+    } else {
+      prevMessagesLengthRef.current = 0;
     }
 
     // Wait for fade-in animation to complete (600ms) before starting typing
@@ -128,11 +150,12 @@ export default function ChatWindow({
     }
   };
 
-  if (messages.length === 0) {
-    const titleText = displayedText || BASE_TEXT;
-    
-    return (
-      <div className="chat-container chat-container-empty">
+  const showEmptyState = !hasActiveChat && messages.length === 0;
+  const titleText = displayedText || BASE_TEXT;
+
+  return (
+    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""}`}>
+      {showEmptyState ? (
         <div className="chat-empty-state">
           <h1 className="chat-empty-title">
             {titleText}
@@ -166,38 +189,35 @@ export default function ChatWindow({
             </button>
           </form>
         </div>
-      </div>
-    );
-  }
-
-  // Traditional chat interface when messages exist
-  return (
-    <div className="chat-container">
-      {/* Header Section */}
-      <div className="chat-header">
-        <img src={aiPic} alt="AI Assistant" className="chat-header-image" />
-        <div className="chat-header-text">
-          <div className="chat-header-title">Travel Assistant</div>
-          <div className="chat-header-subtitle">
-            Ready to help with your next adventure
+      ) : (
+        <>
+          {/* Header Section */}
+          <div className="chat-header">
+            <img src={aiPic} alt="AI Assistant" className="chat-header-image" />
+            <div className="chat-header-text">
+              <div className="chat-header-title">Travel Assistant</div>
+              <div className="chat-header-subtitle">
+                Ready to help with your next adventure
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="chat-messages">
-        {messages.map((msg) => {
-          return (
-            <ChatMessage
-              key={msg.id}
-              message={msg}
-              onItinerarySelect={onItinerarySelect}
-              onEditMessage={onEditMessage}
-            />
-          );
-        })}
-      </div>
+          <div className="chat-messages">
+            {messages.map((msg) => {
+              return (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  onItinerarySelect={onItinerarySelect}
+                  onEditMessage={onEditMessage}
+                />
+              );
+            })}
+          </div>
 
-      <MessageInput onSend={onSend} />
+          <MessageInput onSend={onSend} />
+        </>
+      )}
     </div>
   );
 }

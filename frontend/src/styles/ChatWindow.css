@@ -11,6 +11,9 @@
   padding: 0;
   box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
   border: 1px solid rgba(216, 127, 117, 0.2);
+  min-height: 0;
+  opacity: 1;
+  transform-origin: center center;
 }
 
 /* Empty state container - full height, centered higher */
@@ -22,6 +25,7 @@
   box-shadow: none;
   padding: 2rem;
   padding-top: 15vh;
+  transform-origin: center center;
 }
 
 /* Chat Header */
@@ -36,6 +40,29 @@
   gap: 1rem;
   position: relative;
   z-index: 1;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.chat-container.expanding .chat-header {
+  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+}
+
+.chat-container:not(.chat-container-empty):not(.expanding) .chat-header {
+  opacity: 1;
+  transform: translateY(0);
+  animation: none;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-header-image {
@@ -78,6 +105,25 @@
   flex-direction: column;
   gap: 0.75rem;
   background: #ffffff;
+  opacity: 0;
+}
+
+.chat-container.expanding .chat-messages {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.65s forwards;
+}
+
+.chat-container:not(.chat-container-empty):not(.expanding) .chat-messages {
+  opacity: 1;
+  animation: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Custom scrollbar for chat messages */
@@ -118,6 +164,60 @@
   opacity: 0;
   transform: translateY(30px);
   animation: fadeUpIn 0.6s ease forwards;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.chat-container:not(.chat-container-empty) .chat-empty-state {
+  opacity: 0 !important;
+  transform: translateY(-20px) scale(0.95) !important;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.chat-container.expanding .chat-empty-state {
+  opacity: 0 !important;
+  transform: translateY(-20px) scale(0.9) !important;
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+/* When container is transitioning from empty to full */
+.chat-container.expanding {
+  animation: expandFromCenter 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes expandFromCenter {
+  0% {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 2rem;
+    padding-top: 15vh;
+    justify-content: flex-start;
+    align-items: center;
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  60% {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(216, 127, 117, 0.2);
+    box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
+    padding: 0;
+    justify-content: space-between;
+    align-items: stretch;
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(216, 127, 117, 0.2);
+    box-shadow: 0 2px 12px rgba(216, 127, 117, 0.12);
+    padding: 0;
+    justify-content: space-between;
+    align-items: stretch;
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes fadeUpIn {
@@ -400,6 +500,29 @@
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.chat-container.expanding .message-input {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
+}
+
+.chat-container:not(.chat-container-empty):not(.expanding) .message-input {
+  opacity: 1;
+  transform: translateY(0);
+  animation: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Input box */

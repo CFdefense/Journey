@@ -183,7 +183,9 @@ export default function PrevChatSideBar({
               key={chat.id}
               className={chat.id === activeChatId ? "active" : ""}
               style={{
-                transitionDelay: `${480 + index * 60}ms`
+                transitionDelay: chat.id === activeChatId 
+                  ? "0ms" 
+                  : `${450 + index * 150}ms`
               }}
               onClick={() => {
                 if (editingChatId !== chat.id) {

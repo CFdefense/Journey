@@ -380,6 +380,7 @@ export default function Home() {
             onSend={handleSendMessage}
             onItinerarySelect={handleItinerarySelect}
             onEditMessage={handleEditMessage}
+            hasActiveChat={activeChatId !== null}
           />
         </div>
 
