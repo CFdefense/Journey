@@ -1,5 +1,5 @@
 // Home.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
@@ -46,13 +46,24 @@ export default function Home() {
   );
   const [itineraryTitle, setItineraryTitle] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
+  
+  // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
+  const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
+  // Track the initial chat ID to know when it actually changes
+  const initialChatIdRef = useRef<number | null>(null);
 
   // Handle navigation state from ViewItinerary
   useEffect(() => {
     if (location.state && !initialStateProcessed) {
       const { selectedItineraryId, chatSessionId, openItinerarySidebar } = location.state;
+
+      // Set the flag if we have an itinerary ID from navigation
+      if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
+        setCameFromViewItinerary(true);
+      }
       
       if (chatSessionId !== undefined && chatSessionId !== null) {
+        initialChatIdRef.current = chatSessionId;
         setActiveChatId(chatSessionId);
         sessionStorage.setItem(ACTIVE_CHAT_SESSION, chatSessionId.toString());
       }
@@ -62,7 +73,7 @@ export default function Home() {
       }
       
       // Set itinerary ID last and trigger a load
-      if (selectedItineraryId !== undefined) {
+      if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
         setSelectedItineraryId(selectedItineraryId);
         // Manually load itinerary data since we're setting the ID in initial state
         loadItineraryData(selectedItineraryId);
@@ -196,16 +207,26 @@ export default function Home() {
     }
   };
 
-  // whenever the active chat changes (excluding initial navigation state), clear all itinerary information on home page.
+  // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
   useEffect(() => {
-    // Don't clear itinerary if we're coming from ViewItinerary
-    if (!initialStateProcessed || !location.state?.selectedItineraryId) {
-      setSelectedItineraryId(null);
-      setItineraryData(null);
-      setItineraryTitle("");
-      setItinerarySidebarVisible(false);
+    // Don't clear on initial mount when activeChatId is null
+    if (activeChatId === null && !initialStateProcessed) {
+      return;
     }
-  }, [activeChatId, initialStateProcessed, location.state]);
+    
+    // If we came from ViewItinerary and this is the initial chat ID, don't clear
+    if (cameFromViewItinerary && activeChatId === initialChatIdRef.current) {
+      // Reset the flag so subsequent chat changes will clear itinerary data
+      setCameFromViewItinerary(false);
+      return;
+    }
+    
+    // For normal chat switches, clear itinerary data
+    setSelectedItineraryId(null);
+    setItineraryData(null);
+    setItineraryTitle("");
+    setItinerarySidebarVisible(false);
+  }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
     setSelectedItineraryId(itineraryId);
