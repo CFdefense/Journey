@@ -434,11 +434,11 @@
 .sidebar-logout-btn {
   border: none;
   background: transparent;
-  color: #0b1220;
+  color: #dc2626;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 8px;
   font-weight: 600;
   box-sizing: border-box;
@@ -462,13 +462,19 @@
     padding 0ms ease;
 }
 
+.sidebar-logout-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .sidebar.open .sidebar-logout-btn {
   opacity: 1;
   transform: translateY(0);
-  height: auto;
-  padding: 0;
+  height: 36px;
+  width: 36px;
+  padding: 8px;
   margin-right: 0.5rem;
-  width: auto;
   transition: 
     opacity 200ms ease 450ms,
     transform 260ms ease 450ms,
@@ -492,5 +498,7 @@
 }
 
 .sidebar-logout-btn:hover {
-  opacity: 0.7;
+  opacity: 0.8;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 8px;
 }
