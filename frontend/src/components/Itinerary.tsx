@@ -484,53 +484,54 @@ const Itinerary: React.FC<ItineraryProps> = ({
               </label>
 
               <div className="location-grid">
-                <label>
-                  Address
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, address: e.target.value })}
-                  />
-                </label>
+                <div className="location-grid-row">
+                  <label>
+                    <span>Address</span>
+                    <input
+                      onChange={(e) => setUserEventForm({ ...userEventForm, address: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>City</span>
+                    <input
+                      onChange={(e) => setUserEventForm({ ...userEventForm, city: e.target.value })}
+                    />
+                  </label>
+                </div>
 
-                <label>
-                  City
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, city: e.target.value })}
-                  />
-                </label>
+                <div className="location-grid-row">
+                  <label>
+                    <span>Country</span>
+                    <input
+                      onChange={(e) => setUserEventForm({ ...userEventForm, country: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Postal Code</span>
+                    <input
+                      onChange={(e) => setUserEventForm({ ...userEventForm, postalCode: e.target.value })}
+                      type="number"
+                      maxLength={5}
+                    />
+                  </label>
+                </div>
 
-                <label>
-                  Country
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, country: e.target.value })}
-                  />
-                </label>
-
-                <label>
-                  Postal Code
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, postalCode: e.target.value })}
-                    type="number"
-                    maxLength={5}
-                  />
-                </label>
-
-                <label>
-                  {/*NOTICE! Input elements must use the browser's timezone*/}
-                  Start Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, start: new Date(e.target.value).toISOString() })}
-                    type="datetime-local"
-                  />
-                </label>
-
-                <label>
-                  {/*NOTICE! Input elements must use the browser's timezone*/}
-                  End Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})
-                  <input
-                    onChange={(e) => setUserEventForm({ ...userEventForm, end: new Date(e.target.value).toISOString() })}
-                    type="datetime-local"
-                  />
-                </label>
+                <div className="location-grid-row">
+                  <label>
+                    <span>Start Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span>
+                    <input
+                      type="datetime-local"
+                      onChange={(e) => setUserEventForm({ ...userEventForm, start: new Date(e.target.value).toISOString() })}
+                    />
+                  </label>
+                  <label>
+                    <span>End Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span>
+                    <input
+                      type="datetime-local"
+                      onChange={(e) => setUserEventForm({ ...userEventForm, end: new Date(e.target.value).toISOString() })}
+                    />
+                  </label>
+                </div>
               </div>
             </form>
           </div>

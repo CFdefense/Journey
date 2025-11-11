@@ -496,7 +496,13 @@
 .location-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 12px 16px; /* row-gap column-gap */
+  align-items: end; /* important! ensures all items align at the top of the row */
+}
+
+/* Each row in the grid */
+.location-grid-row {
+  display: contents; /* so that each pair of label+input occupies the correct row */
 }
 
 .location-grid label {
@@ -507,8 +513,12 @@
   color: #333;
 }
 
-.location-grid input {
-  margin-top: 4px;
+.location-grid label span {
+  margin-bottom: 4px; /* spacing between label text and input */
+}
+
+.location-grid input,
+.location-grid textarea {
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
