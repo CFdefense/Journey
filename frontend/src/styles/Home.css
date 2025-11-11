@@ -13,13 +13,27 @@
   position: sticky;
   top: 0;
   width: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(216, 127, 117, 0.2);
-  box-shadow: 0 2px 8px rgba(216, 127, 117, 0.1);
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom: none;
+  box-shadow: none;
   padding: 16px clamp(16px, 4vw, 56px);
+  padding-left: calc(56px + clamp(16px, 4vw, 56px));
+  padding-right: calc(50px + clamp(16px, 4vw, 56px));
   z-index: 100;
   flex-shrink: 0;
+  transition: padding-left 0.45s ease-in-out, padding-right 0.45s ease-in-out;
+}
+
+/* Adjust navbar padding when left sidebar is open */
+.home-layout.with-sidebar ~ * .home-page .auth-navbar,
+.home-page:has(.home-layout.with-sidebar) .auth-navbar {
+  padding-left: calc(260px + clamp(16px, 4vw, 56px));
+}
+
+/* Adjust navbar padding when right sidebar is open */
+.home-page:has(.itinerary-sidebar.open) .auth-navbar {
+  padding-right: calc(380px + clamp(16px, 4vw, 56px));
 }
 
 .home-page .auth-navbar .auth-navbar-content {
@@ -103,7 +117,7 @@
   gap: 0;
   max-width: 100%;
   margin: 0;
-  padding: 1rem;
+  padding: 0;
   position: relative;
   background: transparent;
   min-height: 0;
@@ -127,10 +141,21 @@
   justify-content: center;
   align-items: stretch;
   padding: 0;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: 56px;
+  padding-right: 50px;
   min-width: 0;
   box-sizing: border-box;
+  transition: padding-left 0.45s ease-in-out, padding-right 0.45s ease-in-out;
+}
+
+/* Adjust padding when left sidebar is open */
+.home-layout.with-sidebar .chat-window-wrapper {
+  padding-left: 260px;
+}
+
+/* Adjust padding when right sidebar is open */
+.home-layout:has(.itinerary-sidebar.open) .chat-window-wrapper {
+  padding-right: 380px;
 }
 
 /* Chat container - expands to fill wrapper */
@@ -150,12 +175,17 @@
 
 @media (max-width: 768px) {
   .home-layout {
-    padding: 0.5rem;
+    padding: 0;
   }
 
   .chat-window-wrapper {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 56px;
+    padding-right: 50px;
+  }
+
+  .home-page .auth-navbar {
+    padding-left: calc(56px + 16px);
+    padding-right: calc(50px + 16px);
   }
 
   .home-page .auth-cta span {

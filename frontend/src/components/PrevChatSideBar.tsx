@@ -1,9 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext, type Context } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles/PrevChatSideBar.css";
 import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 import { apiDeleteChat, apiRenameChat } from "../api/home";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
+import userPfp from "../assets/user-pfp-temp.png";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "./GlobalProvider";
+import { apiLogout } from "../api/account";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -34,6 +39,10 @@ export default function PrevChatSideBar({
   const [editingChatId, setEditingChatId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
 
   useEffect(() => {
     if (editingChatId !== null && inputRef.current) {
@@ -123,6 +132,16 @@ export default function PrevChatSideBar({
       setEditingChatId(null);
       setEditingTitle("");
     }
+  };
+
+  const handleLogout = async () => {
+    const { status } = await apiLogout();
+    if (status !== 200) {
+      console.error("Logout failed with status", status);
+    }
+    setAuthorized(false);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
+    navigate("/login");
   };
 
   return (
@@ -234,6 +253,15 @@ export default function PrevChatSideBar({
           ))
         )}
       </ul>
+
+      <div className="sidebar-bottom">
+        <Link to="/account" className="sidebar-profile-link">
+          <img src={userPfp} alt="User profile" className="sidebar-profile-pic" />
+        </Link>
+        <button className="sidebar-logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
 
       {contextMenu && (
         <ContextWindow

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
-import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import {
@@ -357,7 +356,6 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Navbar page="home" />
       <div
         className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
       >

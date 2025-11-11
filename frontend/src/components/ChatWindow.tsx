@@ -72,8 +72,9 @@ export default function ChatWindow({
     }
 
     // Wait for fade-in animation to complete (600ms) before starting typing
+    // On first load, type from the beginning
     const fadeInDelay = setTimeout(() => {
-      typeText(0);
+      typeText(0, true);
     }, 600);
 
     return () => {
@@ -90,10 +91,11 @@ export default function ChatWindow({
     };
   }, [messages.length]);
 
-  const typeText = (endingIndex: number) => {
+  const typeText = (endingIndex: number, startFromBeginning: boolean = false) => {
     const currentEnding = ENDINGS[endingIndex];
     const fullText = BASE_TEXT + currentEnding;
-    let currentIndex = BASE_TEXT.length; // Start typing from the ending
+    // On first load, type from the beginning. On subsequent cycles, start from BASE_TEXT
+    let currentIndex = startFromBeginning ? 0 : BASE_TEXT.length;
 
     if (typeIntervalRef.current) {
       clearInterval(typeIntervalRef.current);
@@ -151,7 +153,7 @@ export default function ChatWindow({
   };
 
   const showEmptyState = !hasActiveChat && messages.length === 0;
-  const titleText = displayedText || BASE_TEXT;
+  const titleText = displayedText;
 
   return (
     <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""}`}>
