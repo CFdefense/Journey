@@ -145,7 +145,7 @@
 }
 
 .action-label {
-  font-size: 0.95rem;
+  font-size: clamp(0.875rem, 1vw, 0.95rem);
   white-space: nowrap;
   opacity: 1;
   max-width: 240px;
@@ -694,4 +694,23 @@
   opacity: 0.8;
   background: rgba(220, 38, 38, 0.1);
   border-radius: 8px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .sidebar.open {
+    width: min(260px, 85vw);
+  }
+
+  .action-label {
+    font-size: clamp(0.8rem, 2vw, 0.95rem);
+  }
+
+  .action-btn.expanded {
+    padding: clamp(0.75rem, 2vw, 10px) clamp(0.875rem, 2.5vw, 12px);
+  }
+
+  .sidebar.open .sidebar-actions {
+    padding: clamp(0.75rem, 2vw, 12px) clamp(1rem, 3vw, 16px);
+  }
 }

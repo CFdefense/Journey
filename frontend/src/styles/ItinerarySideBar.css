@@ -24,7 +24,7 @@
 
 /* When sidebar is closed */
 .itinerary-sidebar.closed {
-  width: 50px;
+  width: 56px;
   background: #ffffff;
 }
 
@@ -86,20 +86,32 @@
   background: transparent;
   border: none;
   color: #666;
-  font-size: 1.3rem;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
   border-radius: 4px;
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .itinerary-sidebar-toggle-btn:hover {
   background: #f0f0f0;
   color: #333;
+}
+
+.itinerary-sidebar-toggle-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  padding-right: 5px;
 }
 
 /* Itinerary content wrapper */

@@ -4,9 +4,49 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 0.25rem;
+  padding: 0;
   z-index: 1000;
-  min-width: 140px;
+  width: 140px;
+  box-sizing: border-box;
+  transform: translateZ(0);
+  contain: layout style paint;
+  display: flex;
+  flex-direction: column;
+}
+
+.context-window-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 8px 8px 0 0;
+}
+
+.context-window-menu-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #0b1220;
+  transition: background 0.2s, color 0.2s;
+  width: 24px;
+  height: 24px;
+}
+
+.context-window-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0b1220;
+}
+
+.context-window-menu-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .context-menu-item {
@@ -17,9 +57,23 @@
   text-align: left;
   cursor: pointer;
   font-size: 0.9rem;
-  border-radius: 6px;
-  transition: all 0.2s;
+  border-radius: 0;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
   font-weight: 600;
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  margin: 0;
+  transform: translateZ(0);
+  flex-shrink: 0;
+}
+
+.context-menu-item:first-of-type {
+  border-radius: 0;
+}
+
+.context-menu-item:last-of-type {
+  border-radius: 0 0 8px 8px;
 }
 
 .context-menu-item.rename {

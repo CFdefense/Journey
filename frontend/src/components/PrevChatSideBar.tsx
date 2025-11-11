@@ -53,9 +53,14 @@ export default function PrevChatSideBar({
 
   const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
     e.stopPropagation();
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    // Get the button element, not the SVG child
+    const buttonElement = (e.currentTarget as HTMLElement);
+    const rect = buttonElement.getBoundingClientRect();
+    const contextWindowWidth = 140; // Match the width in ContextWindow.css
+    // Center the context window relative to the button
+    const centeredX = rect.left + (rect.width / 2) - (contextWindowWidth / 2);
     setContextMenu({
-      x: rect.left + 5,
+      x: centeredX,
       y: rect.bottom + 7,
       chatId
     });

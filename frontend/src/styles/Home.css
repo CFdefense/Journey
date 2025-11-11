@@ -142,7 +142,7 @@
   align-items: stretch;
   padding: 0;
   padding-left: 56px;
-  padding-right: 50px;
+  padding-right: 56px;
   min-width: 0;
   box-sizing: border-box;
   transition: padding-left 0.45s ease-in-out, padding-right 0.45s ease-in-out;
@@ -156,6 +156,11 @@
 /* Adjust padding when right sidebar is open */
 .home-layout:has(.itinerary-sidebar.open) .chat-window-wrapper {
   padding-right: 380px;
+}
+
+/* When right sidebar is closed, ensure equal padding */
+.home-layout:not(:has(.itinerary-sidebar.open)) .chat-window-wrapper {
+  padding-right: 56px;
 }
 
 /* Chat container - expands to fill wrapper */
@@ -180,12 +185,18 @@
 
   .chat-window-wrapper {
     padding-left: 56px;
-    padding-right: 50px;
+    padding-right: 56px;
+  }
+
+  /* Ensure equal padding when sidebars are closed */
+  .home-layout:not(.with-sidebar):not(:has(.itinerary-sidebar.open)) .chat-window-wrapper {
+    padding-left: 56px;
+    padding-right: 56px;
   }
 
   .home-page .auth-navbar {
     padding-left: calc(56px + 16px);
-    padding-right: calc(50px + 16px);
+    padding-right: calc(56px + 16px);
   }
 
   .home-page .auth-cta span {
