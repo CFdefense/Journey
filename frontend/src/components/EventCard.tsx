@@ -3,7 +3,11 @@ import "../styles/EventCard.css";
 import { apiDeleteUserEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
 import { sanitize } from "../helpers/itinerary";
-import type { Event, UserEventRequest, DayItinerary } from "../models/itinerary";
+import type {
+  Event,
+  UserEventRequest,
+  DayItinerary
+} from "../models/itinerary";
 
 interface EventCardProps {
   event_id: number;
@@ -63,8 +67,8 @@ const EventCard: React.FC<EventCardProps> = ({
     country,
     postal_code,
     hard_start,
-    hard_end,
-  })
+    hard_end
+  });
 
   const navigate = useNavigate();
 
@@ -77,7 +81,11 @@ const EventCard: React.FC<EventCardProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     if (onDragStart) {
-      onDragStart(e, { event_name: eventData.event_name, event_description: eventData.event_description, time });
+      onDragStart(e, {
+        event_name: eventData.event_name,
+        event_description: eventData.event_description,
+        time
+      });
     }
   };
 
@@ -126,7 +134,7 @@ const EventCard: React.FC<EventCardProps> = ({
       country: sanitize(eventData.country),
       postal_code: eventData.postal_code,
       hard_start: eventData.hard_start?.substring(0, 19) ?? null,
-      hard_end: eventData.hard_end?.substring(0, 19) ?? null,
+      hard_end: eventData.hard_end?.substring(0, 19) ?? null
     };
     const result = await apiUserEvent(userEvent);
     if (result.status === 401) {
@@ -147,18 +155,19 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("User-event could not be deleted - TODO handle error properly");
       return;
     }
-    unassignedEvents = unassignedEvents.filter(e => e.id !== event_id);
+    unassignedEvents = unassignedEvents.filter((e) => e.id !== event_id);
     setUnassignedEvents(unassignedEvents);
-    localDays = localDays.map(d => {
+    localDays = localDays.map((d) => {
       return {
-        ...d, timeBlocks: d.timeBlocks.map(b => {
-          return { ...b, events: b.events.filter(e => e.id !== event_id) };
+        ...d,
+        timeBlocks: d.timeBlocks.map((b) => {
+          return { ...b, events: b.events.filter((e) => e.id !== event_id) };
         })
       };
     });
     setLocalDays(localDays);
     setIsOpen(false);
-  }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const setEventField = (key: string, value: any) => {
@@ -175,11 +184,14 @@ const EventCard: React.FC<EventCardProps> = ({
         onClick={openModal}
       >
         <h3 className="event-title">{eventData.event_name}</h3>
-        {eventData.event_type && <p className="event-type">{eventData.event_type}</p>}
-        {(eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
-          <p className="event-location">
-            {formatAddress()}
-          </p>
+        {eventData.event_type && (
+          <p className="event-type">{eventData.event_type}</p>
+        )}
+        {(eventData.street_address ||
+          eventData.city ||
+          eventData.country ||
+          eventData.postal_code) && (
+          <p className="event-location">{formatAddress()}</p>
         )}
       </div>
 
@@ -187,29 +199,37 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="event-modal-overlay" onClick={closeModal}>
           <div className="event-modal" onClick={(e) => e.stopPropagation()}>
             <div className="event-card-buttons">
-              {user_created && <button className="card-edit-button" id="user-card-delete" onClick={onDeleteUserEvent}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
+              {user_created && (
+                <button
+                  className="card-edit-button"
+                  id="user-card-delete"
+                  onClick={onDeleteUserEvent}
                 >
-                  <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v10h2V8h-2zm4 0v10h2V8h-2zM6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8H6z"/>
-                </svg>
-              </button>}
-              {user_created && <button className="card-edit-button" onClick={onSaveUserEvent}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z"/>
-                  <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z"/>
-                </svg>
-              </button>}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v10h2V8h-2zm4 0v10h2V8h-2zM6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8H6z" />
+                  </svg>
+                </button>
+              )}
+              {user_created && (
+                <button className="card-edit-button" onClick={onSaveUserEvent}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z" />
+                    <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z" />
+                  </svg>
+                </button>
+              )}
               <button className="close-button" onClick={closeModal}>
                 ✕
               </button>
@@ -221,12 +241,16 @@ const EventCard: React.FC<EventCardProps> = ({
                   <input
                     type="text"
                     value={eventData.event_name}
-                    onChange={(e) => setEventField("event_name", e.target.value)}
+                    onChange={(e) =>
+                      setEventField("event_name", e.target.value)
+                    }
                   />
                 </h2>
                 <textarea
                   value={eventData.event_description || ""}
-                  onChange={(e) => setEventField("event_description", e.target.value)}
+                  onChange={(e) =>
+                    setEventField("event_description", e.target.value)
+                  }
                   placeholder="Description"
                 />
                 <p>
@@ -234,7 +258,9 @@ const EventCard: React.FC<EventCardProps> = ({
                   <input
                     type="text"
                     value={eventData.event_type || ""}
-                    onChange={(e) => setEventField("event_type", e.target.value)}
+                    onChange={(e) =>
+                      setEventField("event_type", e.target.value)
+                    }
                   />
                 </p>
                 <div className="editable-card-components-grid">
@@ -243,7 +269,9 @@ const EventCard: React.FC<EventCardProps> = ({
                     <input
                       type="text"
                       value={eventData.street_address || ""}
-                      onChange={(e) => setEventField("street_address", e.target.value)}
+                      onChange={(e) =>
+                        setEventField("street_address", e.target.value)
+                      }
                     />
                   </p>
                   <p>
@@ -267,40 +295,65 @@ const EventCard: React.FC<EventCardProps> = ({
                     <input
                       type="text"
                       value={eventData.postal_code || ""}
-                      onChange={(e) => setEventField("postal_code", e.target.value)}
+                      onChange={(e) =>
+                        setEventField("postal_code", e.target.value)
+                      }
                     />
                   </p>
                   <p>
                     {/*NOTICE! Input elements must use the browser's timezone*/}
-                    <strong>Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                    <strong>
+                      Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      ):
+                    </strong>{" "}
                     <input
-                      value={eventData.hard_start
-                        ? new Date(eventData.hard_start.substring(0, 19) + "Z")
-                          .toLocaleString("sv-SE", { timeZoneName: "short" })
-                          .slice(0, 16)
-                        : ""
+                      value={
+                        eventData.hard_start
+                          ? new Date(
+                              eventData.hard_start.substring(0, 19) + "Z"
+                            )
+                              .toLocaleString("sv-SE", {
+                                timeZoneName: "short"
+                              })
+                              .slice(0, 16)
+                          : ""
                       }
                       type="datetime-local"
-                      onChange={e => setEventField("hard_start", new Date(e.target.value).toISOString())}
+                      onChange={(e) =>
+                        setEventField(
+                          "hard_start",
+                          new Date(e.target.value).toISOString()
+                        )
+                      }
                     />
                   </p>
                   <p>
                     {/*NOTICE! Input elements must use the browser's timezone*/}
-                    <strong>End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                    <strong>
+                      End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):
+                    </strong>{" "}
                     <input
-                      value={eventData.hard_end
-                        ? new Date(eventData.hard_end.substring(0, 19) + "Z")
-                          .toLocaleString("sv-SE", { timeZoneName: "short" })
-                          .slice(0, 16)
-                        : ""
+                      value={
+                        eventData.hard_end
+                          ? new Date(eventData.hard_end.substring(0, 19) + "Z")
+                              .toLocaleString("sv-SE", {
+                                timeZoneName: "short"
+                              })
+                              .slice(0, 16)
+                          : ""
                       }
                       type="datetime-local"
-                      onChange={e => setEventField("hard_end", new Date(e.target.value).toISOString())}
+                      onChange={(e) =>
+                        setEventField(
+                          "hard_end",
+                          new Date(e.target.value).toISOString()
+                        )
+                      }
                     />
                   </p>
                 </div>
               </div>
-            ): (
+            ) : (
               <div className="readonly-card-contents">
                 <h2>{eventData.event_name}</h2>
                 {eventData.event_description && (
@@ -311,7 +364,10 @@ const EventCard: React.FC<EventCardProps> = ({
                     <strong>Type:</strong> {eventData.event_type}
                   </p>
                 )}
-                {(eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
+                {(eventData.street_address ||
+                  eventData.city ||
+                  eventData.country ||
+                  eventData.postal_code) && (
                   <p>
                     <strong>Location:</strong> {formatAddress()}
                   </p>

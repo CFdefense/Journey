@@ -54,7 +54,7 @@ export default function Itineraries() {
     const allEvents = [
       ...(day.afternoon_events || []),
       ...(day.evening_events || []),
-      ...(day.morning_events || []),
+      ...(day.morning_events || [])
     ];
 
     console.log("All events for location:", allEvents);

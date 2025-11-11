@@ -161,16 +161,14 @@ export async function apiSearchEvent(
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiDeleteUserEvent(
-	id: number
-): Promise<ApiResult<void>> {
+export async function apiDeleteUserEvent(id: number): Promise<ApiResult<void>> {
 	//TODO remove event from cache
 	try {
 		const response = await fetch(
 			`${API_BASE_URL}/api/itinerary/userEvent/${id}`,
 			{
 				method: "DELETE",
-				credentials: import.meta.env.DEV ? "include" : "same-origin",
+				credentials: import.meta.env.DEV ? "include" : "same-origin"
 			}
 		);
 		return { result: null, status: response.status };

@@ -200,7 +200,9 @@ async fn send_message_to_llm(
 					city: Some(String::from("Paris")),
 					country: Some(String::from("France")),
 					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from("Explore the beautiful landmark of Paris.")),
+					event_description: Some(String::from(
+						"Explore the beautiful landmark of Paris.",
+					)),
 					event_name: String::from("Eiffel Tower"),
 					user_created: false,
 					hard_start: None,

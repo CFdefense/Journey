@@ -113,9 +113,9 @@ export type SavedItinerariesResponse = {
 export type TimeBlock = {
 	time: string;
 	events: Event[];
-}
+};
 
 export type DayItinerary = {
 	date: string;
 	timeBlocks: TimeBlock[];
-}
+};

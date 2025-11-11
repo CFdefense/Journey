@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import EventCard from "./EventCard";
-import type { DayItinerary, Event, SearchEventRequest, UserEventRequest } from "../models/itinerary";
+import type {
+  DayItinerary,
+  Event,
+  SearchEventRequest,
+  UserEventRequest
+} from "../models/itinerary";
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
@@ -140,7 +145,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       if (!targetBlock.events.some((e) => e.id === eventId)) {
         targetBlock.events.push(draggedEvent);
       }
-    } else if (!unassigned_events.some(e => e.id === eventId)) {
+    } else if (!unassigned_events.some((e) => e.id === eventId)) {
       unassigned_events.push(draggedEvent);
     }
 
@@ -217,11 +222,12 @@ const Itinerary: React.FC<ItineraryProps> = ({
       street_address: sanitize(userEventForm.address),
       city: sanitize(userEventForm.city),
       country: sanitize(userEventForm.country),
-      postal_code: userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
-        ? parseInt(userEventForm.postalCode)
-        : null,
+      postal_code:
+        userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
+          ? parseInt(userEventForm.postalCode)
+          : null,
       hard_start: sanitize(userEventForm.start?.substring(0, 19)),
-      hard_end: sanitize(userEventForm.end?.substring(0, 19)),
+      hard_end: sanitize(userEventForm.end?.substring(0, 19))
     };
     const result = await apiUserEvent(userEvent);
     if (result.status === 401) {
@@ -237,28 +243,32 @@ const Itinerary: React.FC<ItineraryProps> = ({
     unassignedEvents.push(event);
     setUnassignedEvents(unassignedEvents);
     setCreateModalOpen(false);
-  }
+  };
 
   const onSearchEvents = () => setSearchModalOpen(true);
   const closeSearchModal = () => setSearchModalOpen(false);
   const onSearchSend = async () => {
     const searchEvent: SearchEventRequest = {
-      id: searchEventForm.id && searchEventForm.id.trim() !== ""
-        ? parseInt(searchEventForm.id)
-        : null,
+      id:
+        searchEventForm.id && searchEventForm.id.trim() !== ""
+          ? parseInt(searchEventForm.id)
+          : null,
       street_address: sanitize(searchEventForm.address),
-      postal_code: searchEventForm.postalCode && searchEventForm.postalCode.trim() !== ""
-        ? parseInt(searchEventForm.postalCode)
-        : null,
+      postal_code:
+        searchEventForm.postalCode && searchEventForm.postalCode.trim() !== ""
+          ? parseInt(searchEventForm.postalCode)
+          : null,
       city: sanitize(searchEventForm.city),
       country: sanitize(searchEventForm.country),
       event_type: sanitize(searchEventForm.type),
       event_description: sanitize(searchEventForm.description),
       event_name: sanitize(searchEventForm.name),
-      hard_start_before: sanitize(searchEventForm.startsBefore?.substring(0, 19)),
+      hard_start_before: sanitize(
+        searchEventForm.startsBefore?.substring(0, 19)
+      ),
       hard_start_after: sanitize(searchEventForm.startsAfter?.substring(0, 19)),
       hard_end_before: sanitize(searchEventForm.endsBefore?.substring(0, 19)),
-      hard_end_after: sanitize(searchEventForm.endsAfter?.substring(0, 19)),
+      hard_end_after: sanitize(searchEventForm.endsAfter?.substring(0, 19))
     };
     const result = await apiSearchEvent(searchEvent);
     if (result.status === 401) {
@@ -274,7 +284,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
     } else {
       setSearchResultCaption("Add Events To Your Itinerary");
     }
-    setSearchResult(result.result.events.filter(e => !unassignedEvents.some(v => v.id === e.id)));
+    setSearchResult(
+      result.result.events.filter(
+        (e) => !unassignedEvents.some((v) => v.id === e.id)
+      )
+    );
   };
 
   const formatAddress = (event: Event): string => {
@@ -305,11 +319,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const addEventFromSearch = (event: Event) => {
-    if (!unassignedEvents.some(e => e.id === event.id)) {
+    if (!unassignedEvents.some((e) => e.id === event.id)) {
       unassignedEvents.push(event);
       setUnassignedEvents(unassignedEvents);
     }
-    setSearchResult(searchResult!.filter(e => e.id !== event.id));
+    setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
 
   return (
@@ -324,24 +338,32 @@ const Itinerary: React.FC<ItineraryProps> = ({
               className="itinerary-edit-button"
               id="itinerary-create"
               onClick={onCreateEvent}
-            >Create Event</button>
+            >
+              Create Event
+            </button>
             <button
               className="itinerary-edit-button"
               id="itinerary-search"
               onClick={onSearchEvents}
-            >Search Events</button>
+            >
+              Search Events
+            </button>
             <button
               className="itinerary-edit-button"
               id="itinerary-save"
               onClick={handleSave}
               disabled={buttonsDisabled}
-            >Save</button>
+            >
+              Save
+            </button>
             <button
               className="itinerary-edit-button"
               id="itinerary-cancel"
               onClick={handleCancel}
               disabled={buttonsDisabled}
-            >Cancel</button>
+            >
+              Cancel
+            </button>
           </div>
         )}
       </div>
@@ -439,11 +461,18 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
       {createModalOpen && (
         <div className="user-event-modal-overlay" onClick={closeCreateModal}>
-          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="user-event-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Create a custom event</h2>
               <div className="event-card-buttons">
-                <button className="card-save-button" onClick={onSaveUserEvent} title="Save">
+                <button
+                  className="card-save-button"
+                  onClick={onSaveUserEvent}
+                  title="Save"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="18"
@@ -451,11 +480,17 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z"/>
-                    <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z"/>
+                    <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z" />
+                    <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z" />
                   </svg>
                 </button>
-                <button className="close-button" onClick={closeCreateModal} title="Close">✕</button>
+                <button
+                  className="close-button"
+                  onClick={closeCreateModal}
+                  title="Close"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
@@ -463,7 +498,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Name
                 <input
-                  onChange={(e) => setUserEventForm({ ...userEventForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setUserEventForm({ ...userEventForm, name: e.target.value })
+                  }
                   required
                 />
               </label>
@@ -471,7 +508,12 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Description
                 <textarea
-                  onChange={(e) => setUserEventForm({ ...userEventForm, description: e.target.value })}
+                  onChange={(e) =>
+                    setUserEventForm({
+                      ...userEventForm,
+                      description: e.target.value
+                    })
+                  }
                   rows={4}
                 />
               </label>
@@ -479,7 +521,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <label>
                 Type of Event
                 <input
-                  onChange={(e) => setUserEventForm({ ...userEventForm, type: e.target.value })}
+                  onChange={(e) =>
+                    setUserEventForm({ ...userEventForm, type: e.target.value })
+                  }
                 />
               </label>
 
@@ -488,13 +532,23 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   <label>
                     <span>Address</span>
                     <input
-                      onChange={(e) => setUserEventForm({ ...userEventForm, address: e.target.value })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          address: e.target.value
+                        })
+                      }
                     />
                   </label>
                   <label>
                     <span>City</span>
                     <input
-                      onChange={(e) => setUserEventForm({ ...userEventForm, city: e.target.value })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          city: e.target.value
+                        })
+                      }
                     />
                   </label>
                 </div>
@@ -503,13 +557,23 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   <label>
                     <span>Country</span>
                     <input
-                      onChange={(e) => setUserEventForm({ ...userEventForm, country: e.target.value })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          country: e.target.value
+                        })
+                      }
                     />
                   </label>
                   <label>
                     <span>Postal Code</span>
                     <input
-                      onChange={(e) => setUserEventForm({ ...userEventForm, postalCode: e.target.value })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          postalCode: e.target.value
+                        })
+                      }
                       type="number"
                       maxLength={5}
                     />
@@ -518,17 +582,33 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
                 <div className="location-grid-row">
                   <label>
-                    <span>Start Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span>
+                    <span>
+                      Start Time (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                    </span>
                     <input
                       type="datetime-local"
-                      onChange={(e) => setUserEventForm({ ...userEventForm, start: new Date(e.target.value).toISOString() })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          start: new Date(e.target.value).toISOString()
+                        })
+                      }
                     />
                   </label>
                   <label>
-                    <span>End Time ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span>
+                    <span>
+                      End Time (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                    </span>
                     <input
                       type="datetime-local"
-                      onChange={(e) => setUserEventForm({ ...userEventForm, end: new Date(e.target.value).toISOString() })}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          end: new Date(e.target.value).toISOString()
+                        })
+                      }
                     />
                   </label>
                 </div>
@@ -540,13 +620,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
       {searchModalOpen && (
         <div className="user-event-modal-overlay" onClick={closeSearchModal}>
-          <div className="search-event-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="search-event-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="searchContainer">
               <div className="searchFilters">
                 <div className="modal-header">
                   <h2>Search for an event</h2>
                   <div className="event-card-buttons">
-                    <button className="card-save-button" onClick={onSearchSend} title="Search">
+                    <button
+                      className="card-save-button"
+                      onClick={onSearchSend}
+                      title="Search"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="18"
@@ -554,10 +641,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path d="M10 2a8 8 0 1 0 5.293 14.293l4.707 4.707 1.414-1.414-4.707-4.707A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12A6 6 0 0 1 10 4z"/>
+                        <path d="M10 2a8 8 0 1 0 5.293 14.293l4.707 4.707 1.414-1.414-4.707-4.707A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12A6 6 0 0 1 10 4z" />
                       </svg>
                     </button>
-                    <button className="close-button" onClick={closeSearchModal} title="Close">✕</button>
+                    <button
+                      className="close-button"
+                      onClick={closeSearchModal}
+                      title="Close"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
 
@@ -566,21 +659,36 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Name
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, name: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            name: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       Description
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, description: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            description: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       ID
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, id: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            id: e.target.value
+                          })
+                        }
                         type="number"
                       />
                     </label>
@@ -588,35 +696,60 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     <label>
                       Type of Event
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, type: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            type: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       Address
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, address: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            address: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       City
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, city: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            city: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       Country
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, country: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            country: e.target.value
+                          })
+                        }
                       />
                     </label>
 
                     <label>
                       Postal Code
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, postalCode: e.target.value })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            postalCode: e.target.value
+                          })
+                        }
                         type="number"
                         maxLength={5}
                       />
@@ -624,36 +757,60 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
                     <label>
                       {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Starts Before ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Starts Before (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, startsBefore: new Date(e.target.value).toISOString() })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            startsBefore: new Date(e.target.value).toISOString()
+                          })
+                        }
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
                       {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Starts After ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Starts After (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, startsAfter: new Date(e.target.value).toISOString() })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            startsAfter: new Date(e.target.value).toISOString()
+                          })
+                        }
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
                       {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Ends Before ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Ends Before (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, endsBefore: new Date(e.target.value).toISOString() })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            endsBefore: new Date(e.target.value).toISOString()
+                          })
+                        }
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
                       {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Ends After ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Ends After (
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
                       <input
-                        onChange={(e) => setSearchEventForm({ ...searchEventForm, endsAfter: new Date(e.target.value).toISOString() })}
+                        onChange={(e) =>
+                          setSearchEventForm({
+                            ...searchEventForm,
+                            endsAfter: new Date(e.target.value).toISOString()
+                          })
+                        }
                         type="datetime-local"
                       />
                     </label>
@@ -666,16 +823,24 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   <div className="resultsGrid">
                     {searchResult.map((event: Event) => (
                       <div key={event.id} className="resultCard">
-                        <button className="card-edit-button" onClick={() => addEventFromSearch(event)}>
+                        <button
+                          className="card-edit-button"
+                          onClick={() => addEventFromSearch(event)}
+                        >
                           +
                         </button>
                         <h3 className="event-title">{event.event_name}</h3>
-                        {(event.street_address || event.city || event.country || event.postal_code) && (
+                        {(event.street_address ||
+                          event.city ||
+                          event.country ||
+                          event.postal_code) && (
                           <p className="event-location">
                             {formatAddress(event)}
                           </p>
                         )}
-                        {event.event_type && <p className="event-type">{event.event_type}</p>}
+                        {event.event_type && (
+                          <p className="event-type">{event.event_type}</p>
+                        )}
                       </div>
                     ))}
                   </div>

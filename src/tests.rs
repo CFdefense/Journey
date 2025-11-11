@@ -2,7 +2,11 @@ use crate::{
 	agent, controllers, db,
 	global::*,
 	http_models::{
-		account::{LoginRequest, SignupRequest, UpdateRequest}, chat_session::RenameRequest, event::{SearchEventRequest, UserEventRequest, UserEventResponse}, itinerary::Itinerary, message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest}
+		account::{LoginRequest, SignupRequest, UpdateRequest},
+		chat_session::RenameRequest,
+		event::{SearchEventRequest, UserEventRequest, UserEventResponse},
+		itinerary::Itinerary,
+		message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest},
 	},
 	log,
 	middleware::AuthUser,
@@ -1263,12 +1267,17 @@ async fn test_user_event_flow(
 		country: Some(test.clone()),
 		event_type: Some(test.clone()),
 		event_description: Some(test.clone()),
-		hard_start: Some(NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
-		hard_end: Some(NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
+		hard_start: Some(
+			NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end: Some(
+			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
 	});
-	let Json(UserEventResponse {id}) = controllers::itinerary::api_user_event(user, pool.clone(), json)
-		.await
-		.unwrap();
+	let Json(UserEventResponse { id }) =
+		controllers::itinerary::api_user_event(user, pool.clone(), json)
+			.await
+			.unwrap();
 
 	// update event
 	let update_str = String::from("test updated");
@@ -1291,7 +1300,8 @@ async fn test_user_event_flow(
 
 	// search event
 	let json = Json(SearchEventRequest {
-		id: Some(id), ..Default::default()
+		id: Some(id),
+		..Default::default()
 	});
 	let Json(res) = controllers::itinerary::api_search_event(user, pool.clone(), json)
 		.await
@@ -1308,10 +1318,18 @@ async fn test_user_event_flow(
 		event_type: Some(test.clone()),
 		event_description: Some(test.clone()),
 		event_name: Some(test.clone()),
-		hard_start_before: Some(NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
-		hard_start_after: Some(NaiveDateTime::parse_from_str("2010-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
-		hard_end_before: Some(NaiveDateTime::parse_from_str("2030-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
-		hard_end_after: Some(NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap()),
+		hard_start_before: Some(
+			NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_start_after: Some(
+			NaiveDateTime::parse_from_str("2010-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end_before: Some(
+			NaiveDateTime::parse_from_str("2030-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end_after: Some(
+			NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
 	});
 	let Json(res) = controllers::itinerary::api_search_event(user, pool.clone(), json)
 		.await
@@ -1325,7 +1343,8 @@ async fn test_user_event_flow(
 
 	// verify deletion
 	let json = Json(SearchEventRequest {
-		id: Some(id), ..Default::default()
+		id: Some(id),
+		..Default::default()
 	});
 	let Json(res) = controllers::itinerary::api_search_event(user, pool, json)
 		.await

@@ -35,12 +35,12 @@ const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
             country={null}
             localDays={[]}
             setLocalDays={function (): void {
-                throw new Error("Function not implemented.");
-            } }
+              throw new Error("Function not implemented.");
+            }}
             unassignedEvents={[]}
             setUnassignedEvents={function (): void {
-                throw new Error("Function not implemented.");
-            } }
+              throw new Error("Function not implemented.");
+            }}
           />
         ))}
       </div>
