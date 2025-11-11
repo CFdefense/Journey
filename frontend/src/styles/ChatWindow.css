@@ -38,17 +38,16 @@
   position: relative;
   z-index: 1;
   opacity: 0;
-  transform: translateY(-10px);
+  animation: fadeIn 0.4s ease-in-out forwards;
 }
 
-.chat-container.expanding .chat-header {
-  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
-}
-
-.chat-container:not(.chat-container-empty):not(.expanding) .chat-header {
-  opacity: 1;
-  transform: translateY(0);
-  animation: none;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInDown {
@@ -87,9 +86,10 @@
 
 .chat-header-subtitle {
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.2;
   text-align: left;
+  margin-left: .25rem;
 }
 
 /* Scrollable message area */
@@ -103,15 +103,21 @@
   gap: 0.75rem;
   background: transparent;
   opacity: 0;
+  transform: translateY(-10px);
 }
 
 .chat-container.expanding .chat-messages {
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
 }
 
-.chat-container:not(.chat-container-empty):not(.expanding) .chat-messages {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .chat-messages {
   opacity: 1;
+  transform: translateY(0);
   animation: none;
+}
+
+.chat-container.initial-load:not(.chat-container-empty) .chat-messages {
+  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeIn {
@@ -532,10 +538,14 @@
   animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
 }
 
-.chat-container:not(.chat-container-empty):not(.expanding) .message-input {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .message-input {
   opacity: 1;
   transform: translateY(0);
   animation: none;
+}
+
+.chat-container.initial-load:not(.chat-container-empty) .message-input {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeInUp {

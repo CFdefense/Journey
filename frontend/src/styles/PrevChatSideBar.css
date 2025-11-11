@@ -188,28 +188,15 @@
   transition: opacity 220ms ease, transform 260ms ease, padding 0.45s ease-in-out;
 }
 
-/* Custom scrollbar for chat list */
+/* Hide scrollbar for chat list */
 .chat-list::-webkit-scrollbar {
-  width: 8px;
+  display: none;
+  width: 0;
 }
 
-.chat-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chat-list::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 4px;
-}
-
-.chat-list::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
-
-/* Firefox scrollbar */
 .chat-list {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .sidebar.open .chat-list {

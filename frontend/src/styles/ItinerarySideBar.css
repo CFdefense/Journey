@@ -115,28 +115,15 @@
   transition: opacity 220ms ease 0ms;
 }
 
-/* Custom scrollbar for itinerary content */
+/* Hide scrollbar for itinerary content */
 .itinerary-content::-webkit-scrollbar {
-  width: 8px;
+  display: none;
+  width: 0;
 }
 
-.itinerary-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.itinerary-content::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 4px;
-}
-
-.itinerary-content::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
-
-/* Firefox scrollbar */
 .itinerary-content {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .itinerary-sidebar.open .itinerary-content {

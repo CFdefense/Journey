@@ -32,25 +32,60 @@ export default function ChatWindow({
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
   const [isExpanding, setIsExpanding] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(messages.length > 0);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const deleteIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const prevMessagesLengthRef = useRef<number>(0);
+  const hasMountedRef = useRef<boolean>(false);
+  const mountTimeRef = useRef<number>(Date.now());
+  const initialLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const expandingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Track initial mount
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      mountTimeRef.current = Date.now();
+      // If we have messages on initial mount, this is a reloaded chat session
+      if (messages.length > 0) {
+        setIsInitialLoad(true);
+        // Remove initial load state after animation completes
+        if (initialLoadTimeoutRef.current) {
+          clearTimeout(initialLoadTimeoutRef.current);
+        }
+        initialLoadTimeoutRef.current = setTimeout(() => setIsInitialLoad(false), 900);
+      }
+    }
+
     const wasEmpty = prevMessagesLengthRef.current === 0;
     const nowHasMessages = messages.length > 0;
+    const timeSinceMount = Date.now() - mountTimeRef.current;
     
-    // Only trigger expansion when transitioning from empty (0 messages) to having messages
-    // Not when switching between chats that already have messages (prevMessagesLengthRef > 0)
-    // The key is: wasEmpty means we had 0 messages before, so this is a new chat, not a switch
-    if (nowHasMessages && wasEmpty) {
-      // Start expansion animation when first message arrives from empty state
-      setIsExpanding(true);
-      // Reset expanding state after animation completes
-      setTimeout(() => setIsExpanding(false), 800);
-    } else {
+    // If messages appear within 500ms of mount, treat it as initial load (reloaded chat)
+    // Otherwise, if transitioning from empty to having messages, it's an expansion
+    if (nowHasMessages && wasEmpty && hasMountedRef.current) {
+      if (timeSinceMount < 500) {
+        // Messages appeared very quickly after mount - this is a reloaded chat
+        setIsInitialLoad(true);
+        setIsExpanding(false);
+        if (initialLoadTimeoutRef.current) {
+          clearTimeout(initialLoadTimeoutRef.current);
+        }
+        initialLoadTimeoutRef.current = setTimeout(() => setIsInitialLoad(false), 900);
+      } else {
+        // Messages appeared after some time - this is a new message in an empty chat
+        setIsInitialLoad(false);
+        setIsExpanding(true);
+        if (expandingTimeoutRef.current) {
+          clearTimeout(expandingTimeoutRef.current);
+        }
+        expandingTimeoutRef.current = setTimeout(() => setIsExpanding(false), 800);
+      }
+    } else if (!wasEmpty) {
+      // If we already had messages, we're switching chats, not expanding
       setIsExpanding(false);
+      setIsInitialLoad(false);
     }
 
     if (messages.length > 0) {
@@ -87,6 +122,12 @@ export default function ChatWindow({
       }
       if (deleteIntervalRef.current) {
         clearInterval(deleteIntervalRef.current);
+      }
+      if (initialLoadTimeoutRef.current) {
+        clearTimeout(initialLoadTimeoutRef.current);
+      }
+      if (expandingTimeoutRef.current) {
+        clearTimeout(expandingTimeoutRef.current);
       }
     };
   }, [messages.length]);
@@ -156,7 +197,7 @@ export default function ChatWindow({
   const titleText = displayedText;
 
   return (
-    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""}`}>
+    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""} ${isInitialLoad ? "initial-load" : ""}`}>
       {showEmptyState ? (
         <div className="chat-empty-state">
           <h1 className="chat-empty-title">
