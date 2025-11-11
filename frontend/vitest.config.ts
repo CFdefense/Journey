@@ -15,7 +15,7 @@ export default defineConfig({
 				"src/helpers/global.ts",
 				"src/models",
 				"**/*.d.ts",
-				"**/*.tsx" // if you want to test a react component, you should specifically include that file
+				"**/*.tsx" // if you want to test a react component, you should specifically include that file in the include array below
 			],
 			include: [
 				"src/**",

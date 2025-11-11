@@ -1,8 +1,8 @@
 export type Itinerary = {
 	id: number;
-	/// Destination's local timezone - %Y-%m-%d
+	/// %Y-%m-%d
 	start_date: string;
-	/// Destination's local timezone - %Y-%m-%d
+	/// %Y-%m-%d
 	end_date: string;
 	/// List of days containing events for that day
 	/// * Days are guaranteed to be sorted in chronological order
@@ -15,7 +15,7 @@ export type EventDay = {
 	morning_events: Event[];
 	afternoon_events: Event[];
 	evening_events: Event[];
-	/// Destination's local timezone - %Y-%m-%d
+	/// %Y-%m-%d
 	date: string;
 };
 
@@ -29,9 +29,9 @@ export type Event = {
 	event_description: string | null;
 	event_name: string;
 	user_created: boolean;
-	/// Destination's local timezone - %Y-%m-%d
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	hard_start: string | null; /// for testing sake this is what will have the 13:00 value for phillies game
-	/// Destination's local timezone - %Y-%m-%d
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	hard_end: string | null;
 };
 

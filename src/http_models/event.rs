@@ -18,9 +18,9 @@ pub struct Event {
 	pub event_description: Option<String>,
 	pub event_name: String,
 	pub user_created: bool,
-	/// UTC
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_start: Option<NaiveDateTime>,
-	/// UTC
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_end: Option<NaiveDateTime>,
 }
 
@@ -55,9 +55,9 @@ pub struct UserEventRequest {
 	pub event_type: Option<String>,
 	pub event_description: Option<String>,
 	pub event_name: String,
-	/// UTC
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_start: Option<NaiveDateTime>,
-	/// UTC
+	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_end: Option<NaiveDateTime>,
 }
 
