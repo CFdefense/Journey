@@ -75,7 +75,7 @@ pub struct UserEventResponse {
 /// WHERE name LIKE $1
 /// LIMIT 10;
 /// ```
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, ToSchema, Default, Clone)]
 pub struct SearchEventRequest {
 	/// Search where id=...
 	pub id: Option<i32>,
