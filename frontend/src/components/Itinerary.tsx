@@ -140,7 +140,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       if (!targetBlock.events.some((e) => e.id === eventId)) {
         targetBlock.events.push(draggedEvent);
       }
-    } else if (!unassigned_events.some((e) => e.id === eventId)) {
+    } else if (!unassigned_events.some(e => e.id === eventId)) {
       unassigned_events.push(draggedEvent);
     }
 
@@ -274,7 +274,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     } else {
       setSearchResultCaption("Add Events To Your Itinerary");
     }
-    setSearchResult(result.result.events);
+    setSearchResult(result.result.events.filter(e => !unassignedEvents.some(v => v.id === e.id)));
   };
 
   const formatAddress = (event: Event): string => {
@@ -305,8 +305,10 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const addEventFromSearch = (event: Event) => {
-    unassignedEvents.push(event);
-    setUnassignedEvents(unassignedEvents);
+    if (!unassignedEvents.some(e => e.id === event.id)) {
+      unassignedEvents.push(event);
+      setUnassignedEvents(unassignedEvents);
+    }
     setSearchResult(searchResult!.filter(e => e.id !== event.id));
   };
 

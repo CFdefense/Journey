@@ -175,19 +175,19 @@ const EventCard: React.FC<EventCardProps> = ({
         onClick={openModal}
       >
         <h3 className="event-title">{eventData.event_name}</h3>
+        {eventData.event_type && <p className="event-type">{eventData.event_type}</p>}
         {(eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
           <p className="event-location">
             {formatAddress()}
           </p>
         )}
-        {eventData.event_type && <p className="event-type">{eventData.event_type}</p>}
       </div>
 
       {isOpen && (
         <div className="event-modal-overlay" onClick={closeModal}>
           <div className="event-modal" onClick={(e) => e.stopPropagation()}>
             <div className="event-card-buttons">
-              {user_created && <button className="card-edit-button" onClick={onDeleteUserEvent}>
+              {user_created && <button className="card-edit-button" id="user-card-delete" onClick={onDeleteUserEvent}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
@@ -214,95 +214,108 @@ const EventCard: React.FC<EventCardProps> = ({
                 ✕
               </button>
             </div>
-            <h2>
-              {user_created ? (
-                <input
-                  type="text"
-                  value={eventData.event_name}
-                  onChange={(e) => setEventField("event_name", e.target.value)}
-                />
-              ) : (
-                eventData.event_name
-              )}
-            </h2>
-
             {user_created ? (
-              <textarea
-                value={eventData.event_description || ""}
-                onChange={(e) => setEventField("event_description", e.target.value)}
-                placeholder="Description"
-              />
-            ) : (
-              eventData.event_description && <p>{eventData.event_description}</p>
-            )}
-
-            {user_created ? (
-              <p>
-                <strong>Type:</strong>{" "}
-                <input
-                  type="text"
-                  value={eventData.event_type || ""}
-                  onChange={(e) => setEventField("event_type", e.target.value)}
-                />
-              </p>
-            ) : (
-              eventData.event_type && (
-                <p>
-                  <strong>Type:</strong> {eventData.event_type}
-                </p>
-              )
-            )}
-
-            {user_created ? (
-              <p>
-                <strong>Address:</strong>{" "}
-                <input
-                  type="text"
-                  value={eventData.street_address || ""}
-                  onChange={(e) => setEventField("street_address", e.target.value)}
-                />
-              </p>
-            ) : (
-              (eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
-                <p>
-                  <strong>Location:</strong> {formatAddress()}
-                </p>
-              )
-            )}
-
-            {user_created ? (
-              <>
-                <p>
-                  {/*NOTICE! Input elements must use the browser's timezone*/}
-                  <strong>Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+              <div className="editable-card-contents">
+                <h2>
+                  <strong>Name:</strong>{" "}
                   <input
-                    value={eventData.hard_start
-                      ? new Date(eventData.hard_start.substring(0, 19) + "Z")
-                        .toLocaleString("sv-SE", { timeZoneName: "short" })
-                        .slice(0, 16)
-                      : ""
-                    }
-                    type="datetime-local"
-                    onChange={e => setEventField("hard_start", new Date(e.target.value).toISOString())}
+                    type="text"
+                    value={eventData.event_name}
+                    onChange={(e) => setEventField("event_name", e.target.value)}
+                  />
+                </h2>
+                <textarea
+                  value={eventData.event_description || ""}
+                  onChange={(e) => setEventField("event_description", e.target.value)}
+                  placeholder="Description"
+                />
+                <p>
+                  <strong>Type:</strong>{" "}
+                  <input
+                    type="text"
+                    value={eventData.event_type || ""}
+                    onChange={(e) => setEventField("event_type", e.target.value)}
                   />
                 </p>
-                <p>
-                  {/*NOTICE! Input elements must use the browser's timezone*/}
-                  <strong>End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
-                  <input
-                    value={eventData.hard_end
-                      ? new Date(eventData.hard_end.substring(0, 19) + "Z")
-                        .toLocaleString("sv-SE", { timeZoneName: "short" })
-                        .slice(0, 16)
-                      : ""
-                    }
-                    type="datetime-local"
-                    onChange={e => setEventField("hard_end", new Date(e.target.value).toISOString())}
-                  />
-                </p>
-              </>
-            ) : (
-              <>
+                <div className="editable-card-components-grid">
+                  <p>
+                    <strong>Address:</strong>{" "}
+                    <input
+                      type="text"
+                      value={eventData.street_address || ""}
+                      onChange={(e) => setEventField("street_address", e.target.value)}
+                    />
+                  </p>
+                  <p>
+                    <strong>City:</strong>{" "}
+                    <input
+                      type="text"
+                      value={eventData.city || ""}
+                      onChange={(e) => setEventField("city", e.target.value)}
+                    />
+                  </p>
+                  <p>
+                    <strong>Country:</strong>{" "}
+                    <input
+                      type="text"
+                      value={eventData.country || ""}
+                      onChange={(e) => setEventField("country", e.target.value)}
+                    />
+                  </p>
+                  <p>
+                    <strong>Postal Code:</strong>{" "}
+                    <input
+                      type="text"
+                      value={eventData.postal_code || ""}
+                      onChange={(e) => setEventField("postal_code", e.target.value)}
+                    />
+                  </p>
+                  <p>
+                    {/*NOTICE! Input elements must use the browser's timezone*/}
+                    <strong>Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                    <input
+                      value={eventData.hard_start
+                        ? new Date(eventData.hard_start.substring(0, 19) + "Z")
+                          .toLocaleString("sv-SE", { timeZoneName: "short" })
+                          .slice(0, 16)
+                        : ""
+                      }
+                      type="datetime-local"
+                      onChange={e => setEventField("hard_start", new Date(e.target.value).toISOString())}
+                    />
+                  </p>
+                  <p>
+                    {/*NOTICE! Input elements must use the browser's timezone*/}
+                    <strong>End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):</strong>{" "}
+                    <input
+                      value={eventData.hard_end
+                        ? new Date(eventData.hard_end.substring(0, 19) + "Z")
+                          .toLocaleString("sv-SE", { timeZoneName: "short" })
+                          .slice(0, 16)
+                        : ""
+                      }
+                      type="datetime-local"
+                      onChange={e => setEventField("hard_end", new Date(e.target.value).toISOString())}
+                    />
+                  </p>
+                </div>
+              </div>
+            ): (
+              <div className="readonly-card-contents">
+                <h2>{eventData.event_name}</h2>
+                {eventData.event_description && (
+                  <p>{eventData.event_description}</p>
+                )}
+                {eventData.event_type && (
+                  <p>
+                    <strong>Type:</strong> {eventData.event_type}
+                  </p>
+                )}
+                {(eventData.street_address || eventData.city || eventData.country || eventData.postal_code) && (
+                  <p>
+                    <strong>Location:</strong> {formatAddress()}
+                  </p>
+                )}
                 {eventData.hard_start && (
                   <p>
                     <strong>Start (UTC):</strong> {eventData.hard_start}
@@ -313,7 +326,7 @@ const EventCard: React.FC<EventCardProps> = ({
                     <strong>End (UTC):</strong> {eventData.hard_end}
                   </p>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
