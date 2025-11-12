@@ -380,17 +380,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
               {unassignedEvents.map((event) => (
                 <EventCard
                   key={event.id}
-                  event_id={event.id}
-                  event_name={event.event_name}
-                  event_description={event.event_description}
-                  street_address={event.street_address}
-                  city={event.city}
-                  country={event.country}
-                  postal_code={event.postal_code}
-                  event_type={event.event_type}
-                  user_created={event.user_created}
-                  hard_start={event.hard_start}
-                  hard_end={event.hard_end}
+                  event={event}
                   unassignedEvents={unassignedEvents}
                   setUnassignedEvents={setUnassignedEvents}
                   localDays={localDays}
@@ -434,18 +424,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
               {block.events.map((event) => (
                 <EventCard
                   key={event.id}
-                  event_id={event.id}
-                  event_name={event.event_name}
-                  event_description={event.event_description}
                   time={block.time}
-                  street_address={event.street_address}
-                  city={event.city}
-                  country={event.country}
-                  postal_code={event.postal_code}
-                  event_type={event.event_type}
-                  user_created={event.user_created}
-                  hard_start={event.hard_start}
-                  hard_end={event.hard_end}
+                  event={event}
                   unassignedEvents={unassignedEvents}
                   setUnassignedEvents={setUnassignedEvents}
                   localDays={localDays}
@@ -494,7 +474,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
               </div>
             </div>
 
-            <form className="user-event-form">
+            <form className="user-event-form" onSubmit={onSaveUserEvent}>
               <label>
                 Name
                 <input
@@ -654,7 +634,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </div>
                 </div>
 
-                <form className="user-event-form">
+                <form className="user-event-form" onSubmit={onSearchSend}>
                   <div className="location-grid">
                     <label>
                       Name
