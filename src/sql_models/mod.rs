@@ -39,7 +39,6 @@ pub enum RiskTolerence {
 #[sqlx(type_name = "time_of_day")]
 pub enum TimeOfDay {
 	Morning,
-	Noon,
 	Afternoon,
 	Evening,
 }
