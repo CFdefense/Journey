@@ -20,19 +20,9 @@ const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
         {events.map((event) => (
           <EventCard
             key={event.id}
-            event_name={event.event_name}
-            event_description={event.event_description}
-            street_address={event.street_address}
-            postal_code={event.postal_code}
-            city={event.city}
-            event_type={event.event_type}
-            user_created={event.user_created}
-            hard_start={event.hard_start}
-            hard_end={event.hard_end}
+            event={event}
             draggable
             onDragStart={(e) => onDragStart(e, event)}
-            event_id={0}
-            country={null}
             localDays={[]}
             setLocalDays={function (): void {
               throw new Error("Function not implemented.");
