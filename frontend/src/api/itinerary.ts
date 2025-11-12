@@ -44,6 +44,23 @@ export async function apiItineraryDetails(
 	}
 }
 
+/// Saves or updates an itinerary for the authenticated user
+///
+/// # Method
+/// Sends a `POST /api/itinerary/save` request to insert a new itinerary
+/// or update an existing one in the database.
+///
+/// # Parameters
+/// - `payload`: The complete `Itinerary` object to save. If the itinerary ID
+///   already exists for this user, it will be updated. Otherwise, a new
+///   itinerary will be created.
+///
+/// # Returns
+/// - On success: A `SaveResponse` object containing the ID of the saved itinerary.
+/// - On failure: Throws an error with details about the failure.
+///
+/// # Exceptions
+/// Never throws an exception
 export async function apiSaveItineraryChanges(
 	payload: Itinerary
 ): Promise<SaveResponse> {
@@ -69,6 +86,51 @@ export async function apiSaveItineraryChanges(
 		return data;
 	} catch (error) {
 		console.error("Save API error:", error);
+		throw error;
+	}
+}
+
+/// Unsaves an existing itinerary for the authenticated user
+///
+/// # Method
+/// Sends a `POST /api/itinerary/unsave` request to set the saved field
+/// to false for the specified itinerary.
+///
+/// # Parameters
+/// - `payload`: The complete `Itinerary` object to unsave. The itinerary must
+///   belong to the authenticated user and must currently be saved.
+///
+/// # Returns
+/// - On success: A `SaveResponse` object containing the ID of the unsaved itinerary.
+/// - On failure: Throws an error with details about the failure.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiUnsaveItinerary(
+	payload: Itinerary
+): Promise<SaveResponse> {
+	try {
+		const response = await fetch(`${API_BASE_URL}/api/itinerary/unsave`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: import.meta.env.DEV ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(
+				`Failed to unsave itinerary: ${response.status} ${errorText}`
+			);
+		}
+
+		// Parse and return the SaveResponse
+		const data: SaveResponse = await response.json();
+		return data;
+	} catch (error) {
+		console.error("Unsave API error:", error);
 		throw error;
 	}
 }
