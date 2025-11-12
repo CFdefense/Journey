@@ -160,7 +160,7 @@
 
 .day-tab {
   background: #f0f0f0;
-  border: 2px solid #e0e0e0;
+  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
@@ -172,19 +172,16 @@
 
 .day-tab:hover {
   background: var(--pale-yellow);
-  border-color: var(--gold);
   color: #333;
 }
 
 .day-tab.active {
   background: var(--blue);
   color: white;
-  border-color: var(--blue);
 }
 
 .day-tab.active:hover {
   background: #005a9e;
-  border-color: #005a9e;
 }
 
 /* Itinerary list - HORIZONTAL layout */
@@ -198,7 +195,7 @@
 /* Time block container */
 .time-block {
   background: #fafafa;
-  border: 2px solid #e0e0e0;
+  border: none;
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -208,30 +205,14 @@
 
 .time-block:hover {
   background: #f5f5f5;
-  border-color: #d0d0d0;
-}
-
-/* Different colors for each time block */
-.time-block:nth-child(1) {
-  border-color: var(--gold);
-}
-
-.time-block:nth-child(2) {
-  border-color: var(--light-blue);
-}
-
-.time-block:nth-child(3) {
-  border-color: var(--salmon);
 }
 
 .time-block.editable {
-  border: 2px dashed var(--blue);
   background: #f0f7ff;
 }
 
 .time-block.editable:hover {
   background: #e8f2ff;
-  border-color: var(--light-blue);
 }
 
 /* Time label */

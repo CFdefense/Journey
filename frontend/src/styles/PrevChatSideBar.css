@@ -405,7 +405,7 @@
   padding: 0.75rem;
   cursor: pointer;
   border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border: none;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: #555;
@@ -417,9 +417,9 @@
   /* child fade baseline */
   opacity: 0;
   transform: translateY(6px);
-  transition-property: opacity, transform, background, border-color, color;
-  transition-duration: 200ms, 260ms, 0.2s, 0.2s, 0.2s;
-  transition-timing-function: ease, ease, ease, ease, ease;
+  transition-property: opacity, transform, background, color;
+  transition-duration: 200ms, 260ms, 0.2s, 0.2s;
+  transition-timing-function: ease, ease, ease, ease;
   transition-delay: 0ms;
 }
 
@@ -430,7 +430,6 @@
 
 .chat-list li:hover {
   background: #f0f0f0;
-  border-color: #d0d0d0;
   color: #333;
 }
 
@@ -438,7 +437,6 @@
   background: linear-gradient(135deg, #d87f75 0%, #e8c89f 100%);
   color: #ffffff !important;
   font-weight: 500;
-  border-color: #d87f75;
   transition: all 0.2s ease !important;
   transition-delay: 0ms !important;
 }
@@ -446,13 +444,12 @@
 .chat-list li:not(.active) {
   background: #fafafa !important;
   color: #555 !important;
-  border-color: #e0e0e0 !important;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0ms ease !important;
+  transition: background 0.2s ease, color 0.2s ease !important;
 }
 
 .chat-list li:not(.active) .chat-title {
   color: #555 !important;
-}All
+}
 
 .chat-title {
   flex: 1;
