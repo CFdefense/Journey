@@ -1,5 +1,6 @@
 // Home.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
@@ -21,13 +22,16 @@ import type {
 import type { ChatSession } from "../models/home";
 import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
-import { fetchItinerary } from "../helpers/itinerary";
+import { fetchItinerary, convertToApiFormat } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
-import { apiItineraryDetails } from "../api/itinerary";
+import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
@@ -41,6 +45,49 @@ export default function Home() {
     null
   );
   const [itineraryTitle, setItineraryTitle] = useState<string>("");
+  const [itineraryStartDate, setItineraryStartDate] = useState<string>("");
+  const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
+  const [initialStateProcessed, setInitialStateProcessed] = useState(false);
+  
+  // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
+  const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
+  // Track the initial chat ID to know when it actually changes
+  const initialChatIdRef = useRef<number | null>(null);
+
+  // Handle navigation state from ViewItinerary
+  useEffect(() => {
+    if (location.state && !initialStateProcessed) {
+      const { selectedItineraryId, chatSessionId, openItinerarySidebar } = location.state;
+      console.log("Navigation state - itinerary ID:", selectedItineraryId);
+      
+      // Set the flag if we have an itinerary ID from navigation
+      if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
+        setCameFromViewItinerary(true);
+      }
+      
+      if (chatSessionId !== undefined && chatSessionId !== null) {
+        initialChatIdRef.current = chatSessionId;
+        setActiveChatId(chatSessionId);
+        sessionStorage.setItem(ACTIVE_CHAT_SESSION, chatSessionId.toString());
+      }
+      
+      if (openItinerarySidebar !== undefined) {
+        setItinerarySidebarVisible(openItinerarySidebar);
+      }
+      
+      // Set itinerary ID last and trigger a load
+      if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
+        setSelectedItineraryId(selectedItineraryId);
+        // Manually load itinerary data since we're setting the ID in initial state
+        loadItineraryData(selectedItineraryId);
+      }
+      
+      setInitialStateProcessed(true);
+      
+      // Clear navigation state after processing
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, initialStateProcessed, navigate, location.pathname]);
 
   useEffect(() => {
     async function fetchAccount() {
@@ -88,14 +135,16 @@ export default function Home() {
 
       let chatSessionId = activeChatId;
 
-      // get MRU chat from session storage
-      const prevActiveChat: string | null =
-        sessionStorage.getItem(ACTIVE_CHAT_SESSION);
-      if (prevActiveChat !== null) {
-        const id = +prevActiveChat;
-        if (tempChats.find((chat) => chat.id === id) !== undefined) {
-          chatSessionId = id;
-          setActiveChatId(chatSessionId);
+      // get MRU chat from session storage only if not already set by navigation state
+      if (chatSessionId === null) {
+        const prevActiveChat: string | null =
+          sessionStorage.getItem(ACTIVE_CHAT_SESSION);
+        if (prevActiveChat !== null) {
+          const id = +prevActiveChat;
+          if (tempChats.find((chat) => chat.id === id) !== undefined) {
+            chatSessionId = id;
+            setActiveChatId(chatSessionId);
+          }
         }
       }
 
@@ -136,38 +185,56 @@ export default function Home() {
 
   // Fetch itinerary data when selectedItineraryId changes
   useEffect(() => {
-    async function loadItinerary() {
-      const itineraryId = selectedItineraryId;
-
-      // if no current itinerary is selected, do not try and populate it
-      if (itineraryId === null) {
-        return;
-      }
-
-      try {
-        const data = await fetchItinerary(itineraryId);
-        setItineraryData(data);
-
-        const apiResponse = await apiItineraryDetails(itineraryId);
-
-        if (apiResponse.result) {
-          setItineraryTitle(apiResponse.result.title);
-        }
-      } catch (error) {
-        console.error("Error loading itinerary:", error);
-        setItineraryData(null);
-        setItineraryTitle("");
-      }
+    if (selectedItineraryId !== null) {
+      loadItineraryData(selectedItineraryId);
     }
-
-    loadItinerary();
   }, [selectedItineraryId]);
 
-  // whenever the active chat changes, clear all itinerary information on home page.
+  // Helper function to load itinerary data
+  const loadItineraryData = async (itineraryId: number) => {
+    try {
+      const data = await fetchItinerary(itineraryId);
+      setItineraryData(data);
+
+      const apiResponse = await apiItineraryDetails(itineraryId);
+
+      if (apiResponse.result) {
+        setItineraryTitle(apiResponse.result.title);
+        setItineraryStartDate(apiResponse.result.start_date);
+        setItineraryEndDate(apiResponse.result.end_date);
+      }
+
+      setItinerarySidebarVisible(true); // whenever itinerary data is loaded successfully, make sure the side bar opens
+    } catch (error) {
+      console.error("Error loading itinerary:", error);
+      setItineraryData(null);
+      setItineraryTitle("");
+      setItineraryStartDate("");
+      setItineraryEndDate("");
+    }
+  };
+
+  // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
   useEffect(() => {
+    
+    // Don't clear on initial mount when activeChatId is null
+    if (activeChatId === null && !initialStateProcessed) {
+      return;
+    }
+    
+    // If we came from ViewItinerary and this is the initial chat ID, don't clear
+    if (cameFromViewItinerary && activeChatId === initialChatIdRef.current) {
+      // Reset the flag so subsequent chat changes will clear itinerary data
+      setCameFromViewItinerary(false);
+      return;
+    }
+    
+    // For normal chat switches, clear itinerary data
     setSelectedItineraryId(null);
     setItineraryData(null);
     setItineraryTitle("");
+    setItineraryStartDate("");
+    setItineraryEndDate("");
     setItinerarySidebarVisible(false);
   }, [activeChatId]);
 
@@ -197,6 +264,7 @@ export default function Home() {
     };
 
     let currChatId = activeChatId;
+    let isNewChat = false;
 
     // create a new chat if there is no active chat
     if (activeChatId === null) {
@@ -217,6 +285,28 @@ export default function Home() {
       sessionStorage.setItem(ACTIVE_CHAT_SESSION, newChat.id.toString());
       setActiveChatId(newChat.id);
       currChatId = newChat.id;
+      isNewChat = true;
+    }
+
+    // If we came from ViewItinerary and created a new chat with an itinerary in view,
+    // associate the itinerary with this new chat session
+    if (cameFromViewItinerary && isNewChat && selectedItineraryId !== null && itineraryData !== null) {
+      try {
+        const apiPayload = convertToApiFormat(
+          itineraryData,
+          selectedItineraryId,
+          itineraryStartDate,
+          itineraryEndDate,
+          itineraryTitle,
+          currChatId
+        );
+
+        await apiSaveItineraryChanges(apiPayload);
+        
+      } catch (error) {
+        console.error("Failed to associate itinerary with new chat:", error);
+        // Don't block the message send if this fails
+      }
     }
 
     // The request might take some time, so we display the user message now,

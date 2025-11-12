@@ -21,7 +21,7 @@ import {
 	apiDeleteChat,
 	apiRenameChat,
 	apiItineraryDetails,
-	saveItineraryChanges,
+	apiSaveItineraryChanges,
 	apiGetSavedItineraries,
 	test_state
 } from "./testApi";
@@ -493,20 +493,20 @@ describe("testApi Unit Tests", () => {
 		expect(result.status).toBe(-1);
 	});
 
-	test("saveItineraryChanges success", async () => {
+	test("apiSaveItineraryChanges success", async () => {
 		vi.mocked(customFetch).mockResolvedValue({ status: 200, ok: true, json: async () => mockSaveResponse } as Response);
-		const result = await saveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] });
+		const result = await apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] });
 		expect(result).toEqual(mockSaveResponse);
 	});
 
-	test("saveItineraryChanges not ok", async () => {
+	test("apiSaveItineraryChanges not ok", async () => {
 		vi.mocked(customFetch).mockResolvedValue({ status: 400, ok: false, text: async () => "Bad Request" } as Response);
-		await expect(saveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Failed to save itinerary: 400 Bad Request");
+		await expect(apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Failed to save itinerary: 400 Bad Request");
 	});
 
-	test("saveItineraryChanges error", async () => {
+	test("apiSaveItineraryChanges error", async () => {
 		vi.mocked(customFetch).mockRejectedValue(new Error("Network error"));
-		await expect(saveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Network error");
+		await expect(apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Network error");
 	});
 
 	test("apiGetSavedItineraries success", async () => {

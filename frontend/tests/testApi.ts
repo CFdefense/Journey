@@ -505,7 +505,7 @@ export async function apiItineraryDetails(
 	}
 }
 
-export async function saveItineraryChanges(
+export async function apiSaveItineraryChanges(
 	payload: Itinerary
 ): Promise<SaveResponse> {
 	try {
