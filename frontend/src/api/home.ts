@@ -27,9 +27,6 @@ export async function apiChats(): Promise<ApiResult<ChatsResponse>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/chats`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -139,9 +136,6 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/newChat`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -175,9 +169,6 @@ export async function apiDeleteChat(
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/${payload}`, {
 			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		if (!response.ok) {

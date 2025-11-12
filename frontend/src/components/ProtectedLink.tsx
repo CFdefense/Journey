@@ -51,8 +51,6 @@ export function ProtectedLink({
   }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
-    console.log("loading: ", loading);
-    console.log("authorized: ", authorized);
     if (loading) return <Loading />;
     if (authorized === true) {
       return (

@@ -5,9 +5,13 @@ import {
 	test_state,
 	apiSignUp, apiValidate, apiLogin, apiCurrent, apiLogout,
 	apiChats, apiNewChatId, apiSendMessage, apiMessages,
-	apiItineraryDetails, apiDeleteChat, apiRenameChat, apiUpdateMessage
+	apiItineraryDetails, apiDeleteChat, apiRenameChat, apiUpdateMessage,
+    apiUserEvent,
+	apiSearchEvent,
+	apiDeleteUserEvent
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 import { ChatSessionRow } from "../src/models/chat";
+import { SearchEventRequest, UserEventRequest } from "../src/models/itinerary";
 
 async function test_flow() {
 	// sign up
@@ -128,6 +132,58 @@ async function test_flow() {
 	// Test deleting non-existent chat
 	const deleteNonExistent = await apiDeleteChat(99999);
 	expect(deleteNonExistent.status).toBeGreaterThanOrEqual(-1);
+
+	// Create user-event
+	const userEvent: UserEventRequest = {
+		id: null,
+		event_name: "test",
+		street_address: "test",
+		postal_code: 1,
+		city: "test",
+		country: "test",
+		event_type: "test",
+		event_description: "test",
+		hard_start: "2015-11-12T23:25:00",
+		hard_end: "2025-11-12T23:25:00"
+	};
+	const createEventRes = await apiUserEvent(userEvent);
+	expect(createEventRes.status).toBe(200);
+
+	// Update user-event
+	userEvent.id = createEventRes.result!.id;
+	const updatedName = "test updated";
+	userEvent.event_name = updatedName;
+	const updateEventRes = await apiUserEvent(userEvent);
+	expect(updateEventRes.status).toBe(200);
+	expect(updateEventRes.result!.id).toBe(createEventRes.result!.id);
+
+	// Search user-event
+	const userEventSearch: SearchEventRequest = {
+		id: createEventRes.result!.id,
+		street_address: "test",
+		postal_code: 1,
+		city: "test",
+		country: "test",
+		event_type: "test",
+		event_description: "test",
+		event_name: updatedName,
+		hard_start_before: "2020-11-12T23:25:00",
+		hard_start_after: "2010-11-12T23:25:00",
+		hard_end_before: "2030-11-12T23:25:00",
+		hard_end_after: "2020-11-12T23:25:00"
+	};
+	const searchRes = await apiSearchEvent(userEventSearch);
+	expect(searchRes.status).toBe(200);
+	expect(searchRes.result!.events.some(e => e.event_name === updatedName)).toBe(true);
+
+	// Delete user-event
+	const deleteRes = await apiDeleteUserEvent(createEventRes.result!.id);
+	expect(deleteRes.status).toBe(200);
+
+	// Verify deletion
+	const delSearchRes = await apiSearchEvent(userEventSearch);
+	expect(delSearchRes.status).toBe(200);
+	expect(delSearchRes.result!.events.some(e => e.event_name === updatedName)).toBe(false);
 
 	// logout
 	expect((await apiLogout()).status).toBe(200);

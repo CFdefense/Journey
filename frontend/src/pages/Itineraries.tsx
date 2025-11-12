@@ -81,8 +81,7 @@ export default function Itineraries() {
     const allEvents = [
       ...(day.afternoon_events || []),
       ...(day.evening_events || []),
-      ...(day.morning_events || []),
-      ...(day.noon_events || [])
+      ...(day.morning_events || [])
     ];
 
     console.log("All events for location:", allEvents);
@@ -96,7 +95,6 @@ export default function Itineraries() {
   const getTotalEvents = (day: EventDay) => {
     const total =
       (day.morning_events?.length || 0) +
-      (day.noon_events?.length || 0) +
       (day.afternoon_events?.length || 0) +
       (day.evening_events?.length || 0);
     console.log("Total events:", total);

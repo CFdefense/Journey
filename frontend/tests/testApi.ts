@@ -96,9 +96,6 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/account/logout`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		return { result: null, status: response.status };
@@ -122,9 +119,6 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/account/validate`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		return { result: null, status: response.status };
@@ -177,9 +171,6 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/account/current`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -221,9 +212,6 @@ export async function apiChats(): Promise<ApiResult<ChatsResponse>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/chat/chats`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -333,9 +321,6 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/chat/newChat`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -369,9 +354,6 @@ export async function apiDeleteChat(
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/chat/${payload}`, {
 			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
 		if (!response.ok) {
@@ -495,9 +477,6 @@ export async function apiItineraryDetails(
 		const response = await customFetch(`${API_BASE_URL}/api/itinerary/${itinerary_id}`,
 			{
 				method: "GET",
-				headers: {
-					"Content-Type": "application/json"
-				},
 				credentials: test_state.dev_mode ? "include" : "same-origin"
 			}
 		);
@@ -508,7 +487,7 @@ export async function apiItineraryDetails(
 	}
 }
 
-export async function saveItineraryChanges(
+export async function apiSaveItineraryChanges(
 	payload: Itinerary
 ): Promise<SaveResponse> {
 	try {
@@ -537,6 +516,108 @@ export async function saveItineraryChanges(
 	}
 }
 
+/// Inserts or updates a user-created event
+///
+/// # Method
+/// Sends a `POST /api/itinerary/userEvent` request to insert or
+/// update a user-created event in the db
+///
+/// # Body
+/// - `UserEventRequest`: If the id is specified, it will try to update that event.
+/// Otherwise it will insert a new one. Event name is always required.
+///
+/// # Returns
+/// - On success: The `UserEventResponse` object returned by the backend.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiUserEvent(
+	userEvent: UserEventRequest
+): Promise<ApiResult<UserEventResponse>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/itinerary/userEvent`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: test_state.dev_mode ? "include" : "same-origin",
+				body: JSON.stringify(userEvent)
+			}
+		);
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("apiUserEvent error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+/// Searches the db for events based on the search filters
+///
+/// # Method
+/// Sends a `POST /api/itinerary/searchEvent` request to fetch a list
+/// of events that match the query parameters.
+///
+/// # Body
+/// - `SearchEventRequest`: Optional search parameters to query with.
+///
+/// # Returns
+/// - On success: The `SearchEventResponse` object returned by the backend.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiSearchEvent(
+	query: SearchEventRequest
+): Promise<ApiResult<SearchEventResponse>> {
+	// TODO: get events from cache if possible
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/itinerary/searchEvent`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: test_state.dev_mode ? "include" : "same-origin",
+				body: JSON.stringify(query)
+			}
+		);
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("apiSearchEvent error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
+/// Deletes a user-created event from the db
+///
+/// # Method
+/// Sends a `DELETE /api/itinerary/userEvent/{id}` request to delete the event
+/// with the provided id.
+///
+/// # Returns
+/// - On success: 200 status code.
+/// - On failure: A non-200 status code.
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiDeleteUserEvent(id: number): Promise<ApiResult<void>> {
+	//TODO remove event from cache
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/itinerary/userEvent/${id}`,
+			{
+				method: "DELETE",
+				credentials: test_state.dev_mode ? "include" : "same-origin"
+			}
+		);
+		return { result: null, status: response.status };
+	} catch (error) {
+		console.error("apiDeleteUserEvent error:", error);
+		return { result: null, status: -1 };
+	}
+}
+
 /// Sends a `GET /api/itinerary/saved` request to fetch all saved itineraries.
 ///
 /// # Returns list of saved itineraries if successful.
@@ -547,9 +628,6 @@ export async function apiGetSavedItineraries(): Promise<
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/itinerary/saved`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: "include"
 		});
 		return { result: await response.json(), status: response.status };
