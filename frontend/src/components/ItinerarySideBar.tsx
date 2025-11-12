@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
-import { apiItineraryDetails, apiSaveItineraryChanges , apiGetSavedItineraries} from "../api/itinerary";
+import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import { convertToApiFormat } from "../helpers/itinerary";
 
 interface ItinerarySideBarProps {
