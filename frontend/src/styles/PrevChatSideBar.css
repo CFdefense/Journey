@@ -16,6 +16,7 @@
   z-index: 50;
   opacity: 0;
   transform: translateX(-20px);
+  border-radius: 0;
 }
 
 .sidebar.open,

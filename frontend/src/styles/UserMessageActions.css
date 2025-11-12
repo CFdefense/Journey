@@ -10,7 +10,7 @@
   border-radius: 4px;
   cursor: pointer;
   background: transparent;
-  color: #777; /* icon near timestamp */
+  color: #666; /* icon near timestamp */
   opacity: 0;
   visibility: hidden;
   transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
@@ -23,7 +23,7 @@
 }
 
 .chat-edit-button:hover {
-  color: #444;
+  color: #333;
   background: rgba(0, 0, 0, 0.04);
 }
 
