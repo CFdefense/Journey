@@ -177,7 +177,7 @@ export function canDropEventInTimeBlock(
 }
 
 // Lets you know where the event is allowed to be dropped
-export function getDropErrorMessage(event: Event, targetTimeBlock: string): string | null {
+export function getDropErrorMessage(event: Event): string | null {
 	if (!event.hard_start) return null;
 	
 	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);

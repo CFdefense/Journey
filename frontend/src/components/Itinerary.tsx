@@ -9,7 +9,7 @@ import type {
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import { sanitize, canDropEventInTimeBlock, getDropErrorMessage, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
+import { sanitize, canDropEventInTimeBlock, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
 
 interface ItineraryProps {
   days?: DayItinerary[];
