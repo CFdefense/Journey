@@ -44,7 +44,7 @@ export async function apiItineraryDetails(
 	}
 }
 
-export async function saveItineraryChanges(
+export async function apiSaveItineraryChanges(
 	payload: Itinerary
 ): Promise<SaveResponse> {
 	try {
@@ -196,3 +196,5 @@ export async function apiGetSavedItineraries(): Promise<
 		return { result: null, status: -1 };
 	}
 }
+
+//TODO apiDeleteSavedItinerary

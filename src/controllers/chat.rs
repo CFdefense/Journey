@@ -234,7 +234,7 @@ async fn send_message_to_llm(
 	let inserted_itinerary_id = sqlx::query!(
 		r#"
 		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
-		VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
+		VALUES ($1, FALSE, $2, $3, $4, FALSE, $5)
 		RETURNING id;
 		"#,
 		account_id,

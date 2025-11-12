@@ -1321,7 +1321,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "UTC"
+            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
           },
           "hard_start": {
             "type": [
@@ -1329,7 +1329,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "UTC"
+            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
           },
           "id": {
             "type": "integer",
@@ -1993,7 +1993,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "UTC"
+            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
           },
           "hard_start": {
             "type": [
@@ -2001,7 +2001,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "UTC"
+            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
           },
           "id": {
             "type": [

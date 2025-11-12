@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
 import type { DayItinerary } from "../models/itinerary";
+import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
+import { convertToApiFormat } from "../helpers/itinerary";
 
 interface ItinerarySideBarProps {
   onToggleSidebar: () => void;
@@ -20,15 +22,40 @@ export default function ItinerarySideBar({
 }: ItinerarySideBarProps) {
   const navigate = useNavigate();
 
-  const handleSaveItinerary = () => {
-    if (selectedItineraryId !== null) {
-      console.log("Saving itinerary with ID:", selectedItineraryId);
-    } else {
+  const handleSaveItinerary = async () => {
+    if (selectedItineraryId === null || !itineraryData) {
       console.log("No itinerary selected to save");
+      return;
+    }
+
+    try {
+      // Fetch the full itinerary metadata
+      const apiResponse = await apiItineraryDetails(selectedItineraryId);
+
+      if (!apiResponse.result || apiResponse.status !== 200) {
+        console.error("Failed to fetch itinerary details");
+        return;
+      }
+
+      const itinerary = apiResponse.result;
+
+      // set to the form needed to call the save itinerary api
+      const payload = convertToApiFormat(
+        itineraryData,
+        itinerary.id,
+        itinerary.start_date,
+        itinerary.end_date,
+        itinerary.title,
+        itinerary.chat_session_id
+      );
+
+      // Save the itinerary
+      await apiSaveItineraryChanges(payload);
+    } catch (error) {
+      console.error("Failed to save itinerary:", error);
     }
   };
 
-  // TODO this will need to change but will be based on how ViewItinerary is set up
   const handleViewItinerary = () => {
     if (selectedItineraryId !== null) {
       navigate("/view", { state: { itineraryId: selectedItineraryId } });
@@ -74,7 +101,7 @@ export default function ItinerarySideBar({
             <button
               className="save-itinerary-btn"
               onClick={handleSaveItinerary}
-              disabled={selectedItineraryId === null}
+              disabled={selectedItineraryId === null || !itineraryData}
             >
               Save
             </button>

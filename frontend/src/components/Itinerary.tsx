@@ -294,7 +294,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       (e) => !unassignedEvents.some((v) => v.id === e.id)
     );
     if (result.result.events.length === 0) {
-      setSearchResultCaption("No events match these filters");
+      setSearchResultCaption("No events found that match your filter");
     } else if (displayEvents.length === 0) {
       setSearchResultCaption(
         "You already have all events matching these filters"

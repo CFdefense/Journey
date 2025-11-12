@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../models/itinerary";
-import { apiItineraryDetails, saveItineraryChanges } from "../api/itinerary";
+import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
 import { apiCurrent } from "../api/account";
@@ -54,13 +54,24 @@ export default function ViewItineraryPage() {
         itineraryMetadata.chatSessionId
       );
 
-      const result = await saveItineraryChanges(apiPayload);
+      const result = await apiSaveItineraryChanges(apiPayload);
       console.log("Save result:", result);
       alert("Itinerary saved successfully!");
     } catch (error) {
       console.error("Failed to save itinerary:", error);
       alert("Failed to save changes. Please try again.");
     }
+  };
+
+  const handleEditWithAI = () => {
+    // Navigate to home with both the itinerary ID and chat session ID
+    navigate("/home", {
+      state: {
+        selectedItineraryId: itineraryMetadata.id,
+        chatSessionId: itineraryMetadata.chatSessionId,
+        openItinerarySidebar: true
+      }
+    });
   };
 
   useEffect(() => {
@@ -110,7 +121,9 @@ export default function ViewItineraryPage() {
         title={itineraryMetadata.title}
         editMode={true}
       />
-      <button className="edit-ai-button">Edit with AI</button>
+      <button className="edit-ai-button" onClick={handleEditWithAI}>
+        Edit with AI
+      </button>
     </div>
   );
 }
