@@ -12,6 +12,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { setAuthorized } = useContext<GlobalState>(
@@ -68,15 +70,25 @@ export default function Signup() {
       <div className="login-container">
         <div className="signup-page-content">
           <section className="signup-marketing">
-            <Link to="/home" className="signup-brand">
+            <Link
+              to="/home"
+              className="signup-brand fade-in"
+              style={{ animationDelay: "0ms" }}
+            >
               Journey
             </Link>
-            <p className="signup-sub">
+            <p
+              className="signup-sub fade-in"
+              style={{ animationDelay: "50ms" }}
+            >
               Create your account to start planning your next journey with the
               help of our team of intelligent AI agents.
             </p>
             <div className="signup-bullets">
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "100ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">Personalized AI Planning</div>
                   <div className="bullet-desc">
@@ -87,7 +99,10 @@ export default function Signup() {
                   </div>
                 </div>
               </div>
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "150ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">
                     Tailor itineraries together with collaborative chat
@@ -100,7 +115,10 @@ export default function Signup() {
                   </div>
                 </div>
               </div>
-              <div className="bullet-item">
+              <div
+                className="bullet-item fade-in"
+                style={{ animationDelay: "200ms" }}
+              >
                 <div className="bullet-content">
                   <div className="bullet-title">
                     Save and share your itineraries
@@ -116,12 +134,14 @@ export default function Signup() {
             </div>
           </section>
           <div className="signup-box signup-form-panel">
-            <h1>Create your account</h1>
+            <h1 className="fade-in" style={{ animationDelay: "250ms" }}>
+              Create your account
+            </h1>
             <form onSubmit={handleSubmit}>
               <label className="sr-only" htmlFor="firstName">
                 First Name
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "300ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -149,7 +169,7 @@ export default function Signup() {
               <label className="sr-only" htmlFor="lastName">
                 Last Name
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "350ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -177,7 +197,7 @@ export default function Signup() {
               <label className="sr-only" htmlFor="email">
                 Email
               </label>
-              <div className="field">
+              <div className="field fade-in" style={{ animationDelay: "400ms" }}>
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -202,7 +222,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="password">
                 Password
               </label>
-              <div className="field">
+              <div
+                className="field field--password fade-in"
+                style={{ animationDelay: "450ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -218,19 +241,60 @@ export default function Signup() {
                 </span>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
               </div>
 
               <label className="sr-only" htmlFor="confirmPassword">
                 Re-Enter Password
               </label>
-              <div className="field">
+              <div
+                className="field field--password fade-in"
+                style={{ animationDelay: "500ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -246,16 +310,64 @@ export default function Signup() {
                 </span>
                 <input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Re-Enter Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
               </div>
 
-              <button type="submit">Get Started</button>
+              <button
+                type="submit"
+                className="fade-in"
+                style={{ animationDelay: "550ms" }}
+              >
+                Get Started
+              </button>
             </form>
             {error && <p>{error}</p>}
           </div>

@@ -3,15 +3,24 @@ import { useState, useEffect } from "react";
 import { apiCurrent } from "../api/account";
 import { apiGetSavedItineraries } from "../api/itinerary";
 import Navbar from "../components/Navbar";
+import { useLocation } from "react-router-dom";
 import "../styles/Account.css";
 import type { EventDay, Itinerary } from "../models/itinerary";
+import userPfp from "../assets/user-pfp-temp.png";
 
 export default function Itineraries() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
+  const navbarAvatarUrl = userPfp;
+  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
+  const [accountCreated, setAccountCreated] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     fetchItineraries();
@@ -21,6 +30,24 @@ export default function Itineraries() {
 
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
+        setLastName(account.last_name || "");
+        const maybeTrips = (account as any).trips_planned;
+        setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
+        const maybeCreated = (account as any).created_at;
+        setAccountCreated(
+          maybeCreated
+            ? new Date(maybeCreated).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              })
+            : new Date().toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              })
+        );
+        setLoaded(true);
       }
     }
     fetchAccount();
@@ -96,7 +123,7 @@ export default function Itineraries() {
   };
   return (
     <div className="auth-page auth-page--account">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" />
       <div className="auth-content">
         <div className="account-wrapper">
           {/* Collapsible Sidebar ... (all your sidebar code is fine) ... */}
@@ -163,9 +190,39 @@ export default function Itineraries() {
           </aside>
 
           <main className="main-content">
-            <div className="account-container">
+            {loaded && (
+            <div className="account-container fade-in">
               <div className="account-box" style={{ maxWidth: "800px" }}>
-                <h1>Saved Itineraries</h1>
+                <div className="hs-hero-card">
+                  <div className="profile-header">
+                    <div className="avatar-wrapper">
+                      <img
+                        src={profileImageUrl}
+                        alt={`${firstName || "User"}`}
+                        className="avatar"
+                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                      />
+                    </div>
+                    <div className="profile-meta">
+                      <h1 className="profile-name">
+                        {`${firstName || ""} ${lastName || ""}`.trim() || "Your Name"}
+                      </h1>
+                      <p className="profile-email">Saved Itineraries</p>
+                    </div>
+                  </div>
+                  <div className="hs-stats">
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {tripsPlanned ?? 5}
+                      </div>
+                      <div className="hs-stat__label">Trips planned</div>
+                    </div>
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">{accountCreated}</div>
+                      <div className="hs-stat__label">Account created</div>
+                    </div>
+                  </div>
+                </div>
 
                 {loading ? (
                   <div className="empty-state">
@@ -235,8 +292,35 @@ export default function Itineraries() {
                 )}
               </div>
             </div>
+            )}
           </main>
         </div>
+        {/* Bottom tab bar */}
+        <footer className="account-bottom-bar">
+          <div className="account-bottom-inner">
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname === "/account" ? "active" : ""}`}
+              onClick={() => navigate("/account")}
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/preferences") ? "active" : ""}`}
+              onClick={() => navigate("/account/preferences")}
+            >
+              Preferences
+            </button>
+            <button
+              type="button"
+              className={`bottom-tab ${location.pathname.includes("/account/itineraries") ? "active" : ""}`}
+              onClick={() => navigate("/account/itineraries")}
+            >
+              Itineraries
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );

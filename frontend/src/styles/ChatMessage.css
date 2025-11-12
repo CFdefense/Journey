@@ -9,7 +9,7 @@
 }
 
 /* User message actions positioning */
-.chat-message-wrapper.user .edit-button {
+.chat-message-wrapper.user .chat-edit-button {
   align-self: flex-end;
 }
 

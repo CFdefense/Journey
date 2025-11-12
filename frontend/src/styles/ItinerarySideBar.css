@@ -1,4 +1,8 @@
 .itinerary-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
   background: #ffffff;
   border-left: 1px solid #e0e0e0;
   padding: 0;
@@ -6,22 +10,22 @@
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
-  transition: width 0.3s ease;
-  align-self: stretch;
+  transition: width 0.45s ease-in-out;
+  will-change: width;
   box-sizing: border-box;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  border-radius: 0;
 }
 
-/* When sidebar is open - 30% of viewport width */
 .itinerary-sidebar.open {
-  width: 30%;
-  min-width: 300px;
-  max-width: 500px;
+  /* Smooth width without min/max jumps */
+  width: 380px;
 }
 
 /* When sidebar is closed */
 .itinerary-sidebar.closed {
-  width: 50px;
+  width: 56px;
   background: #ffffff;
 }
 
@@ -37,8 +41,8 @@
 }
 
 .itinerary-sidebar.closed .itinerary-sidebar-top {
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end; /* keep toggle pinned to the right */
+  padding: 0.75rem; /* avoid layout jump when collapsing */
 }
 
 .itinerary-sidebar-title {
@@ -46,30 +50,69 @@
   font-weight: 600;
   color: #2c3e50;
   white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  visibility: hidden;
+  max-width: 0;
+  overflow: hidden;
+  transition: 
+    opacity 200ms ease,
+    transform 260ms ease,
+    visibility 0ms ease 200ms,
+    max-width 0ms ease 200ms;
+}
+
+.itinerary-sidebar.open .itinerary-sidebar-title {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  max-width: 200px;
+  transition-delay: 480ms;
+  transition: 
+    opacity 200ms ease 480ms,
+    transform 260ms ease 480ms,
+    visibility 0ms ease 480ms,
+    max-width 0ms ease 480ms;
 }
 
 .itinerary-sidebar.closed .itinerary-sidebar-title {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  max-width: 0;
+  transform: translateY(6px);
+  transition-delay: 0ms;
 }
 
 .itinerary-sidebar-toggle-btn {
   background: transparent;
   border: none;
   color: #666;
-  font-size: 1.3rem;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
   border-radius: 4px;
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .itinerary-sidebar-toggle-btn:hover {
   background: #f0f0f0;
   color: #333;
+}
+
+.itinerary-sidebar-toggle-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  padding-right: 5px;
 }
 
 /* Itinerary content wrapper */
@@ -80,34 +123,49 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  /* default hidden; will fade in after width animation completes */
+  opacity: 0;
+  transition: opacity 220ms ease 0ms;
 }
 
-/* Custom scrollbar for itinerary content */
+/* Hide scrollbar for itinerary content */
 .itinerary-content::-webkit-scrollbar {
-  width: 8px;
+  display: none;
+  width: 0;
 }
 
-.itinerary-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.itinerary-content::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 4px;
-}
-
-.itinerary-content::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
-
-/* Firefox scrollbar */
 .itinerary-content {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.itinerary-sidebar.open .itinerary-content {
+  opacity: 1;
+  /* delay fade-in to follow the 0.45s width transition */
+  transition: opacity 220ms ease 450ms;
 }
 
 .itinerary-sidebar.closed .itinerary-content {
-  display: none;
+  pointer-events: none;
+}
+
+/* Fade-up children after panel opens */
+.itinerary-content > * {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms ease, transform 260ms ease;
+}
+
+.itinerary-sidebar.open .itinerary-content > * {
+  opacity: 1;
+  transform: translateY(0);
+  /* start after the width transition completes (450ms) and container fades in */
+  transition-delay: 480ms;
+}
+
+/* slight stagger for second block (e.g., actions) */
+.itinerary-sidebar.open .itinerary-content > :nth-child(2) {
+  transition-delay: 520ms;
 }
 
 /* Action buttons container at the bottom of itinerary sidebar */
@@ -177,14 +235,12 @@
 
 @media (max-width: 1200px) {
   .itinerary-sidebar.open {
-    width: 35%;
-    min-width: 280px;
+    width: 340px;
   }
 }
 
 @media (max-width: 768px) {
   .itinerary-sidebar.open {
-    width: 40%;
-    min-width: 250px;
+    width: 300px;
   }
 }

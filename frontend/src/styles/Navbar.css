@@ -1,0 +1,120 @@
+/* User menu in navbar */
+.user-menu {
+  position: relative;
+}
+
+.user-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 10px 6px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: inherit;
+}
+
+.user-menu-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  min-width: 12ch;
+  transition: opacity 150ms ease;
+}
+
+.user-menu-name.pending {
+  opacity: 0;
+}
+
+.user-menu-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: block;
+  transition: opacity 150ms ease;
+}
+
+.user-menu-button.pending .user-menu-avatar {
+  opacity: 0;
+}
+
+.auth-cta-link.pending {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-menu-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Match 'Create' link styling on the Index page */
+.index-page .user-menu-button {
+  gap: 4px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.user-menu-caret {
+  color: rgba(11, 18, 32, 0.6);
+  transition: transform 0.15s ease;
+}
+.user-menu-caret.open {
+  transform: rotate(180deg);
+}
+
+.user-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 18, 32, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 30;
+  display: none;
+}
+
+.user-menu-dropdown.open {
+  display: block; 
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: #0b1220;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  font-family: inherit;
+  cursor: pointer;
+}
+.user-menu-item:hover {
+  background: rgba(11, 18, 32, 0.05);
+}
+.user-menu-item--danger {
+  color: #b23a30;
+}
+.user-menu-item--danger:hover {
+  background: rgba(178, 58, 48, 0.08);
+}

@@ -1,10 +1,9 @@
 // Home.tsx
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
-import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import {
@@ -29,18 +28,16 @@ import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
-  const location = useLocation();
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
-  const [firstName, setFirstName] = useState<string>("");
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
     null
   );
@@ -95,29 +92,28 @@ export default function Home() {
       if (showFinishPopup) {
         return;
       }
-      const currentResult = await apiCurrent();
-      // TODO 401 -> navigate to /login
-
-      const account = currentResult.result;
-      if (account === null || currentResult.status !== 200) {
-        console.error(
-          "API call to /api/account/current failed with status: ",
-          currentResult.status
-        );
-        setShowFinishPopup(false);
-        return; // TODO handle and display error
-      }
-
-      // Set the first name
-      setFirstName(account.first_name || "");
-
-      // check if any preferences were not yet filled out
-      setShowFinishPopup(
-        account.budget_preference === null ||
-          account.disabilities === null ||
-          account.food_allergies === null ||
-          account.risk_preference === null
-      );
+      apiCurrent()
+        .then((currentResult) => {
+          const account = currentResult.result;
+          if (account === null || currentResult.status !== 200) {
+            console.error(
+              "API call to /api/account/current failed with status: ",
+              currentResult.status
+            );
+            navigate("/login");
+            return;
+          }
+          setShowFinishPopup(
+            account.budget_preference === null ||
+              account.disabilities === null ||
+              account.food_allergies === null ||
+              account.risk_preference === null
+          );
+        })
+        .catch((err) => {
+          console.error("Failed to fetch account:", err);
+          navigate("/login");
+        });
     }
 
     async function fetchChats() {
@@ -451,7 +447,6 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Navbar page="home" firstName={firstName} />
       <div
         className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
       >
@@ -470,10 +465,12 @@ export default function Home() {
 
         <div className="chat-window-wrapper">
           <ChatWindow
+            key={activeChatId ?? 'empty'}
             messages={activeChat?.messages ?? []}
             onSend={handleSendMessage}
             onItinerarySelect={handleItinerarySelect}
             onEditMessage={handleEditMessage}
+            hasActiveChat={activeChatId !== null}
           />
         </div>
 
