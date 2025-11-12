@@ -1,3 +1,15 @@
+/* Fade-up animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Wrapper: full screen gradient background */
 .not-found-wrapper {
   position: fixed;
@@ -32,6 +44,7 @@
   margin: 0;
   line-height: 1;
   letter-spacing: 0.05em;
+  animation: fadeUp 0.8s ease-out;
 }
 
 
@@ -41,6 +54,7 @@
   color: #ff8c42;
   margin: 1rem 0 2rem 0;
   font-weight: 500;
+  animation: fadeUp 0.8s ease-out 0.2s both;
 }
 
 /* Return to home link/button */
@@ -58,6 +72,7 @@
   padding: 0.5rem 1rem;
   transition: opacity 0.2s ease;
   font-family: inherit;
+  animation: fadeUp 0.8s ease-out 0.4s both;
 }
 
 .not-found-link:hover {
