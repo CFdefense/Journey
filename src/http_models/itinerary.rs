@@ -53,7 +53,7 @@ pub struct SavedResponse {
 }
 
 /// Response model from `/api/itinerary/save` endpoint
-#[derive(Serialize, ToSchema, ToResponse)]
+#[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct SaveResponse {
 	/// id of the itinerary that was just saved
 	/// * May be the same as the itinerary id passed in the request

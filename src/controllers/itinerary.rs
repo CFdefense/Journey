@@ -32,6 +32,7 @@ use crate::swagger::SecurityAddon;
 		api_get_itinerary,
 		api_saved_itineraries,
 		api_save,
+		api_unsave,
 		api_user_event,
 		api_search_event,
 		api_delete_user_event

@@ -1063,6 +1063,62 @@
         ]
       }
     },
+    "/api/itinerary/unsave": {
+      "post": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Unsave an existing itinerary",
+        "description": "Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user and is currently saved.",
+        "operationId": "api_unsave",
+        "requestBody": {
+          "description": "The itinerary to unsave.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Itinerary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The id of the itinerary that was just unsaved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Itinerary not found or doesn't belong to user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
     "/api/itinerary/userEvent": {
       "post": {
         "tags": [
