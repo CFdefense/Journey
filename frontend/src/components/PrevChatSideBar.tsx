@@ -160,7 +160,7 @@ export default function PrevChatSideBar({
             title="Home"
           >
             <img 
-              src="/placeholder-logo.png" 
+              src="/logo.png" 
               alt="Journey Logo" 
               className="sidebar-logo"
               onError={(e) => {
@@ -173,7 +173,7 @@ export default function PrevChatSideBar({
               }}
             />
             <div className="sidebar-logo-fallback">
-              J
+              <img src="/logo.png" alt="Journey Logo" />
             </div>
           </Link>
           <button
