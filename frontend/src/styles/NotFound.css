@@ -25,13 +25,15 @@
 
 /* Large 404 number */
 .not-found-number {
-  font-size: 20rem;
-  font-weight: 900;
+  font-family: "Righteous", sans-serif;
+  font-size: clamp(6rem, 15vw, 20rem);
+  font-weight: 400;
   color: #ff8c42;
   margin: 0;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.05em;
 }
+
 
 /* Message text */
 .not-found-message {
@@ -50,7 +52,7 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  text-decoration-color: none;
+  text-decoration-color: #ff8c42;
   text-decoration-style: wavy;
   text-underline-offset: 4px;
   padding: 0.5rem 1rem;
