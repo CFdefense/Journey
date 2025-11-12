@@ -1,19 +1,9 @@
 import type {
 	Itinerary as ApiItinerary,
 	EventDay,
-	Event
+	DayItinerary
 } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
-
-export interface TimeBlock {
-	time: string;
-	events: Event[];
-}
-
-export interface DayItinerary {
-	date: string;
-	timeBlocks: TimeBlock[];
-}
 
 //function that calls api on given itinerary Id, returns the time block used by itinerary component
 export async function fetchItinerary(
@@ -33,7 +23,7 @@ export async function fetchItinerary(
 		console.log("Error", err);
 		return [
 			{
-				date: "N/A",
+				date: "",
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -48,7 +38,7 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 	if (!apiItinerary.event_days || apiItinerary.event_days.length === 0) {
 		return [
 			{
-				date: "N/A",
+				date: "",
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -111,4 +101,8 @@ export function convertToApiFormat(
 			};
 		})
 	};
+}
+
+export function sanitize(v: string | null): string | null {
+	return v && v.trim() !== "" ? v : null;
 }

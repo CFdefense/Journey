@@ -114,17 +114,17 @@
 }
 
 /* Edit Buttons */
-.edit-buttons-container {
+.itinerary-edit-buttons-container {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 40px;
 }
 
-.edit-button {
+.itinerary-edit-button {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 14px;
+  padding: 10px 4px;
   background: none;
   border: 2px solid #555;
   text-align: center;
@@ -134,19 +134,18 @@
   transition: background 0.15s ease;
 }
 
-.edit-button:disabled {
+.itinerary-edit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-#itinerary-save:not(:disabled):hover {
-  background-color: var(--pale-yellow);
+.itinerary-edit-button:not(:disabled):hover {
+  background-color: var(--gold);
   color: #333;
 }
 
 #itinerary-cancel:not(:disabled):hover {
   background-color: var(--salmon);
-  color: #333;
 }
 
 /* Day tabs */
@@ -400,6 +399,200 @@
   transform: translateY(0);
 }
 
+.user-event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.user-event-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  border-top: 4px solid #006bbb;
+  color: black;
+}
+
+.search-event-modal {
+  display: flex;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  border-top: 4px solid #006bbb;
+  color: black;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.icon-button:hover {
+  background: #eee;
+}
+
+.user-event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-event-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.user-event-form input,
+.user-event-form textarea {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.user-event-form input:focus,
+.user-event-form textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 16px; /* row-gap column-gap */
+  align-items: end; /* important! ensures all items align at the top of the row */
+}
+
+/* Each row in the grid */
+.location-grid-row {
+  display: contents; /* so that each pair of label+input occupies the correct row */
+}
+
+.location-grid label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.location-grid label span {
+  margin-bottom: 4px; /* spacing between label text and input */
+}
+
+.location-grid input,
+.location-grid textarea {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-save-button {
+  background: #f0f0f0;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.card-save-button:hover {
+  background: var(--light-blue);
+  color: white;
+}
+
+.searchContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+}
+
+.searchFilters {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.searchResults {
+  flex: 1.5;
+  padding-left: 16px;
+  overflow-y: auto;
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.resultCard {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+  transition: background 0.2s;
+}
+
+.resultCard:hover {
+  background: #f0f8ff;
+}
+
+.resultCard h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.resultCard p {
+  font-size: 0.9rem;
+  color: #555;
+}
+
 /* Responsive design */
 @media (max-width: 1200px) {
   .itinerary-list {
@@ -409,7 +602,6 @@
 
   .time-block {
     aspect-ratio: auto;
-    min-height: 300px;
   }
 }
 
@@ -437,5 +629,22 @@
 
   .time-block {
     padding: 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .searchContainer {
+    flex-direction: column;
+  }
+
+  .searchFilters {
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+
+  .searchResults {
+    padding-left: 0;
   }
 }

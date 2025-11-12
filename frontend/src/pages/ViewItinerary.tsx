@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
@@ -65,12 +65,12 @@ export default function ViewItineraryPage() {
 
   const handleEditWithAI = () => {
     // Navigate to home with both the itinerary ID and chat session ID
-    navigate("/home", { 
-      state: { 
+    navigate("/home", {
+      state: {
         selectedItineraryId: itineraryMetadata.id,
         chatSessionId: itineraryMetadata.chatSessionId,
         openItinerarySidebar: true
-      } 
+      }
     });
   };
 

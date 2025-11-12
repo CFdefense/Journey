@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/ItinerarySideBar.css";
 import Itinerary from "./Itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import { convertToApiFormat } from "../helpers/itinerary";
 
@@ -51,7 +51,6 @@ export default function ItinerarySideBar({
 
       // Save the itinerary
       await apiSaveItineraryChanges(payload);
-      
     } catch (error) {
       console.error("Failed to save itinerary:", error);
     }

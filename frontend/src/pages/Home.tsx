@@ -17,13 +17,13 @@ import {
 import type {
   MessagePageRequest,
   SendMessageRequest,
-  UpdateMessageRequest
+  UpdateMessageRequest,
+  Message
 } from "../models/chat";
 import type { ChatSession } from "../models/home";
-import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
 import { fetchItinerary, convertToApiFormat } from "../helpers/itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
@@ -31,7 +31,7 @@ export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 export default function Home() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
@@ -48,7 +48,7 @@ export default function Home() {
   const [itineraryStartDate, setItineraryStartDate] = useState<string>("");
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
-  
+
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
   // Track the initial chat ID to know when it actually changes
@@ -57,33 +57,34 @@ export default function Home() {
   // Handle navigation state from ViewItinerary
   useEffect(() => {
     if (location.state && !initialStateProcessed) {
-      const { selectedItineraryId, chatSessionId, openItinerarySidebar } = location.state;
+      const { selectedItineraryId, chatSessionId, openItinerarySidebar } =
+        location.state;
       console.log("Navigation state - itinerary ID:", selectedItineraryId);
-      
+
       // Set the flag if we have an itinerary ID from navigation
       if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
         setCameFromViewItinerary(true);
       }
-      
+
       if (chatSessionId !== undefined && chatSessionId !== null) {
         initialChatIdRef.current = chatSessionId;
         setActiveChatId(chatSessionId);
         sessionStorage.setItem(ACTIVE_CHAT_SESSION, chatSessionId.toString());
       }
-      
+
       if (openItinerarySidebar !== undefined) {
         setItinerarySidebarVisible(openItinerarySidebar);
       }
-      
+
       // Set itinerary ID last and trigger a load
       if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
         setSelectedItineraryId(selectedItineraryId);
         // Manually load itinerary data since we're setting the ID in initial state
         loadItineraryData(selectedItineraryId);
       }
-      
+
       setInitialStateProcessed(true);
-      
+
       // Clear navigation state after processing
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -216,19 +217,18 @@ export default function Home() {
 
   // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
   useEffect(() => {
-    
     // Don't clear on initial mount when activeChatId is null
     if (activeChatId === null && !initialStateProcessed) {
       return;
     }
-    
+
     // If we came from ViewItinerary and this is the initial chat ID, don't clear
     if (cameFromViewItinerary && activeChatId === initialChatIdRef.current) {
       // Reset the flag so subsequent chat changes will clear itinerary data
       setCameFromViewItinerary(false);
       return;
     }
-    
+
     // For normal chat switches, clear itinerary data
     setSelectedItineraryId(null);
     setItineraryData(null);
@@ -290,7 +290,12 @@ export default function Home() {
 
     // If we came from ViewItinerary and created a new chat with an itinerary in view,
     // associate the itinerary with this new chat session
-    if (cameFromViewItinerary && isNewChat && selectedItineraryId !== null && itineraryData !== null) {
+    if (
+      cameFromViewItinerary &&
+      isNewChat &&
+      selectedItineraryId !== null &&
+      itineraryData !== null
+    ) {
       try {
         const apiPayload = convertToApiFormat(
           itineraryData,
@@ -302,7 +307,6 @@ export default function Home() {
         );
 
         await apiSaveItineraryChanges(apiPayload);
-        
       } catch (error) {
         console.error("Failed to associate itinerary with new chat:", error);
         // Don't block the message send if this fails
