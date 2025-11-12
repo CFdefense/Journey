@@ -1,90 +1,146 @@
+/* Fade-up animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Wrapper: full screen gradient background */
-.lost-tourist-wrapper {
+.not-found-wrapper {
+  position: fixed;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 80vh;
-  background: linear-gradient(135deg, var(--light-blue) 0%, var(--blue) 100%);
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+    linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
   padding: 2rem;
   box-sizing: border-box;
 }
 
-/* Card container */
-.lost-tourist-card {
-  background-color: var(--pale-yellow);
-  padding: 3rem 2rem;
-  max-width: 500px;
-  width: 100%;
+/* Main content container */
+.not-found-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  animation: float 3s ease-in-out infinite;
+  z-index: 2;
 }
 
-/* Floating animation */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+/* Large 404 number */
+.not-found-number {
+  font-family: "Righteous", sans-serif;
+  font-size: clamp(6rem, 15vw, 20rem);
+  font-weight: 400;
+  color: #ff8c42;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  animation: fadeUp 0.8s ease-out;
 }
 
-/* Tourist image */
-.tourist-image {
-  width: 200px;
-  height: auto;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+
+/* Message text */
+.not-found-message {
+  font-size: 1.2rem;
+  color: #ff8c42;
+  margin: 1rem 0 2rem 0;
+  font-weight: 500;
+  animation: fadeUp 0.8s ease-out 0.2s both;
 }
 
-/* Title */
-.lost-tourist-title {
-  font-size: 1.8rem;
-  color: var(--blue);
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-/* Description */
-.lost-tourist-description {
-  font-size: 1.1rem;
-  color: #333;
-  margin-bottom: 2rem;
-}
-
-/* Buttons */
-.lost-tourist-buttons button {
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.75rem 1.5rem;
+/* Return to home link/button */
+.not-found-link {
+  background: transparent;
   border: none;
+  color: #ff8c42;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  margin: 0 0.5rem;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  text-decoration: underline;
+  text-decoration-color: #ff8c42;
+  text-decoration-style: wavy;
+  text-underline-offset: 4px;
+  padding: 0.5rem 1rem;
+  transition: opacity 0.2s ease;
+  font-family: inherit;
+  animation: fadeUp 0.8s ease-out 0.4s both;
 }
 
-/* Home button */
-.btn-home {
-  background-color: var(--salmon);
-  color: white;
+.not-found-link:hover {
+  opacity: 0.8;
 }
 
-.btn-home:hover {
-  background-color: var(--salmon);
-  transform: translateY(-3px);
+/* Character in bottom-left */
+.not-found-character {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-/* Journey button */
-.btn-journey {
-  background-color: var(--gold);
-  color: var(--blue);
+.character-image {
+  width: 1000px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  object-position: bottom left;
+  max-width: 50vw;
+  max-height: 60vh;
+  filter: brightness(0) saturate(100%) invert(55%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
 }
 
-.btn-journey:hover {
-  background-color: var(--gold);
-  transform: translateY(-3px);
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .not-found-number {
+    font-size: 5rem;
+  }
+
+  .not-found-message {
+    font-size: 1rem;
+    padding: 0 1rem;
+  }
+
+  .not-found-wrapper {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 10vh;
+    padding-bottom: 2rem;
+  }
+
+  .not-found-content {
+    padding-bottom: 2rem;
+    z-index: 2;
+  }
+
+  .not-found-character {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    order: 2;
+  }
+
+  .character-image {
+    width: auto;
+    max-width: 80vw;
+    max-height: 40vh;
+    object-position: center bottom;
+  }
 }
