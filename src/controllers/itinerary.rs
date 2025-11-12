@@ -412,12 +412,13 @@ pub async fn api_save(
 			sqlx::query!(
 				r#"
 				UPDATE itineraries
-				SET start_date = $1, end_date = $2, title = $3, saved = TRUE
-				WHERE id = $4 AND account_id = $5;
+				SET start_date = $1, end_date = $2, title = $3, chat_session_id = $4, saved = TRUE
+				WHERE id = $5 AND account_id = $6;
 				"#,
 				itinerary.start_date,
 				itinerary.end_date,
 				itinerary.title,
+				itinerary.chat_session_id,  
 				id,
 				user.id
 			)
