@@ -38,7 +38,21 @@
   position: relative;
   z-index: 1;
   opacity: 0;
-  animation: fadeIn 0.4s ease-in-out forwards;
+  will-change: opacity;
+}
+
+.chat-container.expanding .chat-header {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
+}
+
+.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .chat-header {
+  opacity: 1;
+  animation: none;
+}
+
+.chat-container.initial-load:not(.chat-container-empty) .chat-header {
+  opacity: 0;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeIn {
@@ -103,7 +117,7 @@
   gap: 0.75rem;
   background: transparent;
   opacity: 0;
-  transform: translateY(-10px);
+  will-change: opacity;
 }
 
 .chat-container.expanding .chat-messages {
@@ -112,12 +126,12 @@
 
 .chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .chat-messages {
   opacity: 1;
-  transform: translateY(0);
   animation: none;
 }
 
 .chat-container.initial-load:not(.chat-container-empty) .chat-messages {
-  animation: fadeInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
+  opacity: 0;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeIn {
@@ -272,6 +286,23 @@
   width: 100%;
   max-width: min(850px, 100%);
   align-self: center;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Animation when sending message from empty state - fade down */
+.chat-container-empty .chat-empty-state .chat-empty-search.sending {
+  animation: fadeDown 0.6s ease forwards;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 }
 
 /* When search bar is in expanded chat view (MessageInput component) */
@@ -283,6 +314,23 @@
   margin: 0;
   width: calc(100% - 2rem);
   max-width: min(850px, calc(100% - 2rem));
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Animation when sending message from open chat mode - fade up */
+.chat-container:not(.chat-container-empty) .chat-empty-search.sending {
+  animation: fadeUp 0.3s ease forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
 }
 
 /* During expansion - search bar in empty state moves to bottom */

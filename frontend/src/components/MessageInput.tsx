@@ -6,17 +6,21 @@ interface MessageInputProps {
 
 export default function MessageInput({ onSend }: MessageInputProps) {
   const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
+      setIsSending(true);
       onSend(input.trim());
       setInput("");
+      // Reset animation state after animation completes
+      setTimeout(() => setIsSending(false), 300);
     }
   };
 
   return (
-    <form className="chat-empty-search" onSubmit={handleSubmit}>
+    <form className={`chat-empty-search ${isSending ? "sending" : ""}`} onSubmit={handleSubmit}>
       <input
         type="text"
         value={input}

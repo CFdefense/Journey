@@ -33,6 +33,7 @@ export default function ChatWindow({
   const [displayedText, setDisplayedText] = useState("");
   const [isExpanding, setIsExpanding] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(messages.length > 0);
+  const [isSendingEmpty, setIsSendingEmpty] = useState(false);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const deleteIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -188,8 +189,11 @@ export default function ChatWindow({
   const handleEmptyStateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (emptyStateInput.trim()) {
+      setIsSendingEmpty(true);
       onSend(emptyStateInput.trim());
       setEmptyStateInput("");
+      // Reset animation state after animation completes
+      setTimeout(() => setIsSendingEmpty(false), 600);
     }
   };
 
@@ -204,7 +208,7 @@ export default function ChatWindow({
             {titleText}
             <span className="typing-cursor">|</span>
           </h1>
-          <form className="chat-empty-search" onSubmit={handleEmptyStateSubmit}>
+          <form className={`chat-empty-search ${isSendingEmpty ? "sending" : ""}`} onSubmit={handleEmptyStateSubmit}>
             <input
               type="text"
               value={emptyStateInput}
