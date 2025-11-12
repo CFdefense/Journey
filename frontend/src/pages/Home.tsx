@@ -1,6 +1,6 @@
 // Home.tsx
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
@@ -29,6 +29,7 @@ export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
