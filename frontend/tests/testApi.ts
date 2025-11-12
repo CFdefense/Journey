@@ -18,8 +18,6 @@ import type {
 	UpdateRequest
 } from "../src/models/account";
 
-
-
 /// Calls login
 ///
 /// # Method
@@ -110,7 +108,6 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 	}
 }
 
-
 /// Calls validate
 ///
 /// # Method
@@ -144,23 +141,24 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 ///
 /// # Returns updated account information if successful.
 /// # Throws Error with message to be displayed.
-export async function apiUpdateAccount(payload: UpdateRequest): Promise<ApiResult<CurrentResponse>> {
-    try {
-        const response = await customFetch(`${API_BASE_URL}/api/account/update`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify(payload)
-        });
-        return { result: await response.json(), status: response.status };
-    } catch (error) {
-        console.error("Update Account API error: ", error);
-        return { result: null, status: -1 };
-    }
+export async function apiUpdateAccount(
+	payload: UpdateRequest
+): Promise<ApiResult<CurrentResponse>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/account/update`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: "include",
+			body: JSON.stringify(payload)
+		});
+		return { result: await response.json(), status: response.status };
+	} catch (error) {
+		console.error("Update Account API error: ", error);
+		return { result: null, status: -1 };
+	}
 }
-
 
 /// Calls current
 ///
@@ -193,6 +191,7 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 		return { result: null, status: -1 };
 	}
 }
+
 
 
 import type {
@@ -467,7 +466,11 @@ export async function apiUpdateMessage(
 
 
 
-import type { Itinerary, SaveResponse, SavedItinerariesResponse } from "../src/models/itinerary";
+import type {
+	Itinerary,
+	SaveResponse,
+	SavedItinerariesResponse
+} from "../src/models/itinerary";
 
 /// Calls itinerary details
 ///
@@ -538,7 +541,9 @@ export async function saveItineraryChanges(
 ///
 /// # Returns list of saved itineraries if successful.
 /// # Throws Error with message to be displayed.
-export async function apiGetSavedItineraries(): Promise<ApiResult<SavedItinerariesResponse>> {
+export async function apiGetSavedItineraries(): Promise<
+	ApiResult<SavedItinerariesResponse>
+> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/itinerary/saved`, {
 			method: "GET",

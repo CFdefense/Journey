@@ -13,6 +13,12 @@
   background:
     radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
     linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.auth-page--account::-webkit-scrollbar {
+  display: none;
 }
 
 .auth-content {
