@@ -39,7 +39,9 @@ const EventCard: React.FC<EventCardProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [eventData, setEventData] = useState(event);
-  const [inputEvent, setInputEvent] = useState(JSON.parse(JSON.stringify(event)));
+  const [inputEvent, setInputEvent] = useState(
+    JSON.parse(JSON.stringify(event))
+  );
 
   const navigate = useNavigate();
 
@@ -212,14 +214,20 @@ const EventCard: React.FC<EventCardProps> = ({
                     type="text"
                     value={inputEvent.event_name}
                     onChange={(e) =>
-                      setInputEvent({...inputEvent, event_name: e.target.value})
+                      setInputEvent({
+                        ...inputEvent,
+                        event_name: e.target.value
+                      })
                     }
                   />
                 </h2>
                 <textarea
                   value={inputEvent.event_description || ""}
                   onChange={(e) =>
-                    setInputEvent({...inputEvent, event_description: e.target.value})
+                    setInputEvent({
+                      ...inputEvent,
+                      event_description: e.target.value
+                    })
                   }
                   placeholder="Description"
                 />
@@ -229,7 +237,10 @@ const EventCard: React.FC<EventCardProps> = ({
                     type="text"
                     value={inputEvent.event_type || ""}
                     onChange={(e) =>
-                      setInputEvent({...inputEvent, event_type: e.target.value})
+                      setInputEvent({
+                        ...inputEvent,
+                        event_type: e.target.value
+                      })
                     }
                   />
                 </p>
@@ -240,7 +251,10 @@ const EventCard: React.FC<EventCardProps> = ({
                       type="text"
                       value={inputEvent.street_address || ""}
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, street_address: e.target.value})
+                        setInputEvent({
+                          ...inputEvent,
+                          street_address: e.target.value
+                        })
                       }
                     />
                   </p>
@@ -250,7 +264,7 @@ const EventCard: React.FC<EventCardProps> = ({
                       type="text"
                       value={inputEvent.city || ""}
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, city: e.target.value})
+                        setInputEvent({ ...inputEvent, city: e.target.value })
                       }
                     />
                   </p>
@@ -260,7 +274,10 @@ const EventCard: React.FC<EventCardProps> = ({
                       type="text"
                       value={inputEvent.country || ""}
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, country: e.target.value})
+                        setInputEvent({
+                          ...inputEvent,
+                          country: e.target.value
+                        })
                       }
                     />
                   </p>
@@ -270,14 +287,18 @@ const EventCard: React.FC<EventCardProps> = ({
                       type="text"
                       value={inputEvent.postal_code || ""}
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, postal_code: e.target.value})
+                        setInputEvent({
+                          ...inputEvent,
+                          postal_code: e.target.value
+                        })
                       }
                     />
                   </p>
                   <p>
                     {/*NOTICE! Input elements must use the browser's timezone*/}
                     <strong>
-                      Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}):
+                      Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      ):
                     </strong>{" "}
                     <input
                       value={
@@ -293,7 +314,10 @@ const EventCard: React.FC<EventCardProps> = ({
                       }
                       type="datetime-local"
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, hard_start: new Date(e.target.value).toISOString()})
+                        setInputEvent({
+                          ...inputEvent,
+                          hard_start: new Date(e.target.value).toISOString()
+                        })
                       }
                     />
                   </p>
@@ -314,7 +338,10 @@ const EventCard: React.FC<EventCardProps> = ({
                       }
                       type="datetime-local"
                       onChange={(e) =>
-                        setInputEvent({...inputEvent, hard_end: new Date(e.target.value).toISOString()})
+                        setInputEvent({
+                          ...inputEvent,
+                          hard_end: new Date(e.target.value).toISOString()
+                        })
                       }
                     />
                   </p>

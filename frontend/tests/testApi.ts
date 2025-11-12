@@ -606,15 +606,13 @@ export async function apiSearchEvent(
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiDeleteUserEvent(
-	id: number
-): Promise<ApiResult<void>> {
+export async function apiDeleteUserEvent(id: number): Promise<ApiResult<void>> {
 	//TODO remove event from cache
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/itinerary/userEvent/${id}`,
 			{
 				method: "DELETE",
-				credentials: test_state.dev_mode ? "include" : "same-origin",
+				credentials: test_state.dev_mode ? "include" : "same-origin"
 			}
 		);
 		return { result: null, status: response.status };
