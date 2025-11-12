@@ -41,18 +41,21 @@
   will-change: opacity;
 }
 
+/* Fade in header when expanding (empty to messages) */
 .chat-container.expanding .chat-header {
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
 }
 
-.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .chat-header {
-  opacity: 1;
-  animation: none;
-}
-
-.chat-container.initial-load:not(.chat-container-empty) .chat-header {
+/* Fade in header when switching chats or reloading */
+.chat-container.switching:not(.chat-container-empty) .chat-header {
   opacity: 0;
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
+}
+
+/* Default state - visible */
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-header {
+  opacity: 1;
+  animation: none;
 }
 
 @keyframes fadeIn {
@@ -120,27 +123,21 @@
   will-change: opacity;
 }
 
+/* Fade in messages when expanding (empty to messages) */
 .chat-container.expanding .chat-messages {
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
 }
 
-.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .chat-messages {
-  opacity: 1;
-  animation: none;
-}
-
-.chat-container.initial-load:not(.chat-container-empty) .chat-messages {
+/* Fade in messages when switching chats or reloading */
+.chat-container.switching:not(.chat-container-empty) .chat-messages {
   opacity: 0;
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* Default state - visible */
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-messages {
+  opacity: 1;
+  animation: none;
 }
 
 /* Custom scrollbar for chat messages */
@@ -587,18 +584,23 @@
   transform: translateY(10px);
 }
 
+/* Fade in input when expanding (empty to messages) */
 .chat-container.expanding .message-input {
   animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
 }
 
-.chat-container:not(.chat-container-empty):not(.expanding):not(.initial-load) .message-input {
+/* Fade in input when switching chats or reloading */
+.chat-container.switching:not(.chat-container-empty) .message-input {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
+}
+
+/* Default state - visible */
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .message-input {
   opacity: 1;
   transform: translateY(0);
   animation: none;
-}
-
-.chat-container.initial-load:not(.chat-container-empty) .message-input {
-  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeInUp {

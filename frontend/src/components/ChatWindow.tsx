@@ -32,15 +32,16 @@ export default function ChatWindow({
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
   const [isExpanding, setIsExpanding] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(messages.length > 0);
+  const [isSwitching, setIsSwitching] = useState(false);
   const [isSendingEmpty, setIsSendingEmpty] = useState(false);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const deleteIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const prevMessagesRef = useRef<Message[]>([]);
   const prevMessagesLengthRef = useRef<number>(0);
   const hasMountedRef = useRef<boolean>(false);
   const mountTimeRef = useRef<number>(Date.now());
-  const initialLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const switchingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const expandingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -48,46 +49,71 @@ export default function ChatWindow({
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       mountTimeRef.current = Date.now();
+      prevMessagesRef.current = messages;
+      prevMessagesLengthRef.current = messages.length;
+      
       // If we have messages on initial mount, this is a reloaded chat session
       if (messages.length > 0) {
-        setIsInitialLoad(true);
-        // Remove initial load state after animation completes
-        if (initialLoadTimeoutRef.current) {
-          clearTimeout(initialLoadTimeoutRef.current);
+        setIsSwitching(true);
+        if (switchingTimeoutRef.current) {
+          clearTimeout(switchingTimeoutRef.current);
         }
-        initialLoadTimeoutRef.current = setTimeout(() => setIsInitialLoad(false), 900);
+        switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
       }
+      return;
     }
 
     const wasEmpty = prevMessagesLengthRef.current === 0;
     const nowHasMessages = messages.length > 0;
     const timeSinceMount = Date.now() - mountTimeRef.current;
     
+    // Detect if we're switching chats (messages changed but not just appended)
+    // Compare first message ID to detect chat switches
+    const prevFirstId = prevMessagesRef.current[0]?.id;
+    const currentFirstId = messages[0]?.id;
+    const isChatSwitch = messages.length > 0 && 
+                         prevMessagesRef.current.length > 0 &&
+                         (prevFirstId !== currentFirstId || 
+                          messages.length < prevMessagesLengthRef.current);
+    
+    // If switching between chats with messages
+    if (isChatSwitch) {
+      setIsSwitching(true);
+      setIsExpanding(false);
+      if (switchingTimeoutRef.current) {
+        clearTimeout(switchingTimeoutRef.current);
+      }
+      switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
+    }
     // If messages appear within 500ms of mount, treat it as initial load (reloaded chat)
     // Otherwise, if transitioning from empty to having messages, it's an expansion
-    if (nowHasMessages && wasEmpty && hasMountedRef.current) {
+    else if (nowHasMessages && wasEmpty && hasMountedRef.current) {
       if (timeSinceMount < 500) {
         // Messages appeared very quickly after mount - this is a reloaded chat
-        setIsInitialLoad(true);
+        setIsSwitching(true);
         setIsExpanding(false);
-        if (initialLoadTimeoutRef.current) {
-          clearTimeout(initialLoadTimeoutRef.current);
+        if (switchingTimeoutRef.current) {
+          clearTimeout(switchingTimeoutRef.current);
         }
-        initialLoadTimeoutRef.current = setTimeout(() => setIsInitialLoad(false), 900);
+        switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
       } else {
         // Messages appeared after some time - this is a new message in an empty chat
-        setIsInitialLoad(false);
+        setIsSwitching(false);
         setIsExpanding(true);
         if (expandingTimeoutRef.current) {
           clearTimeout(expandingTimeoutRef.current);
         }
         expandingTimeoutRef.current = setTimeout(() => setIsExpanding(false), 800);
       }
-    } else if (!wasEmpty) {
-      // If we already had messages, we're switching chats, not expanding
+    } else if (!wasEmpty && !isChatSwitch) {
+      // If we already had messages and it's not a switch, just reset states
       setIsExpanding(false);
-      setIsInitialLoad(false);
+      setIsSwitching(false);
     }
+
+    // Update refs
+    prevMessagesRef.current = messages;
+    prevMessagesLengthRef.current = messages.length;
 
     if (messages.length > 0) {
       // Reset when messages appear
@@ -101,10 +127,7 @@ export default function ChatWindow({
       if (deleteIntervalRef.current) {
         clearInterval(deleteIntervalRef.current);
       }
-      prevMessagesLengthRef.current = messages.length;
       return;
-    } else {
-      prevMessagesLengthRef.current = 0;
     }
 
     // Wait for fade-in animation to complete (600ms) before starting typing
@@ -124,14 +147,14 @@ export default function ChatWindow({
       if (deleteIntervalRef.current) {
         clearInterval(deleteIntervalRef.current);
       }
-      if (initialLoadTimeoutRef.current) {
-        clearTimeout(initialLoadTimeoutRef.current);
+      if (switchingTimeoutRef.current) {
+        clearTimeout(switchingTimeoutRef.current);
       }
       if (expandingTimeoutRef.current) {
         clearTimeout(expandingTimeoutRef.current);
       }
     };
-  }, [messages.length]);
+  }, [messages]);
 
   const typeText = (endingIndex: number, startFromBeginning: boolean = false) => {
     const currentEnding = ENDINGS[endingIndex];
@@ -201,7 +224,7 @@ export default function ChatWindow({
   const titleText = displayedText;
 
   return (
-    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""} ${isInitialLoad ? "initial-load" : ""}`}>
+    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""} ${isSwitching ? "switching" : ""}`}>
       {showEmptyState ? (
         <div className="chat-empty-state">
           <h1 className="chat-empty-title">
