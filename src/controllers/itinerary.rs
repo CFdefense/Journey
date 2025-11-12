@@ -407,7 +407,26 @@ pub async fn api_save(
 
 	// if it doesn't exist, insert a new one
 	let id = match id_opt {
-		Some(id) => id,
+		Some(id) => {
+			// UPDATE existing itinerary and set saved=TRUE
+			sqlx::query!(
+				r#"
+				UPDATE itineraries
+				SET start_date = $1, end_date = $2, title = $3, saved = TRUE
+				WHERE id = $4 AND account_id = $5;
+				"#,
+				itinerary.start_date,
+				itinerary.end_date,
+				itinerary.title,
+				id,
+				user.id
+			)
+			.execute(&pool)
+			.await
+			.map_err(AppError::from)?;
+			
+			id
+		}
 		None => {
 			sqlx::query!(
 				r#"

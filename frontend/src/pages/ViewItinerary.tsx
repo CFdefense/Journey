@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../helpers/itinerary";
-import { apiItineraryDetails, saveItineraryChanges } from "../api/itinerary";
+import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
 import { apiCurrent } from "../api/account";
@@ -54,7 +54,7 @@ export default function ViewItineraryPage() {
         itineraryMetadata.chatSessionId
       );
 
-      const result = await saveItineraryChanges(apiPayload);
+      const result = await apiSaveItineraryChanges(apiPayload);
       console.log("Save result:", result);
       alert("Itinerary saved successfully!");
     } catch (error) {
