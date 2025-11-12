@@ -237,6 +237,17 @@ const Itinerary: React.FC<ItineraryProps> = ({
       alert("TODO");
       return;
     }
+    setUserEventForm({
+      name: "",
+      description: "",
+      type: "",
+      address: "",
+      city: "",
+      country: "",
+      postalCode: "",
+      start: "",
+      end: ""
+    });
     const event = userEvent as Event;
     event.id = result.result.id;
     event.user_created = true;
@@ -279,16 +290,19 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setSearchResult([]);
       return;
     }
-    if (result.result.events.length === 0) {
-      setSearchResultCaption("No Events Match These Filters");
-    } else {
-      setSearchResultCaption("Add Events To Your Itinerary");
-    }
-    setSearchResult(
-      result.result.events.filter(
-        (e) => !unassignedEvents.some((v) => v.id === e.id)
-      )
+    const displayEvents = result.result.events.filter(
+      (e) => !unassignedEvents.some((v) => v.id === e.id)
     );
+    if (result.result.events.length === 0) {
+      setSearchResultCaption("No events match these filters");
+    } else if (displayEvents.length === 0) {
+      setSearchResultCaption(
+        "You already have all events matching these filters"
+      );
+    } else {
+      setSearchResultCaption("Add events to your itinerary");
+    }
+    setSearchResult(displayEvents);
   };
 
   const formatAddress = (event: Event): string => {
