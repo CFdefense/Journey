@@ -37,8 +37,6 @@ export function ProtectedRoute({ children }: any) {
   }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
-    console.log("loading: ", loading);
-    console.log("authorized: ", authorized);
     if (loading) return <Loading />;
     if (authorized === false) return <Navigate to="/login" replace />;
   }

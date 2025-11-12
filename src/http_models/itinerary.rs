@@ -37,8 +37,6 @@ pub struct Itinerary {
 pub struct EventDay {
 	/// All the events taking place in the morning
 	pub morning_events: Vec<Event>,
-	/// All the events taking place around noon
-	pub noon_events: Vec<Event>,
 	/// All the events taking place in the afternoon
 	pub afternoon_events: Vec<Event>,
 	/// All the events taking place in the evening
