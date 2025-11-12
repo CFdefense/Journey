@@ -20,7 +20,7 @@ export default function NotFoundPage() {
       </div>
       <div className="not-found-character">
         <img 
-          src="/404.png" 
+          src="/404_logo.png" 
           alt="404 character" 
           className="character-image"
         />
