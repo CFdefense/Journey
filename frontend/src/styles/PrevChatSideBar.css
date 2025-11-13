@@ -48,6 +48,7 @@
   z-index: 1;
   margin-bottom: 16px;
   padding-left: 8px;
+  padding-right: 8px;
 }
 
 .sidebar.open .sidebar-actions {
@@ -707,6 +708,5 @@
   }
 
   .sidebar.open .sidebar-actions {
-    padding-right: 8px;
   }
 }
