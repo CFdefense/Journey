@@ -500,6 +500,9 @@
   background: transparent !important;
   padding: 0 !important;
   transition: none;
+  width: 50%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .chat-message-content.editing .edit-message-container {
@@ -519,6 +522,9 @@
   margin: 0;
   text-align: left;
   position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .message-text p {
