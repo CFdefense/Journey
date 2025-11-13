@@ -706,7 +706,4 @@
   .action-btn.expanded {
     padding: clamp(0.75rem, 2vw, 10px) clamp(0.875rem, 2.5vw, 12px);
   }
-
-  .sidebar.open .sidebar-actions {
-  }
 }
