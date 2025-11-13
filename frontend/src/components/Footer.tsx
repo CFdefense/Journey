@@ -20,9 +20,10 @@ export default function Footer() {
         </div>
 
         <div className="footer-center">
-          <div
-            className="footer-logo-placeholder"
-            aria-label="Journey logo placeholder"
+          <img
+            src="/logo_white.png"
+            alt="Journey Logo"
+            className="footer-logo"
           />
           <div className="footer-copyright">
             <div className="footer-company">Journey</div>
