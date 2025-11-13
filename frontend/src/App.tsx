@@ -14,74 +14,78 @@ import {
   ProtectedRoute
 } from "./components/ProtectedRoute";
 import AuthLayout from "./components/AuthLayout";
+import Toast from "./components/Toast";
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/view"
-          element={
-            <ProtectedRoute>
-              <ViewItinerary />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/account"
-          element={
-            <ProtectedRoute>
-              <Account />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <InverseProtectedRoute>
-              <AuthLayout variant="login">
-                <Login />
-              </AuthLayout>
-            </InverseProtectedRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <InverseProtectedRoute>
-              <AuthLayout variant="signup">
-                <Signup />
-              </AuthLayout>
-            </InverseProtectedRoute>
-          }
-        />
-        <Route
-          path="/account/preferences"
-          element={
-            <ProtectedRoute>
-              <Preferences />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/account/itineraries"
-          element={
-            <ProtectedRoute>
-              <Itineraries />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/view"
+            element={
+              <ProtectedRoute>
+                <ViewItinerary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Account />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <InverseProtectedRoute>
+                <AuthLayout variant="login">
+                  <Login />
+                </AuthLayout>
+              </InverseProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <InverseProtectedRoute>
+                <AuthLayout variant="signup">
+                  <Signup />
+                </AuthLayout>
+              </InverseProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/preferences"
+            element={
+              <ProtectedRoute>
+                <Preferences />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/itineraries"
+            element={
+              <ProtectedRoute>
+                <Itineraries />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+      <Toast />
+    </>
   );
 }
