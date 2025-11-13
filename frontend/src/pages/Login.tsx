@@ -26,7 +26,6 @@ export default function Login() {
       }
 
       setAuthorized(true);
-      toast.success("Welcome back!");
       navigate("/home");
     } catch (err) {
       console.error(err);
