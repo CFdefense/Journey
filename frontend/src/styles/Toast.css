@@ -1,7 +1,7 @@
 /* Toast Container - positioned in top right */
 .toast-container {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
   z-index: 10000;
   display: flex;
@@ -186,7 +186,7 @@
 /* Responsive adjustments */
 @media (max-width: 480px) {
   .toast-container {
-    top: 16px;
+    top: 72px;
     right: 16px;
     left: 16px;
     width: auto;

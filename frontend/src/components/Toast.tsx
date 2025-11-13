@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "../styles/Toast.css";
 
 export type ToastType = "success" | "error" | "info" | "warning";
@@ -13,19 +13,42 @@ export interface Toast {
 interface ToastProps {
   toast: Toast;
   onClose: (id: string) => void;
+  isExiting: boolean;
 }
 
-function ToastItem({ toast, onClose }: ToastProps) {
-  const duration = toast.duration ?? 5000;
+function ToastItem({ toast, onClose, isExiting }: ToastProps) {
+  const duration = toast.duration ?? 2000;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const onCloseRef = useRef(onClose);
+  
+  // Keep the onClose ref updated
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose(toast.id);
+    if (duration > 0 && !isExiting) {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      // Set new timer
+      timerRef.current = setTimeout(() => {
+        onCloseRef.current(toast.id);
       }, duration);
-      return () => clearTimeout(timer);
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      };
+    } else {
+      // Clear timer if exiting
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     }
-  }, [toast.id, duration, onClose]);
+  }, [toast.id, duration, isExiting]);
 
   const getIcon = () => {
     switch (toast.type) {
@@ -92,7 +115,7 @@ function ToastItem({ toast, onClose }: ToastProps) {
   };
 
   return (
-    <div className={`toast toast--${toast.type}`}>
+    <div className={`toast toast--${toast.type} ${isExiting ? "toast-exiting" : ""}`}>
       <div className="toast-content">
         <div className="toast-icon">{getIcon()}</div>
         <p className="toast-message">{toast.message}</p>
@@ -139,7 +162,8 @@ function addToast(message: string, type: ToastType = "info", duration?: number) 
 }
 
 function removeToast(id: string) {
-  toastState = toastState.filter((toast) => toast.id !== id);
+  // Remove immediately - the component will handle the exit animation
+  toastState = toastState.filter((t) => t.id !== id);
   notifyListeners();
 }
 
@@ -156,10 +180,22 @@ export const toast = {
 // Main Toast Container Component
 export default function Toast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const listener = (newToasts: Toast[]) => {
       setToasts(newToasts);
+      // Clean up exiting IDs for toasts that are no longer in state
+      setExitingIds((prev) => {
+        const currentIds = new Set(newToasts.map((t) => t.id));
+        const newSet = new Set<string>();
+        prev.forEach((id) => {
+          if (currentIds.has(id)) {
+            newSet.add(id);
+          }
+        });
+        return newSet;
+      });
     };
     listeners.push(listener);
     setToasts([...toastState]);
@@ -169,12 +205,26 @@ export default function Toast() {
     };
   }, []);
 
+  const handleClose = useCallback((id: string) => {
+    // Mark as exiting first to trigger animation
+    setExitingIds((prev) => new Set(prev).add(id));
+    // Wait for animation to complete before removing
+    setTimeout(() => {
+      removeToast(id);
+    }, 300); // Match animation duration in CSS
+  }, []);
+
   if (toasts.length === 0) return null;
 
   return (
     <div className="toast-container">
       {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onClose={removeToast} />
+        <ToastItem
+          key={toast.id}
+          toast={toast}
+          onClose={handleClose}
+          isExiting={exitingIds.has(toast.id)}
+        />
       ))}
     </div>
   );
