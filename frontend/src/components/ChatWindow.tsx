@@ -43,8 +43,57 @@ export default function ChatWindow({
   const mountTimeRef = useRef<number>(Date.now());
   const switchingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const expandingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const animationStartedRef = useRef<boolean>(false);
+  const shouldPreserveAnimationRef = useRef<boolean>(false);
+  const initialFadeInDelayRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Check if messages have actually changed
+    const messagesChanged = 
+      prevMessagesLengthRef.current !== messages.length ||
+      prevMessagesRef.current.length !== messages.length ||
+      (messages.length > 0 && prevMessagesRef.current.length > 0 && 
+       prevMessagesRef.current[0]?.id !== messages[0]?.id);
+    
+    // Helper function to create cleanup that preserves animation if needed
+    const createCleanup = (fadeInDelay?: NodeJS.Timeout, isInitialMount: boolean = false) => {
+      return () => {
+        // Don't clear initial fadeInDelay if we're preserving animation
+        // (it will be cleared when typeText is called or when messages change)
+        if (fadeInDelay && isInitialMount && shouldPreserveAnimationRef.current) {
+          // Preserve the initial timeout - don't clear it
+          return;
+        }
+        if (fadeInDelay) {
+          clearTimeout(fadeInDelay);
+        }
+        if (isInitialMount && fadeInDelay) {
+          initialFadeInDelayRef.current = null;
+        }
+        // Only clear intervals if we shouldn't preserve the animation
+        if (!shouldPreserveAnimationRef.current) {
+          if (animationTimeoutRef.current) {
+            clearTimeout(animationTimeoutRef.current);
+          }
+          if (typeIntervalRef.current) {
+            clearInterval(typeIntervalRef.current);
+          }
+          if (deleteIntervalRef.current) {
+            clearInterval(deleteIntervalRef.current);
+          }
+        }
+        if (switchingTimeoutRef.current) {
+          clearTimeout(switchingTimeoutRef.current);
+        }
+        if (expandingTimeoutRef.current) {
+          clearTimeout(expandingTimeoutRef.current);
+        }
+      };
+    };
+    
+    // Determine if we should preserve the animation (messages haven't changed and we're in empty state)
+    const shouldPreserve = !messagesChanged && messages.length === 0 && animationStartedRef.current;
+
     // Track initial mount
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
@@ -55,13 +104,57 @@ export default function ChatWindow({
       // If we have messages on initial mount, this is a reloaded chat session
       if (messages.length > 0) {
         setIsSwitching(true);
+        shouldPreserveAnimationRef.current = false;
         if (switchingTimeoutRef.current) {
           clearTimeout(switchingTimeoutRef.current);
         }
         switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
+        return createCleanup();
       }
-      return;
+      // If empty on initial mount, start animation
+      else {
+        animationStartedRef.current = true;
+        // Set preserve flag early so cleanup doesn't clear the timeout
+        shouldPreserveAnimationRef.current = true;
+        // Clear any existing timeout first
+        if (initialFadeInDelayRef.current) {
+          clearTimeout(initialFadeInDelayRef.current);
+        }
+        initialFadeInDelayRef.current = setTimeout(() => {
+          typeText(0, true);
+          initialFadeInDelayRef.current = null;
+        }, 600);
+        
+        return createCleanup(initialFadeInDelayRef.current, true);
+      }
     }
+
+    // If messages haven't changed and we're in empty state with animation running, don't restart
+    if (shouldPreserve) {
+      // Animation is already running, don't restart it
+      // Set ref so next cleanup knows to preserve
+      shouldPreserveAnimationRef.current = true;
+      return createCleanup();
+    }
+    
+    // If we're in empty state but animation hasn't started yet (e.g., initial mount timeout was cleared),
+    // start it now
+    if (messages.length === 0 && !animationStartedRef.current && hasMountedRef.current && 
+        prevMessagesLengthRef.current === 0) {
+      animationStartedRef.current = true;
+      shouldPreserveAnimationRef.current = true; // Preserve so cleanup doesn't clear it
+      if (initialFadeInDelayRef.current) {
+        clearTimeout(initialFadeInDelayRef.current);
+      }
+      initialFadeInDelayRef.current = setTimeout(() => {
+        typeText(0, true);
+        initialFadeInDelayRef.current = null;
+      }, 600);
+      return createCleanup(initialFadeInDelayRef.current, true);
+    }
+    
+    // Reset preserve flag since we're not preserving
+    shouldPreserveAnimationRef.current = false;
 
     const wasEmpty = prevMessagesLengthRef.current === 0;
     const nowHasMessages = messages.length > 0;
@@ -80,6 +173,7 @@ export default function ChatWindow({
     if (isChatSwitch) {
       setIsSwitching(true);
       setIsExpanding(false);
+      animationStartedRef.current = false;
       if (switchingTimeoutRef.current) {
         clearTimeout(switchingTimeoutRef.current);
       }
@@ -88,6 +182,7 @@ export default function ChatWindow({
     // If messages appear within 500ms of mount, treat it as initial load (reloaded chat)
     // Otherwise, if transitioning from empty to having messages, it's an expansion
     else if (nowHasMessages && wasEmpty && hasMountedRef.current) {
+      animationStartedRef.current = false;
       if (timeSinceMount < 500) {
         // Messages appeared very quickly after mount - this is a reloaded chat
         setIsSwitching(true);
@@ -117,6 +212,8 @@ export default function ChatWindow({
 
     if (messages.length > 0) {
       // Reset when messages appear
+      animationStartedRef.current = false;
+      shouldPreserveAnimationRef.current = false;
       setDisplayedText("");
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
@@ -127,33 +224,42 @@ export default function ChatWindow({
       if (deleteIntervalRef.current) {
         clearInterval(deleteIntervalRef.current);
       }
-      return;
+      return createCleanup();
     }
 
-    // Wait for fade-in animation to complete (600ms) before starting typing
-    // On first load, type from the beginning
-    const fadeInDelay = setTimeout(() => {
-      typeText(0, true);
-    }, 600);
+    // Only start animation if messages actually changed to empty state
+    // (transitioned from non-empty to empty, or initial mount with empty)
+    if (messages.length === 0) {
+      // If transitioning from non-empty to empty, start animation
+      if (messagesChanged && !wasEmpty) {
+        animationStartedRef.current = true;
+        shouldPreserveAnimationRef.current = false; // Starting new animation, don't preserve yet
+        const fadeInDelay = setTimeout(() => {
+          typeText(0, true);
+        }, 600);
 
-    return () => {
-      clearTimeout(fadeInDelay);
-      if (animationTimeoutRef.current) {
-        clearTimeout(animationTimeoutRef.current);
+        return createCleanup(fadeInDelay);
       }
-      if (typeIntervalRef.current) {
-        clearInterval(typeIntervalRef.current);
+      // If already empty and animation not started yet (initial mount case handled separately)
+      else if (!animationStartedRef.current && hasMountedRef.current) {
+        animationStartedRef.current = true;
+        shouldPreserveAnimationRef.current = false; // Starting new animation, don't preserve yet
+        const fadeInDelay = setTimeout(() => {
+          typeText(0, true);
+        }, 600);
+
+        return createCleanup(fadeInDelay);
       }
-      if (deleteIntervalRef.current) {
-        clearInterval(deleteIntervalRef.current);
+      // If animation is already running and messages haven't changed, preserve it
+      else if (animationStartedRef.current && !messagesChanged) {
+        shouldPreserveAnimationRef.current = true;
+        return createCleanup();
       }
-      if (switchingTimeoutRef.current) {
-        clearTimeout(switchingTimeoutRef.current);
-      }
-      if (expandingTimeoutRef.current) {
-        clearTimeout(expandingTimeoutRef.current);
-      }
-    };
+    }
+    
+    // Default cleanup if we reach here
+    shouldPreserveAnimationRef.current = false;
+    return createCleanup();
   }, [messages]);
 
   const typeText = (endingIndex: number, startFromBeginning: boolean = false) => {
