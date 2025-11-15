@@ -17,7 +17,8 @@ export default function Itineraries() {
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const navbarAvatarUrl = userPfp;
-  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
@@ -191,107 +192,108 @@ export default function Itineraries() {
 
           <main className="main-content">
             {loaded && (
-            <div className="account-container fade-in">
-              <div className="account-box" style={{ maxWidth: "800px" }}>
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"}`}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
-                    </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {`${firstName || ""} ${lastName || ""}`.trim() || "Your Name"}
-                      </h1>
-                      <p className="profile-email">Saved Itineraries</p>
-                    </div>
-                  </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
+              <div className="account-container fade-in">
+                <div className="account-box" style={{ maxWidth: "800px" }}>
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"}`}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
                       </div>
-                      <div className="hs-stat__label">Trips planned</div>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {`${firstName || ""} ${lastName || ""}`.trim() ||
+                            "Your Name"}
+                        </h1>
+                        <p className="profile-email">Saved Itineraries</p>
+                      </div>
                     </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">{accountCreated}</div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
-
-                {loading ? (
-                  <div className="empty-state">
-                    <p>Loading itineraries...</p>
-                  </div>
-                ) : error ? (
-                  <div className="empty-state">
-                    <p style={{ color: "#dc3545" }}>{error}</p>
-                  </div>
-                ) : itineraries.length === 0 ? (
-                  <div className="empty-state">
-                    <p>No saved itineraries found</p>
-                    <p
-                      style={{
-                        fontSize: "0.9rem",
-                        marginTop: "8px",
-                        marginBottom: "16px"
-                      }}
-                    >
-                      Your saved travel plans will appear here
-                    </p>
-                    <button
-                      className="btn-primary"
-                      onClick={() => navigate("/home")}
-                    >
-                      Create Itinerary
-                    </button>
-                  </div>
-                ) : (
-                  <div className="itineraries-list">
-                    {/* --- CHANGE 2: Map over itineraries --- */}
-                    {itineraries.map((itinerary) => {
-                      {
-                        /* Safety check: get the first day, if it exists */
-                      }
-                      const firstDay = itinerary.event_days?.[0];
-                      return (
-                        <div
-                          key={itinerary.id}
-                          className="itinerary-card"
-                          onClick={() => handleCardClick(itinerary.id)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <h3>{itinerary.title || "My Itinerary"}</h3>
-                          {firstDay && (
-                            <>
-                              <p>
-                                <strong>Location:</strong>{" "}
-                                {getLocation(firstDay)}
-                              </p>
-                              <p>
-                                <strong>Total Events (Day 1):</strong>{" "}
-                                {getTotalEvents(firstDay)}
-                              </p>
-                            </>
-                          )}
-                          <p>
-                            <strong>Dates:</strong>{" "}
-                            {itinerary.start_date
-                              ? `${new Date(itinerary.start_date).toLocaleDateString()} - ${new Date(itinerary.end_date).toLocaleDateString()}`
-                              : "Date not available"}
-                          </p>
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
                         </div>
-                      );
-                    })}
+                        <div className="hs-stat__label">Trips planned</div>
+                      </div>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">{accountCreated}</div>
+                        <div className="hs-stat__label">Account created</div>
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  {loading ? (
+                    <div className="empty-state">
+                      <p>Loading itineraries...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="empty-state">
+                      <p style={{ color: "#dc3545" }}>{error}</p>
+                    </div>
+                  ) : itineraries.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No saved itineraries found</p>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          marginTop: "8px",
+                          marginBottom: "16px"
+                        }}
+                      >
+                        Your saved travel plans will appear here
+                      </p>
+                      <button
+                        className="btn-primary"
+                        onClick={() => navigate("/home")}
+                      >
+                        Create Itinerary
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="itineraries-list">
+                      {/* --- CHANGE 2: Map over itineraries --- */}
+                      {itineraries.map((itinerary) => {
+                        {
+                          /* Safety check: get the first day, if it exists */
+                        }
+                        const firstDay = itinerary.event_days?.[0];
+                        return (
+                          <div
+                            key={itinerary.id}
+                            className="itinerary-card"
+                            onClick={() => handleCardClick(itinerary.id)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <h3>{itinerary.title || "My Itinerary"}</h3>
+                            {firstDay && (
+                              <>
+                                <p>
+                                  <strong>Location:</strong>{" "}
+                                  {getLocation(firstDay)}
+                                </p>
+                                <p>
+                                  <strong>Total Events (Day 1):</strong>{" "}
+                                  {getTotalEvents(firstDay)}
+                                </p>
+                              </>
+                            )}
+                            <p>
+                              <strong>Dates:</strong>{" "}
+                              {itinerary.start_date
+                                ? `${new Date(itinerary.start_date).toLocaleDateString()} - ${new Date(itinerary.end_date).toLocaleDateString()}`
+                                : "Date not available"}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             )}
           </main>
         </div>

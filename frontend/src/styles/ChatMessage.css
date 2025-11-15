@@ -82,8 +82,9 @@
   color: #333;
   box-sizing: border-box;
   overflow-y: auto;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Custom scrollbar for edit textarea */
@@ -114,9 +115,10 @@
   outline: none;
   border-color: rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3),
-              0 0 0 3px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 /* Edit message action buttons */
@@ -146,12 +148,13 @@
   background: #fa8072;
   color: #ffffff;
   border-color: #fa8072;
-  box-shadow: 0 4px 16px rgba(250, 128, 114, 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 16px rgba(250, 128, 114, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .edit-cancel-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -165,8 +168,9 @@
 .edit-cancel-btn:hover {
   background: #ff6b5a;
   border-color: #ff6b5a;
-  box-shadow: 0 6px 20px rgba(250, 128, 114, 0.5),
-              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 6px 20px rgba(250, 128, 114, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
@@ -176,20 +180,22 @@
 
 .edit-cancel-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(250, 128, 114, 0.25),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 8px rgba(250, 128, 114, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .edit-save-btn {
   background: #006bbb;
   color: #ffffff;
   border-color: #006bbb;
-  box-shadow: 0 4px 16px rgba(0, 107, 187, 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 16px rgba(0, 107, 187, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .edit-save-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -203,8 +209,9 @@
 .edit-save-btn:hover {
   background: #0080d4;
   border-color: #0080d4;
-  box-shadow: 0 6px 20px rgba(0, 107, 187, 0.5),
-              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 6px 20px rgba(0, 107, 187, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
@@ -214,6 +221,7 @@
 
 .edit-save-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 107, 187, 0.25),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 8px rgba(0, 107, 187, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
