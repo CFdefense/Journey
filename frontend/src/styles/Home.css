@@ -22,7 +22,9 @@
   padding-right: calc(50px + clamp(16px, 4vw, 56px));
   z-index: 100;
   flex-shrink: 0;
-  transition: padding-left 0.45s ease-in-out, padding-right 0.45s ease-in-out;
+  transition:
+    padding-left 0.45s ease-in-out,
+    padding-right 0.45s ease-in-out;
 }
 
 /* Adjust navbar padding when left sidebar is open */
@@ -145,7 +147,9 @@
   padding-right: 56px;
   min-width: 0;
   box-sizing: border-box;
-  transition: padding-left 0.45s ease-in-out, padding-right 0.45s ease-in-out;
+  transition:
+    padding-left 0.45s ease-in-out,
+    padding-right 0.45s ease-in-out;
 }
 
 /* Adjust padding when left sidebar is open */
@@ -189,7 +193,8 @@
   }
 
   /* Ensure equal padding when sidebars are closed */
-  .home-layout:not(.with-sidebar):not(:has(.itinerary-sidebar.open)) .chat-window-wrapper {
+  .home-layout:not(.with-sidebar):not(:has(.itinerary-sidebar.open))
+    .chat-window-wrapper {
     padding-left: 56px;
     padding-right: 56px;
   }

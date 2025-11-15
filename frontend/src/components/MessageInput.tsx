@@ -20,7 +20,10 @@ export default function MessageInput({ onSend }: MessageInputProps) {
   };
 
   return (
-    <form className={`chat-empty-search ${isSending ? "sending" : ""}`} onSubmit={handleSubmit}>
+    <form
+      className={`chat-empty-search ${isSending ? "sending" : ""}`}
+      onSubmit={handleSubmit}
+    >
       <input
         type="text"
         value={input}

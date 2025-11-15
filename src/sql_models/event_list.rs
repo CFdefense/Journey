@@ -29,8 +29,10 @@ pub struct EventListJoinRow {
 	pub event_name: String,
 	/// User-Created
 	pub user_created: bool,
-	/// Hard Start Time UTC
+	/// Hard Start Time
 	pub hard_start: Option<NaiveDateTime>,
-	/// Hard End Time UTC
+	/// Hard End Time
 	pub hard_end: Option<NaiveDateTime>,
+	/// Timezone of hard start and hard end
+	pub timezone: Option<String>,
 }

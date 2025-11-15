@@ -993,7 +993,8 @@
                 "event_name": "Music Festival",
                 "event_type": "Concert",
                 "hard_start_after": "2025-11-01T00:00:00",
-                "hard_start_before": "2025-11-30T23:59:59"
+                "hard_start_before": "2025-11-30T23:59:59",
+                "timezone": "America/New_York"
               }
             }
           },
@@ -1020,6 +1021,7 @@
                       "id": 1,
                       "postal_code": 10001,
                       "street_address": "123 Main St",
+                      "timezone": "America/New_York",
                       "user_created": false
                     },
                     {
@@ -1033,6 +1035,7 @@
                       "id": 2,
                       "postal_code": 10002,
                       "street_address": "456 Broadway",
+                      "timezone": "America/New_York",
                       "user_created": true
                     }
                   ]
@@ -1320,16 +1323,14 @@
               "string",
               "null"
             ],
-            "format": "date-time",
-            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
+            "format": "date-time"
           },
           "hard_start": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time",
-            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
+            "format": "date-time"
           },
           "id": {
             "type": "integer",
@@ -1348,6 +1349,13 @@
               "string",
               "null"
             ]
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Timezone of hard start and hard end"
           },
           "user_created": {
             "type": "boolean"
@@ -1705,6 +1713,13 @@
               "null"
             ],
             "description": "Search where street_address like ..."
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Search where timezone like ..."
           }
         }
       },
@@ -1992,16 +2007,14 @@
               "string",
               "null"
             ],
-            "format": "date-time",
-            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
+            "format": "date-time"
           },
           "hard_start": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time",
-            "description": "UTC %Y-%m-%dT%H:%M:%S%.f"
+            "format": "date-time"
           },
           "id": {
             "type": [
@@ -2023,6 +2036,13 @@
               "string",
               "null"
             ]
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Timezone of hard start and hard end"
           }
         }
       },

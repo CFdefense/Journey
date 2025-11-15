@@ -49,18 +49,26 @@ export default function ChatWindow({
 
   useEffect(() => {
     // Check if messages have actually changed
-    const messagesChanged = 
+    const messagesChanged =
       prevMessagesLengthRef.current !== messages.length ||
       prevMessagesRef.current.length !== messages.length ||
-      (messages.length > 0 && prevMessagesRef.current.length > 0 && 
-       prevMessagesRef.current[0]?.id !== messages[0]?.id);
-    
+      (messages.length > 0 &&
+        prevMessagesRef.current.length > 0 &&
+        prevMessagesRef.current[0]?.id !== messages[0]?.id);
+
     // Helper function to create cleanup that preserves animation if needed
-    const createCleanup = (fadeInDelay?: NodeJS.Timeout, isInitialMount: boolean = false) => {
+    const createCleanup = (
+      fadeInDelay?: NodeJS.Timeout,
+      isInitialMount: boolean = false
+    ) => {
       return () => {
         // Don't clear initial fadeInDelay if we're preserving animation
         // (it will be cleared when typeText is called or when messages change)
-        if (fadeInDelay && isInitialMount && shouldPreserveAnimationRef.current) {
+        if (
+          fadeInDelay &&
+          isInitialMount &&
+          shouldPreserveAnimationRef.current
+        ) {
           // Preserve the initial timeout - don't clear it
           return;
         }
@@ -90,9 +98,10 @@ export default function ChatWindow({
         }
       };
     };
-    
+
     // Determine if we should preserve the animation (messages haven't changed and we're in empty state)
-    const shouldPreserve = !messagesChanged && messages.length === 0 && animationStartedRef.current;
+    const shouldPreserve =
+      !messagesChanged && messages.length === 0 && animationStartedRef.current;
 
     // Track initial mount
     if (!hasMountedRef.current) {
@@ -100,7 +109,7 @@ export default function ChatWindow({
       mountTimeRef.current = Date.now();
       prevMessagesRef.current = messages;
       prevMessagesLengthRef.current = messages.length;
-      
+
       // If we have messages on initial mount, this is a reloaded chat session
       if (messages.length > 0) {
         setIsSwitching(true);
@@ -108,7 +117,10 @@ export default function ChatWindow({
         if (switchingTimeoutRef.current) {
           clearTimeout(switchingTimeoutRef.current);
         }
-        switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
+        switchingTimeoutRef.current = setTimeout(
+          () => setIsSwitching(false),
+          500
+        );
         return createCleanup();
       }
       // If empty on initial mount, start animation
@@ -124,7 +136,7 @@ export default function ChatWindow({
           typeText(0, true);
           initialFadeInDelayRef.current = null;
         }, 600);
-        
+
         return createCleanup(initialFadeInDelayRef.current, true);
       }
     }
@@ -136,11 +148,15 @@ export default function ChatWindow({
       shouldPreserveAnimationRef.current = true;
       return createCleanup();
     }
-    
+
     // If we're in empty state but animation hasn't started yet (e.g., initial mount timeout was cleared),
     // start it now
-    if (messages.length === 0 && !animationStartedRef.current && hasMountedRef.current && 
-        prevMessagesLengthRef.current === 0) {
+    if (
+      messages.length === 0 &&
+      !animationStartedRef.current &&
+      hasMountedRef.current &&
+      prevMessagesLengthRef.current === 0
+    ) {
       animationStartedRef.current = true;
       shouldPreserveAnimationRef.current = true; // Preserve so cleanup doesn't clear it
       if (initialFadeInDelayRef.current) {
@@ -152,23 +168,24 @@ export default function ChatWindow({
       }, 600);
       return createCleanup(initialFadeInDelayRef.current, true);
     }
-    
+
     // Reset preserve flag since we're not preserving
     shouldPreserveAnimationRef.current = false;
 
     const wasEmpty = prevMessagesLengthRef.current === 0;
     const nowHasMessages = messages.length > 0;
     const timeSinceMount = Date.now() - mountTimeRef.current;
-    
+
     // Detect if we're switching chats (messages changed but not just appended)
     // Compare first message ID to detect chat switches
     const prevFirstId = prevMessagesRef.current[0]?.id;
     const currentFirstId = messages[0]?.id;
-    const isChatSwitch = messages.length > 0 && 
-                         prevMessagesRef.current.length > 0 &&
-                         (prevFirstId !== currentFirstId || 
-                          messages.length < prevMessagesLengthRef.current);
-    
+    const isChatSwitch =
+      messages.length > 0 &&
+      prevMessagesRef.current.length > 0 &&
+      (prevFirstId !== currentFirstId ||
+        messages.length < prevMessagesLengthRef.current);
+
     // If switching between chats with messages
     if (isChatSwitch) {
       setIsSwitching(true);
@@ -177,7 +194,10 @@ export default function ChatWindow({
       if (switchingTimeoutRef.current) {
         clearTimeout(switchingTimeoutRef.current);
       }
-      switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
+      switchingTimeoutRef.current = setTimeout(
+        () => setIsSwitching(false),
+        500
+      );
     }
     // If messages appear within 500ms of mount, treat it as initial load (reloaded chat)
     // Otherwise, if transitioning from empty to having messages, it's an expansion
@@ -190,7 +210,10 @@ export default function ChatWindow({
         if (switchingTimeoutRef.current) {
           clearTimeout(switchingTimeoutRef.current);
         }
-        switchingTimeoutRef.current = setTimeout(() => setIsSwitching(false), 500);
+        switchingTimeoutRef.current = setTimeout(
+          () => setIsSwitching(false),
+          500
+        );
       } else {
         // Messages appeared after some time - this is a new message in an empty chat
         setIsSwitching(false);
@@ -198,7 +221,10 @@ export default function ChatWindow({
         if (expandingTimeoutRef.current) {
           clearTimeout(expandingTimeoutRef.current);
         }
-        expandingTimeoutRef.current = setTimeout(() => setIsExpanding(false), 800);
+        expandingTimeoutRef.current = setTimeout(
+          () => setIsExpanding(false),
+          800
+        );
       }
     } else if (!wasEmpty && !isChatSwitch) {
       // If we already had messages and it's not a switch, just reset states
@@ -256,13 +282,16 @@ export default function ChatWindow({
         return createCleanup();
       }
     }
-    
+
     // Default cleanup if we reach here
     shouldPreserveAnimationRef.current = false;
     return createCleanup();
   }, [messages]);
 
-  const typeText = (endingIndex: number, startFromBeginning: boolean = false) => {
+  const typeText = (
+    endingIndex: number,
+    startFromBeginning: boolean = false
+  ) => {
     const currentEnding = ENDINGS[endingIndex];
     const fullText = BASE_TEXT + currentEnding;
     // On first load, type from the beginning. On subsequent cycles, start from BASE_TEXT
@@ -330,14 +359,19 @@ export default function ChatWindow({
   const titleText = displayedText;
 
   return (
-    <div className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""} ${isSwitching ? "switching" : ""}`}>
+    <div
+      className={`chat-container ${showEmptyState ? "chat-container-empty" : ""} ${isExpanding ? "expanding" : ""} ${isSwitching ? "switching" : ""}`}
+    >
       {showEmptyState ? (
         <div className="chat-empty-state">
           <h1 className="chat-empty-title">
             {titleText}
             <span className="typing-cursor">|</span>
           </h1>
-          <form className={`chat-empty-search ${isSendingEmpty ? "sending" : ""}`} onSubmit={handleEmptyStateSubmit}>
+          <form
+            className={`chat-empty-search ${isSendingEmpty ? "sending" : ""}`}
+            onSubmit={handleEmptyStateSubmit}
+          >
             <input
               type="text"
               value={emptyStateInput}
