@@ -12,7 +12,6 @@ import {
 } from "../helpers/account";
 
 export default function Account() {
-
   const navigate = useNavigate();
   const location = useLocation();
   const [statusMessage, setStatusMessage] = useState<{
@@ -33,7 +32,8 @@ export default function Account() {
 
   // Use same profile picture asset as Navbar for consistency
   const navbarAvatarUrl = userPfp;
-  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -75,9 +75,7 @@ export default function Account() {
       setLastName(account.last_name || "");
       // Optional stats from backend; otherwise, provide demo values
       const maybeTrips = (account as any).trips_planned;
-      setTripsPlanned(
-        typeof maybeTrips === "number" ? maybeTrips : 5
-      );
+      setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
       const maybeCreated = (account as any).created_at;
       setAccountCreated(
         maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
@@ -221,222 +219,229 @@ export default function Account() {
 
       <div className="auth-content">
         {loaded && (
-        <div className="account-wrapper fade-in">
-          {/* Main Content */}
-          <main className="main-content">
-            <div className="account-container">
-              <div className="account-box">
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"} ${lastName || ""}`.trim()}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
-                    </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {(firstName || "Your") + " " + (lastName || "Name")}
-                      </h1>
-                      <p className="profile-email">Account &amp; Settings</p>
-                    </div>
-                  </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
+          <div className="account-wrapper fade-in">
+            {/* Main Content */}
+            <main className="main-content">
+              <div className="account-container">
+                <div className="account-box">
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"} ${lastName || ""}`.trim()}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
                       </div>
-                      <div className="hs-stat__label">Trips planned</div>
-                    </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {accountCreated ?? formatDate(new Date())}
-                      </div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
-
-                {statusMessage && (
-                  <div
-                    className={`status-message status-message--${statusMessage.type}`}
-                  >
-                    {statusMessage.message}
-                  </div>
-                )}
-
-                <form onSubmit={handleUpdate}>
-                  <div className="field-list">
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">First name</div>
-                        {isEditingFirst ? (
-                          <input
-                            type="text"
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {firstName || "—"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingFirst) {
-                              await submitUpdate();
-                            }
-                            setIsEditingFirst(!isEditingFirst);
-                          }}
-                        >
-                          {isEditingFirst ? "Done" : "Edit"}
-                        </button>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {(firstName || "Your") + " " + (lastName || "Name")}
+                        </h1>
+                        <p className="profile-email">Account &amp; Settings</p>
                       </div>
                     </div>
-
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">Last name</div>
-                        {isEditingLast ? (
-                          <input
-                            type="text"
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {lastName || "—"}
-                          </div>
-                        )}
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
+                        </div>
+                        <div className="hs-stat__label">Trips planned</div>
                       </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingLast) {
-                              await submitUpdate();
-                            }
-                            setIsEditingLast(!isEditingLast);
-                          }}
-                        >
-                          {isEditingLast ? "Done" : "Edit"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">Email address</div>
-                        <div className="field-row__value">{email}</div>
-                      </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button pill-button--disabled"
-                          disabled
-                          title="Cannot edit email associated with your account"
-                        >
-                          Edit
-                        </button>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {accountCreated ?? formatDate(new Date())}
+                        </div>
+                        <div className="hs-stat__label">Account created</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="field-section">
-                    <button
-                      type="button"
-                      className="field-section__header"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-expanded={showPassword}
+                  {statusMessage && (
+                    <div
+                      className={`status-message status-message--${statusMessage.type}`}
                     >
-                      Password
-                      <span className={`chevron ${showPassword ? "up" : "down"}`}></span>
-                    </button>
-                    {showPassword && (
-                      <div className="password-fields">
-                        <div className="field-group">
-                          <label htmlFor="currentPassword">Current Password:</label>
-                          <input
-                            type="password"
-                            id="currentPassword"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            placeholder="Enter your current password"
-                          />
-                          {passwordErrors.current && (
-                            <small className="error-message">
-                              {passwordErrors.current}
-                            </small>
+                      {statusMessage.message}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpdate}>
+                    <div className="field-list">
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">First name</div>
+                          {isEditingFirst ? (
+                            <input
+                              type="text"
+                              id="firstName"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                            />
+                          ) : (
+                            <div className="field-row__value">
+                              {firstName || "—"}
+                            </div>
                           )}
                         </div>
-
-                        <div className="field-group">
-                          <label htmlFor="newPassword">New Password:</label>
-                          <input
-                            type="password"
-                            id="newPassword"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Enter new password"
-                          />
-                          {passwordErrors.new && (
-                            <small className="error-message">
-                              {passwordErrors.new}
-                            </small>
-                          )}
-                          {!passwordErrors.new && newPassword && (
-                            <small className="helper-text">
-                              Password must be 8-128 characters, contain uppercase,
-                              lowercase, and a number.
-                            </small>
-                          )}
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="confirmPassword">
-                            Confirm New Password:
-                          </label>
-                          <input
-                            type="password"
-                            id="confirmPassword"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Confirm new password"
-                          />
-                          {passwordErrors.confirm && (
-                            <small className="error-message">
-                              {passwordErrors.confirm}
-                            </small>
-                          )}
-                        </div>
-
-                        <div className="password-actions">
+                        <div className="field-row__action">
                           <button
                             type="button"
-                            className="btn-primary"
-                            onClick={submitUpdate}
+                            className="pill-button"
+                            onClick={async () => {
+                              if (isEditingFirst) {
+                                await submitUpdate();
+                              }
+                              setIsEditingFirst(!isEditingFirst);
+                            }}
                           >
-                            Change password
+                            {isEditingFirst ? "Done" : "Edit"}
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </form>
 
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">Last name</div>
+                          {isEditingLast ? (
+                            <input
+                              type="text"
+                              id="lastName"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                            />
+                          ) : (
+                            <div className="field-row__value">
+                              {lastName || "—"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="field-row__action">
+                          <button
+                            type="button"
+                            className="pill-button"
+                            onClick={async () => {
+                              if (isEditingLast) {
+                                await submitUpdate();
+                              }
+                              setIsEditingLast(!isEditingLast);
+                            }}
+                          >
+                            {isEditingLast ? "Done" : "Edit"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">Email address</div>
+                          <div className="field-row__value">{email}</div>
+                        </div>
+                        <div className="field-row__action">
+                          <button
+                            type="button"
+                            className="pill-button pill-button--disabled"
+                            disabled
+                            title="Cannot edit email associated with your account"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="field-section">
+                      <button
+                        type="button"
+                        className="field-section__header"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-expanded={showPassword}
+                      >
+                        Password
+                        <span
+                          className={`chevron ${showPassword ? "up" : "down"}`}
+                        ></span>
+                      </button>
+                      {showPassword && (
+                        <div className="password-fields">
+                          <div className="field-group">
+                            <label htmlFor="currentPassword">
+                              Current Password:
+                            </label>
+                            <input
+                              type="password"
+                              id="currentPassword"
+                              value={currentPassword}
+                              onChange={(e) =>
+                                setCurrentPassword(e.target.value)
+                              }
+                              placeholder="Enter your current password"
+                            />
+                            {passwordErrors.current && (
+                              <small className="error-message">
+                                {passwordErrors.current}
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="field-group">
+                            <label htmlFor="newPassword">New Password:</label>
+                            <input
+                              type="password"
+                              id="newPassword"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Enter new password"
+                            />
+                            {passwordErrors.new && (
+                              <small className="error-message">
+                                {passwordErrors.new}
+                              </small>
+                            )}
+                            {!passwordErrors.new && newPassword && (
+                              <small className="helper-text">
+                                Password must be 8-128 characters, contain
+                                uppercase, lowercase, and a number.
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="field-group">
+                            <label htmlFor="confirmPassword">
+                              Confirm New Password:
+                            </label>
+                            <input
+                              type="password"
+                              id="confirmPassword"
+                              value={confirmPassword}
+                              onChange={(e) =>
+                                setConfirmPassword(e.target.value)
+                              }
+                              placeholder="Confirm new password"
+                            />
+                            {passwordErrors.confirm && (
+                              <small className="error-message">
+                                {passwordErrors.confirm}
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="password-actions">
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              onClick={submitUpdate}
+                            >
+                              Change password
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
-          </main>
-        </div>
+            </main>
+          </div>
         )}
         {/* Bottom tab bar */}
         <footer className="account-bottom-bar">

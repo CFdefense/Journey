@@ -50,7 +50,9 @@ export default function ChatMessage({
         if (!container) return;
 
         const rect = container.getBoundingClientRect();
-        const inputBar = document.querySelector('.message-input') as HTMLElement;
+        const inputBar = document.querySelector(
+          ".message-input"
+        ) as HTMLElement;
         if (!inputBar) return;
 
         const inputRect = inputBar.getBoundingClientRect();
@@ -60,12 +62,12 @@ export default function ChatMessage({
       };
 
       updateMaxHeight();
-      window.addEventListener('resize', updateMaxHeight);
-      window.addEventListener('scroll', updateMaxHeight, true);
+      window.addEventListener("resize", updateMaxHeight);
+      window.addEventListener("scroll", updateMaxHeight, true);
 
       return () => {
-        window.removeEventListener('resize', updateMaxHeight);
-        window.removeEventListener('scroll', updateMaxHeight, true);
+        window.removeEventListener("resize", updateMaxHeight);
+        window.removeEventListener("scroll", updateMaxHeight, true);
       };
     }
   }, [isEditing]);

@@ -23,7 +23,11 @@
   cursor: pointer;
   font-size: 0.9rem;
   border-radius: 0;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
   font-weight: 600;
   box-sizing: border-box;
   display: block;
