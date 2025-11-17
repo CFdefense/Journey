@@ -119,11 +119,11 @@ export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 		const date = new Date(timestamp);
 		const hours = date.getUTCHours();
 		
-		if (hours >= 6 && hours < 12) {
+		if (hours >= 4 && hours < 12) {
 			return "Morning";
 		} else if (hours >= 12 && hours < 18) {
 			return "Afternoon";
-		} else if (hours >= 18 || hours < 6) {
+		} else if (hours >= 18 || hours < 4) {
 			return "Evening";
 		}
 		return null;

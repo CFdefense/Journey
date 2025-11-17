@@ -215,11 +215,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const getTimeRange = (timeLabel: string): string => {
     switch (timeLabel) {
       case "Morning":
-        return "6:00 AM - 12:00 PM";
+        return "4:00 AM - 12:00 PM";
       case "Afternoon":
         return "12:00 PM - 6:00 PM";
       case "Evening":
-        return "6:00 PM - 12:00 AM";
+        return "6:00 PM - 4:00 AM";
       default:
         return "";
     }
