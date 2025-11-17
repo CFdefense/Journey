@@ -80,7 +80,7 @@
 .auth-page--account .auth-brand {
   color: #ffffff;
 }
-.auth-page--account{
+.auth-page--account {
   color: #ffffff;
   opacity: 0.9;
 }
@@ -95,7 +95,7 @@
   text-decoration: none;
   font-weight: 700;
 }
-.auth-page--account{
+.auth-page--account {
   opacity: 0.8;
 }
 
@@ -492,12 +492,14 @@
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.06s ease;
-  min-height: 40px;               /* match input height */
+  transition:
+    background 0.2s ease,
+    transform 0.06s ease;
+  min-height: 40px; /* match input height */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;                  /* keep text vertically centered */
+  line-height: 1; /* keep text vertically centered */
   min-width: 72px;
 }
 

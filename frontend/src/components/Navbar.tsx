@@ -56,11 +56,25 @@ export default function Navbar({ page }: NavbarProps) {
         >
           <img src={userPfp} alt="User profile" className="user-menu-avatar" />
         </button>
-        <div className={`user-menu-dropdown ${menuOpen ? "open" : ""}`} role="menu" aria-hidden={!menuOpen}>
-          <Link to="/account" className="user-menu-item" role="menuitem" onClick={() => setMenuOpen(false)}>
+        <div
+          className={`user-menu-dropdown ${menuOpen ? "open" : ""}`}
+          role="menu"
+          aria-hidden={!menuOpen}
+        >
+          <Link
+            to="/account"
+            className="user-menu-item"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+          >
             Account
           </Link>
-          <button type="button" className="user-menu-item user-menu-item--danger" role="menuitem" onClick={onLogout}>
+          <button
+            type="button"
+            className="user-menu-item user-menu-item--danger"
+            role="menuitem"
+            onClick={onLogout}
+          >
             Log out
           </button>
         </div>
@@ -100,7 +114,9 @@ export default function Navbar({ page }: NavbarProps) {
         }
         if (authorized === null) {
           // Reserve space to avoid flashing between login/signup and user menu
-          return <div className="auth-cta auth-cta--pending" aria-hidden="true" />;
+          return (
+            <div className="auth-cta auth-cta--pending" aria-hidden="true" />
+          );
         }
         return (
           <div className="auth-cta">
@@ -113,7 +129,11 @@ export default function Navbar({ page }: NavbarProps) {
           </div>
         );
       case "home":
-        return <div className="auth-cta"><UserMenu /></div>;
+        return (
+          <div className="auth-cta">
+            <UserMenu />
+          </div>
+        );
       case "view":
         return (
           <div className="auth-cta">
