@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
 import userPfp from "../assets/user-pfp-temp.png";
+import { toast } from "../components/Toast";
 
 type BudgetOption =
   | "VeryLowBudget"
@@ -52,10 +53,6 @@ export default function Preferences() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
   const [budget, setBudget] = useState<BudgetBucket>(BudgetBucket.MediumBudget);
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerence>(
@@ -119,10 +116,7 @@ export default function Preferences() {
         );
         setLoaded(true);
       } else {
-        setStatusMessage({
-          message: "Failed to load preferences. Please try again.",
-          type: "error"
-        });
+        toast.error("Failed to load preferences. Please try again.");
         setLoaded(true);
       }
     };
@@ -151,7 +145,6 @@ export default function Preferences() {
   // Legacy submit removed in favor of inline updates
   // Inline update for a single preference field
   const submitPartialUpdate = async (partial: Partial<UpdateRequest>) => {
-    setStatusMessage(null);
     const payload: UpdateRequest = {
       email: null,
       first_name: null,
@@ -164,19 +157,19 @@ export default function Preferences() {
       food_allergies: null,
       ...partial
     };
-    const updateResult = await apiUpdateAccount(payload);
-    if (updateResult.status !== 200) {
-      setStatusMessage({
-        message: "Update failed. Please try again.",
-        type: "error"
-      });
+    try {
+      const updateResult = await apiUpdateAccount(payload);
+      if (updateResult.status !== 200) {
+        toast.error("Update failed. Please try again.");
+        return false;
+      }
+      toast.success("Preferences updated successfully!");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update preferences. Please try again.");
       return false;
     }
-    setStatusMessage({
-      message: "Preferences updated successfully!",
-      type: "success"
-    });
-    return true;
   };
 
   return (
@@ -286,14 +279,6 @@ export default function Preferences() {
                     </div>
                   </div>
 
-                  {statusMessage && (
-                    <div
-                      className={`status-message status-message--${statusMessage.type}`}
-                    >
-                      {statusMessage.message}
-                    </div>
-                  )}
-
                   <div className="field-list">
                     {/* Budget */}
                     <div
@@ -313,11 +298,17 @@ export default function Preferences() {
                               }
                             }}
                           >
-                            {budgetOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
+                            {budgetOptions.map((option) => {
+                              const enumValue =
+                                BudgetBucket[
+                                  option as keyof typeof BudgetBucket
+                                ];
+                              return (
+                                <option key={option} value={enumValue}>
+                                  {option.replace(/([a-z])([A-Z])/g, "$1 $2")}
+                                </option>
+                              );
+                            })}
                           </select>
                         ) : (
                           <div className="field-row__value">
