@@ -306,14 +306,6 @@ export default function Account() {
                     </div>
                   </div>
 
-                  {statusMessage && (
-                    <div
-                      className={`status-message status-message--${statusMessage.type}`}
-                    >
-                      {statusMessage.message}
-                    </div>
-                  )}
-
                   <form onSubmit={handleUpdate}>
                     <div className="field-list">
                       <div className="field-row">
@@ -487,6 +479,7 @@ export default function Account() {
                       )}
                     </div>
                   </form>
+                </form>
                 </div>
               </div>
             </main>
