@@ -234,79 +234,6 @@ export default function Account() {
                 </div>
 
                 <form onSubmit={handleUpdate}>
-                  <div className="field-list">
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">First name</div>
-                        {isEditingFirst ? (
-                          <input
-                            type="text"
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {firstName || "—"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingFirst) {
-                              await submitUpdate();
-                            }
-                            setIsEditingFirst(!isEditingFirst);
-                          }}
-                        >
-                          {isEditingFirst ? "Done" : "Edit"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">Last name</div>
-                        {isEditingLast ? (
-                          <input
-                            type="text"
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {lastName || "—"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="profile-meta">
-                        <h1 className="profile-name">
-                          {(firstName || "Your") + " " + (lastName || "Name")}
-                        </h1>
-                        <p className="profile-email">Account &amp; Settings</p>
-                      </div>
-                    </div>
-                    <div className="hs-stats">
-                      <div className="hs-stat">
-                        <div className="hs-stat__value">
-                          {tripsPlanned ?? 5}
-                        </div>
-                        <div className="hs-stat__label">Trips planned</div>
-                      </div>
-                      <div className="hs-stat">
-                        <div className="hs-stat__value">
-                          {accountCreated ?? formatDate(new Date())}
-                        </div>
-                        <div className="hs-stat__label">Account created</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleUpdate}>
                     <div className="field-list">
                       <div className="field-row">
                         <div className="field-row__meta">
@@ -479,7 +406,6 @@ export default function Account() {
                       )}
                     </div>
                   </form>
-                </form>
                 </div>
               </div>
             </main>
