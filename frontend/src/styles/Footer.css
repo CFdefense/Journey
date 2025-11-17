@@ -54,14 +54,12 @@
   text-align: center;
 }
 
-.footer-logo-placeholder {
-  width: clamp(64px, 9vw, 96px);
-  height: clamp(40px, 6vw, 56px);
-  border-radius: 8px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 6px 16px var(--card-shadow);
-  margin-bottom: 12px;
+.footer-logo {
+  width: clamp(150px, 12vw, 300px);
+  height: clamp(150px, 12vw, 140px);
+  object-fit: contain;
+  margin-bottom: -12px;
+  margin-top: -30px;
 }
 
 .footer-company {

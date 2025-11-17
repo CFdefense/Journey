@@ -47,7 +47,6 @@
   animation: fadeUp 0.8s ease-out;
 }
 
-
 /* Message text */
 .not-found-message {
   font-size: 1.2rem;
@@ -100,7 +99,8 @@
   object-position: bottom left;
   max-width: 50vw;
   max-height: 60vh;
-  filter: brightness(0) saturate(100%) invert(55%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+  filter: brightness(0) saturate(100%) invert(55%) sepia(51%) saturate(2878%)
+    hue-rotate(346deg) brightness(104%) contrast(97%);
 }
 
 /* Responsive adjustments */

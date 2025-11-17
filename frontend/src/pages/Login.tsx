@@ -4,12 +4,12 @@ import "../styles/Login.css";
 import { apiLogin } from "../api/account";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
+import { toast } from "../components/Toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
@@ -17,16 +17,21 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { status } = await apiLogin({ email, password });
-    if (status !== 200) {
+    try {
+      const { status } = await apiLogin({ email, password });
+      if (status !== 200) {
+        setAuthorized(false);
+        toast.error("Invalid email or password.");
+        return;
+      }
+
+      setAuthorized(true);
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to log in. Please try again.");
       setAuthorized(false);
-      setError("Invalid email or password.");
-      return;
     }
-    setAuthorized(true);
-    console.log("Login successful");
-    setError("");
-    navigate("/home");
   };
 
   return (
@@ -147,7 +152,6 @@ export default function Login() {
               Log In
             </button>
           </form>
-          {error && <p>{error}</p>}
         </div>
       </div>
     </div>

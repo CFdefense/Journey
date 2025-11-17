@@ -52,10 +52,9 @@
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
-/* Default state - visible */
+/* Fade in header on initial load with messages */
 .chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-header {
-  opacity: 1;
-  animation: none;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
 @keyframes fadeIn {
@@ -106,7 +105,7 @@
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.2;
   text-align: left;
-  margin-left: .25rem;
+  margin-left: 0.25rem;
 }
 
 /* Scrollable message area */
@@ -115,12 +114,16 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1rem;
+  padding-bottom: calc(
+    1rem + 80px
+  ); /* Extra padding at bottom to prevent overlap with input */
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   background: transparent;
   opacity: 0;
   will-change: opacity;
+  position: relative;
 }
 
 /* Fade in messages when expanding (empty to messages) */
@@ -135,33 +138,30 @@
 }
 
 /* Default state - visible */
-.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-messages {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
+  .chat-messages {
   opacity: 1;
   animation: none;
 }
 
-/* Custom scrollbar for chat messages */
+/* Hide scrollbar for chat messages while keeping scroll functionality */
 .chat-messages::-webkit-scrollbar {
-  width: 8px;
+  width: 0;
+  display: none;
 }
 
 .chat-messages::-webkit-scrollbar-track {
-  background: transparent;
+  display: none;
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 4px;
+  display: none;
 }
 
-.chat-messages::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
-
-/* Firefox scrollbar */
+/* Firefox scrollbar - hide */
 .chat-messages {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Empty state styling*/
@@ -176,7 +176,9 @@
   opacity: 0;
   transform: translateY(30px);
   animation: fadeUpIn 0.6s ease forwards;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
   position: relative;
   min-height: 200px;
 }
@@ -185,14 +187,18 @@
   opacity: 0 !important;
   transform: translateY(-20px) scale(0.95) !important;
   pointer-events: none;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
 }
 
 .chat-container.expanding .chat-empty-state {
   opacity: 0 !important;
   transform: translateY(-20px) scale(0.9) !important;
   pointer-events: none;
-  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+  transition:
+    opacity 0.3s ease 0.1s,
+    transform 0.3s ease 0.1s;
 }
 
 /* When container is transitioning from empty to full */
@@ -250,10 +256,12 @@
 }
 
 @keyframes blink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }
@@ -283,7 +291,9 @@
   width: 100%;
   max-width: min(850px, 100%);
   align-self: center;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Animation when sending message from empty state - fade down */
@@ -311,7 +321,9 @@
   margin: 0;
   width: calc(100% - 2rem);
   max-width: min(850px, calc(100% - 2rem));
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Animation when sending message from open chat mode - fade up */
@@ -464,6 +476,7 @@
   flex-direction: column;
   gap: 0.25rem;
   max-width: 55%;
+  position: relative;
 }
 
 .chat-message-wrapper.user .chat-message-content {
@@ -494,6 +507,22 @@
   background: #006bbb;
   color: #ffffff;
   border-bottom-right-radius: 4px;
+  transition:
+    background 0.2s ease,
+    padding 0.2s ease;
+}
+
+.chat-message-content.editing .chat-message.user {
+  background: transparent !important;
+  padding: 0 !important;
+  transition: none;
+  width: 50%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.chat-message-content.editing .edit-message-container {
+  background: transparent;
 }
 
 /* Received messages (bot) */
@@ -508,6 +537,10 @@
 .message-text {
   margin: 0;
   text-align: left;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .message-text p {
@@ -597,7 +630,8 @@
 }
 
 /* Default state - visible */
-.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .message-input {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
+  .message-input {
   opacity: 1;
   transform: translateY(0);
   animation: none;

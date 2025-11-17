@@ -16,6 +16,15 @@
 /* Expand message content when editing */
 .chat-message-wrapper.user .chat-message-content.editing {
   max-width: 75%;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+}
+
+/* Ensure edit container doesn't extend beyond viewport */
+.chat-messages .edit-message-container {
+  max-height: min(400px, calc(100vh - 250px));
+  bottom: auto;
 }
 
 /* Edit message container */
@@ -24,7 +33,35 @@
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
-  min-width: 400px;
+  min-width: 0;
+  max-width: 100%;
+  background: transparent;
+  animation: fadeDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(-10px);
+  position: relative;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  max-height: 400px; /* Default, will be overridden by JS */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Edit message textarea */
@@ -33,16 +70,21 @@
   min-height: 80px;
   max-height: 400px;
   padding: 0.75rem;
-  border: 2px solid #006bbb;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   font-size: 0.95rem;
   font-family: inherit;
   line-height: 1.5;
   resize: vertical;
-  background: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #333;
   box-sizing: border-box;
   overflow-y: auto;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Custom scrollbar for edit textarea */
@@ -71,8 +113,12 @@
 
 .edit-message-input:focus {
   outline: none;
-  border-color: #005a9e;
-  box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 /* Edit message action buttons */
@@ -80,49 +126,102 @@
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+  animation: fadeDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .edit-cancel-btn,
 .edit-save-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .edit-cancel-btn {
-  background: linear-gradient(135deg, #fa8072 0%, #ff9b8a 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(250, 128, 114, 0.2);
+  background: #fa8072;
+  color: #ffffff;
+  border-color: #fa8072;
+  box-shadow:
+    0 4px 16px rgba(250, 128, 114, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.edit-cancel-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #ff6b5a 0%, #ff8a7a 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .edit-cancel-btn:hover {
-  background: linear-gradient(135deg, #e56b5d 0%, #fa8072 100%);
-  box-shadow: 0 4px 8px rgba(250, 128, 114, 0.3);
-  transform: translateY(-1px);
+  background: #ff6b5a;
+  border-color: #ff6b5a;
+  box-shadow:
+    0 6px 20px rgba(250, 128, 114, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.edit-cancel-btn:hover::before {
+  opacity: 1;
 }
 
 .edit-cancel-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(250, 128, 114, 0.2);
+  box-shadow:
+    0 2px 8px rgba(250, 128, 114, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .edit-save-btn {
-  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+  background: #006bbb;
+  color: #ffffff;
+  border-color: #006bbb;
+  box-shadow:
+    0 4px 16px rgba(0, 107, 187, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.edit-save-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0080d4 0%, #30a0e0 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .edit-save-btn:hover {
-  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
-  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
-  transform: translateY(-1px);
+  background: #0080d4;
+  border-color: #0080d4;
+  box-shadow:
+    0 6px 20px rgba(0, 107, 187, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.edit-save-btn:hover::before {
+  opacity: 1;
 }
 
 .edit-save-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
+  box-shadow:
+    0 2px 8px rgba(0, 107, 187, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }

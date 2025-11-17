@@ -13,7 +13,10 @@
   color: #666; /* icon near timestamp */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
 }
 
 /* Reveal alongside timestamp on hover */

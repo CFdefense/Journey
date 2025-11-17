@@ -17,21 +17,21 @@ env:
   BIND_ADDRESS: 0.0.0.0:3001
 
 jobs:
-  # format:
-  #   name: Format
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: rustfmt
-  #     - uses: Swatinem/rust-cache@v2
-  #       with:
-  #         cache-on-failure: "true"
-  #         cache-all-crates: "true"
-  #         cache-workspace-crates: "true"
-  #     - name: Check all workspaces
-  #       run: cargo fmt --check
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+      - name: Check all workspaces
+        run: cargo fmt --check
 
   # security_audit:
   #   name: Security Audit
@@ -402,3 +402,20 @@ jobs:
         npm run codecov
 
         kill $BACKEND_PID
+
+  front_end_format:
+    name: Front-End Format
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-node@v6
+      with:
+        node-version: 'latest'
+        node-version-file: './frontend/package.json'
+        cache: 'npm'
+        cache-dependency-path: './frontend/package-lock.json'
+    - name: Check formatting
+      run: |
+        cd ./frontend
+        npm i
+        npm run format -- -c

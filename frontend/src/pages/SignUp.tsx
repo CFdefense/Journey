@@ -5,6 +5,7 @@ import { apiSignUp } from "../api/account";
 import * as logic from "../helpers/account";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "../components/GlobalProvider";
+import { toast } from "../components/Toast";
 
 export default function Signup() {
   const [firstName, setFirstName] = useState("");
@@ -14,7 +15,6 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
@@ -26,43 +26,48 @@ export default function Signup() {
     // sanitize user input
     const nameError = logic.checkIfValidName(firstName, lastName);
     if (nameError) {
-      setError(nameError);
+      toast.error(nameError);
       return;
     }
 
     const passwordError = logic.checkIfValidPassword(password);
     if (passwordError) {
-      setError(passwordError);
+      toast.error(passwordError);
       return;
     }
 
     const matchError = logic.checkIfPasswordsMatch(password, confirmPassword);
     if (matchError) {
-      setError(matchError);
+      toast.error(matchError);
       return;
     }
 
-    const { status } = await apiSignUp({
-      email,
-      first_name: firstName, // rust backend expects snake case as json variable
-      last_name: lastName,
-      password
-    });
-    if (status === 409) {
-      setError(
-        "An account with this email already exists. Please log in instead."
-      );
-      return;
-    }
-    if (status !== 200) {
+    try {
+      const { status } = await apiSignUp({
+        email,
+        first_name: firstName, // rust backend expects snake case as json variable
+        last_name: lastName,
+        password
+      });
+      if (status === 409) {
+        toast.error(
+          "An account with this email already exists. Please log in instead."
+        );
+        return;
+      }
+      if (status !== 200) {
+        setAuthorized(false);
+        toast.error("Sign up failed. Please try again.");
+        return;
+      }
+      setAuthorized(true);
+      toast.success("Account created successfully!");
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to create account. Please try again.");
       setAuthorized(false);
-      setError("Sign up failed.");
-      return;
     }
-    setAuthorized(true);
-    console.log("Account creation successful");
-    setError("");
-    navigate("/home");
   };
 
   return (
@@ -141,7 +146,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="firstName">
                 First Name
               </label>
-              <div className="field fade-in" style={{ animationDelay: "300ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "300ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -169,7 +177,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="lastName">
                 Last Name
               </label>
-              <div className="field fade-in" style={{ animationDelay: "350ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "350ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -197,7 +208,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="email">
                 Email
               </label>
-              <div className="field fade-in" style={{ animationDelay: "400ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "400ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -323,9 +337,7 @@ export default function Signup() {
                   aria-label={
                     showConfirmPassword ? "Hide password" : "Show password"
                   }
-                  onClick={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
                     <svg
@@ -369,7 +381,6 @@ export default function Signup() {
                 Get Started
               </button>
             </form>
-            {error && <p>{error}</p>}
           </div>
         </div>
       </div>
