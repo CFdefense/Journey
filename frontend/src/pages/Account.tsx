@@ -10,14 +10,11 @@ import {
   checkIfPasswordsMatch,
   checkIfValidName
 } from "../helpers/account";
+import { toast } from "../components/Toast";
 
 export default function Account() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
@@ -63,10 +60,7 @@ export default function Account() {
           "API call to /api/account/current failed with status: ",
           currentResult.status
         );
-        setStatusMessage({
-          message: "Failed to load account details. Please log in again.",
-          type: "error"
-        });
+        toast.error("Failed to load account details. Please log in again.");
         return;
       }
 
@@ -87,7 +81,6 @@ export default function Account() {
   }, []);
   // Core submit/update logic used by form submit and inline "Done" buttons
   const submitUpdate = async () => {
-    setStatusMessage(null);
     setPasswordErrors({});
 
     // Validate name fields
@@ -95,10 +88,7 @@ export default function Account() {
     const trimmedLast = lastName.trim();
     const nameError = checkIfValidName(trimmedFirst, trimmedLast);
     if (nameError) {
-      setStatusMessage({
-        message: nameError,
-        type: "error"
-      });
+      toast.error(nameError);
       return;
     }
 
@@ -112,20 +102,14 @@ export default function Account() {
         setPasswordErrors({
           current: "Current password is required to change your password."
         });
-        setStatusMessage({
-          message: "Please provide your current password to change it.",
-          type: "error"
-        });
+        toast.error("Please provide your current password to change it.");
         return;
       }
 
       // Validate new password is provided
       if (!newPassword) {
         setPasswordErrors({ new: "New password is required." });
-        setStatusMessage({
-          message: "Please enter a new password.",
-          type: "error"
-        });
+        toast.error("Please enter a new password.");
         return;
       }
 
@@ -133,10 +117,7 @@ export default function Account() {
       const passwordValidationError = checkIfValidPassword(newPassword);
       if (passwordValidationError) {
         setPasswordErrors({ new: passwordValidationError });
-        setStatusMessage({
-          message: passwordValidationError,
-          type: "error"
-        });
+        toast.error(passwordValidationError);
         return;
       }
 
@@ -144,10 +125,7 @@ export default function Account() {
       const matchError = checkIfPasswordsMatch(newPassword, confirmPassword);
       if (matchError) {
         setPasswordErrors({ confirm: matchError });
-        setStatusMessage({
-          message: matchError,
-          type: "error"
-        });
+        toast.error(matchError);
         return;
       }
     }
@@ -164,48 +142,46 @@ export default function Account() {
       disabilities: null
     };
 
-    const updateResult = await apiUpdateAccount(payload);
+    try {
+      const updateResult = await apiUpdateAccount(payload);
 
-    if (updateResult.status !== 200) {
-      console.error(
-        "API call to /api/account/update failed with status: ",
-        updateResult.status
+      if (updateResult.status !== 200) {
+        console.error(
+          "API call to /api/account/update failed with status: ",
+          updateResult.status
+        );
+
+        // Handle password-related errors (400 Bad Request)
+        if (updateResult.status === 400 && isChangingPassword) {
+          toast.error("Current password is incorrect. Please try again.");
+          setPasswordErrors({ current: "Current password is incorrect." });
+        } else {
+          toast.error("Update failed. Please try again.");
+        }
+        return;
+      }
+
+      toast.success(
+        isChangingPassword
+          ? "Password updated successfully!"
+          : "Account updated successfully!"
       );
 
-      // Handle password-related errors (400 Bad Request)
-      if (updateResult.status === 400 && isChangingPassword) {
-        setStatusMessage({
-          message: "Current password is incorrect. Please try again.",
-          type: "error"
-        });
-        setPasswordErrors({ current: "Current password is incorrect." });
-      } else {
-        setStatusMessage({
-          message: "Update failed. Please try again.",
-          type: "error"
-        });
+      // Update UI with any returned account info
+      if (updateResult.result) {
+        setFirstName(updateResult.result.first_name || trimmedFirst);
+        setLastName(updateResult.result.last_name || trimmedLast);
       }
-      return;
+
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors({});
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update account. Please try again.");
     }
-
-    setStatusMessage({
-      message: isChangingPassword
-        ? "Password updated successfully!"
-        : "Account settings updated successfully!",
-      type: "success"
-    });
-
-    // Update UI with any returned account info
-    if (updateResult.result) {
-      setFirstName(updateResult.result.first_name || trimmedFirst);
-      setLastName(updateResult.result.last_name || trimmedLast);
-    }
-
-    // Clear password fields
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordErrors({});
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -219,53 +195,45 @@ export default function Account() {
 
       <div className="auth-content">
         {loaded && (
-          <div className="account-wrapper fade-in">
-            {/* Main Content */}
-            <main className="main-content">
-              <div className="account-container">
-                <div className="account-box">
-                  <div className="hs-hero-card">
-                    <div className="profile-header">
-                      <div className="avatar-wrapper">
-                        <img
-                          src={profileImageUrl}
-                          alt={`${firstName || "User"} ${lastName || ""}`.trim()}
-                          className="avatar"
-                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                        />
-                      </div>
-                      <div className="profile-meta">
-                        <h1 className="profile-name">
-                          {(firstName || "Your") + " " + (lastName || "Name")}
-                        </h1>
-                        <p className="profile-email">Account &amp; Settings</p>
-                      </div>
+        <div className="account-wrapper fade-in">
+          {/* Main Content */}
+          <main className="main-content">
+            <div className="account-container">
+              <div className="account-box">
+                <div className="hs-hero-card">
+                  <div className="profile-header">
+                    <div className="avatar-wrapper">
+                      <img
+                        src={profileImageUrl}
+                        alt={`${firstName || "User"} ${lastName || ""}`.trim()}
+                        className="avatar"
+                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                      />
                     </div>
-                    <div className="hs-stats">
-                      <div className="hs-stat">
-                        <div className="hs-stat__value">
-                          {tripsPlanned ?? 5}
-                        </div>
-                        <div className="hs-stat__label">Trips planned</div>
-                      </div>
-                      <div className="hs-stat">
-                        <div className="hs-stat__value">
-                          {accountCreated ?? formatDate(new Date())}
-                        </div>
-                        <div className="hs-stat__label">Account created</div>
-                      </div>
+                    <div className="profile-meta">
+                      <h1 className="profile-name">
+                        {(firstName || "Your") + " " + (lastName || "Name")}
+                      </h1>
+                      <p className="profile-email">Account &amp; Settings</p>
                     </div>
                   </div>
-
-                  {statusMessage && (
-                    <div
-                      className={`status-message status-message--${statusMessage.type}`}
-                    >
-                      {statusMessage.message}
+                  <div className="hs-stats">
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {tripsPlanned ?? 5}
+                      </div>
+                      <div className="hs-stat__label">Trips planned</div>
                     </div>
-                  )}
+                    <div className="hs-stat">
+                      <div className="hs-stat__value">
+                        {accountCreated ?? formatDate(new Date())}
+                      </div>
+                      <div className="hs-stat__label">Account created</div>
+                    </div>
+                  </div>
+                </div>
 
-                  <form onSubmit={handleUpdate}>
+                <form onSubmit={handleUpdate}>
                     <div className="field-list">
                       <div className="field-row">
                         <div className="field-row__meta">
