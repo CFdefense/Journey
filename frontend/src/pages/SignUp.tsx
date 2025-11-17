@@ -146,7 +146,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="firstName">
                 First Name
               </label>
-              <div className="field fade-in" style={{ animationDelay: "300ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "300ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -174,7 +177,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="lastName">
                 Last Name
               </label>
-              <div className="field fade-in" style={{ animationDelay: "350ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "350ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -202,7 +208,10 @@ export default function Signup() {
               <label className="sr-only" htmlFor="email">
                 Email
               </label>
-              <div className="field fade-in" style={{ animationDelay: "400ms" }}>
+              <div
+                className="field fade-in"
+                style={{ animationDelay: "400ms" }}
+              >
                 <span className="field__icon" aria-hidden>
                   <svg
                     width="20"
@@ -328,9 +337,7 @@ export default function Signup() {
                   aria-label={
                     showConfirmPassword ? "Hide password" : "Show password"
                   }
-                  onClick={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
                     <svg

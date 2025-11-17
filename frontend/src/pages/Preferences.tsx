@@ -68,7 +68,8 @@ export default function Preferences() {
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const navbarAvatarUrl = userPfp;
-  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const budgetOptions: BudgetOption[] = [
@@ -242,40 +243,41 @@ export default function Preferences() {
           {/* Main Content */}
           <main className="main-content">
             {loaded && (
-            <div className="account-container fade-in">
-              <div className="account-box">
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"}`}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
+              <div className="account-container fade-in">
+                <div className="account-box">
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"}`}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
+                      </div>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {`${firstName || ""} ${lastName || ""}`.trim() ||
+                            "Your Name"}
+                        </h1>
+                        <p className="profile-email">Account Preferences</p>
+                      </div>
                     </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {`${firstName || ""} ${lastName || ""}`.trim() || "Your Name"}
-                      </h1>
-                      <p className="profile-email">Account Preferences</p>
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
+                        </div>
+                        <div className="hs-stat__label">Trips planned</div>
+                      </div>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {accountCreated ?? formatDate(new Date())}
+                        </div>
+                        <div className="hs-stat__label">Account created</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
-                      </div>
-                      <div className="hs-stat__label">Trips planned</div>
-                    </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {accountCreated ?? formatDate(new Date())}
-                      </div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="field-list">
                   {/* Budget */}
@@ -292,163 +294,142 @@ export default function Preferences() {
                             if (newVal !== undefined) {
                               setBudget(newVal as BudgetBucket);
                             }
+                            setIsEditingBudget(!isEditingBudget);
                           }}
                         >
-                          {budgetOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="field-row__value">
-                          {enumToString(BudgetBucket, budget)}
-                        </div>
-                      )}
+                          {isEditingBudget ? "Done" : "Edit"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="field-row__action">
-                      <button
-                        type="button"
-                        className="pill-button"
-                        onClick={async () => {
-                          if (isEditingBudget) {
-                            await submitPartialUpdate({
-                              budget_preference: budget
-                            });
-                          }
-                          setIsEditingBudget(!isEditingBudget);
-                        }}
-                      >
-                        {isEditingBudget ? "Done" : "Edit"}
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Risk Tolerance */}
-                  <div className={`field-row ${isEditingRisk ? "field-row--editing" : ""}`}>
-                    <div className="field-row__meta">
-                      <div className="field-row__label">Risk tolerance</div>
-                      {isEditingRisk ? (
-                        <select
-                          id="riskTolerance"
-                          value={enumToString(RiskTolerence, riskTolerance)}
-                          onChange={(e) => {
-                            const key = e.target.value;
-                            const newVal = stringToEnum(
-                              RiskTolerence,
-                              key
-                            );
-                            if (newVal !== undefined) {
-                              setRiskTolerance(newVal as RiskTolerence);
+                    {/* Risk Tolerance */}
+                    <div
+                      className={`field-row ${isEditingRisk ? "field-row--editing" : ""}`}
+                    >
+                      <div className="field-row__meta">
+                        <div className="field-row__label">Risk tolerance</div>
+                        {isEditingRisk ? (
+                          <select
+                            id="riskTolerance"
+                            value={enumToString(RiskTolerence, riskTolerance)}
+                            onChange={(e) => {
+                              const key = e.target.value;
+                              const newVal = stringToEnum(RiskTolerence, key);
+                              if (newVal !== undefined) {
+                                setRiskTolerance(newVal as RiskTolerence);
+                              }
+                            }}
+                          >
+                            {riskOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="field-row__value">
+                            {enumToString(RiskTolerence, riskTolerance)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="field-row__action">
+                        <button
+                          type="button"
+                          className="pill-button"
+                          onClick={async () => {
+                            if (isEditingRisk) {
+                              await submitPartialUpdate({
+                                risk_preference: riskTolerance
+                              });
                             }
+                            setIsEditingRisk(!isEditingRisk);
                           }}
                         >
-                          {riskOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="field-row__value">
-                          {enumToString(RiskTolerence, riskTolerance)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="field-row__action">
-                      <button
-                        type="button"
-                        className="pill-button"
-                        onClick={async () => {
-                          if (isEditingRisk) {
-                            await submitPartialUpdate({
-                              risk_preference: riskTolerance
-                            });
-                          }
-                          setIsEditingRisk(!isEditingRisk);
-                        }}
-                      >
-                        {isEditingRisk ? "Done" : "Edit"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Disabilities */}
-                  <div className={`field-row ${isEditingDisabilities ? "field-row--editing" : ""}`}>
-                    <div className="field-row__meta">
-                      <div className="field-row__label">
-                        Disabilities/Accessibility Needs
+                          {isEditingRisk ? "Done" : "Edit"}
+                        </button>
                       </div>
-                      {isEditingDisabilities ? (
-                        <textarea
-                          id="disabilities"
-                          value={disabilities}
-                          onChange={(e) => setDisabilities(e.target.value)}
-                          placeholder="e.g., Wheelchair user, visual impairment."
-                        />
-                      ) : (
-                        <div className="field-row__value">
-                          {disabilities || "—"}
-                        </div>
-                      )}
                     </div>
-                    <div className="field-row__action">
-                      <button
-                        type="button"
-                        className="pill-button"
-                        onClick={async () => {
-                          if (isEditingDisabilities) {
-                            await submitPartialUpdate({
-                              disabilities: disabilities || null
-                            });
-                          }
-                          setIsEditingDisabilities(!isEditingDisabilities);
-                        }}
-                      >
-                        {isEditingDisabilities ? "Done" : "Edit"}
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Food preferences */}
-                  <div className={`field-row ${isEditingFood ? "field-row--editing" : ""}`}>
-                    <div className="field-row__meta">
-                      <div className="field-row__label">
-                        Food Preferences/Allergies
-                      </div>
-                      {isEditingFood ? (
-                        <textarea
-                          id="foodPreferences"
-                          value={foodPreferences}
-                          onChange={(e) => setFoodPreferences(e.target.value)}
-                          placeholder="e.g., Gluten-free, no shellfish, vegan."
-                        />
-                      ) : (
-                        <div className="field-row__value">
-                          {foodPreferences || "—"}
+                    {/* Disabilities */}
+                    <div
+                      className={`field-row ${isEditingDisabilities ? "field-row--editing" : ""}`}
+                    >
+                      <div className="field-row__meta">
+                        <div className="field-row__label">
+                          Disabilities/Accessibility Needs
                         </div>
-                      )}
+                        {isEditingDisabilities ? (
+                          <textarea
+                            id="disabilities"
+                            value={disabilities}
+                            onChange={(e) => setDisabilities(e.target.value)}
+                            placeholder="e.g., Wheelchair user, visual impairment."
+                          />
+                        ) : (
+                          <div className="field-row__value">
+                            {disabilities || "—"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="field-row__action">
+                        <button
+                          type="button"
+                          className="pill-button"
+                          onClick={async () => {
+                            if (isEditingDisabilities) {
+                              await submitPartialUpdate({
+                                disabilities: disabilities || null
+                              });
+                            }
+                            setIsEditingDisabilities(!isEditingDisabilities);
+                          }}
+                        >
+                          {isEditingDisabilities ? "Done" : "Edit"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="field-row__action">
-                      <button
-                        type="button"
-                        className="pill-button"
-                        onClick={async () => {
-                          if (isEditingFood) {
-                            await submitPartialUpdate({
-                              food_allergies: foodPreferences || null
-                            });
-                          }
-                          setIsEditingFood(!isEditingFood);
-                        }}
-                      >
-                        {isEditingFood ? "Done" : "Edit"}
-                      </button>
+
+                    {/* Food preferences */}
+                    <div
+                      className={`field-row ${isEditingFood ? "field-row--editing" : ""}`}
+                    >
+                      <div className="field-row__meta">
+                        <div className="field-row__label">
+                          Food Preferences/Allergies
+                        </div>
+                        {isEditingFood ? (
+                          <textarea
+                            id="foodPreferences"
+                            value={foodPreferences}
+                            onChange={(e) => setFoodPreferences(e.target.value)}
+                            placeholder="e.g., Gluten-free, no shellfish, vegan."
+                          />
+                        ) : (
+                          <div className="field-row__value">
+                            {foodPreferences || "—"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="field-row__action">
+                        <button
+                          type="button"
+                          className="pill-button"
+                          onClick={async () => {
+                            if (isEditingFood) {
+                              await submitPartialUpdate({
+                                food_allergies: foodPreferences || null
+                              });
+                            }
+                            setIsEditingFood(!isEditingFood);
+                          }}
+                        >
+                          {isEditingFood ? "Done" : "Edit"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
             )}
           </main>
         </div>
