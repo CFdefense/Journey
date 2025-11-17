@@ -31,6 +31,7 @@ export default function Itineraries() {
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
         setLastName(account.last_name || "");
+        setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
         const maybeTrips = (account as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (account as any).created_at;
@@ -125,7 +126,7 @@ export default function Itineraries() {
   };
   return (
     <div className="auth-page auth-page--account">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
       <div className="auth-content">
         <div className="account-wrapper">
           {/* Collapsible Sidebar ... (all your sidebar code is fine) ... */}

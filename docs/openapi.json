@@ -38,6 +38,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "Last",
+                  "profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images",
                   "risk_preference": "Adventurer"
                 }
               }
@@ -238,6 +239,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "last",
+                  "profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images",
                   "risk_preference": "Adventurer"
                 }
               }
@@ -1046,7 +1048,7 @@
           },
           "disabilities": {
             "type": "string",
-            "description": "Optional food and allergies preferences"
+            "description": "Optional food and allergies preferences\nshould this have option encoded..."
           },
           "email": {
             "type": "string",
@@ -1058,11 +1060,18 @@
           },
           "food_allergies": {
             "type": "string",
-            "description": "Optional food and allergies preferences"
+            "description": "Optional food and allergies preferences\nshould this have option encoded..."
           },
           "last_name": {
             "type": "string",
             "description": "Last name"
+          },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
           },
           "risk_preference": {
             "oneOf": [
@@ -1570,6 +1579,13 @@
             ],
             "description": "Optional new plaintext password"
           },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
+          },
           "risk_preference": {
             "oneOf": [
               {
@@ -1624,6 +1640,13 @@
           "last_name": {
             "type": "string",
             "description": "Current last name"
+          },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
           },
           "risk_preference": {
             "oneOf": [

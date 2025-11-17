@@ -22,6 +22,7 @@ export default function Account() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  //const [profile_picture, setProfilePicture] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,12 +35,14 @@ export default function Account() {
   // Use same profile picture asset as Navbar for consistency
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [newProfilePicture, setNewProfilePicture] = useState<string>("")
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
+  const [showProfilePicModal, setShowProfilePicModal] = useState<boolean>(false);
 
   const formatDate = (dateInput: string | number | Date): string => {
     const date = new Date(dateInput);
@@ -73,6 +76,7 @@ export default function Account() {
       setEmail(account.email || "");
       setFirstName(account.first_name || "");
       setLastName(account.last_name || "");
+      setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
       // Optional stats from backend; otherwise, provide demo values
       const maybeTrips = (account as any).trips_planned;
       setTripsPlanned(
@@ -163,7 +167,8 @@ export default function Account() {
       budget_preference: null,
       risk_preference: null,
       food_allergies: null,
-      disabilities: null
+      disabilities: null,
+      profile_picture: newProfilePicture.trim().length > 0 ? newProfilePicture.trim() : null
     };
 
     const updateResult = await apiUpdateAccount(payload);
@@ -201,6 +206,10 @@ export default function Account() {
     if (updateResult.result) {
       setFirstName(updateResult.result.first_name || trimmedFirst);
       setLastName(updateResult.result.last_name || trimmedLast);
+      if (updateResult.result.profile_picture) {
+        setProfileImageUrl(updateResult.result.profile_picture);
+      }
+      setNewProfilePicture("");
     }
 
     // Clear password fields
@@ -217,8 +226,7 @@ export default function Account() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" firstName={firstName} />
-
+      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
       <div className="auth-content">
         {loaded && (
         <div className="account-wrapper fade-in">
@@ -235,6 +243,17 @@ export default function Account() {
                         className="avatar"
                         onError={() => setProfileImageUrl(navbarAvatarUrl)}
                       />
+                      <button
+                        type="button"
+                        className="avatar-edit-button"
+                        onClick={() => {
+                          setNewProfilePicture(profileImageUrl === navbarAvatarUrl ? "" : profileImageUrl);
+                          setShowProfilePicModal(true);
+                        }}
+                        aria-label="Edit profile picture"
+                      >
+                        ✒️
+                      </button>
                     </div>
                     <div className="profile-meta">
                       <h1 className="profile-name">
@@ -349,7 +368,6 @@ export default function Account() {
                       </div>
                     </div>
                   </div>
-
                   <div className="field-section">
                     <button
                       type="button"
@@ -431,7 +449,75 @@ export default function Account() {
                     )}
                   </div>
                 </form>
-
+                {showProfilePicModal && (
+                  <div className="modal-overlay" onClick={() => {
+                    setShowProfilePicModal(false);
+                    setNewProfilePicture("");
+                  }}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                      <h2>Change Profile Picture</h2>
+                      
+                      {/* File input */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Check file size (limit to 5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              setStatusMessage({
+                                type: "error",
+                                message: "Image must be smaller than 5MB"
+                              });
+                              return;
+                            }
+                            
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setNewProfilePicture(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="modal-file-input"
+                      />
+                      
+                      {/* Preview */}
+                      {newProfilePicture && (
+                        <div className="preview-container">
+                          <img 
+                            src={newProfilePicture} 
+                            alt="Preview" 
+                            className="preview-image"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="modal-actions">
+                        <button 
+                          className="modal-btn modal-btn--secondary"
+                          onClick={() => {
+                            setShowProfilePicModal(false);
+                            setNewProfilePicture("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          className="modal-btn modal-btn--primary"
+                          onClick={async () => {
+                            await submitUpdate();
+                            setShowProfilePicModal(false);
+                          }}
+                          disabled={!newProfilePicture}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </main>

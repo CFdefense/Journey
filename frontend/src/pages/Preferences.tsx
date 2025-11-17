@@ -133,6 +133,7 @@ export default function Preferences() {
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
         setLastName(account.last_name || "");
+        setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
         const maybeTrips = (account as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (account as any).created_at;
@@ -161,6 +162,7 @@ export default function Preferences() {
       risk_preference: null,
       disabilities: null,
       food_allergies: null,
+      profile_picture: null,
       ...partial
     };
     const updateResult = await apiUpdateAccount(payload);
@@ -180,7 +182,7 @@ export default function Preferences() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
 
       <div className="auth-content">
         <div className="account-wrapper">

@@ -433,7 +433,8 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 				"budget_preference": "MediumBudget",
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
-				"disabilities": "knee replacement"
+				"disabilities": "knee replacement",
+				"profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images"
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -464,7 +465,8 @@ pub async fn api_current(
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             COALESCE(food_allergies, '') as "food_allergies!: String",
-            COALESCE(disabilities, '') as "disabilities!: String"
+            COALESCE(disabilities, '') as "disabilities!: String",
+			COALESCE(profile_picture, '') as "profile_picture!: String"
         FROM accounts
         WHERE id = $1
         "#,
@@ -491,6 +493,7 @@ pub async fn api_current(
 /// - 'risk_preference': The user's risk preference (string).
 /// - 'food_allergies': The user's allergies (string).
 /// - 'disabilities': The user's disabilities (string).
+/// - 'profile_picture': The user's profile pic (string)
 ///
 /// # Responses
 /// - `200 OK` - with body: [UpdateResponse]
@@ -509,7 +512,8 @@ pub async fn api_current(
 ///         "budget_preference": "",
 ///         "risk_preference": "",
 ///         "food_allergies": "",
-///         "disabilities": ""
+///         "disabilities": "",
+/// 		"profile_picture": ""
 ///       }'
 /// ```
 #[utoipa::path(
@@ -538,7 +542,8 @@ pub async fn api_current(
 				"budget_preference": "LowBudget",
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
-				"disabilities": "knee replacement"
+				"disabilities": "knee replacement",
+				"profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images"
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -609,8 +614,10 @@ pub async fn api_update(
             budget_preference = COALESCE($5, budget_preference),
             risk_preference = COALESCE($6, risk_preference),
             food_allergies = COALESCE($7, food_allergies),
-            disabilities = COALESCE($8, disabilities)
-        WHERE id = $9
+            disabilities = COALESCE($8, disabilities),
+			profile_picture = COALESCE($9, profile_picture)
+			
+        WHERE id = $10
         RETURNING
             email,
             first_name,
@@ -618,7 +625,8 @@ pub async fn api_update(
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             food_allergies,
-            disabilities
+            disabilities,
+			profile_picture
         "#,
 		payload.email,
 		payload.first_name,
@@ -628,6 +636,7 @@ pub async fn api_update(
 		payload.risk_preference as Option<RiskTolerence>,
 		payload.food_allergies,
 		payload.disabilities,
+		payload.profile_picture,
 		user.id
 	)
 	.fetch_one(&pool)
