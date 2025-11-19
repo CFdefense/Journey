@@ -183,6 +183,22 @@
   background: #005a9e;
 }
 
+.day-delete {
+  background: var(--salmon);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.day-delete:hover {
+  filter: brightness(85%);
+  color: #333;
+}
+
 /* Itinerary list - HORIZONTAL layout */
 .itinerary-list {
   display: grid;
