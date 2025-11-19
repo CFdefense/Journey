@@ -141,6 +141,7 @@
 }
 
 .event-modal input,
+.event-modal select,
 .event-modal textarea {
   color: #222;
   background-color: var(--pale-yellow);
@@ -194,6 +195,7 @@
 
 .editable-card-contents input[type="text"],
 .editable-card-contents input[type="datetime-local"],
+.editable-card-contents select,
 .editable-card-contents textarea {
   background: #fffbe8;
   color: #333;
@@ -207,6 +209,7 @@
 }
 
 .editable-card-contents input:focus,
+.editable-card-contents select:focus,
 .editable-card-contents textarea:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 2px rgba(0, 107, 187, 0.2);

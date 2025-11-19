@@ -18,10 +18,10 @@ pub struct Event {
 	pub event_description: Option<String>,
 	pub event_name: String,
 	pub user_created: bool,
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_start: Option<NaiveDateTime>,
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_end: Option<NaiveDateTime>,
+	/// Timezone of hard start and hard end
+	pub timezone: Option<String>,
 }
 
 impl From<&EventListJoinRow> for Event {
@@ -39,6 +39,7 @@ impl From<&EventListJoinRow> for Event {
 			user_created: value.user_created.clone(),
 			hard_start: value.hard_start.clone(),
 			hard_end: value.hard_end.clone(),
+			timezone: value.timezone.clone(),
 		}
 	}
 }
@@ -55,10 +56,10 @@ pub struct UserEventRequest {
 	pub event_type: Option<String>,
 	pub event_description: Option<String>,
 	pub event_name: String,
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_start: Option<NaiveDateTime>,
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
 	pub hard_end: Option<NaiveDateTime>,
+	/// Timezone of hard start and hard end
+	pub timezone: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]
@@ -101,6 +102,8 @@ pub struct SearchEventRequest {
 	pub hard_end_before: Option<NaiveDateTime>,
 	/// Search where hard_end > ...
 	pub hard_end_after: Option<NaiveDateTime>,
+	/// Search where timezone like ...
+	pub timezone: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]

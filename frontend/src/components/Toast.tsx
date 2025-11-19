@@ -20,7 +20,7 @@ function ToastItem({ toast, onClose, isExiting }: ToastProps) {
   const duration = toast.duration ?? 2000;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const onCloseRef = useRef(onClose);
-  
+
   // Keep the onClose ref updated
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -115,7 +115,9 @@ function ToastItem({ toast, onClose, isExiting }: ToastProps) {
   };
 
   return (
-    <div className={`toast toast--${toast.type} ${isExiting ? "toast-exiting" : ""}`}>
+    <div
+      className={`toast toast--${toast.type} ${isExiting ? "toast-exiting" : ""}`}
+    >
       <div className="toast-content">
         <div className="toast-icon">{getIcon()}</div>
         <p className="toast-message">{toast.message}</p>
@@ -149,7 +151,11 @@ function notifyListeners() {
   listeners.forEach((listener) => listener([...toastState]));
 }
 
-function addToast(message: string, type: ToastType = "info", duration?: number) {
+function addToast(
+  message: string,
+  type: ToastType = "info",
+  duration?: number
+) {
   const id = Math.random().toString(36).substring(2, 9) + Date.now().toString();
   const newToast: Toast = {
     id,
@@ -169,10 +175,14 @@ function removeToast(id: string) {
 
 // Toast API
 export const toast = {
-  success: (message: string, duration?: number) => addToast(message, "success", duration),
-  error: (message: string, duration?: number) => addToast(message, "error", duration),
-  info: (message: string, duration?: number) => addToast(message, "info", duration),
-  warning: (message: string, duration?: number) => addToast(message, "warning", duration),
+  success: (message: string, duration?: number) =>
+    addToast(message, "success", duration),
+  error: (message: string, duration?: number) =>
+    addToast(message, "error", duration),
+  info: (message: string, duration?: number) =>
+    addToast(message, "info", duration),
+  warning: (message: string, duration?: number) =>
+    addToast(message, "warning", duration),
   show: (message: string, type: ToastType = "info", duration?: number) =>
     addToast(message, type, duration)
 };

@@ -144,6 +144,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -159,6 +160,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -174,6 +176,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -192,6 +195,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -207,6 +211,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -222,6 +227,7 @@ async fn send_message_to_llm(
 					user_created: false,
 					hard_start: None,
 					hard_end: None,
+					timezone: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},

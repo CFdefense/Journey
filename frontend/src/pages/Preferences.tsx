@@ -279,56 +279,60 @@ export default function Preferences() {
                     </div>
                   </div>
 
-                <div className="field-list">
-                  {/* Budget */}
-                  <div className={`field-row ${isEditingBudget ? "field-row--editing" : ""}`}>
-                    <div className="field-row__meta">
-                      <div className="field-row__label">Budget</div>
-                      {isEditingBudget ? (
-                        <select
-                          id="budget"
-                          value={enumToString(BudgetBucket, budget)}
-                          onChange={(e) => {
-                            const key = e.target.value;
-                            const newVal = stringToEnum(BudgetBucket, key);
-                            if (newVal !== undefined) {
-                              setBudget(newVal as BudgetBucket);
+                  <div className="field-list">
+                    {/* Budget */}
+                    <div
+                      className={`field-row ${isEditingBudget ? "field-row--editing" : ""}`}
+                    >
+                      <div className="field-row__meta">
+                        <div className="field-row__label">Budget</div>
+                        {isEditingBudget ? (
+                          <select
+                            id="budget"
+                            value={enumToString(BudgetBucket, budget)}
+                            onChange={(e) => {
+                              const key = e.target.value;
+                              const newVal = stringToEnum(BudgetBucket, key);
+                              if (newVal !== undefined) {
+                                setBudget(newVal as BudgetBucket);
+                              }
+                            }}
+                          >
+                            {budgetOptions.map((option) => {
+                              const enumValue =
+                                BudgetBucket[
+                                  option as keyof typeof BudgetBucket
+                                ];
+                              return (
+                                <option key={option} value={enumValue}>
+                                  {option.replace(/([a-z])([A-Z])/g, "$1 $2")}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        ) : (
+                          <div className="field-row__value">
+                            {enumToString(BudgetBucket, budget)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="field-row__action">
+                        <button
+                          type="button"
+                          className="pill-button"
+                          onClick={async () => {
+                            if (isEditingBudget) {
+                              await submitPartialUpdate({
+                                budget_preference: budget
+                              });
                             }
+                            setIsEditingBudget(!isEditingBudget);
                           }}
                         >
-                          {budgetOptions.map((option) => {
-                            const enumValue =
-                              BudgetBucket[option as keyof typeof BudgetBucket];
-                            return (
-                              <option key={option} value={enumValue}>
-                                {option.replace(/([a-z])([A-Z])/g, "$1 $2")}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      ) : (
-                        <div className="field-row__value">
-                          {enumToString(BudgetBucket, budget)}
-                        </div>
-                      )}
+                          {isEditingBudget ? "Done" : "Edit"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="field-row__action">
-                      <button
-                        type="button"
-                        className="pill-button"
-                        onClick={async () => {
-                          if (isEditingBudget) {
-                            await submitPartialUpdate({
-                              budget_preference: budget
-                            });
-                          }
-                          setIsEditingBudget(!isEditingBudget);
-                        }}
-                      >
-                        {isEditingBudget ? "Done" : "Edit"}
-                      </button>
-                    </div>
-                  </div>
 
                     {/* Risk Tolerance */}
                     <div

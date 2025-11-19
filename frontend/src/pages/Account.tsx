@@ -195,45 +195,45 @@ export default function Account() {
 
       <div className="auth-content">
         {loaded && (
-        <div className="account-wrapper fade-in">
-          {/* Main Content */}
-          <main className="main-content">
-            <div className="account-container">
-              <div className="account-box">
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"} ${lastName || ""}`.trim()}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
+          <div className="account-wrapper fade-in">
+            {/* Main Content */}
+            <main className="main-content">
+              <div className="account-container">
+                <div className="account-box">
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"} ${lastName || ""}`.trim()}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
+                      </div>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {(firstName || "Your") + " " + (lastName || "Name")}
+                        </h1>
+                        <p className="profile-email">Account &amp; Settings</p>
+                      </div>
                     </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {(firstName || "Your") + " " + (lastName || "Name")}
-                      </h1>
-                      <p className="profile-email">Account &amp; Settings</p>
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
+                        </div>
+                        <div className="hs-stat__label">Trips planned</div>
+                      </div>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {accountCreated ?? formatDate(new Date())}
+                        </div>
+                        <div className="hs-stat__label">Account created</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
-                      </div>
-                      <div className="hs-stat__label">Trips planned</div>
-                    </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {accountCreated ?? formatDate(new Date())}
-                      </div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
 
-                <form onSubmit={handleUpdate}>
+                  <form onSubmit={handleUpdate}>
                     <div className="field-list">
                       <div className="field-row">
                         <div className="field-row__meta">
