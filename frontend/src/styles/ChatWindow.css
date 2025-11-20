@@ -52,10 +52,11 @@
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
 }
 
-/* Fade in header on initial load with messages */
+/* Default state - visible */
 .chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
   .chat-header {
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s forwards;
+  opacity: 1;
+  animation: none;
 }
 
 @keyframes fadeIn {

@@ -323,12 +323,6 @@
   position: absolute;
 }
 
-.sidebar-logo-fallback img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 /* When sidebar is closed, reduce spacing so label area collapses smoothly */
 .sidebar.closed .action-btn {
   gap: 0;

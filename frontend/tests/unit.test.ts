@@ -689,43 +689,37 @@ describe("testApi Unit Tests", () => {
 			title: "Test Trip",
 			event_days: []
 		});
-		expect(result.result).toEqual(mockSaveResponse);
+		expect(result).toEqual({ result: mockSaveResponse, status: 200 });
 	});
 
 	test("apiSaveItineraryChanges not ok", async () => {
 		vi.mocked(customFetch).mockResolvedValue({
 			status: 400,
 			ok: false,
-			text: async () => "Bad Request"
+			json: async () => ({ error: "Bad Request" })
 		} as Response);
-		expect(
-			(
-				await apiSaveItineraryChanges({
-					id: 1,
-					start_date: "2025-01-01",
-					end_date: "2025-01-01",
-					chat_session_id: null,
-					title: "Test Trip",
-					event_days: []
-				})
-			).status
-		).toBe(400);
+		const result = await apiSaveItineraryChanges({
+			id: 1,
+			start_date: "2025-01-01",
+			end_date: "2025-01-01",
+			chat_session_id: null,
+			title: "Test Trip",
+			event_days: []
+		});
+		expect(result.status).toBe(400);
 	});
 
 	test("apiSaveItineraryChanges error", async () => {
 		vi.mocked(customFetch).mockRejectedValue(new Error("Network error"));
-		expect(
-			(
-				await apiSaveItineraryChanges({
-					id: 1,
-					start_date: "2025-01-01",
-					end_date: "2025-01-01",
-					chat_session_id: null,
-					title: "Test Trip",
-					event_days: []
-				})
-			).status
-		).toBe(-1);
+		const result = await apiSaveItineraryChanges({
+			id: 1,
+			start_date: "2025-01-01",
+			end_date: "2025-01-01",
+			chat_session_id: null,
+			title: "Test Trip",
+			event_days: []
+		});
+		expect(result).toEqual({ result: null, status: -1 });
 	});
 
 	test("apiGetSavedItineraries success", async () => {
