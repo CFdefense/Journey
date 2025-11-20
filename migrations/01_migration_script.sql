@@ -61,10 +61,11 @@ CREATE TABLE events (
     event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-    --UTC
+    --Timestamp of event location
     hard_start TIMESTAMP WITHOUT TIME ZONE,
-    --UTC
-    hard_end TIMESTAMP WITHOUT TIME ZONE
+    --Timestamp of event location
+    hard_end TIMESTAMP WITHOUT TIME ZONE,
+    timezone VARCHAR(255)
 );
 
 CREATE TABLE chat_sessions (

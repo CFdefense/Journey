@@ -28,7 +28,8 @@ const ENV_DECL = `export const test_state = {
 	dev_mode: true
 };\n`;
 
-const API_RESULT_FIND = 'import type { ApiResult } from "../src/helpers/global";';
+const API_RESULT_FIND =
+  'import type { ApiResult } from "../src/helpers/global";';
 
 const GEN_FILE_WARNING = `
 //================================//
@@ -40,25 +41,30 @@ const IMPORT_CUSTOM_FETCH = 'import { customFetch } from "./customFetch";';
 
 const API_DIR = "./src/api/";
 
-const api_src = (await Promise.all((await fs
-	.readdir(API_DIR, { withFileTypes: true }))
-	.filter(file => file.isFile())
-	.map(async file => await fs.readFile(path.join(API_DIR, file.name), "utf8"))))
-	.join("\n");
+const api_src = (
+  await Promise.all(
+    (await fs.readdir(API_DIR, { withFileTypes: true }))
+      .filter((file) => file.isFile())
+      .map(
+        async (file) => await fs.readFile(path.join(API_DIR, file.name), "utf8")
+      )
+  )
+).join("\n");
 
-let gen_src = GEN_FILE_WARNING
-	+ URL
-	+ ENV_DECL
-	+ API_RESULT_FIND
-	 + "\n"
-	+ IMPORT_CUSTOM_FETCH
-	+ api_src
-		.replaceAll(HELPERS_FIND, HELPERS_REPLACE)
-		.replaceAll(MODELS_FIND, MODELS_REPLACE)
-		.replaceAll(FETCH_FIND, FETCH_REPLACE)
-		.replaceAll(URL_FIND, "")
-		.replaceAll(ENV_FIND, ENV_REPLACE)
-		.replaceAll(API_RESULT_FIND, "");
+let gen_src =
+  GEN_FILE_WARNING +
+  URL +
+  ENV_DECL +
+  API_RESULT_FIND +
+  "\n" +
+  IMPORT_CUSTOM_FETCH +
+  api_src
+    .replaceAll(HELPERS_FIND, HELPERS_REPLACE)
+    .replaceAll(MODELS_FIND, MODELS_REPLACE)
+    .replaceAll(FETCH_FIND, FETCH_REPLACE)
+    .replaceAll(URL_FIND, "")
+    .replaceAll(ENV_FIND, ENV_REPLACE)
+    .replaceAll(API_RESULT_FIND, "");
 
 await fs.writeFile("./tests/testApi.ts", gen_src, "utf8");
 

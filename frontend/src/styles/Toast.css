@@ -39,7 +39,7 @@
   border-radius: 16px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 2px 8px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -50,7 +50,7 @@
 
 /* Glass liquid effect background */
 .toast-content::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -217,4 +217,3 @@
     transform: translateX(100%);
   }
 }
-

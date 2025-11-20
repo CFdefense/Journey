@@ -29,10 +29,10 @@ export type Event = {
 	event_description: string | null;
 	event_name: string;
 	user_created: boolean;
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
-	hard_start: string | null; /// for testing sake this is what will have the 13:00 value for phillies game
-	/// UTC %Y-%m-%dT%H:%M:%S%.f
+	hard_start: string | null;
 	hard_end: string | null;
+	/// Timezone of hard start and hard end
+	timezone: string | null;
 };
 
 export type SavedResponse = {
@@ -59,6 +59,8 @@ export type UserEventRequest = {
 	event_name: string;
 	hard_start: string | null;
 	hard_end: string | null;
+	/// Timezone of hard start and hard end
+	timezone: string | null;
 };
 
 export type UserEventResponse = {
@@ -99,6 +101,8 @@ export type SearchEventRequest = {
 	hard_end_before: string | null;
 	/// Search where hard_end > ...
 	hard_end_after: string | null;
+	/// Search where timezone like ...
+	timezone: string | null;
 };
 
 export type SearchEventResponse = {
@@ -119,3 +123,48 @@ export type DayItinerary = {
 	date: string;
 	timeBlocks: TimeBlock[];
 };
+
+/// This is a subset of IANA canonical timezone identifiers.
+/// There is exactly 1 identifier for each unique timezone to eliminate duplicate timezones.
+/// This list may need to be adjusted depending on how 3rd party APIs (like Google Maps) use timezones.
+export const TIMEZONES: string[] = [
+	"Pacific/Niue",
+	"Pacific/Honolulu",
+	"Pacific/Marquesas",
+	"America/Anchorage",
+	"America/Los_Angeles",
+	"America/Denver",
+	"America/Chicago",
+	"America/New_York",
+	"America/Halifax",
+	"America/St_Johns",
+	"America/Sao_Paulo",
+	"Atlantic/Stanley",
+	"America/Noronha",
+	"Atlantic/Azores",
+	"UTC",
+	"Europe/Berlin",
+	"Europe/Athens",
+	"Africa/Nairobi",
+	"Europe/Moscow",
+	"Asia/Tehran",
+	"Asia/Dubai",
+	"Asia/Kabul",
+	"Antarctica/Vostok",
+	"Asia/Kolkata",
+	"Asia/Kathmandu",
+	"Asia/Dhaka",
+	"Asia/Yangon",
+	"Asia/Jakarta",
+	"Asia/Shanghai",
+	"Australia/Eucla",
+	"Asia/Tokyo",
+	"Australia/Adelaide",
+	"Australia/Brisbane",
+	"Australia/Lord_Howe",
+	"Pacific/Norfolk",
+	"Pacific/Auckland",
+	"Pacific/Chatham",
+	"Pacific/Tongatapu",
+	"Pacific/Kiritimati"
+];

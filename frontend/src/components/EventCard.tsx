@@ -3,10 +3,11 @@ import "../styles/EventCard.css";
 import { apiDeleteUserEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
 import { sanitize } from "../helpers/itinerary";
-import type {
-  Event,
-  UserEventRequest,
-  DayItinerary
+import {
+  type Event,
+  type UserEventRequest,
+  type DayItinerary,
+  TIMEZONES
 } from "../models/itinerary";
 
 interface EventCardProps {
@@ -39,9 +40,10 @@ const EventCard: React.FC<EventCardProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [eventData, setEventData] = useState(event);
-  const [inputEvent, setInputEvent] = useState(
-    JSON.parse(JSON.stringify(event))
-  );
+  const [inputEvent, setInputEvent] = useState({
+    ...JSON.parse(JSON.stringify(event)),
+    timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
+  });
 
   const navigate = useNavigate();
 
@@ -102,25 +104,39 @@ const EventCard: React.FC<EventCardProps> = ({
   const onSaveUserEvent = async () => {
     const userEvent: UserEventRequest = {
       id: eventData.id,
-      event_name: sanitize(inputEvent.event_name) ?? "", //TODO: name must not be null or empty, so we could handle the error before sending the request
+      event_name: sanitize(inputEvent.event_name)!,
       event_description: sanitize(inputEvent.event_description),
       event_type: sanitize(inputEvent.event_type),
       street_address: sanitize(inputEvent.street_address),
       city: sanitize(inputEvent.city),
       country: sanitize(inputEvent.country),
       postal_code: inputEvent.postal_code,
-      hard_start: inputEvent.hard_start?.substring(0, 19) ?? null,
-      hard_end: inputEvent.hard_end?.substring(0, 19) ?? null
+      hard_start: sanitize(inputEvent.hard_start),
+      hard_end: sanitize(inputEvent.hard_end),
+      timezone:
+        inputEvent.timezoneIndex === -1
+          ? null
+          : TIMEZONES[inputEvent.timezoneIndex]
     };
     const result = await apiUserEvent(userEvent);
     if (result.status === 401) {
       navigate("/login");
       return;
     } else if (result.result === null || result.status !== 200) {
-      alert("Error updaing user-event - TODO: handle error properly");
+      alert("TODO: handle error properly - could not update user event");
       return;
     }
-    setEventData(inputEvent);
+    setEventData(userEvent as Event);
+    event.city = userEvent.city;
+    event.country = userEvent.country;
+    event.event_description = userEvent.event_description;
+    event.event_name = userEvent.event_name;
+    event.event_type = userEvent.event_type;
+    event.hard_end = userEvent.hard_end;
+    event.hard_start = userEvent.hard_start;
+    event.postal_code = userEvent.postal_code;
+    event.street_address = userEvent.street_address;
+    event.timezone = userEvent.timezone;
     setIsOpen(false);
   };
 
@@ -129,7 +145,7 @@ const EventCard: React.FC<EventCardProps> = ({
     if (result.status === 401) {
       navigate("/login");
     } else if (result.status !== 200) {
-      alert("User-event could not be deleted - TODO handle error properly");
+      alert("TODO: handle error properly - could not delete user event");
       return;
     }
     unassignedEvents = unassignedEvents.filter((e) => e.id !== event.id);
@@ -189,7 +205,11 @@ const EventCard: React.FC<EventCardProps> = ({
                 </button>
               )}
               {event.user_created && (
-                <button className="card-edit-button" onClick={onSaveUserEvent}>
+                <button
+                  className="card-edit-button"
+                  onClick={onSaveUserEvent}
+                  form="editable-card-contents"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="18"
@@ -207,12 +227,16 @@ const EventCard: React.FC<EventCardProps> = ({
               </button>
             </div>
             {eventData.user_created ? (
-              <div className="editable-card-contents">
+              <form
+                id="editable-card-contents"
+                className="editable-card-contents"
+              >
                 <h2>
                   <strong>Name:</strong>{" "}
                   <input
                     type="text"
                     value={inputEvent.event_name}
+                    required
                     onChange={(e) =>
                       setInputEvent({
                         ...inputEvent,
@@ -295,58 +319,60 @@ const EventCard: React.FC<EventCardProps> = ({
                     />
                   </p>
                   <p>
-                    {/*NOTICE! Input elements must use the browser's timezone*/}
-                    <strong>
-                      Start ({Intl.DateTimeFormat().resolvedOptions().timeZone}
-                      ):
-                    </strong>{" "}
+                    <strong>Start:</strong>{" "}
                     <input
-                      value={
-                        inputEvent.hard_start
-                          ? new Date(
-                              inputEvent.hard_start.substring(0, 19) + "Z"
-                            )
-                              .toLocaleString("sv-SE", {
-                                timeZoneName: "short"
-                              })
-                              .slice(0, 16)
-                          : ""
-                      }
+                      value={inputEvent.hard_start ? inputEvent.hard_start : ""}
                       type="datetime-local"
-                      onChange={(e) =>
-                        setInputEvent({
-                          ...inputEvent,
-                          hard_start: new Date(e.target.value).toISOString()
-                        })
-                      }
+                      onChange={(e) => {
+                        let hard_start = e.target.value;
+                        if (hard_start !== "") {
+                          hard_start += ":00";
+                        }
+                        setInputEvent({ ...inputEvent, hard_start });
+                      }}
                     />
                   </p>
                   <p>
-                    {/*NOTICE! Input elements must use the browser's timezone*/}
-                    <strong>
-                      End ({Intl.DateTimeFormat().resolvedOptions().timeZone}):
-                    </strong>{" "}
+                    <strong>End:</strong>{" "}
                     <input
-                      value={
-                        inputEvent.hard_end
-                          ? new Date(inputEvent.hard_end.substring(0, 19) + "Z")
-                              .toLocaleString("sv-SE", {
-                                timeZoneName: "short"
-                              })
-                              .slice(0, 16)
-                          : ""
-                      }
+                      value={inputEvent.hard_end ? inputEvent.hard_end : ""}
                       type="datetime-local"
-                      onChange={(e) =>
-                        setInputEvent({
-                          ...inputEvent,
-                          hard_end: new Date(e.target.value).toISOString()
-                        })
-                      }
+                      onChange={(e) => {
+                        let hard_end = e.target.value;
+                        if (hard_end !== "") {
+                          hard_end += ":00";
+                        }
+                        setInputEvent({ ...inputEvent, hard_end });
+                      }}
                     />
                   </p>
                 </div>
-              </div>
+                {(inputEvent.hard_start || inputEvent.hard_end) && (
+                  <p>
+                    <strong>Timezone:</strong>
+                    <select
+                      value={inputEvent.timezoneIndex}
+                      onChange={(e) =>
+                        setInputEvent({
+                          ...inputEvent,
+                          timezoneIndex: +e.target.value
+                        })
+                      }
+                    >
+                      {[
+                        <option key={-1} value={-1}>
+                          No Timezone Selected
+                        </option>,
+                        ...TIMEZONES.map((tz, index) => (
+                          <option key={index} value={index}>
+                            {tz}
+                          </option>
+                        ))
+                      ]}
+                    </select>
+                  </p>
+                )}
+              </form>
             ) : (
               <div className="readonly-card-contents">
                 <h2>{eventData.event_name}</h2>
@@ -368,14 +394,20 @@ const EventCard: React.FC<EventCardProps> = ({
                 )}
                 {eventData.hard_start && (
                   <p>
-                    <strong>Start (UTC):</strong> {eventData.hard_start}
+                    <strong>Start:</strong> {eventData.hard_start}
                   </p>
                 )}
                 {eventData.hard_end && (
                   <p>
-                    <strong>End (UTC):</strong> {eventData.hard_end}
+                    <strong>End:</strong> {eventData.hard_end}
                   </p>
                 )}
+                {(eventData.hard_start || eventData.hard_end) &&
+                  eventData.timezone && (
+                    <p>
+                      <strong>Timezone:</strong> {eventData.timezone}
+                    </p>
+                  )}
               </div>
             )}
           </div>

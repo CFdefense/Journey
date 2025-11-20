@@ -105,7 +105,8 @@ export function convertToApiFormat(
 }
 
 export function sanitize(v: string | null): string | null {
-	return v && v.trim() !== "" ? v : null;
+	const str = v?.trim();
+	return str && str !== "" ? str : null;
 }
 
 export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
