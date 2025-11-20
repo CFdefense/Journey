@@ -101,7 +101,8 @@ const EventCard: React.FC<EventCardProps> = ({
     return addr;
   };
 
-  const onSaveUserEvent = async () => {
+  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const userEvent: UserEventRequest = {
       id: eventData.id,
       event_name: sanitize(inputEvent.event_name)!,
