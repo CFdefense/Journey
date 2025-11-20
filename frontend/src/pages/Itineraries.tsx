@@ -17,11 +17,12 @@ export default function Itineraries() {
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const navbarAvatarUrl = userPfp;
-  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
-  
+
   // State for menu and delete confirmation
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
@@ -69,7 +70,8 @@ export default function Itineraries() {
 
     if (openMenuId !== null) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [openMenuId]);
 
@@ -96,7 +98,7 @@ export default function Itineraries() {
     try {
       await apiUnsaveItinerary(itinerary);
       // Remove from local state
-      setItineraries(prev => prev.filter(item => item.id !== itinerary.id));
+      setItineraries((prev) => prev.filter((item) => item.id !== itinerary.id));
       setDeleteConfirmId(null);
       setOpenMenuId(null);
     } catch (err) {
@@ -202,171 +204,185 @@ export default function Itineraries() {
 
           <main className="main-content">
             {loaded && (
-            <div className="account-container fade-in">
-              <div className="account-box" style={{ maxWidth: "800px" }}>
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"}`}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
-                    </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {`${firstName || ""} ${lastName || ""}`.trim() || "Your Name"}
-                      </h1>
-                      <p className="profile-email">Saved Itineraries</p>
-                    </div>
-                  </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
+              <div className="account-container fade-in">
+                <div className="account-box" style={{ maxWidth: "800px" }}>
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"}`}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
                       </div>
-                      <div className="hs-stat__label">Trips planned</div>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {`${firstName || ""} ${lastName || ""}`.trim() ||
+                            "Your Name"}
+                        </h1>
+                        <p className="profile-email">Saved Itineraries</p>
+                      </div>
                     </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">{accountCreated}</div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
-
-                {loading ? (
-                  <div className="empty-state">
-                    <p>Loading itineraries...</p>
-                  </div>
-                ) : error ? (
-                  <div className="empty-state">
-                    <p style={{ color: "#dc3545" }}>{error}</p>
-                  </div>
-                ) : itineraries.length === 0 ? (
-                  <div className="empty-state">
-                    <p>No saved itineraries found</p>
-                    <p
-                      style={{
-                        fontSize: "0.9rem",
-                        marginTop: "8px",
-                        marginBottom: "16px"
-                      }}
-                    >
-                      Your saved travel plans will appear here
-                    </p>
-                    <button
-                      className="btn-primary"
-                      onClick={() => navigate("/home")}
-                    >
-                      Create Itinerary
-                    </button>
-                  </div>
-                ) : (
-                  <div className="itineraries-list">
-                    {itineraries.map((itinerary) => {
-                      const firstDay = itinerary.event_days?.[0];
-                      return (
-                        <div
-                          key={itinerary.id}
-                          className="itinerary-card"
-                          style={{ position: "relative" }}
-                        >
-                          {/* Three-dot menu button */}
-                          <button
-                            className="itinerary-menu-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(openMenuId === itinerary.id ? null : itinerary.id);
-                            }}
-                            aria-label="Options"
-                          >
-                            <svg
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <circle cx="12" cy="12" r="1" />
-                              <circle cx="12" cy="5" r="1" />
-                              <circle cx="12" cy="19" r="1" />
-                            </svg>
-                          </button>
-
-                          {/* Dropdown menu */}
-                          {openMenuId === itinerary.id && (
-                            <div className="itinerary-menu-dropdown" ref={menuRef}>
-                              <button
-                                className="itinerary-menu-item itinerary-menu-item--delete"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteConfirmId(itinerary.id);
-                                }}
-                              >
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="3 6 5 6 21 6" />
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                </svg>
-                                Delete
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Card content - clickable */}
-                          <div
-                            onClick={() => handleCardClick(itinerary.id)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <h3>{itinerary.title || "My Itinerary"}</h3>
-                            {firstDay && (
-                              <>
-                                <p>
-                                  <strong>Location:</strong>{" "}
-                                  {getLocation(firstDay)}
-                                </p>
-                                <p>
-                                  <strong>Total Events (Day 1):</strong>{" "}
-                                  {getTotalEvents(firstDay)}
-                                </p>
-                              </>
-                            )}
-                            <p>
-                              <strong>Dates:</strong>{" "}
-                              {itinerary.start_date
-                                ? `${new Date(itinerary.start_date).toLocaleDateString()} - ${new Date(itinerary.end_date).toLocaleDateString()}`
-                                : "Date not available"}
-                            </p>
-                          </div>
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
                         </div>
-                      );
-                    })}
+                        <div className="hs-stat__label">Trips planned</div>
+                      </div>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">{accountCreated}</div>
+                        <div className="hs-stat__label">Account created</div>
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  {loading ? (
+                    <div className="empty-state">
+                      <p>Loading itineraries...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="empty-state">
+                      <p style={{ color: "#dc3545" }}>{error}</p>
+                    </div>
+                  ) : itineraries.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No saved itineraries found</p>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          marginTop: "8px",
+                          marginBottom: "16px"
+                        }}
+                      >
+                        Your saved travel plans will appear here
+                      </p>
+                      <button
+                        className="btn-primary"
+                        onClick={() => navigate("/home")}
+                      >
+                        Create Itinerary
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="itineraries-list">
+                      {itineraries.map((itinerary) => {
+                        const firstDay = itinerary.event_days?.[0];
+                        return (
+                          <div
+                            key={itinerary.id}
+                            className="itinerary-card"
+                            style={{ position: "relative" }}
+                          >
+                            {/* Three-dot menu button */}
+                            <button
+                              className="itinerary-menu-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(
+                                  openMenuId === itinerary.id
+                                    ? null
+                                    : itinerary.id
+                                );
+                              }}
+                              aria-label="Options"
+                            >
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="12" r="1" />
+                                <circle cx="12" cy="5" r="1" />
+                                <circle cx="12" cy="19" r="1" />
+                              </svg>
+                            </button>
+
+                            {/* Dropdown menu */}
+                            {openMenuId === itinerary.id && (
+                              <div
+                                className="itinerary-menu-dropdown"
+                                ref={menuRef}
+                              >
+                                <button
+                                  className="itinerary-menu-item itinerary-menu-item--delete"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteConfirmId(itinerary.id);
+                                  }}
+                                >
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Card content - clickable */}
+                            <div
+                              onClick={() => handleCardClick(itinerary.id)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <h3>{itinerary.title || "My Itinerary"}</h3>
+                              {firstDay && (
+                                <>
+                                  <p>
+                                    <strong>Location:</strong>{" "}
+                                    {getLocation(firstDay)}
+                                  </p>
+                                  <p>
+                                    <strong>Total Events (Day 1):</strong>{" "}
+                                    {getTotalEvents(firstDay)}
+                                  </p>
+                                </>
+                              )}
+                              <p>
+                                <strong>Dates:</strong>{" "}
+                                {itinerary.start_date
+                                  ? `${new Date(itinerary.start_date).toLocaleDateString()} - ${new Date(itinerary.end_date).toLocaleDateString()}`
+                                  : "Date not available"}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             )}
           </main>
         </div>
 
         {/* Delete Confirmation Modal */}
         {deleteConfirmId !== null && (
-          <div className="modal-overlay" onClick={() => setDeleteConfirmId(null)}>
+          <div
+            className="modal-overlay"
+            onClick={() => setDeleteConfirmId(null)}
+          >
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <h2>Delete Itinerary?</h2>
-              <p>Are you sure you want to delete this itinerary? This action cannot be undone.</p>
+              <p>
+                Are you sure you want to delete this itinerary? This action
+                cannot be undone.
+              </p>
               <div className="modal-actions">
                 <button
                   className="btn-secondary"
@@ -378,7 +394,9 @@ export default function Itineraries() {
                 <button
                   className="btn-danger"
                   onClick={() => {
-                    const itinerary = itineraries.find(i => i.id === deleteConfirmId);
+                    const itinerary = itineraries.find(
+                      (i) => i.id === deleteConfirmId
+                    );
                     if (itinerary) handleDeleteItinerary(itinerary);
                   }}
                   disabled={isDeleting}

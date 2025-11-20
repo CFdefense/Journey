@@ -1069,14 +1069,14 @@
           "Itinerary"
         ],
         "summary": "Unsave an existing itinerary",
-        "description": "Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user and is currently saved.",
+        "description": "Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user.",
         "operationId": "api_unsave",
         "requestBody": {
-          "description": "The itinerary to unsave.",
+          "description": "The itinerary id to unsave.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Itinerary"
+                "$ref": "#/components/schemas/UnsaveRequest"
               }
             }
           },
@@ -1084,14 +1084,7 @@
         },
         "responses": {
           "200": {
-            "description": "The id of the itinerary that was just unsaved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SaveResponse"
-                }
-              }
-            }
+            "description": "Successfully unsaved itinerary"
           },
           "400": {
             "description": "Bad Request"
@@ -1847,6 +1840,20 @@
           "password": {
             "type": "string",
             "description": "Plaintext password submitted by the user"
+          }
+        }
+      },
+      "UnsaveRequest": {
+        "type": "object",
+        "description": "Request model from /api/itinerary/unsave",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "itinerary id to unsave"
           }
         }
       },

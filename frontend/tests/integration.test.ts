@@ -211,7 +211,7 @@ async function test_flow() {
 	// Unsave the itinerary
 	testItinerary.id = savedItineraryId;
 	const unsaveResult = await apiUnsaveItinerary(testItinerary);
-	expect(unsaveResult.id).toBe(savedItineraryId);
+	expect(unsaveResult.status).toBe(200);
 
 	// Verify it's no longer in saved itineraries
 	const savedItinerariesAfterUnsave = await apiGetSavedItineraries();
@@ -306,7 +306,7 @@ describe("Integration Tests", () => {
 			chat_session_id: null,
 			title: "Error Test"
 		};
-		
+
 		try {
 			await apiUnsaveItinerary(errorItinerary2);
 			// If no error thrown, that's also acceptable for error handling test

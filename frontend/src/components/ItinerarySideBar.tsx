@@ -69,9 +69,11 @@ export default function ItinerarySideBar({
     }
   };
 
- return (
+  return (
     <>
-      <div className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}>
+      <div
+        className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}
+      >
         <div className="itinerary-sidebar-top">
           <div className="itinerary-sidebar-title">Itinerary</div>
           <button
@@ -79,10 +81,34 @@ export default function ItinerarySideBar({
             onClick={onToggleSidebar}
             aria-label="Toggle itinerary sidebar"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 6H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3 12H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3 18H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </div>
@@ -121,8 +147,14 @@ export default function ItinerarySideBar({
 
       {/* Save Confirmation Modal */}
       {showSaveModal && (
-        <div className="itinerary-modal-overlay" onClick={() => setShowSaveModal(false)}>
-          <div className="itinerary-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="itinerary-modal-overlay"
+          onClick={() => setShowSaveModal(false)}
+        >
+          <div
+            className="itinerary-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2>Save Itinerary?</h2>
             <p>This will save all changes to your itinerary.</p>
             <div className="itinerary-modal-actions">

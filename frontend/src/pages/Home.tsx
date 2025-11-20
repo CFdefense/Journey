@@ -465,7 +465,7 @@ export default function Home() {
 
         <div className="chat-window-wrapper">
           <ChatWindow
-            key={activeChatId ?? 'empty'}
+            key={activeChatId ?? "empty"}
             messages={activeChat?.messages ?? []}
             onSend={handleSendMessage}
             onItinerarySelect={handleItinerarySelect}

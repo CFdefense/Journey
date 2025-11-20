@@ -471,10 +471,10 @@ pub async fn api_save(
 /// `POST /api/itinerary/unsave`
 ///
 /// # Request Body
-/// - [Itinerary]
+/// - [UnsaveRequest]
 ///
 /// # Responses
-/// - `200 OK` - with body: [SaveResponse]
+/// - `200 OK` - Successfully unsaved itinerary for this user
 /// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
 /// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
 /// - `404 NOT_FOUND` - Itinerary not found or doesn't belong to user (public error)
@@ -485,31 +485,21 @@ pub async fn api_save(
 /// curl -X POST http://localhost:3001/api/itinerary/unsave
 ///   -H "Content-Type: application/json"
 ///   -d '{
-///         "id": 3,
-///         "start_date": "2025-07-15",
-///         "end_date": "2025-07-21",
-///         "event_days": [],
-///         "chat_session_id": 4,
-///         "title": "Poughkeepsie 7/15-21 2025"
+///         "id": 3
 ///       }'
 /// ```
 #[utoipa::path(
 	post,
 	path="/unsave",
 	summary="Unsave an existing itinerary",
-	description="Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user and is currently saved.",
+	description="Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user.",
 	request_body(
-		content=Itinerary,
+		content=UnsaveRequest,
 		content_type="application/json",
-		description="The itinerary to unsave.",
+		description="The itinerary id to unsave."
 	),
 	responses(
-		(
-			status=200,
-			description="The id of the itinerary that was just unsaved.",
-			body=SaveResponse,
-			content_type="application/json",
-		),
+		(status=200, description="Successfully unsaved itinerary"),
 		(status=400, description="Bad Request"),
 		(status=401, description="User has an invalid cookie/no cookie"),
 		(status=404, description="Itinerary not found or doesn't belong to user"),
@@ -523,12 +513,17 @@ pub async fn api_save(
 pub async fn api_unsave(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
-	Json(itinerary): Json<Itinerary>,
-) -> ApiResult<Json<SaveResponse>> {
-	// Verify the itinerary exists, belongs to this user, and is currently saved
-	let existing = sqlx::query!(
-		r#"SELECT id, saved FROM itineraries WHERE id=$1 AND account_id=$2"#,
-		itinerary.id,
+	Json(UnsaveRequest{ id }): Json<UnsaveRequest>,
+) -> ApiResult<()> {
+	// Update the itinerary to set saved=FALSE
+	sqlx::query!(
+		r#"
+		UPDATE itineraries
+		SET saved = FALSE
+		WHERE id = $1 AND account_id = $2
+		RETURNING id;
+		"#,
+		id,
 		user.id
 	)
 	.fetch_optional(&pool)
@@ -536,28 +531,7 @@ pub async fn api_unsave(
 	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
-	// Verify the itinerary is currently saved
-	if !existing.saved {
-		return Err(AppError::BadRequest(String::from(
-			"Itinerary is not currently saved"
-		)));
-	}
-
-	// Update the itinerary to set saved=FALSE
-	sqlx::query!(
-		r#"
-		UPDATE itineraries
-		SET saved = FALSE
-		WHERE id = $1 AND account_id = $2;
-		"#,
-		itinerary.id,
-		user.id
-	)
-	.execute(&pool)
-	.await
-	.map_err(AppError::from)?;
-
-	Ok(Json(SaveResponse { id: itinerary.id }))
+	Ok(())
 }
 
 

@@ -54,11 +54,11 @@ export default function PrevChatSideBar({
   const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
     e.stopPropagation();
     // Get the button element, not the SVG child
-    const buttonElement = (e.currentTarget as HTMLElement);
+    const buttonElement = e.currentTarget as HTMLElement;
     const rect = buttonElement.getBoundingClientRect();
     const contextWindowWidth = 140; // Match the width in ContextWindow.css
     // Center the context window relative to the button
-    const centeredX = rect.left + (rect.width / 2) - (contextWindowWidth / 2);
+    const centeredX = rect.left + rect.width / 2 - contextWindowWidth / 2;
     setContextMenu({
       x: centeredX,
       y: rect.bottom + 7,
@@ -159,22 +159,23 @@ export default function PrevChatSideBar({
             aria-label="Go to home"
             title="Home"
           >
-            <img 
-              src="/placeholder-logo.png" 
-              alt="Journey Logo" 
+            <img
+              src="/placeholder-logo.png"
+              alt="Journey Logo"
               className="sidebar-logo"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback && fallback.classList.contains('sidebar-logo-fallback')) {
-                  target.style.display = 'none';
-                  fallback.style.display = 'flex';
+                if (
+                  fallback &&
+                  fallback.classList.contains("sidebar-logo-fallback")
+                ) {
+                  target.style.display = "none";
+                  fallback.style.display = "flex";
                 }
               }}
             />
-            <div className="sidebar-logo-fallback">
-              J
-            </div>
+            <div className="sidebar-logo-fallback">J</div>
           </Link>
           <button
             className={`action-btn menu-toggle-btn hamburger-btn ${sidebarVisible ? "hidden" : "visible"}`}
@@ -183,10 +184,31 @@ export default function PrevChatSideBar({
             title="Menu"
           >
             <span className="action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 12H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 18H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M3 6H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M3 12H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M3 18H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </span>
           </button>
@@ -196,10 +218,31 @@ export default function PrevChatSideBar({
             aria-label="Close menu"
             title="Close menu"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M3 12H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M3 18H21" stroke="#0b1220" strokeWidth="2" strokeLinecap="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 6H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M3 12H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M3 18H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -211,9 +254,25 @@ export default function PrevChatSideBar({
           title="New chat"
         >
           <span className="action-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 5V19"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M5 12H19"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </span>
           <span className="action-label">New chat</span>
@@ -225,9 +284,26 @@ export default function PrevChatSideBar({
           title="Search chats"
         >
           <span className="action-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2"/>
-              <path d="M16.5 16.5L20 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="6"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M16.5 16.5L20 20"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </span>
           <span className="action-label">Search chats</span>
@@ -243,9 +319,8 @@ export default function PrevChatSideBar({
               key={chat.id}
               className={chat.id === activeChatId ? "active" : ""}
               style={{
-                transitionDelay: chat.id === activeChatId 
-                  ? "0ms" 
-                  : `${450 + index * 150}ms`
+                transitionDelay:
+                  chat.id === activeChatId ? "0ms" : `${450 + index * 150}ms`
               }}
               onClick={() => {
                 if (editingChatId !== chat.id) {
@@ -297,9 +372,17 @@ export default function PrevChatSideBar({
 
       <div className="sidebar-bottom">
         <Link to="/account" className="sidebar-profile-link">
-          <img src={userPfp} alt="User profile" className="sidebar-profile-pic" />
+          <img
+            src={userPfp}
+            alt="User profile"
+            className="sidebar-profile-pic"
+          />
         </Link>
-        <button className="sidebar-logout-btn" onClick={handleLogout} title="Logout">
+        <button
+          className="sidebar-logout-btn"
+          onClick={handleLogout}
+          title="Logout"
+        >
           <svg
             width="20"
             height="20"

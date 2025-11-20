@@ -119,3 +119,7 @@ export type DayItinerary = {
 	date: string;
 	timeBlocks: TimeBlock[];
 };
+
+export type UnsaveRequest = {
+	id: number;
+};
