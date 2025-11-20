@@ -475,7 +475,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <div className="event-card-buttons">
                 <button
                   className="card-save-button"
-                  onClick={onSaveUserEvent}
                   title="Save"
                   form="user-event-form"
                   type="submit"

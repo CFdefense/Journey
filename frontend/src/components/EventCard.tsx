@@ -207,7 +207,6 @@ const EventCard: React.FC<EventCardProps> = ({
               {event.user_created && (
                 <button
                   className="card-edit-button"
-                  onClick={onSaveUserEvent}
                   form="editable-card-contents"
                 >
                   <svg
@@ -230,6 +229,7 @@ const EventCard: React.FC<EventCardProps> = ({
               <form
                 id="editable-card-contents"
                 className="editable-card-contents"
+                onSubmit={onSaveUserEvent}
               >
                 <h2>
                   <strong>Name:</strong>{" "}
