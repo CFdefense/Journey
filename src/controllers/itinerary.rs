@@ -513,7 +513,7 @@ pub async fn api_save(
 pub async fn api_unsave(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
-	Json(UnsaveRequest{ id }): Json<UnsaveRequest>,
+	Json(UnsaveRequest { id }): Json<UnsaveRequest>,
 ) -> ApiResult<()> {
 	// Update the itinerary to set saved=FALSE
 	sqlx::query!(
@@ -533,7 +533,6 @@ pub async fn api_unsave(
 
 	Ok(())
 }
-
 
 /// Insert or update a user-created custom event
 ///

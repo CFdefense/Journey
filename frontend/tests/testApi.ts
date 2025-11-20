@@ -511,7 +511,7 @@ export async function apiItineraryDetails(
 /// Never throws an exception
 export async function apiSaveItineraryChanges(
 	payload: Itinerary
-): Promise<SaveResponse> {
+): Promise<ApiResult<SaveResponse>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/itinerary/save`, {
 			method: "POST",
@@ -522,19 +522,10 @@ export async function apiSaveItineraryChanges(
 			body: JSON.stringify(payload)
 		});
 
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`Failed to save itinerary: ${response.status} ${errorText}`
-			);
-		}
-
-		// Parse and return the SaveResponse
-		const data: SaveResponse = await response.json();
-		return data;
+		return { result: await response.json(), status: response.status };
 	} catch (error) {
-		console.error("Save API error:", error);
-		throw error;
+		console.error("apiSaveItineraryChanges error:", error);
+		return { result: null, status: -1 };
 	}
 }
 
@@ -568,7 +559,7 @@ export async function apiUnsaveItinerary(
 		});
 		return { result: null, status: response.status };
 	} catch (error) {
-		console.error("Unsave API error:", error);
+		console.error("apiUnsaveItinerary error:", error);
 		return { result: null, status: -1 };
 	}
 }
@@ -693,5 +684,3 @@ export async function apiGetSavedItineraries(): Promise<
 		return { result: null, status: -1 };
 	}
 }
-
-//TODO apiDeleteSavedItinerary

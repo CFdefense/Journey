@@ -32,35 +32,41 @@ export default function ItinerarySideBar({
     }
 
     setIsSaving(true);
-    try {
-      // Fetch the full itinerary metadata
-      const apiResponse = await apiItineraryDetails(selectedItineraryId);
 
-      if (!apiResponse.result || apiResponse.status !== 200) {
-        console.error("Failed to fetch itinerary details");
-        return;
-      }
+    // Fetch the full itinerary metadata
+    const apiResponse = await apiItineraryDetails(selectedItineraryId);
 
-      const itinerary = apiResponse.result;
-
-      // set to the form needed to call the save itinerary api
-      const payload = convertToApiFormat(
-        itineraryData,
-        itinerary.id,
-        itinerary.start_date,
-        itinerary.end_date,
-        itinerary.title,
-        itinerary.chat_session_id
-      );
-
-      // Save the itinerary
-      await apiSaveItineraryChanges(payload);
-      setShowSaveModal(false);
-    } catch (error) {
-      console.error("Failed to save itinerary:", error);
-    } finally {
+    if (!apiResponse.result || apiResponse.status !== 200) {
+      console.error("Failed to fetch itinerary details");
       setIsSaving(false);
+      // TODO: handle and display error
+      return;
     }
+
+    const itinerary = apiResponse.result;
+
+    // set to the form needed to call the save itinerary api
+    const payload = convertToApiFormat(
+      itineraryData,
+      itinerary.id,
+      itinerary.start_date,
+      itinerary.end_date,
+      itinerary.title,
+      itinerary.chat_session_id
+    );
+
+    // Save the itinerary
+    const saveResult = await apiSaveItineraryChanges(payload);
+
+    if (saveResult.result === null || saveResult.status !== 200) {
+      console.error("Failed to save itinerary:", saveResult.status);
+      setIsSaving(false);
+      // TODO: handle and display error
+      return;
+    }
+
+    setShowSaveModal(false);
+    setIsSaving(false);
   };
 
   const handleViewItinerary = () => {

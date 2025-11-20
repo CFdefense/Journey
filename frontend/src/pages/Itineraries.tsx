@@ -76,39 +76,36 @@ export default function Itineraries() {
   }, [openMenuId]);
 
   const fetchItineraries = async () => {
-    try {
-      const result = await apiGetSavedItineraries();
-      const data = result.result;
-      if (data && data.itineraries) {
-        console.log("Fetched itineraries:", data.itineraries);
-        setItineraries(data.itineraries as Itinerary[]);
-      }
-    } catch (err) {
-      console.error("Error fetching itineraries:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load itineraries"
-      );
-    } finally {
-      setLoading(false);
+    const result = await apiGetSavedItineraries();
+    const data = result.result;
+
+    if (data && data.itineraries && result.status === 200) {
+      console.log("Fetched itineraries:", data.itineraries);
+      setItineraries(data.itineraries as Itinerary[]);
+    } else {
+      console.error("Error fetching itineraries:", result.status);
+      setError("Failed to load itineraries");
     }
+
+    setLoading(false);
   };
 
   const handleDeleteItinerary = async (itinerary: Itinerary) => {
     setIsDeleting(true);
-    try {
-      await apiUnsaveItinerary(itinerary);
+
+    const result = await apiUnsaveItinerary(itinerary);
+
+    if (result.status === 200) {
       // Remove from local state
       setItineraries((prev) => prev.filter((item) => item.id !== itinerary.id));
       setDeleteConfirmId(null);
       setOpenMenuId(null);
-    } catch (err) {
-      console.error("Error deleting itinerary:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to delete itinerary"
-      );
-    } finally {
-      setIsDeleting(false);
+    } else {
+      console.error("Error deleting itinerary:", result.status);
+      setError("Failed to delete itinerary");
     }
+
+    setIsDeleting(false);
   };
 
   const getLocation = (day: EventDay) => {

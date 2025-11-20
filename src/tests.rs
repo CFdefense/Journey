@@ -1829,9 +1829,7 @@ async fn test_unsave_itinerary_success(
 	assert_ne!(itinerary_id, 0);
 
 	// Now unsave it
-	let json = Json(UnsaveRequest {
-		id: itinerary_id
-	});
+	let json = Json(UnsaveRequest { id: itinerary_id });
 	controllers::itinerary::api_unsave(user, pool.clone(), json)
 		.await
 		.unwrap();
@@ -1840,10 +1838,7 @@ async fn test_unsave_itinerary_success(
 	let saved = controllers::itinerary::api_saved_itineraries(user, pool)
 		.await
 		.unwrap();
-	assert!(!saved
-		.itineraries
-		.iter()
-		.any(|i| i.id == itinerary_id));
+	assert!(!saved.itineraries.iter().any(|i| i.id == itinerary_id));
 }
 
 async fn test_unsave_itinerary_not_found(
@@ -1871,9 +1866,7 @@ async fn test_unsave_itinerary_not_found(
 	});
 
 	// Try to unsave a non-existent itinerary
-	let json = Json(UnsaveRequest {
-		id: 999999
-	});
+	let json = Json(UnsaveRequest { id: 999999 });
 	assert_eq!(
 		controllers::itinerary::api_unsave(user, pool, json)
 			.await
@@ -1923,17 +1916,13 @@ async fn test_unsave_already_unsaved_itinerary(
 		.id;
 
 	// Unsave it once
-	let json = Json(UnsaveRequest {
-		id: itinerary_id
-	});
+	let json = Json(UnsaveRequest { id: itinerary_id });
 	controllers::itinerary::api_unsave(user, pool.clone(), json)
 		.await
 		.unwrap();
 
 	// Try to unsave it again
-	let json = Json(UnsaveRequest {
-		id: itinerary_id
-	});
+	let json = Json(UnsaveRequest { id: itinerary_id });
 	controllers::itinerary::api_unsave(user, pool, json)
 		.await
 		.unwrap();
