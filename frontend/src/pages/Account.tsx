@@ -31,8 +31,6 @@ export default function Account() {
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
-  const [profileImageUrl, setProfileImageUrl] =
-    useState<string>(navbarAvatarUrl);
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -235,14 +233,6 @@ export default function Account() {
                       </div>
                     </div>
                   </div>
-
-                  {statusMessage && (
-                    <div
-                      className={`status-message status-message--${statusMessage.type}`}
-                    >
-                      {statusMessage.message}
-                    </div>
-                  )}
 
                   <form onSubmit={handleUpdate}>
                     <div className="field-list">

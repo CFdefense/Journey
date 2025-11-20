@@ -70,8 +70,6 @@ export default function Preferences() {
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
-  const [profileImageUrl, setProfileImageUrl] =
-    useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const budgetOptions: BudgetOption[] = [
@@ -280,14 +278,6 @@ export default function Preferences() {
                       </div>
                     </div>
                   </div>
-
-                  {statusMessage && (
-                    <div
-                      className={`status-message status-message--${statusMessage.type}`}
-                    >
-                      {statusMessage.message}
-                    </div>
-                  )}
 
                   <div className="field-list">
                     {/* Budget */}

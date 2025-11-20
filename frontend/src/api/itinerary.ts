@@ -68,7 +68,6 @@ export async function apiItineraryDetails(
 export async function apiSaveItineraryChanges(
 	payload: Itinerary
 ): Promise<ApiResult<SaveResponse>> {
-): Promise<ApiResult<SaveResponse>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
 			method: "POST",

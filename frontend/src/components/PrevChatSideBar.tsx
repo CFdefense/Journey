@@ -160,9 +160,6 @@ export default function PrevChatSideBar({
             title="Home"
           >
             <img
-              src="/placeholder-logo.png"
-              alt="Journey Logo"
-            <img
               src="/logo.png"
               alt="Journey Logo"
               className="sidebar-logo"
@@ -175,16 +172,9 @@ export default function PrevChatSideBar({
                 ) {
                   target.style.display = "none";
                   fallback.style.display = "flex";
-                if (
-                  fallback &&
-                  fallback.classList.contains("sidebar-logo-fallback")
-                ) {
-                  target.style.display = "none";
-                  fallback.style.display = "flex";
                 }
               }}
             />
-            <div className="sidebar-logo-fallback">J</div>
             <div className="sidebar-logo-fallback">
               <img src="/logo.png" alt="Journey Logo" />
             </div>
