@@ -122,6 +122,7 @@ export default function ChatWindow({
           () => setIsSwitching(false),
           500
         );
+        return createCleanup();
       }
       // If empty on initial mount, start animation
       else {

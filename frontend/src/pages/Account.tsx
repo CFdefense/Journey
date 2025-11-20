@@ -70,7 +70,6 @@ export default function Account() {
       // Optional stats from backend; otherwise, provide demo values
       const maybeTrips = (account as any).trips_planned;
       setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
-      setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
       const maybeCreated = (account as any).created_at;
       setAccountCreated(
         maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
