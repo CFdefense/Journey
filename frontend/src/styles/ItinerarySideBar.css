@@ -55,7 +55,7 @@
   visibility: hidden;
   max-width: 0;
   overflow: hidden;
-  transition: 
+  transition:
     opacity 200ms ease,
     transform 260ms ease,
     visibility 0ms ease 200ms,
@@ -68,7 +68,7 @@
   visibility: visible;
   max-width: 200px;
   transition-delay: 480ms;
-  transition: 
+  transition:
     opacity 200ms ease 480ms,
     transform 260ms ease 480ms,
     visibility 0ms ease 480ms,
@@ -153,7 +153,9 @@
 .itinerary-content > * {
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 200ms ease, transform 260ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 260ms ease;
 }
 
 .itinerary-sidebar.open .itinerary-content > * {
@@ -346,7 +348,7 @@
   .itinerary-modal-actions {
     flex-direction: column-reverse;
   }
-  
+
   .itinerary-modal-actions button {
     width: 100%;
   }

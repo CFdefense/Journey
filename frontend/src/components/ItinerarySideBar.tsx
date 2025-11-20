@@ -32,35 +32,41 @@ export default function ItinerarySideBar({
     }
 
     setIsSaving(true);
-    try {
-      // Fetch the full itinerary metadata
-      const apiResponse = await apiItineraryDetails(selectedItineraryId);
 
-      if (!apiResponse.result || apiResponse.status !== 200) {
-        console.error("Failed to fetch itinerary details");
-        return;
-      }
+    // Fetch the full itinerary metadata
+    const apiResponse = await apiItineraryDetails(selectedItineraryId);
 
-      const itinerary = apiResponse.result;
-
-      // set to the form needed to call the save itinerary api
-      const payload = convertToApiFormat(
-        itineraryData,
-        itinerary.id,
-        itinerary.start_date,
-        itinerary.end_date,
-        itinerary.title,
-        itinerary.chat_session_id
-      );
-
-      // Save the itinerary
-      await apiSaveItineraryChanges(payload);
-      setShowSaveModal(false);
-    } catch (error) {
-      console.error("Failed to save itinerary:", error);
-    } finally {
+    if (!apiResponse.result || apiResponse.status !== 200) {
+      console.error("Failed to fetch itinerary details");
       setIsSaving(false);
+      // TODO: handle and display error
+      return;
     }
+
+    const itinerary = apiResponse.result;
+
+    // set to the form needed to call the save itinerary api
+    const payload = convertToApiFormat(
+      itineraryData,
+      itinerary.id,
+      itinerary.start_date,
+      itinerary.end_date,
+      itinerary.title,
+      itinerary.chat_session_id
+    );
+
+    // Save the itinerary
+    const saveResult = await apiSaveItineraryChanges(payload);
+
+    if (saveResult.result === null || saveResult.status !== 200) {
+      console.error("Failed to save itinerary:", saveResult.status);
+      setIsSaving(false);
+      // TODO: handle and display error
+      return;
+    }
+
+    setShowSaveModal(false);
+    setIsSaving(false);
   };
 
   const handleViewItinerary = () => {
@@ -69,9 +75,11 @@ export default function ItinerarySideBar({
     }
   };
 
- return (
+  return (
     <>
-      <div className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}>
+      <div
+        className={`itinerary-sidebar ${sidebarVisible ? "open" : "closed"}`}
+      >
         <div className="itinerary-sidebar-top">
           <div className="itinerary-sidebar-title">Itinerary</div>
           <button
@@ -79,10 +87,34 @@ export default function ItinerarySideBar({
             onClick={onToggleSidebar}
             aria-label="Toggle itinerary sidebar"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 6H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3 12H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3 18H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </div>
@@ -121,8 +153,14 @@ export default function ItinerarySideBar({
 
       {/* Save Confirmation Modal */}
       {showSaveModal && (
-        <div className="itinerary-modal-overlay" onClick={() => setShowSaveModal(false)}>
-          <div className="itinerary-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="itinerary-modal-overlay"
+          onClick={() => setShowSaveModal(false)}
+        >
+          <div
+            className="itinerary-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2>Save Itinerary?</h2>
             <p>This will save all changes to your itinerary.</p>
             <div className="itinerary-modal-actions">

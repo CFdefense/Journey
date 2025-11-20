@@ -53,7 +53,8 @@
 }
 
 /* Default state - visible */
-.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-header {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
+  .chat-header {
   opacity: 1;
   animation: none;
 }
@@ -106,7 +107,7 @@
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.2;
   text-align: left;
-  margin-left: .25rem;
+  margin-left: 0.25rem;
 }
 
 /* Scrollable message area */
@@ -135,7 +136,8 @@
 }
 
 /* Default state - visible */
-.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .chat-messages {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
+  .chat-messages {
   opacity: 1;
   animation: none;
 }
@@ -176,7 +178,9 @@
   opacity: 0;
   transform: translateY(30px);
   animation: fadeUpIn 0.6s ease forwards;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
   position: relative;
   min-height: 200px;
 }
@@ -185,14 +189,18 @@
   opacity: 0 !important;
   transform: translateY(-20px) scale(0.95) !important;
   pointer-events: none;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
 }
 
 .chat-container.expanding .chat-empty-state {
   opacity: 0 !important;
   transform: translateY(-20px) scale(0.9) !important;
   pointer-events: none;
-  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+  transition:
+    opacity 0.3s ease 0.1s,
+    transform 0.3s ease 0.1s;
 }
 
 /* When container is transitioning from empty to full */
@@ -250,10 +258,12 @@
 }
 
 @keyframes blink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }
@@ -283,7 +293,9 @@
   width: 100%;
   max-width: min(850px, 100%);
   align-self: center;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Animation when sending message from empty state - fade down */
@@ -311,7 +323,9 @@
   margin: 0;
   width: calc(100% - 2rem);
   max-width: min(850px, calc(100% - 2rem));
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Animation when sending message from open chat mode - fade up */
@@ -597,7 +611,8 @@
 }
 
 /* Default state - visible */
-.chat-container:not(.chat-container-empty):not(.expanding):not(.switching) .message-input {
+.chat-container:not(.chat-container-empty):not(.expanding):not(.switching)
+  .message-input {
   opacity: 1;
   transform: translateY(0);
   animation: none;

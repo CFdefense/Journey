@@ -200,7 +200,9 @@ async function test_flow() {
 
 	// Save itinerary
 	const saveResult = await apiSaveItineraryChanges(testItinerary);
-	const savedItineraryId = saveResult.id;
+	expect(saveResult.result).not.toBe(null);
+	expect(saveResult.status).toBe(200);
+	const savedItineraryId = saveResult.result!.id;
 	expect(savedItineraryId).toBeGreaterThan(0);
 
 	// Verify it's in saved itineraries
@@ -211,7 +213,7 @@ async function test_flow() {
 	// Unsave the itinerary
 	testItinerary.id = savedItineraryId;
 	const unsaveResult = await apiUnsaveItinerary(testItinerary);
-	expect(unsaveResult.id).toBe(savedItineraryId);
+	expect(unsaveResult.status).toBe(200);
 
 	// Verify it's no longer in saved itineraries
 	const savedItinerariesAfterUnsave = await apiGetSavedItineraries();
@@ -227,24 +229,12 @@ async function test_flow() {
 		chat_session_id: null,
 		title: "Non-existent"
 	};
-	try {
-		await apiUnsaveItinerary(nonExistentItinerary);
-		// Should not reach here
-		expect(true).toBe(false);
-	} catch (error) {
-		// Expected to throw error with 404
-		expect(error).toBeDefined();
-	}
+	const unsaveNonExistent = await apiUnsaveItinerary(nonExistentItinerary);
+	expect(unsaveNonExistent.status).toBe(404);
 
 	// Test unsaving already unsaved itinerary (should return 400)
-	try {
-		await apiUnsaveItinerary(testItinerary);
-		// Should not reach here
-		expect(true).toBe(false);
-	} catch (error) {
-		// Expected to throw error with 400
-		expect(error).toBeDefined();
-	}
+	const unsaveAlreadyUnsaved = await apiUnsaveItinerary(testItinerary);
+	expect(unsaveAlreadyUnsaved.status).toBe(400);
 
 	// logout
 	expect((await apiLogout()).status).toBe(200);
@@ -307,21 +297,11 @@ describe("Integration Tests", () => {
 			title: "Error Test"
 		};
 		
-		try {
-			await apiUnsaveItinerary(errorItinerary2);
-			// If no error thrown, that's also acceptable for error handling test
-		} catch (error) {
-			// Expected behavior - error thrown
-			expect(error).toBeDefined();
-		}
+		const errorUnsave = await apiUnsaveItinerary(errorItinerary2);
+		expect(errorUnsave.status).toBeGreaterThanOrEqual(-1);
 
-		try {
-			await apiSaveItineraryChanges(errorItinerary2);
-			// If no error thrown, that's also acceptable for error handling test
-		} catch (error) {
-			// Expected behavior - error thrown
-			expect(error).toBeDefined();
-		}
+		const errorSave = await apiSaveItineraryChanges(errorItinerary2);
+		expect(errorSave.status).toBeGreaterThanOrEqual(-1);
 
 		const errorSavedList = await apiGetSavedItineraries();
 		expect(errorSavedList.status).toBeGreaterThanOrEqual(-1);

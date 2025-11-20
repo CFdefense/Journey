@@ -495,17 +495,19 @@ describe("testApi Unit Tests", () => {
 	test("apiSaveItineraryChanges success", async () => {
 		vi.mocked(customFetch).mockResolvedValue({ status: 200, ok: true, json: async () => mockSaveResponse } as Response);
 		const result = await apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] });
-		expect(result).toEqual(mockSaveResponse);
+		expect(result).toEqual({ result: mockSaveResponse, status: 200 });
 	});
-
+	
 	test("apiSaveItineraryChanges not ok", async () => {
-		vi.mocked(customFetch).mockResolvedValue({ status: 400, ok: false, text: async () => "Bad Request" } as Response);
-		await expect(apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Failed to save itinerary: 400 Bad Request");
+		vi.mocked(customFetch).mockResolvedValue({ status: 400, ok: false, json: async () => ({ error: "Bad Request" }) } as Response);
+		const result = await apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] });
+		expect(result.status).toBe(400);
 	});
 
 	test("apiSaveItineraryChanges error", async () => {
 		vi.mocked(customFetch).mockRejectedValue(new Error("Network error"));
-		await expect(apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] })).rejects.toThrow("Network error");
+		const result = await apiSaveItineraryChanges({ id: 1, start_date: "2025-01-01", end_date: "2025-01-01", chat_session_id: null, title: "Test Trip", event_days: [] });
+		expect(result).toEqual({ result: null, status: -1 });
 	});
 
 	test("apiGetSavedItineraries success", async () => {
@@ -521,3 +523,4 @@ describe("testApi Unit Tests", () => {
 		expect(result.status).toBe(-1);
 	});
 });
+
