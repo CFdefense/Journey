@@ -59,3 +59,10 @@ pub struct SaveResponse {
 	/// * May be the same as the itinerary id passed in the request
 	pub id: i32,
 }
+
+/// Request model from /api/itinerary/unsave
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UnsaveRequest {
+	/// itinerary id to unsave
+	pub id: i32,
+}

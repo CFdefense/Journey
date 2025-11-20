@@ -6,6 +6,7 @@ import type {
 	SaveResponse,
 	SearchEventRequest,
 	SearchEventResponse,
+	UnsaveRequest,
 	UserEventRequest,
 	UserEventResponse
 } from "../models/itinerary";
@@ -92,17 +93,17 @@ export async function apiSaveItineraryChanges(
 /// to false for the specified itinerary.
 ///
 /// # Parameters
-/// - `payload`: The complete `Itinerary` object to unsave. The itinerary must
-///   belong to the authenticated user and must currently be saved.
+/// - `payload`: The itinerary id to unsave. The itinerary must
+///   belong to the authenticated user.
 ///
 /// # Returns
-/// - On success: A `SaveResponse` object containing the ID of the unsaved itinerary.
-/// - On failure: Throws an error with details about the failure.
+/// - On success: status code of 200
+/// - On failure: non-200 status code
 ///
 /// # Exceptions
 /// Never throws an exception
 export async function apiUnsaveItinerary(
-	payload: Itinerary
+	payload: UnsaveRequest
 ): Promise<ApiResult<void>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/itinerary/unsave`, {

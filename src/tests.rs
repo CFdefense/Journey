@@ -5,7 +5,7 @@ use crate::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
 		chat_session::RenameRequest,
 		event::{SearchEventRequest, UserEventRequest, UserEventResponse},
-		itinerary::Itinerary,
+		itinerary::{Itinerary, UnsaveRequest},
 		message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest},
 	},
 	log,
@@ -1837,27 +1837,16 @@ async fn test_unsave_itinerary_success(
 	assert_ne!(itinerary_id, 0);
 
 	// Now unsave it
-	let json = Json(Itinerary {
-		id: itinerary_id,
-		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
-		event_days: vec![],
-		chat_session_id: None,
-		title: String::from("Test Itinerary to Unsave"),
-	});
-	let response = controllers::itinerary::api_unsave(user, pool.clone(), json)
+	let json = Json(UnsaveRequest { id: itinerary_id });
+	controllers::itinerary::api_unsave(user, pool.clone(), json)
 		.await
 		.unwrap();
-	assert_eq!(response.id, itinerary_id);
 
 	// Verify it's no longer in saved itineraries
 	let saved = controllers::itinerary::api_saved_itineraries(user, pool)
 		.await
 		.unwrap();
-	assert!(!saved
-		.itineraries
-		.iter()
-		.any(|i| i.id == itinerary_id));
+	assert!(!saved.itineraries.iter().any(|i| i.id == itinerary_id));
 }
 
 async fn test_unsave_itinerary_not_found(
@@ -1885,14 +1874,7 @@ async fn test_unsave_itinerary_not_found(
 	});
 
 	// Try to unsave a non-existent itinerary
-	let json = Json(Itinerary {
-		id: 999999,
-		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
-		event_days: vec![],
-		chat_session_id: None,
-		title: String::from("Non-existent Itinerary"),
-	});
+	let json = Json(UnsaveRequest { id: 999999 });
 	assert_eq!(
 		controllers::itinerary::api_unsave(user, pool, json)
 			.await
@@ -1942,33 +1924,14 @@ async fn test_unsave_already_unsaved_itinerary(
 		.id;
 
 	// Unsave it once
-	let json = Json(Itinerary {
-		id: itinerary_id,
-		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
-		event_days: vec![],
-		chat_session_id: None,
-		title: String::from("Test Itinerary"),
-	});
+	let json = Json(UnsaveRequest { id: itinerary_id });
 	controllers::itinerary::api_unsave(user, pool.clone(), json)
 		.await
 		.unwrap();
 
-	// Try to unsave it again - should return 400 BadRequest
-	let json = Json(Itinerary {
-		id: itinerary_id,
-		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
-		event_days: vec![],
-		chat_session_id: None,
-		title: String::from("Test Itinerary"),
-	});
-	assert_eq!(
-		controllers::itinerary::api_unsave(user, pool, json)
-			.await
-			.unwrap_err()
-			.status_code()
-			.as_u16(),
-		400
-	);
+	// Try to unsave it again
+	let json = Json(UnsaveRequest { id: itinerary_id });
+	controllers::itinerary::api_unsave(user, pool, json)
+		.await
+		.unwrap();
 }
