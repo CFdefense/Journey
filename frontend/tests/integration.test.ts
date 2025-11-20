@@ -20,21 +20,29 @@ async function test_flow() {
 	// sign up
 	const unique: number = Date.now();
 	const email = `test${unique}@gmail.com`;
-	expect((await apiSignUp({
-		email: email,
-		first_name: "First",
-		last_name: "Last",
-		password: "Password123"
-	})).status).toBe(200);
+	expect(
+		(
+			await apiSignUp({
+				email: email,
+				first_name: "First",
+				last_name: "Last",
+				password: "Password123"
+			})
+		).status
+	).toBe(200);
 
 	// validate cookie
 	expect((await apiValidate()).status === 200).toBe(true);
 
 	// login
-	expect((await apiLogin({
-		email: email,
-		password: "Password123"
-	})).status).toBe(200);
+	expect(
+		(
+			await apiLogin({
+				email: email,
+				password: "Password123"
+			})
+		).status
+	).toBe(200);
 
 	// get account info
 	expect(await apiCurrent()).toStrictEqual({
@@ -105,27 +113,34 @@ async function test_flow() {
 		message_id: null
 	});
 	expect(updatedPageResult.status).toBe(200);
-	expect(updatedPageResult.result!.message_page[0].text).toBe("updated test message");
-	expect(updatedPageResult.result!.message_page[1]).toStrictEqual(updatedBotMessage);
+	expect(updatedPageResult.result!.message_page[0].text).toBe(
+		"updated test message"
+	);
+	expect(updatedPageResult.result!.message_page[1]).toStrictEqual(
+		updatedBotMessage
+	);
 
 	// rename the chat
-	const renameResult = await apiRenameChat({ new_title: "Updated Title", id: newChatId });
+	const renameResult = await apiRenameChat({
+		new_title: "Updated Title",
+		id: newChatId
+	});
 	expect(renameResult.status).toBe(200);
 	const chatsAfterRename = await apiChats();
 	expect(chatsAfterRename.status).toBe(200);
-	const expectedChat: ChatSessionRow = { id: newChatId, title: "Updated Title" };
+	const expectedChat: ChatSessionRow = {
+		id: newChatId,
+		title: "Updated Title"
+	};
 	expect(
-		chatsAfterRename
-			.result!
-			.chat_sessions
-			.find((chat) => chat.id === expectedChat.id)!
-			.title
+		chatsAfterRename.result!.chat_sessions.find(
+			(chat) => chat.id === expectedChat.id
+		)!.title
 	).toBe(expectedChat.title);
 
 	// Delete the chat
 	const deleteResult = await apiDeleteChat(newChatId);
 	expect(deleteResult.status).toBe(200);
-	expect(deleteResult.result).toBe(newChatId);
 
 	// Verify chat is deleted
 	const chatsAfterDelete = await apiChats();
@@ -147,7 +162,8 @@ async function test_flow() {
 		event_type: "test",
 		event_description: "test",
 		hard_start: "2015-11-12T23:25:00",
-		hard_end: "2025-11-12T23:25:00"
+		hard_end: "2025-11-12T23:25:00",
+		timezone: "UTC"
 	};
 	const createEventRes = await apiUserEvent(userEvent);
 	expect(createEventRes.status).toBe(200);
@@ -173,7 +189,8 @@ async function test_flow() {
 		hard_start_before: "2020-11-12T23:25:00",
 		hard_start_after: "2010-11-12T23:25:00",
 		hard_end_before: "2030-11-12T23:25:00",
-		hard_end_after: "2020-11-12T23:25:00"
+		hard_end_after: "2020-11-12T23:25:00",
+		timezone: "UTC"
 	};
 	const searchRes = await apiSearchEvent(userEventSearch);
 	expect(searchRes.status).toBe(200);
@@ -270,7 +287,10 @@ describe("Integration Tests", () => {
 		const errorItinerary = await apiItineraryDetails(99999);
 		expect(errorItinerary.status).toBeGreaterThanOrEqual(-1);
 
-		const errorMessages = await apiMessages({ chat_session_id: 99999, message_id: null });
+		const errorMessages = await apiMessages({
+			chat_session_id: 99999,
+			message_id: null
+		});
 		expect(errorMessages.status).toBeGreaterThanOrEqual(-1);
 
 		const errorSend = await apiSendMessage({

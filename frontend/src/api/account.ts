@@ -137,7 +137,10 @@ export async function apiUpdateAccount(
 			credentials: "include",
 			body: JSON.stringify(payload)
 		});
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Update Account API error: ", error);
 		return { result: null, status: -1 };
@@ -163,10 +166,10 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 			method: "GET",
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Current API error: ", error);
 		return { result: null, status: -1 };

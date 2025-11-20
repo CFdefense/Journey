@@ -1261,6 +1261,7 @@ async fn test_user_event_flow(
 		id: parts[1].parse().unwrap(),
 	});
 	let test = String::from("test");
+	let description = String::from("Unit test event");
 	let json = Json(UserEventRequest {
 		id: None,
 		event_name: test.clone(),
@@ -1269,13 +1270,14 @@ async fn test_user_event_flow(
 		city: Some(test.clone()),
 		country: Some(test.clone()),
 		event_type: Some(test.clone()),
-		event_description: Some(test.clone()),
+		event_description: Some(description.clone()),
 		hard_start: Some(
 			NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
 		hard_end: Some(
 			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
+		timezone: Some(String::from("UTC")),
 	});
 	let Json(UserEventResponse { id }) =
 		controllers::itinerary::api_user_event(user, pool.clone(), json)
@@ -1287,14 +1289,19 @@ async fn test_user_event_flow(
 	let json = Json(UserEventRequest {
 		id: Some(id),
 		event_name: update_str.clone(),
-		street_address: None,
-		postal_code: None,
-		city: None,
-		country: None,
-		event_type: None,
-		event_description: None,
-		hard_start: None,
-		hard_end: None,
+		event_description: Some(description),
+		street_address: Some(test.clone()),
+		postal_code: Some(1),
+		city: Some(test.clone()),
+		country: Some(test.clone()),
+		event_type: Some(test.clone()),
+		hard_start: Some(
+			NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end: Some(
+			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		timezone: Some(String::from("UTC")),
 	});
 	let Json(res) = controllers::itinerary::api_user_event(user, pool.clone(), json)
 		.await
@@ -1333,6 +1340,7 @@ async fn test_user_event_flow(
 		hard_end_after: Some(
 			NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
+		timezone: Some(String::from("UTC")),
 	});
 	let Json(res) = controllers::itinerary::api_search_event(user, pool.clone(), json)
 		.await

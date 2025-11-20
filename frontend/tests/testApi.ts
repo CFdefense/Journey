@@ -147,7 +147,10 @@ export async function apiUpdateAccount(
 			credentials: "include",
 			body: JSON.stringify(payload)
 		});
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Update Account API error: ", error);
 		return { result: null, status: -1 };
@@ -173,10 +176,10 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 			method: "GET",
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Current API error: ", error);
 		return { result: null, status: -1 };
@@ -214,10 +217,10 @@ export async function apiChats(): Promise<ApiResult<ChatsResponse>> {
 			method: "GET",
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiChats error:", error);
 		return { result: null, status: -1 };
@@ -323,11 +326,10 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 			method: "GET",
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
 		return {
-			result: (await response.json()).chat_session_id,
+			result: response.ok
+				? (await response.json()).chat_session_id
+				: null,
 			status: response.status
 		};
 	} catch (error) {
@@ -348,18 +350,13 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiDeleteChat(
-	payload: number
-): Promise<ApiResult<number>> {
+export async function apiDeleteChat(payload: number): Promise<ApiResult<void>> {
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/chat/${payload}`, {
 			method: "DELETE",
 			credentials: test_state.dev_mode ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: payload, status: response.status };
+		return { result: null, status: response.status };
 	} catch (error) {
 		console.error("apiDeleteChat error:", error);
 		return { result: null, status: -1 };
@@ -394,9 +391,6 @@ export async function apiRenameChat(
 			credentials: test_state.dev_mode ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
 		return { result: null, status: response.status };
 	} catch (error) {
 		console.error("apiRenameChat error:", error);
@@ -451,7 +445,12 @@ export async function apiUpdateMessage(
 import type {
 	Itinerary,
 	SavedItinerariesResponse,
+	SavedItinerariesResponse,
 	SaveResponse,
+	SearchEventRequest,
+	SearchEventResponse,
+	UserEventRequest,
+	UserEventResponse
 	SearchEventRequest,
 	SearchEventResponse,
 	UserEventRequest,
@@ -484,7 +483,10 @@ export async function apiItineraryDetails(
 				credentials: test_state.dev_mode ? "include" : "same-origin"
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };
@@ -593,7 +595,10 @@ export async function apiUserEvent(
 				body: JSON.stringify(userEvent)
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiUserEvent error:", error);
 		return { result: null, status: -1 };
@@ -630,7 +635,10 @@ export async function apiSearchEvent(
 				body: JSON.stringify(query)
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiSearchEvent error:", error);
 		return { result: null, status: -1 };
@@ -677,9 +685,14 @@ export async function apiGetSavedItineraries(): Promise<
 			method: "GET",
 			credentials: "include"
 		});
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Get Saved Itineraries API error: ", error);
 		return { result: null, status: -1 };
 	}
 }
+
+//TODO apiDeleteSavedItinerary

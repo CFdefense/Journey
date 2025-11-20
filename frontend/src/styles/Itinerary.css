@@ -459,6 +459,7 @@
 }
 
 .user-event-form input,
+.user-event-form select,
 .user-event-form textarea {
   margin-top: 4px;
   padding: 8px 10px;
@@ -469,6 +470,7 @@
 }
 
 .user-event-form input:focus,
+.user-event-form select:focus,
 .user-event-form textarea:focus {
   outline: none;
   border-color: #007bff;
@@ -500,6 +502,7 @@
 }
 
 .location-grid input,
+.location-grid select,
 .location-grid textarea {
   padding: 8px 10px;
   border: 1px solid #ccc;

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type Context } from "react";
+import { useContext, useEffect, useRef, type Context } from "react";
 import { apiValidate } from "../api/account";
 import { Navigate } from "react-router-dom";
 import { Loading } from "./Loading";
@@ -10,34 +10,39 @@ import type { GlobalState } from "./GlobalProvider";
 /// Redirects to login if not authenticated.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ProtectedRoute({ children }: any) {
-  const [loading, setLoading] = useState(true);
   const { authorized, setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
+  const isCheckingRef = useRef(false);
 
   useEffect(() => {
     if (!bypassProtection()) {
       if (authorized !== null) {
-        setLoading(false);
+        isCheckingRef.current = false;
         return;
       }
-      apiValidate()
-        .then(({ status }) => {
-          setAuthorized(status === 200);
-        })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((err: any) => {
-          setAuthorized(false);
-          console.error(err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      // Only set checking flag when we actually start the API call
+      if (!isCheckingRef.current) {
+        isCheckingRef.current = true;
+        apiValidate()
+          .then(({ status }) => {
+            setAuthorized(status === 200);
+          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .catch((err: any) => {
+            setAuthorized(false);
+            console.error(err);
+          })
+          .finally(() => {
+            isCheckingRef.current = false;
+          });
+      }
     }
   }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
-    if (loading) return <Loading />;
+    // Only show loading if we're actively checking (authorized is null AND we've started checking)
+    if (authorized === null && isCheckingRef.current) return <Loading />;
     if (authorized === false) return <Navigate to="/login" replace />;
   }
 
@@ -49,34 +54,39 @@ export function ProtectedRoute({ children }: any) {
 /// Redirects to home if authenticated.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function InverseProtectedRoute({ children }: any) {
-  const [loading, setLoading] = useState(true);
   const { authorized, setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
+  const isCheckingRef = useRef(false);
 
   useEffect(() => {
     if (!bypassProtection()) {
       if (authorized !== null) {
-        setLoading(false);
+        isCheckingRef.current = false;
         return;
       }
-      apiValidate()
-        .then(({ status }) => {
-          setAuthorized(status === 200);
-        })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((err: any) => {
-          setAuthorized(false);
-          console.error(err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      // Only set checking flag when we actually start the API call
+      if (!isCheckingRef.current) {
+        isCheckingRef.current = true;
+        apiValidate()
+          .then(({ status }) => {
+            setAuthorized(status === 200);
+          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .catch((err: any) => {
+            setAuthorized(false);
+            console.error(err);
+          })
+          .finally(() => {
+            isCheckingRef.current = false;
+          });
+      }
     }
   }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
-    if (loading) return <Loading />;
+    // Only show loading if we're actively checking (authorized is null AND we've started checking)
+    if (authorized === null && isCheckingRef.current) return <Loading />;
     if (authorized === true) return <Navigate to="/home" replace />;
   }
 

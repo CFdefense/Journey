@@ -19,6 +19,8 @@ export default function Itineraries() {
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);

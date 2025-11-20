@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
 import userPfp from "../assets/user-pfp-temp.png";
+import { toast } from "../components/Toast";
 
 type BudgetOption =
   | "VeryLowBudget"
@@ -52,10 +53,6 @@ export default function Preferences() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
   const [budget, setBudget] = useState<BudgetBucket>(BudgetBucket.MediumBudget);
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerence>(
@@ -71,6 +68,8 @@ export default function Preferences() {
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const navbarAvatarUrl = userPfp;
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
@@ -119,10 +118,7 @@ export default function Preferences() {
         );
         setLoaded(true);
       } else {
-        setStatusMessage({
-          message: "Failed to load preferences. Please try again.",
-          type: "error"
-        });
+        toast.error("Failed to load preferences. Please try again.");
         setLoaded(true);
       }
     };
@@ -151,7 +147,6 @@ export default function Preferences() {
   // Legacy submit removed in favor of inline updates
   // Inline update for a single preference field
   const submitPartialUpdate = async (partial: Partial<UpdateRequest>) => {
-    setStatusMessage(null);
     const payload: UpdateRequest = {
       email: null,
       first_name: null,
@@ -164,19 +159,19 @@ export default function Preferences() {
       food_allergies: null,
       ...partial
     };
-    const updateResult = await apiUpdateAccount(payload);
-    if (updateResult.status !== 200) {
-      setStatusMessage({
-        message: "Update failed. Please try again.",
-        type: "error"
-      });
+    try {
+      const updateResult = await apiUpdateAccount(payload);
+      if (updateResult.status !== 200) {
+        toast.error("Update failed. Please try again.");
+        return false;
+      }
+      toast.success("Preferences updated successfully!");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update preferences. Please try again.");
       return false;
     }
-    setStatusMessage({
-      message: "Preferences updated successfully!",
-      type: "success"
-    });
-    return true;
   };
 
   return (

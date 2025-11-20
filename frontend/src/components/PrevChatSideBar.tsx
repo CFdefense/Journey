@@ -162,6 +162,9 @@ export default function PrevChatSideBar({
             <img
               src="/placeholder-logo.png"
               alt="Journey Logo"
+            <img
+              src="/logo.png"
+              alt="Journey Logo"
               className="sidebar-logo"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -172,10 +175,19 @@ export default function PrevChatSideBar({
                 ) {
                   target.style.display = "none";
                   fallback.style.display = "flex";
+                if (
+                  fallback &&
+                  fallback.classList.contains("sidebar-logo-fallback")
+                ) {
+                  target.style.display = "none";
+                  fallback.style.display = "flex";
                 }
               }}
             />
             <div className="sidebar-logo-fallback">J</div>
+            <div className="sidebar-logo-fallback">
+              <img src="/logo.png" alt="Journey Logo" />
+            </div>
           </Link>
           <button
             className={`action-btn menu-toggle-btn hamburger-btn ${sidebarVisible ? "hidden" : "visible"}`}

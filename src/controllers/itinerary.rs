@@ -65,7 +65,8 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.event_name,
 			e.user_created,
 			e.hard_start,
-			e.hard_end
+			e.hard_end,
+			e.timezone
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
 		WHERE el.itinerary_id = $1
@@ -634,18 +635,17 @@ pub async fn api_user_event(
 			r#"
 			UPDATE events
 			SET
-				street_address    = COALESCE($1, street_address),
-				postal_code       = COALESCE($2, postal_code),
-				city              = COALESCE($3, city),
-				country           = COALESCE($4, city),
-				event_type        = COALESCE($5, event_type),
-				event_description = COALESCE($6, event_description),
+				street_address    = $1,
+				postal_code       = $2,
+				city              = $3,
+				country           = $4,
+				event_type        = $5,
+				event_description = $6,
 				event_name        = $7,
-				user_created      = TRUE,
-				account_id        = $8,
-				hard_start        = COALESCE($9, hard_start),
-				hard_end          = COALESCE($10, hard_end)
-			WHERE id=$11 AND user_created=TRUE AND account_id=$8
+				hard_start        = $8,
+				hard_end          = $9,
+				timezone          = $10
+			WHERE id=$11 AND user_created=TRUE AND account_id=$12
 			RETURNING id
 			"#,
 			event.street_address,
@@ -655,10 +655,11 @@ pub async fn api_user_event(
 			event.event_type,
 			event.event_description,
 			event.event_name,
-			user.id,
 			event.hard_start,
 			event.hard_end,
-			id
+			event.timezone,
+			id,
+			user.id,
 		)
 		.fetch_optional(&pool)
 		.await
@@ -671,9 +672,10 @@ pub async fn api_user_event(
 			INSERT INTO events(
 				street_address, postal_code, city, country,
 				event_type, event_description, event_name,
-				user_created, account_id, hard_start, hard_end
+				user_created, account_id, hard_start, hard_end,
+				timezone
 			)
-			VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10)
+			VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10, $11)
 			RETURNING id
 			"#,
 			event.street_address,
@@ -686,6 +688,7 @@ pub async fn api_user_event(
 			user.id,
 			event.hard_start,
 			event.hard_end,
+			event.timezone,
 		)
 		.fetch_one(&pool)
 		.await
@@ -743,7 +746,8 @@ pub async fn api_user_event(
 ///       "user_created": false,
 ///       "account_id": 2,
 ///       "hard_start": "2025-11-15T18:00:00",
-///       "hard_end": "2025-11-15T23:00:00"
+///       "hard_end": "2025-11-15T23:00:00",
+///       "timezone": "America/New_York"
 ///     },
 ///     {
 ///       "id": 2,
@@ -756,7 +760,8 @@ pub async fn api_user_event(
 ///       "user_created": true,
 ///       "account_id": 3,
 ///       "hard_start": "2025-11-20T19:00:00",
-///       "hard_end": "2025-11-20T22:00:00"
+///       "hard_end": "2025-11-20T22:00:00",
+///       "timezone": "America/New_York"
 ///     }
 ///   ]
 /// }
@@ -775,7 +780,8 @@ pub async fn api_user_event(
             "city": "New York",
             "event_type": "Concert",
             "hard_start_after": "2025-11-01T00:00:00",
-            "hard_start_before": "2025-11-30T23:59:59"
+            "hard_start_before": "2025-11-30T23:59:59",
+            "timezone": "America/New_York"
         })
     ),
     responses(
@@ -797,7 +803,8 @@ pub async fn api_user_event(
                         "user_created": false,
                         "account_id": 2,
                         "hard_start": "2025-11-15T18:00:00",
-                        "hard_end": "2025-11-15T23:00:00"
+                        "hard_end": "2025-11-15T23:00:00",
+                        "timezone": "America/New_York"
                     },
                     {
                         "id": 2,
@@ -810,7 +817,8 @@ pub async fn api_user_event(
                         "user_created": true,
                         "account_id": 3,
                         "hard_start": "2025-11-20T19:00:00",
-                        "hard_end": "2025-11-20T22:00:00"
+                        "hard_end": "2025-11-20T22:00:00",
+                        "timezone": "America/New_York"
                     }
                 ]
             })
@@ -869,6 +877,10 @@ pub async fn api_search_event(
 	}
 	if let Some(hard_end_after) = query.hard_end_after {
 		qb.push(" AND hard_end > ").push_bind(hard_end_after);
+	}
+	if let Some(timezone) = query.timezone {
+		qb.push(" AND timezone ILIKE ")
+			.push_bind(format!("%{}%", timezone));
 	}
 	qb.push(" ORDER BY hard_start ASC LIMIT ")
 		.push_bind(EVENT_SEARCH_RESULT_LEN);
