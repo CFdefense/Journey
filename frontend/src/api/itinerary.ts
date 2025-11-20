@@ -37,7 +37,10 @@ export async function apiItineraryDetails(
 				credentials: import.meta.env.DEV ? "include" : "same-origin"
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };
@@ -46,7 +49,7 @@ export async function apiItineraryDetails(
 
 export async function apiSaveItineraryChanges(
 	payload: Itinerary
-): Promise<SaveResponse> {
+): Promise<ApiResult<SaveResponse>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/itinerary/save`, {
 			method: "POST",
@@ -57,19 +60,14 @@ export async function apiSaveItineraryChanges(
 			body: JSON.stringify(payload)
 		});
 
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`Failed to save itinerary: ${response.status} ${errorText}`
-			);
-		}
-
 		// Parse and return the SaveResponse
-		const data: SaveResponse = await response.json();
-		return data;
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Save API error:", error);
-		throw error;
+		return { result: null, status: -1 };
 	}
 }
 
@@ -104,7 +102,10 @@ export async function apiUserEvent(
 				body: JSON.stringify(userEvent)
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiUserEvent error:", error);
 		return { result: null, status: -1 };
@@ -142,7 +143,10 @@ export async function apiSearchEvent(
 				body: JSON.stringify(query)
 			}
 		);
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiSearchEvent error:", error);
 		return { result: null, status: -1 };
@@ -190,7 +194,10 @@ export async function apiGetSavedItineraries(): Promise<
 			method: "GET",
 			credentials: "include"
 		});
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Get Saved Itineraries API error: ", error);
 		return { result: null, status: -1 };

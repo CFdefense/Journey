@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import EventCard from "./EventCard";
-import type {
-  DayItinerary,
-  Event,
-  SearchEventRequest,
-  UserEventRequest
+import {
+  TIMEZONES,
+  type DayItinerary,
+  type Event,
+  type SearchEventRequest,
+  type UserEventRequest
 } from "../models/itinerary";
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
@@ -45,7 +46,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
     country: "",
     postalCode: "",
     start: "",
-    end: ""
+    end: "",
+    timezoneIndex: -1
   });
   const [searchEventForm, setSearchEventForm] = useState({
     name: "",
@@ -59,7 +61,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
     startsBefore: "",
     startsAfter: "",
     endsBefore: "",
-    endsAfter: ""
+    endsAfter: "",
+    timezoneIndex: -1
   });
   const [searchResult, setSearchResult] = useState<Event[] | null>(null);
   const [searchResultCaption, setSearchResultCaption] = useState<string>("");
@@ -135,7 +138,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
         event_type: "",
         user_created: false,
         hard_start: null,
-        hard_end: null
+        hard_end: null,
+        timezone: null
       };
     }
 
@@ -230,7 +234,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const onSaveUserEvent = async () => {
     const userEvent: UserEventRequest = {
       id: null,
-      event_name: sanitize(userEventForm.name) ?? "", //TODO: name must not be null or empty, so we could handle the error before sending the request
+      event_name: sanitize(userEventForm.name)!,
       event_description: sanitize(userEventForm.description),
       event_type: sanitize(userEventForm.type),
       street_address: sanitize(userEventForm.address),
@@ -240,15 +244,19 @@ const Itinerary: React.FC<ItineraryProps> = ({
         userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
           ? parseInt(userEventForm.postalCode)
           : null,
-      hard_start: sanitize(userEventForm.start?.substring(0, 19)),
-      hard_end: sanitize(userEventForm.end?.substring(0, 19))
+      hard_start: sanitize(userEventForm.start),
+      hard_end: sanitize(userEventForm.end),
+      timezone:
+        userEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[userEventForm.timezoneIndex]
     };
     const result = await apiUserEvent(userEvent);
     if (result.status === 401) {
       navigate("/login");
       return;
     } else if (result.result === null || result.status !== 200) {
-      alert("TODO");
+      alert("TODO: handle error properly - could not create user event");
       return;
     }
     setUserEventForm({
@@ -260,7 +268,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
       country: "",
       postalCode: "",
       start: "",
-      end: ""
+      end: "",
+      timezoneIndex: -1
     });
     const event = userEvent as Event;
     event.id = result.result.id;
@@ -288,12 +297,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
       event_type: sanitize(searchEventForm.type),
       event_description: sanitize(searchEventForm.description),
       event_name: sanitize(searchEventForm.name),
-      hard_start_before: sanitize(
-        searchEventForm.startsBefore?.substring(0, 19)
-      ),
-      hard_start_after: sanitize(searchEventForm.startsAfter?.substring(0, 19)),
-      hard_end_before: sanitize(searchEventForm.endsBefore?.substring(0, 19)),
-      hard_end_after: sanitize(searchEventForm.endsAfter?.substring(0, 19))
+      hard_start_before: sanitize(searchEventForm.startsBefore),
+      hard_start_after: sanitize(searchEventForm.startsAfter),
+      hard_end_before: sanitize(searchEventForm.endsBefore),
+      hard_end_after: sanitize(searchEventForm.endsAfter),
+      timezone:
+        searchEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[searchEventForm.timezoneIndex]
     };
     const result = await apiSearchEvent(searchEvent);
     if (result.status === 401) {
@@ -480,6 +491,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   className="card-save-button"
                   onClick={onSaveUserEvent}
                   title="Save"
+                  form="user-event-form"
+                  type="submit"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -502,7 +515,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
               </div>
             </div>
 
-            <form className="user-event-form" onSubmit={onSaveUserEvent}>
+            <form
+              id="user-event-form"
+              className="user-event-form"
+              onSubmit={onSaveUserEvent}
+            >
               <label>
                 Name
                 <input
@@ -590,37 +607,59 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
                 <div className="location-grid-row">
                   <label>
-                    <span>
-                      Start Time (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
-                    </span>
+                    <span>Start Time</span>
                     <input
                       type="datetime-local"
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          start: new Date(e.target.value).toISOString()
-                        })
-                      }
+                      onChange={(e) => {
+                        let start = e.target.value;
+                        if (start !== "") {
+                          start += ":00";
+                        }
+                        setUserEventForm({ ...userEventForm, start });
+                      }}
                     />
                   </label>
                   <label>
-                    <span>
-                      End Time (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
-                    </span>
+                    <span>End Time</span>
                     <input
                       type="datetime-local"
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          end: new Date(e.target.value).toISOString()
-                        })
-                      }
+                      onChange={(e) => {
+                        let end = e.target.value;
+                        if (end !== "") {
+                          end += ":00";
+                        }
+                        setUserEventForm({ ...userEventForm, end });
+                      }}
                     />
                   </label>
                 </div>
               </div>
+
+              {(userEventForm.start || userEventForm.end) && (
+                <label>
+                  <span>Timezone</span>
+                  <select
+                    value={userEventForm.timezoneIndex}
+                    onChange={(e) =>
+                      setUserEventForm({
+                        ...userEventForm,
+                        timezoneIndex: +e.target.value
+                      })
+                    }
+                  >
+                    {[
+                      <option key={-1} value={-1}>
+                        No Timezone Selected
+                      </option>,
+                      ...TIMEZONES.map((tz, index) => (
+                        <option key={index} value={index}>
+                          {tz}
+                        </option>
+                      ))
+                    ]}
+                  </select>
+                </label>
+              )}
             </form>
           </div>
         </div>
@@ -764,63 +803,91 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     </label>
 
                     <label>
-                      {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Starts Before (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Starts Before
                       <input
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          let startsBefore = e.target.value;
+                          if (startsBefore !== "") {
+                            startsBefore += ":00";
+                          }
                           setSearchEventForm({
                             ...searchEventForm,
-                            startsBefore: new Date(e.target.value).toISOString()
-                          })
-                        }
+                            startsBefore
+                          });
+                        }}
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
-                      {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Starts After (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Starts After
                       <input
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          let startsAfter = e.target.value;
+                          if (startsAfter !== "") {
+                            startsAfter += ":00";
+                          }
                           setSearchEventForm({
                             ...searchEventForm,
-                            startsAfter: new Date(e.target.value).toISOString()
-                          })
-                        }
+                            startsAfter
+                          });
+                        }}
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
-                      {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Ends Before (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Ends Before
                       <input
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          let endsBefore = e.target.value;
+                          if (endsBefore !== "") {
+                            endsBefore += ":00";
+                          }
                           setSearchEventForm({
                             ...searchEventForm,
-                            endsBefore: new Date(e.target.value).toISOString()
-                          })
-                        }
+                            endsBefore
+                          });
+                        }}
                         type="datetime-local"
                       />
                     </label>
 
                     <label>
-                      {/*NOTICE! Input elements must use the browser's timezone*/}
-                      Ends After (
-                      {Intl.DateTimeFormat().resolvedOptions().timeZone})
+                      Ends After
                       <input
+                        onChange={(e) => {
+                          let endsAfter = e.target.value;
+                          if (endsAfter !== "") {
+                            endsAfter += ":00";
+                          }
+                          setSearchEventForm({ ...searchEventForm, endsAfter });
+                        }}
+                        type="datetime-local"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Timezone</span>
+                      <select
                         onChange={(e) =>
                           setSearchEventForm({
                             ...searchEventForm,
-                            endsAfter: new Date(e.target.value).toISOString()
+                            timezoneIndex: +e.target.value
                           })
                         }
-                        type="datetime-local"
-                      />
+                      >
+                        {[
+                          <option key={-1} value={-1}>
+                            No Timezone Selected
+                          </option>,
+                          ...TIMEZONES.map((tz, index) => (
+                            <option key={index} value={index}>
+                              {tz}
+                            </option>
+                          ))
+                        ]}
+                      </select>
                     </label>
                   </div>
                 </form>
