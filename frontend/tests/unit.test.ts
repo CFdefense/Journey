@@ -8,7 +8,11 @@ import {
 	fetchItinerary,
 	populateItinerary,
 	convertToApiFormat,
-	sanitize
+	sanitize,
+	getTimeBlockFromTimestamp,
+	getDateFromTimestamp,
+	canDropEventInTimeBlock,
+	getDropErrorMessage
 } from "../src/helpers/itinerary";
 import type {
 	Itinerary as ApiItinerary,
@@ -43,7 +47,8 @@ import type {
 import type {
 	Itinerary,
 	SaveResponse,
-	SavedItinerariesResponse
+	SavedItinerariesResponse,
+	Event
 } from "../src/models/itinerary";
 
 // Mock the API module
@@ -269,6 +274,182 @@ describe("Itinerary Helper Tests", () => {
 
 		const result = await fetchItinerary(1);
 		expect(result[0].date).toBe("");
+	});
+
+	test("Test fetchItinerary with error", async () => {
+		vi.mocked(itineraryApi.apiItineraryDetails).mockRejectedValue(new Error("Network error"));
+
+		const result = await fetchItinerary(1);
+		expect(result[0].date).toBe("");
+	});
+	
+	test("Test getTimeBlockFromTimestamp - Morning", () => {
+		expect(getTimeBlockFromTimestamp("2025-01-01T08:00:00")).toBe("Morning");
+		expect(getTimeBlockFromTimestamp("2025-01-01T04:00:00Z")).toBe("Morning");
+		expect(getTimeBlockFromTimestamp("2025-01-01T11:59:59Z")).toBe("Morning");
+	});
+
+	test("Test getTimeBlockFromTimestamp - Afternoon", () => {
+		expect(getTimeBlockFromTimestamp("2025-01-01T12:00:00")).toBe("Afternoon");
+		expect(getTimeBlockFromTimestamp("2025-01-01T15:30:00Z")).toBe("Afternoon");
+		expect(getTimeBlockFromTimestamp("2025-01-01T17:59:59Z")).toBe("Afternoon");
+	});
+
+	test("Test getTimeBlockFromTimestamp - Evening", () => {
+		expect(getTimeBlockFromTimestamp("2025-01-01T18:00:00")).toBe("Evening");
+		expect(getTimeBlockFromTimestamp("2025-01-01T22:00:00Z")).toBe("Evening");
+		expect(getTimeBlockFromTimestamp("2025-01-01T03:59:59Z")).toBe("Evening");
+	});
+
+	test("Test getTimeBlockFromTimestamp - Invalid timestamp", () => {
+		expect(getTimeBlockFromTimestamp("invalid")).toBe(null);
+		expect(getTimeBlockFromTimestamp("")).toBe(null);
+	});
+
+	test("Test getDateFromTimestamp - Valid timestamps", () => {
+		expect(getDateFromTimestamp("2025-01-01T08:00:00")).toBe("2025-01-01");
+		expect(getDateFromTimestamp("2025-01-01T08:00:00Z")).toBe("2025-01-01");
+		expect(getDateFromTimestamp("2025-12-31T23:59:59Z")).toBe("2025-12-31");
+	});
+
+	test("Test getDateFromTimestamp - Invalid timestamp", () => {
+		expect(getDateFromTimestamp("invalid")).toBe("");
+		expect(getDateFromTimestamp("")).toBe("");
+	});
+
+	test("Test canDropEventInTimeBlock - No hard_start", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Flexible Event",
+		event_description: "Can move anywhere",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: null,
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(true);
+		expect(canDropEventInTimeBlock(event, "Afternoon", "2025-01-02", 1)).toBe(true);
+	});
+
+	test("Test canDropEventInTimeBlock - Unassigned events (targetTimeIndex -1)", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Any Event",
+		event_description: "Test",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: "2025-01-01T08:00:00Z",
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(canDropEventInTimeBlock(event, "Afternoon", "2025-01-02", -1)).toBe(true);
+	});
+
+	test("Test canDropEventInTimeBlock - Matching time block and date", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Fixed Event",
+		event_description: "Must be at specific time",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: "2025-01-01T08:00:00Z",
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(true);
+	});
+
+	test("Test canDropEventInTimeBlock - Wrong time block", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Fixed Event",
+		event_description: "Must be in morning",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: "2025-01-01T08:00:00Z",
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(canDropEventInTimeBlock(event, "Afternoon", "2025-01-01", 1)).toBe(false);
+	});
+
+	test("Test canDropEventInTimeBlock - Wrong date", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Fixed Event",
+		event_description: "Must be on specific date",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: "2025-01-01T08:00:00Z",
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-02", 0)).toBe(false);
+	});
+
+	test("Test getDropErrorMessage - Event with hard_start", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Concert",
+		event_description: "Must attend at specific time",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "entertainment",
+		user_created: false,
+		hard_start: "2025-01-01T19:00:00Z",
+		hard_end: null,
+		timezone: null
+		};
+		
+		const message = getDropErrorMessage(event);
+		expect(message).toBe('"Concert" has a fixed start time and must be placed in the Evening block on 2025-01-01.');
+	});
+
+	test("Test getDropErrorMessage - Event without hard_start", () => {
+		const event: Event = {
+		id: 1,
+		event_name: "Flexible Event",
+		event_description: "Can be anywhere",
+		street_address: "123 Main St",
+		postal_code: 12345,
+		city: "TestCity",
+		country: "TestCountry",
+		event_type: "food",
+		user_created: false,
+		hard_start: null,
+		hard_end: null,
+		timezone: null
+		};
+		
+		expect(getDropErrorMessage(event)).toBe(null);
 	});
 });
 
