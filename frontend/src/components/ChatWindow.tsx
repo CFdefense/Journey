@@ -110,6 +110,7 @@ export default function ChatWindow({
       prevMessagesRef.current = messages;
       prevMessagesLengthRef.current = messages.length;
 
+
       // If we have messages on initial mount, this is a reloaded chat session
       if (messages.length > 0) {
         setIsSwitching(true);

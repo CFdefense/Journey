@@ -246,3 +246,110 @@
     width: 300px;
   }
 }
+
+/* Itinerary Modal styles - unique class names to avoid conflicts */
+.itinerary-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.itinerary-modal-content {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.itinerary-modal-content h2 {
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  color: #0b1220;
+  font-weight: 700;
+}
+
+.itinerary-modal-content p {
+  margin: 0 0 24px 0;
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.itinerary-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.itinerary-modal-actions button {
+  min-width: 120px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itinerary-btn-secondary {
+  background: #eef1f4;
+  color: #0b1220;
+}
+
+.itinerary-btn-secondary:hover:not(:disabled) {
+  background: #e4e8ec;
+}
+
+.itinerary-btn-primary {
+  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+}
+
+.itinerary-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
+  transform: translateY(-1px);
+}
+
+.itinerary-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
+}
+
+.itinerary-btn-primary:disabled,
+.itinerary-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .itinerary-modal-content {
+    padding: 24px;
+  }
+
+  .itinerary-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .itinerary-modal-actions button {
+    width: 100%;
+  }
+}

@@ -168,3 +168,7 @@ export const TIMEZONES: string[] = [
 	"Pacific/Tongatapu",
 	"Pacific/Kiritimati"
 ];
+
+export type UnsaveRequest = {
+	id: number,
+};

@@ -298,17 +298,11 @@ export default function Preferences() {
                               }
                             }}
                           >
-                            {budgetOptions.map((option) => {
-                              const enumValue =
-                                BudgetBucket[
-                                  option as keyof typeof BudgetBucket
-                                ];
-                              return (
-                                <option key={option} value={enumValue}>
-                                  {option.replace(/([a-z])([A-Z])/g, "$1 $2")}
-                                </option>
-                              );
-                            })}
+                            {budgetOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
                           </select>
                         ) : (
                           <div className="field-row__value">
