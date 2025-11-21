@@ -1066,6 +1066,55 @@
         ]
       }
     },
+    "/api/itinerary/unsave": {
+      "post": {
+        "tags": [
+          "Itinerary"
+        ],
+        "summary": "Unsave an existing itinerary",
+        "description": "Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user.",
+        "operationId": "api_unsave",
+        "requestBody": {
+          "description": "The itinerary id to unsave.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully unsaved itinerary"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Itinerary not found or doesn't belong to user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
     "/api/itinerary/userEvent": {
       "post": {
         "tags": [
@@ -1806,6 +1855,20 @@
           "password": {
             "type": "string",
             "description": "Plaintext password submitted by the user"
+          }
+        }
+      },
+      "UnsaveRequest": {
+        "type": "object",
+        "description": "Request model from /api/itinerary/unsave",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "itinerary id to unsave"
           }
         }
       },

@@ -32,6 +32,7 @@ use crate::swagger::SecurityAddon;
 		api_get_itinerary,
 		api_saved_itineraries,
 		api_save,
+		api_unsave,
 		api_user_event,
 		api_search_event,
 		api_delete_user_event
@@ -465,6 +466,75 @@ pub async fn api_save(
 	Ok(Json(SaveResponse { id }))
 }
 
+/// Unsave an existing itinerary for the user
+///
+/// # Method
+/// `POST /api/itinerary/unsave`
+///
+/// # Request Body
+/// - [UnsaveRequest]
+///
+/// # Responses
+/// - `200 OK` - Successfully unsaved itinerary for this user
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - Itinerary not found or doesn't belong to user (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/itinerary/unsave
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "id": 3
+///       }'
+/// ```
+#[utoipa::path(
+	post,
+	path="/unsave",
+	summary="Unsave an existing itinerary",
+	description="Sets the saved field to false for the given itinerary. Verifies the itinerary belongs to the user.",
+	request_body(
+		content=UnsaveRequest,
+		content_type="application/json",
+		description="The itinerary id to unsave."
+	),
+	responses(
+		(status=200, description="Successfully unsaved itinerary"),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Itinerary not found or doesn't belong to user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Itinerary"
+)]
+pub async fn api_unsave(
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
+	Json(UnsaveRequest { id }): Json<UnsaveRequest>,
+) -> ApiResult<()> {
+	// Update the itinerary to set saved=FALSE
+	sqlx::query!(
+		r#"
+		UPDATE itineraries
+		SET saved = FALSE
+		WHERE id = $1 AND account_id = $2
+		RETURNING id;
+		"#,
+		id,
+		user.id
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(AppError::from)?
+	.ok_or(AppError::NotFound)?;
+
+	Ok(())
+}
+
 /// Insert or update a user-created custom event
 ///
 /// # Method
@@ -866,6 +936,7 @@ pub fn itinerary_routes() -> AxumRouter {
 	AxumRouter::new()
 		.route("/saved", get(api_saved_itineraries))
 		.route("/save", post(api_save))
+		.route("/unsave", post(api_unsave))
 		.route("/{id}", get(api_get_itinerary))
 		.route("/userEvent", post(api_user_event))
 		.route("/searchEvent", post(api_search_event))

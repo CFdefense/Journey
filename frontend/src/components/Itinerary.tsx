@@ -231,7 +231,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const onCreateEvent = () => setCreateModalOpen(true);
   const closeCreateModal = () => setCreateModalOpen(false);
-  const onSaveUserEvent = async () => {
+  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const userEvent: UserEventRequest = {
       id: null,
       event_name: sanitize(userEventForm.name)!,
@@ -281,7 +282,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const onSearchEvents = () => setSearchModalOpen(true);
   const closeSearchModal = () => setSearchModalOpen(false);
-  const onSearchSend = async () => {
+  const onSearchSend = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const searchEvent: SearchEventRequest = {
       id:
         searchEventForm.id && searchEventForm.id.trim() !== ""
@@ -365,6 +367,43 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
 
+  const addDayBefore = () => {
+    const first = new Date(localDays[0].date);
+    first.setDate(first.getDate() - 1);
+    const newDay: DayItinerary = {
+      date: first.toISOString().slice(0, 10),
+      timeBlocks: []
+    };
+    setLocalDays([newDay, ...localDays]);
+    setButtonsDisabled(false);
+  };
+
+  const addDayAfter = () => {
+    const last = new Date(localDays[localDays.length - 1].date);
+    last.setDate(last.getDate() + 1);
+    const newDay: DayItinerary = {
+      date: last.toISOString().slice(0, 10),
+      timeBlocks: []
+    };
+    setLocalDays([...localDays, newDay]);
+    setButtonsDisabled(false);
+  };
+
+  const deleteDay = (first: boolean) => {
+    setLocalDays(
+      first
+        ? localDays.slice(1, localDays.length)
+        : localDays.slice(0, localDays.length - 1)
+    );
+    setUnassignedEvents([
+      ...unassignedEvents,
+      ...localDays[first ? 0 : localDays.length - 1].timeBlocks.flatMap(
+        (b) => b.events
+      )
+    ]);
+    setButtonsDisabled(false);
+  };
+
   return (
     <div className={`itinerary-section ${compact ? "compact" : ""}`}>
       {/* Header Row */}
@@ -435,15 +474,45 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
       {/* Day Tabs */}
       <div className="day-tabs">
+        {editMode && (
+          <button className="day-tab" onClick={addDayBefore}>
+            +
+          </button>
+        )}
         {localDays.map((day, index) => (
-          <button
+          <div
             key={day.date.toString()}
             className={`day-tab ${index === selectedDayIndex ? "active" : ""}`}
             onClick={() => setSelectedDayIndex(index)}
           >
             Day {index + 1} ({day.date.toString()})
-          </button>
+            {editMode &&
+              localDays.length > 1 &&
+              (index === 0 || index === localDays.length - 1) && (
+                <button
+                  className="day-delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteDay(index === 0);
+                    if (
+                      index !== selectedDayIndex ||
+                      (index === selectedDayIndex &&
+                        index === localDays.length - 1)
+                    ) {
+                      setSelectedDayIndex(selectedDayIndex - 1);
+                    }
+                  }}
+                >
+                  -
+                </button>
+              )}
+          </div>
         ))}
+        {editMode && (
+          <button className="day-tab" onClick={addDayAfter}>
+            +
+          </button>
+        )}
       </div>
 
       {/* Time Blocks */}
@@ -489,7 +558,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <div className="event-card-buttons">
                 <button
                   className="card-save-button"
-                  onClick={onSaveUserEvent}
                   title="Save"
                   form="user-event-form"
                   type="submit"
@@ -678,7 +746,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   <div className="event-card-buttons">
                     <button
                       className="card-save-button"
-                      onClick={onSearchSend}
+                      // onClick={onSearchSend}
+                      form="search-event-form"
                       title="Search"
                     >
                       <svg
@@ -701,7 +770,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </div>
                 </div>
 
-                <form className="user-event-form" onSubmit={onSearchSend}>
+                <form
+                  id="search-event-form"
+                  className="user-event-form"
+                  onSubmit={onSearchSend}
+                >
                   <div className="location-grid">
                     <label>
                       Name
