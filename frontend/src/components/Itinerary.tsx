@@ -10,7 +10,7 @@ import {
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import { sanitize } from "../helpers/itinerary";
+import { sanitize, canDropEventInTimeBlock, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
 
 interface ItineraryProps {
   days?: DayItinerary[];
@@ -143,6 +143,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
       };
     }
 
+    //  checks to see if being dropped in a time block, and the event has a hard start
+    if (targetTimeIndex >= 0 && draggedEvent.hard_start) {
+		const currentDay = localDays[selectedDayIndex];
+		const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
+		const targetDate = currentDay.date;
+		
+		if (!canDropEventInTimeBlock(draggedEvent, targetTimeBlock, targetDate, targetTimeIndex)) {
+			const requiredTimeBlock = getTimeBlockFromTimestamp(draggedEvent.hard_start);
+			const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
+			alert(`"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`);
+			return;
+		}
+	}
+
     // Add event to target time block if not already there
     if (targetTimeIndex >= 0) {
       const targetBlock = currentDay.timeBlocks[targetTimeIndex];
@@ -205,11 +219,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const getTimeRange = (timeLabel: string): string => {
     switch (timeLabel) {
       case "Morning":
-        return "6:00 AM - 12:00 PM";
+        return "4:00 AM - 12:00 PM";
       case "Afternoon":
         return "12:00 PM - 6:00 PM";
       case "Evening":
-        return "6:00 PM - 12:00 AM";
+        return "6:00 PM - 4:00 AM";
       default:
         return "";
     }

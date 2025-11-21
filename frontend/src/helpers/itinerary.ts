@@ -1,7 +1,8 @@
 import type {
 	Itinerary as ApiItinerary,
 	EventDay,
-	DayItinerary
+	DayItinerary,
+	Event
 } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
 
@@ -106,4 +107,89 @@ export function convertToApiFormat(
 export function sanitize(v: string | null): string | null {
 	const str = v?.trim();
 	return str && str !== "" ? str : null;
+}
+
+export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
+	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
+	let timestamp = utcTimestamp;
+	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+		timestamp = timestamp + 'Z';
+	}
+	
+	const date = new Date(timestamp);
+	
+	// Checks if the date is valid instead of using the try catch.
+	if (isNaN(date.getTime())) {
+		return null;
+	}
+	
+	const hours = date.getUTCHours();
+	
+	if (hours >= 4 && hours < 12) {
+		return "Morning";
+	} else if (hours >= 12 && hours < 18) {
+		return "Afternoon";
+	} else if (hours >= 18 || hours < 4) {
+		return "Evening";
+	}
+	return null;
+}
+
+export function getDateFromTimestamp(utcTimestamp: string): string {
+	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
+	let timestamp = utcTimestamp;
+	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+		timestamp = timestamp + 'Z';
+	}
+	
+	const date = new Date(timestamp);
+	
+	// Same date check
+	if (isNaN(date.getTime())) {
+		return "";
+	}
+	return date.toISOString().split('T')[0];
+}
+
+export function canDropEventInTimeBlock(
+	event: Event,
+	targetTimeBlock: string,
+	targetDate: string,
+	targetTimeIndex: number
+): boolean {
+	// Always allows it to be dropped into unassigned events
+	if (targetTimeIndex === -1) {
+		return true;
+	}
+
+	// If there is no hardstart, let it drop wherever
+	if (!event.hard_start) {
+		return true;
+	}
+
+	// Get the required time block and date from hard_start
+	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);
+	const requiredDate = getDateFromTimestamp(event.hard_start);
+
+	// If we couldn't parse the timestamp, allow the drop (fail open)
+	if (!requiredTimeBlock || !requiredDate) {
+		return true;
+	}
+
+	// Check if both time block and date match
+	return requiredTimeBlock === targetTimeBlock && requiredDate === targetDate;
+}
+
+// Lets you know where the event is allowed to be dropped
+export function getDropErrorMessage(event: Event): string | null {
+	if (!event.hard_start) return null;
+	
+	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);
+	const requiredDate = getDateFromTimestamp(event.hard_start);
+	
+	if (requiredTimeBlock && requiredDate) {
+		return `"${event.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`;
+	}
+	
+	return null;
 }
