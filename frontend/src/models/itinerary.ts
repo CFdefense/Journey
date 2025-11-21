@@ -170,5 +170,5 @@ export const TIMEZONES: string[] = [
 ];
 
 export type UnsaveRequest = {
-	id: number,
+	id: number;
 };

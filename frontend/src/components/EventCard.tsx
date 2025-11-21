@@ -101,7 +101,8 @@ const EventCard: React.FC<EventCardProps> = ({
     return addr;
   };
 
-  const onSaveUserEvent = async () => {
+  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const userEvent: UserEventRequest = {
       id: eventData.id,
       event_name: sanitize(inputEvent.event_name)!,
@@ -207,7 +208,6 @@ const EventCard: React.FC<EventCardProps> = ({
               {event.user_created && (
                 <button
                   className="card-edit-button"
-                  onClick={onSaveUserEvent}
                   form="editable-card-contents"
                 >
                   <svg
@@ -230,6 +230,7 @@ const EventCard: React.FC<EventCardProps> = ({
               <form
                 id="editable-card-contents"
                 className="editable-card-contents"
+                onSubmit={onSaveUserEvent}
               >
                 <h2>
                   <strong>Name:</strong>{" "}

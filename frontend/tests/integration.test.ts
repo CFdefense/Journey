@@ -3,9 +3,19 @@
 import { describe, expect, test } from "vitest";
 import {
 	test_state,
-	apiSignUp, apiValidate, apiLogin, apiCurrent, apiLogout,
-	apiChats, apiNewChatId, apiSendMessage, apiMessages,
-	apiItineraryDetails, apiDeleteChat, apiRenameChat, apiUpdateMessage,
+	apiSignUp,
+	apiValidate,
+	apiLogin,
+	apiCurrent,
+	apiLogout,
+	apiChats,
+	apiNewChatId,
+	apiSendMessage,
+	apiMessages,
+	apiItineraryDetails,
+	apiDeleteChat,
+	apiRenameChat,
+	apiUpdateMessage,
 	apiUserEvent,
 	apiSearchEvent,
 	apiDeleteUserEvent,
@@ -14,7 +24,11 @@ import {
 	apiGetSavedItineraries
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 import { ChatSessionRow } from "../src/models/chat";
-import { SearchEventRequest, UserEventRequest, Itinerary } from "../src/models/itinerary";
+import {
+	SearchEventRequest,
+	UserEventRequest,
+	Itinerary
+} from "../src/models/itinerary";
 
 async function test_flow() {
 	// sign up
@@ -194,7 +208,11 @@ async function test_flow() {
 	};
 	const searchRes = await apiSearchEvent(userEventSearch);
 	expect(searchRes.status).toBe(200);
-	expect(searchRes.result!.events.some((e: { event_name: string; }) => e.event_name === updatedName)).toBe(true);
+	expect(
+		searchRes.result!.events.some(
+			(e: { event_name: string }) => e.event_name === updatedName
+		)
+	).toBe(true);
 
 	// Delete user-event
 	const deleteRes = await apiDeleteUserEvent(createEventRes.result!.id);
@@ -203,7 +221,11 @@ async function test_flow() {
 	// Verify deletion
 	const delSearchRes = await apiSearchEvent(userEventSearch);
 	expect(delSearchRes.status).toBe(200);
-	expect(delSearchRes.result!.events.some((e: { event_name: string; }) => e.event_name === updatedName)).toBe(false);
+	expect(
+		delSearchRes.result!.events.some(
+			(e: { event_name: string }) => e.event_name === updatedName
+		)
+	).toBe(false);
 
 	// Test save/unsave itinerary flow
 	const testItinerary: Itinerary = {
@@ -225,7 +247,11 @@ async function test_flow() {
 	// Verify it's in saved itineraries
 	const savedItineraries = await apiGetSavedItineraries();
 	expect(savedItineraries.status).toBe(200);
-	expect(savedItineraries.result!.itineraries.some((i: { id: any; }) => i.id === savedItineraryId)).toBe(true);
+	expect(
+		savedItineraries.result!.itineraries.some(
+			(i: { id: any }) => i.id === savedItineraryId
+		)
+	).toBe(true);
 
 	// Unsave the itinerary
 	testItinerary.id = savedItineraryId;
@@ -235,7 +261,11 @@ async function test_flow() {
 	// Verify it's no longer in saved itineraries
 	const savedItinerariesAfterUnsave = await apiGetSavedItineraries();
 	expect(savedItinerariesAfterUnsave.status).toBe(200);
-	expect(savedItinerariesAfterUnsave.result!.itineraries.some((i: { id: any; }) => i.id === savedItineraryId)).toBe(false);
+	expect(
+		savedItinerariesAfterUnsave.result!.itineraries.some(
+			(i: { id: any }) => i.id === savedItineraryId
+		)
+	).toBe(false);
 
 	// Test unsaving non-existent itinerary (should return 404)
 	const nonExistentItinerary: Itinerary = {
