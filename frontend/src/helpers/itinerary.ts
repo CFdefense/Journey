@@ -110,42 +110,45 @@ export function sanitize(v: string | null): string | null {
 }
 
 export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
-	try {
-		// Ensure the timestamp is treated as UTC by adding 'Z' if not present
-		let timestamp = utcTimestamp;
-		if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('Z')) {
-			timestamp = timestamp + 'Z';
-		}
-		
-		const date = new Date(timestamp);
-		const hours = date.getUTCHours();
-		
-		if (hours >= 4 && hours < 12) {
-			return "Morning";
-		} else if (hours >= 12 && hours < 18) {
-			return "Afternoon";
-		} else if (hours >= 18 || hours < 4) {
-			return "Evening";
-		}
-		return null;
-	} catch {
+	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
+	let timestamp = utcTimestamp;
+	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+		timestamp = timestamp + 'Z';
+	}
+	
+	const date = new Date(timestamp);
+	
+	// Checks if the date is valid instead of using the try catch.
+	if (isNaN(date.getTime())) {
 		return null;
 	}
+	
+	const hours = date.getUTCHours();
+	
+	if (hours >= 4 && hours < 12) {
+		return "Morning";
+	} else if (hours >= 12 && hours < 18) {
+		return "Afternoon";
+	} else if (hours >= 18 || hours < 4) {
+		return "Evening";
+	}
+	return null;
 }
 
 export function getDateFromTimestamp(utcTimestamp: string): string {
-	try {
-		// Ensure the timestamp is treated as UTC by adding 'Z' if not present
-		let timestamp = utcTimestamp;
-		if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('Z')) {
-			timestamp = timestamp + 'Z';
-		}
-		
-		const date = new Date(timestamp);
-		return date.toISOString().split('T')[0];
-	} catch {
+	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
+	let timestamp = utcTimestamp;
+	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+		timestamp = timestamp + 'Z';
+	}
+	
+	const date = new Date(timestamp);
+	
+	// Same date check
+	if (isNaN(date.getTime())) {
 		return "";
 	}
+	return date.toISOString().split('T')[0];
 }
 
 export function canDropEventInTimeBlock(
