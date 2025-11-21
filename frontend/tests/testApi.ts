@@ -445,15 +445,10 @@ export async function apiUpdateMessage(
 import type {
 	Itinerary,
 	SavedItinerariesResponse,
-	SavedItinerariesResponse,
 	SaveResponse,
 	SearchEventRequest,
 	SearchEventResponse,
 	UnsaveRequest,
-	UserEventRequest,
-	UserEventResponse
-	SearchEventRequest,
-	SearchEventResponse,
 	UserEventRequest,
 	UserEventResponse
 } from "../src/models/itinerary";
@@ -695,5 +690,3 @@ export async function apiGetSavedItineraries(): Promise<
 		return { result: null, status: -1 };
 	}
 }
-
-//TODO apiDeleteSavedItinerary

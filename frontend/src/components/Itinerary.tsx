@@ -217,7 +217,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const onCreateEvent = () => setCreateModalOpen(true);
   const closeCreateModal = () => setCreateModalOpen(false);
-  const onSaveUserEvent = async () => {
+  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const userEvent: UserEventRequest = {
       id: null,
       event_name: sanitize(userEventForm.name)!,
@@ -267,7 +268,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const onSearchEvents = () => setSearchModalOpen(true);
   const closeSearchModal = () => setSearchModalOpen(false);
-  const onSearchSend = async () => {
+  const onSearchSend = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const searchEvent: SearchEventRequest = {
       id:
         searchEventForm.id && searchEventForm.id.trim() !== ""
@@ -475,7 +477,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               <div className="event-card-buttons">
                 <button
                   className="card-save-button"
-                  onClick={onSaveUserEvent}
                   title="Save"
                   form="user-event-form"
                   type="submit"
@@ -664,7 +665,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   <div className="event-card-buttons">
                     <button
                       className="card-save-button"
-                      onClick={onSearchSend}
+                      // onClick={onSearchSend}
+                      form="search-event-form"
                       title="Search"
                     >
                       <svg
@@ -687,7 +689,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </div>
                 </div>
 
-                <form className="user-event-form" onSubmit={onSearchSend}>
+                <form
+                  id="search-event-form"
+                  className="user-event-form"
+                  onSubmit={onSearchSend}
+                >
                   <div className="location-grid">
                     <label>
                       Name
