@@ -104,10 +104,11 @@ export default function Home() {
             return;
           }
           setShowFinishPopup(
-            account.budget_preference === null ||
-              account.disabilities === null ||
-              account.food_allergies === null ||
-              account.risk_preference === null
+            account.budget_preference === null &&
+            account.disabilities === "" &&
+            account.food_allergies === "" &&
+            account.risk_preference === null
+
           );
         })
         .catch((err) => {

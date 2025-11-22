@@ -54,12 +54,10 @@ export default function Preferences() {
   const location = useLocation();
 
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [budget, setBudget] = useState<BudgetBucket>(BudgetBucket.MediumBudget);
-  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence>(
-    RiskTolerence.LightFun
-  );
-  const [disabilities, setDisabilities] = useState("");
-  const [foodPreferences, setFoodPreferences] = useState("");
+  const [budget, setBudget] = useState<BudgetBucket | null>(null);
+  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(null);
+  const [disabilities, setDisabilities] = useState<string | null>(null);
+  const [foodPreferences, setFoodPreferences] = useState<string | null>(null);
   const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
   const [isEditingRisk, setIsEditingRisk] = useState<boolean>(false);
   const [isEditingDisabilities, setIsEditingDisabilities] =
@@ -289,15 +287,20 @@ export default function Preferences() {
                         {isEditingBudget ? (
                           <select
                             id="budget"
-                            value={enumToString(BudgetBucket, budget)}
+                            value={budget ? enumToString(BudgetBucket, budget) : ""}
                             onChange={(e) => {
                               const key = e.target.value;
-                              const newVal = stringToEnum(BudgetBucket, key);
-                              if (newVal !== undefined) {
-                                setBudget(newVal as BudgetBucket);
+                              if (key === "") {
+                                setBudget(null);
+                              } else {
+                                const newVal = stringToEnum(BudgetBucket, key);
+                                if (newVal !== undefined) {
+                                  setBudget(newVal as BudgetBucket);
+                                }
                               }
                             }}
                           >
+                            <option value="">Select budget...</option>
                             {budgetOptions.map((option) => (
                               <option key={option} value={option}>
                                 {option}
@@ -306,7 +309,7 @@ export default function Preferences() {
                           </select>
                         ) : (
                           <div className="field-row__value">
-                            {enumToString(BudgetBucket, budget)}
+                            {budget ? enumToString(BudgetBucket, budget) : "—"}
                           </div>
                         )}
                       </div>
@@ -337,15 +340,20 @@ export default function Preferences() {
                         {isEditingRisk ? (
                           <select
                             id="riskTolerance"
-                            value={enumToString(RiskTolerence, riskTolerance)}
+                            value={riskTolerance ? enumToString(RiskTolerence, riskTolerance) : ""}
                             onChange={(e) => {
                               const key = e.target.value;
-                              const newVal = stringToEnum(RiskTolerence, key);
-                              if (newVal !== undefined) {
-                                setRiskTolerance(newVal as RiskTolerence);
+                              if (key === "") {
+                                setRiskTolerance(null);
+                              } else {
+                                const newVal = stringToEnum(RiskTolerence, key);
+                                if (newVal !== undefined) {
+                                  setRiskTolerance(newVal as RiskTolerence);
+                                }
                               }
                             }}
                           >
+                            <option value="">Select risk tolerance...</option>
                             {riskOptions.map((option) => (
                               <option key={option} value={option}>
                                 {option}
@@ -354,7 +362,7 @@ export default function Preferences() {
                           </select>
                         ) : (
                           <div className="field-row__value">
-                            {enumToString(RiskTolerence, riskTolerance)}
+                            {riskTolerance ? enumToString(RiskTolerence, riskTolerance) : "—"}
                           </div>
                         )}
                       </div>
@@ -387,7 +395,7 @@ export default function Preferences() {
                         {isEditingDisabilities ? (
                           <textarea
                             id="disabilities"
-                            value={disabilities}
+                            value={disabilities ?? ""}
                             onChange={(e) => setDisabilities(e.target.value)}
                             placeholder="e.g., Wheelchair user, visual impairment."
                           />
@@ -426,7 +434,7 @@ export default function Preferences() {
                         {isEditingFood ? (
                           <textarea
                             id="foodPreferences"
-                            value={foodPreferences}
+                            value={foodPreferences ?? ""}
                             onChange={(e) => setFoodPreferences(e.target.value)}
                             placeholder="e.g., Gluten-free, no shellfish, vegan."
                           />
