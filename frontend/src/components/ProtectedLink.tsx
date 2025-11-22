@@ -24,10 +24,11 @@ export function ProtectedLink({
   unauthTo,
   unauthChildren
 }: ProtectedLinkParams) {
-  const [loading, setLoading] = useState(true);
   const { authorized, setAuthorized } = useContext<GlobalState>(
     GlobalContext as Context<GlobalState>
   );
+  // Only show loading if we don't already know the authorization status
+  const [loading, setLoading] = useState(authorized === null);
 
   useEffect(() => {
     if (!bypassProtection()) {
@@ -47,12 +48,12 @@ export function ProtectedLink({
         .finally(() => {
           setLoading(false);
         });
+    } else {
+      setLoading(false);
     }
   }, [authorized, setAuthorized]);
 
   if (!bypassProtection()) {
-    console.log("loading: ", loading);
-    console.log("authorized: ", authorized);
     if (loading) return <Loading />;
     if (authorized === true) {
       return (

@@ -2,17 +2,15 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
-import { apiCurrent } from "../api/account";
 
-export default function ViewItineraryPage() {
+function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [days, setDays] = useState<DayItinerary[]>([]);
-  const [firstName, setFirstName] = useState<string>("");
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -25,19 +23,6 @@ export default function ViewItineraryPage() {
     title: "",
     chatSessionId: null as number | null
   });
-
-  useEffect(() => {
-    async function fetchAccount() {
-      const currentResult = await apiCurrent();
-      const account = currentResult.result;
-
-      if (account && currentResult.status === 200) {
-        setFirstName(account.first_name || "");
-      }
-    }
-
-    fetchAccount();
-  }, []);
 
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
     setDays(updatedDays);
@@ -65,12 +50,12 @@ export default function ViewItineraryPage() {
 
   const handleEditWithAI = () => {
     // Navigate to home with both the itinerary ID and chat session ID
-    navigate("/home", { 
-      state: { 
+    navigate("/home", {
+      state: {
         selectedItineraryId: itineraryMetadata.id,
         chatSessionId: itineraryMetadata.chatSessionId,
         openItinerarySidebar: true
-      } 
+      }
     });
   };
 
@@ -113,7 +98,7 @@ export default function ViewItineraryPage() {
 
   return (
     <div className="view-page">
-      <Navbar page="view" firstName={firstName} />
+      <Navbar page="view" />
       <Itinerary
         days={days}
         onUpdate={handleItineraryUpdate}
@@ -127,3 +112,4 @@ export default function ViewItineraryPage() {
     </div>
   );
 }
+export default ViewItineraryPage;

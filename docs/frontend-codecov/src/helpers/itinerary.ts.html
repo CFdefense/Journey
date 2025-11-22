@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/helpers</a> itinerary.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>91/91</span>
+                <span class='fraction'>95/95</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
-                <span class="strong">81.25% </span>
+                <span class="strong">85.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>13/16</span>
+                <span class='fraction'>18/21</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>4/4</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>91/91</span>
+                <span class='fraction'>95/95</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -172,27 +172,12 @@
 <a name='L107'></a><a href='#L107'>107</a>
 <a name='L108'></a><a href='#L108'>108</a>
 <a name='L109'></a><a href='#L109'>109</a>
-<a name='L110'></a><a href='#L110'>110</a>
-<a name='L111'></a><a href='#L111'>111</a>
-<a name='L112'></a><a href='#L112'>112</a>
-<a name='L113'></a><a href='#L113'>113</a>
-<a name='L114'></a><a href='#L114'>114</a>
-<a name='L115'></a><a href='#L115'>115</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L110'></a><a href='#L110'>110</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -291,22 +276,17 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type {
 	Itinerary as ApiItinerary,
 	EventDay,
-	Event
+	DayItinerary
 } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
-&nbsp;
-export interface TimeBlock {
-	time: string;
-	events: Event[];
-}
-&nbsp;
-export interface DayItinerary {
-	date: string;
-	timeBlocks: TimeBlock[];
-}
 &nbsp;
 //function that calls api on given itinerary Id, returns the time block used by itinerary component
 export async function fetchItinerary(
@@ -326,7 +306,7 @@ export async function fetchItinerary(
 		console.log("Error", err);
 		return [
 			{
-				date: "N/A",
+				date: "",
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -341,7 +321,7 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 	if (!apiItinerary.event_days || apiItinerary.event_days.length === 0) {
 		return [
 			{
-				date: "N/A",
+				date: "",
 				timeBlocks: [
 					{ time: "Morning", events: [] },
 					{ time: "Afternoon", events: [] },
@@ -405,6 +385,11 @@ export function convertToApiFormat(
 		})
 	};
 }
+&nbsp;
+export function sanitize(v: string | null): string | null {
+	const str = v?.trim();
+	return str &amp;&amp; str !== "" ? str : null;
+}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -412,7 +397,7 @@ export function convertToApiFormat(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-09T20:39:38.942Z
+                at 2025-11-20T21:14:27.498Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
@@ -424,4 +409,3 @@ export function convertToApiFormat(
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

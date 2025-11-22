@@ -3,7 +3,8 @@ import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
 import userPfp from "../assets/user-pfp-temp.png";
-import { apiLogout, apiCurrent } from "../api/account";
+import { apiLogout } from "../api/account";
+import { apiCurrent } from "../api/account";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 import "../styles/Navbar.css";
 
@@ -81,7 +82,7 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
       <div className="user-menu" ref={menuRef}>
         <button
           type="button"
-          className={`user-menu-button ${nameReady ? "ready" : "pending"}`}
+          className="user-menu-button"
           onClick={() => setMenuOpen((v) => !v)}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
@@ -98,11 +99,25 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
             onError={(e) => { e.currentTarget.src = userPfp; }}
           />
         </button>
-        <div className={`user-menu-dropdown ${menuOpen ? "open" : ""}`} role="menu" aria-hidden={!menuOpen}>
-          <Link to="/account" className="user-menu-item" role="menuitem" onClick={() => setMenuOpen(false)}>
+        <div
+          className={`user-menu-dropdown ${menuOpen ? "open" : ""}`}
+          role="menu"
+          aria-hidden={!menuOpen}
+        >
+          <Link
+            to="/account"
+            className="user-menu-item"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+          >
             Account
           </Link>
-          <button type="button" className="user-menu-item user-menu-item--danger" role="menuitem" onClick={onLogout}>
+          <button
+            type="button"
+            className="user-menu-item user-menu-item--danger"
+            role="menuitem"
+            onClick={onLogout}
+          >
             Log out
           </button>
         </div>
@@ -143,7 +158,9 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
         }
         if (authorized === null) {
           // Reserve space to avoid flashing between login/signup and user menu
-          return <div className="auth-cta auth-cta--pending" aria-hidden="true" />;
+          return (
+            <div className="auth-cta auth-cta--pending" aria-hidden="true" />
+          );
         }
         return (
           <div className="auth-cta">
@@ -156,12 +173,16 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
           </div>
         );
       case "home":
-        return <div className="auth-cta"><UserMenu /></div>;
+        return (
+          <div className="auth-cta">
+            <UserMenu />
+          </div>
+        );
       case "view":
         return (
           <div className="auth-cta">
             {isAccountRoute && (
-              <Link to="/home" className={`auth-cta-link ${nameReady ? "" : "pending"}`}>
+              <Link to="/home" className="auth-cta-link">
                 Create
               </Link>
             )}

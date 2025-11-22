@@ -1,4 +1,8 @@
 .sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
   background: #ffffff;
   border-right: 1px solid #e0e0e0;
   padding: 0;
@@ -6,10 +10,22 @@
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
-  transition: width 0.3s ease;
-  align-self: stretch;
+  transition:
+    width 0.45s ease-in-out,
+    opacity 0.3s ease-in-out,
+    transform 0.3s ease-in-out;
   box-sizing: border-box;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  opacity: 0;
+  transform: translateX(-20px);
+  border-radius: 0;
+}
+
+.sidebar.open,
+.sidebar.closed {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* When sidebar is open */
@@ -19,55 +35,297 @@
 
 /* When sidebar is closed */
 .sidebar.closed {
-  width: 50px;
+  width: 56px;
   background: #ffffff;
 }
 
-/* Top section with toggle button and optional title */
-.sidebar-top {
+/* Actions area (menu, new chat, search) */
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+  border-bottom: none;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+  margin-bottom: 16px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.sidebar.open .sidebar-actions {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.sidebar-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
-  height: 50px;
-  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 8px;
+  position: relative;
 }
 
-.sidebar.closed .sidebar-top {
-  justify-content: center;
-  padding: 0;
+.sidebar.closed .sidebar-header-top {
+  justify-content: flex-start;
 }
 
-.sidebar-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  white-space: nowrap;
+.sidebar.closed .sidebar-actions {
+  flex-direction: column;
+  align-items: flex-start; /* keep buttons pinned to the left edge */
+  justify-content: flex-start;
 }
 
-.sidebar.closed .sidebar-title {
-  display: none;
-}
-
-.sidebar-toggle-btn {
-  background: transparent;
-  border: none;
-  color: #666;
-  font-size: 1.3rem;
+.action-btn {
+  border: 1px solid #e0e0e0;
+  background: #f7f7f8;
+  color: #0b1220;
+  border-radius: 10px;
   cursor: pointer;
-  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start; /* keep icon pinned left while shrinking */
+  gap: 8px;
+  font-weight: 600;
+  height: 36px; /* lock total height */
+  box-sizing: border-box; /* include padding/border in height */
+  transition:
+    width 0.4s ease-in-out,
+    padding 0.4s ease-in-out,
+    gap 0.3s ease-in-out,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  overflow: hidden; /* allow label to be clipped from the right */
+}
+
+.action-btn:hover {
+  background: #f0f0f2;
+  border-color: #d7d7db;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #d87f75 0%, #e8c89f 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 2px 4px rgba(216, 127, 117, 0.25);
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #c96d63 0%, #d4b88f 100%);
+  box-shadow: 0 4px 8px rgba(216, 127, 117, 0.35);
+}
+
+.action-btn.expanded {
+  padding: 10px 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.action-btn.icon-only {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  padding: 9px; /* keep consistent left padding so icon does not recentre visually */
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.action-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.action-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.action-label {
+  font-size: clamp(0.875rem, 1vw, 0.95rem);
+  white-space: nowrap;
+  opacity: 1;
+  max-width: 240px;
+  overflow: hidden;
+  transition:
+    opacity 0.25s ease,
+    max-width 0.35s ease-in-out;
+  transform-origin: left; /* collapse from right to left */
+}
+
+.sidebar.closed .action-label {
+  opacity: 0;
+  max-width: 0;
+}
+
+/* Menu toggle button - logo when open */
+.menu-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 6px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  border-radius: 4px;
-  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
-.sidebar-toggle-btn:hover {
-  background: #f0f0f0;
-  color: #333;
+.menu-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.logo-link {
+  cursor: pointer;
+  transition: opacity 0.3s ease-out;
+}
+
+.logo-link.hidden {
+  pointer-events: none;
+  position: absolute;
+  opacity: 0;
+}
+
+.logo-link.visible {
+  opacity: 1;
+  pointer-events: auto;
+  position: relative;
+}
+
+.hamburger-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  visibility: hidden;
+}
+
+.hamburger-btn.visible {
+  opacity: 0;
+  pointer-events: none;
+  position: relative;
+  visibility: visible;
+  animation: fadeInHamburger 0.2s ease-out 0.35s forwards;
+}
+
+@keyframes fadeInHamburger {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.sidebar.open .menu-toggle-btn.expanded {
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding: 6px;
+}
+
+.menu-close-btn {
+  border: none;
+  background: transparent;
+  padding: 6px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #0b1220;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  visibility: hidden;
+}
+
+.sidebar.open .menu-close-btn {
+  animation: fadeInRight 0.3s ease-out 0.2s forwards;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.sidebar.closed .menu-close-btn {
+  animation: moveToLeft 0.3s ease-out forwards;
+  pointer-events: none;
+  visibility: visible;
+}
+
+.menu-close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes moveToLeft {
+  from {
+    opacity: 1;
+    right: 0;
+    left: auto;
+    visibility: visible;
+  }
+  to {
+    opacity: 0;
+    right: auto;
+    left: 0;
+    visibility: hidden;
+  }
+}
+
+.sidebar-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-logo[style*="display: none"] + .sidebar-logo-fallback {
+  display: flex !important;
+}
+
+.sidebar-logo-fallback {
+  width: 36px;
+  height: 36px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d87f75 0%, #e8c89f 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 4px;
+  position: absolute;
+}
+
+/* When sidebar is closed, reduce spacing so label area collapses smoothly */
+.sidebar.closed .action-btn {
+  gap: 0;
 }
 
 /* New chat button wrapper */
@@ -81,7 +339,7 @@
 }
 
 .new-chat-btn {
-  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
+  background: linear-gradient(135deg, #d87f75 0%, #e8c89f 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -91,18 +349,18 @@
   font-size: 0.9rem;
   transition: all 0.2s;
   width: 100%;
-  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+  box-shadow: 0 2px 4px rgba(216, 127, 117, 0.25);
 }
 
 .new-chat-btn:hover {
-  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
+  background: linear-gradient(135deg, #c96d63 0%, #d4b88f 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
+  box-shadow: 0 4px 8px rgba(216, 127, 117, 0.35);
 }
 
 .new-chat-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.1);
+  box-shadow: 0 1px 2px rgba(216, 127, 117, 0.2);
 }
 
 /* Chat list */
@@ -112,63 +370,85 @@
   margin: 0;
   overflow-y: auto;
   flex: 1;
+  /* fade baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 220ms ease,
+    transform 260ms ease,
+    padding 0.45s ease-in-out;
 }
 
-/* Custom scrollbar for chat list */
+/* Hide scrollbar for chat list */
 .chat-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.chat-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chat-list::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 4px;
-}
-
-.chat-list::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
-
-/* Firefox scrollbar */
-.chat-list {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d0d0 transparent;
-}
-
-.sidebar.closed .chat-list {
   display: none;
+  width: 0;
+}
+
+.chat-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sidebar.open .chat-list {
+  opacity: 1;
+  transform: translateY(0);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  /* follow the 0.45s width animation of the sidebar */
+  transition-delay: 450ms;
 }
 
 .chat-list li {
   padding: 0.75rem;
   cursor: pointer;
   border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border: none;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: #555;
-  transition: all 0.2s;
   background: #fafafa;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  /* child fade baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  transition-property: opacity, transform, background, color;
+  transition-duration: 200ms, 260ms, 0.2s, 0.2s;
+  transition-timing-function: ease, ease, ease, ease;
+  transition-delay: 0ms;
+}
+
+.sidebar.open .chat-list li {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .chat-list li:hover {
   background: #f0f0f0;
-  border-color: #d0d0d0;
   color: #333;
 }
 
 .chat-list li.active {
-  background: #006bbb;
-  color: #ffffff;
+  background: linear-gradient(135deg, #d87f75 0%, #e8c89f 100%);
+  color: #ffffff !important;
   font-weight: 500;
-  border-color: #006bbb;
+  transition: all 0.2s ease !important;
+  transition-delay: 0ms !important;
+}
+
+.chat-list li:not(.active) {
+  background: #fafafa !important;
+  color: #555 !important;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease !important;
+}
+
+.chat-list li:not(.active) .chat-title {
+  color: #555 !important;
 }
 
 .chat-title {
@@ -189,7 +469,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s ease;
   flex-shrink: 0;
   line-height: 1;
   min-width: 24px;
@@ -200,8 +482,16 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
+.chat-list li.active .chat-menu-btn {
+  color: #ffffff !important;
+}
+
 .chat-list li.active .chat-menu-btn:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-list li:not(.active) .chat-menu-btn {
+  color: #555 !important;
 }
 
 .chat-title {
@@ -262,4 +552,160 @@
 .chat-title-input:focus {
   border-color: #2a8fc7;
   box-shadow: 0 0 0 3px rgba(48, 160, 224, 0.2);
+}
+
+/* Bottom section with profile and logout */
+.sidebar-bottom {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid #e0e0e0;
+  box-sizing: border-box;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.sidebar.open .sidebar-bottom {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar.closed .sidebar-bottom {
+  flex-direction: column;
+  align-items: flex-start; /* keep profile pinned to the left edge */
+  justify-content: flex-start;
+  padding: 8px; /* keep same left padding so edge doesn't jump */
+  gap: 0; /* remove gap when closed so logout button doesn't affect spacing */
+}
+
+.sidebar-profile-link {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start; /* keep icon pinned left while shrinking */
+  height: 36px; /* lock total height to match action buttons */
+  width: 36px; /* square when closed */
+  box-sizing: border-box;
+  transition:
+    width 0.4s ease-in-out,
+    padding 0.4s ease-in-out,
+    background 0.15s ease;
+  overflow: hidden;
+  text-decoration: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sidebar.open .sidebar-profile-link {
+  padding: 0;
+  width: 36px;
+}
+
+.sidebar.closed .sidebar-profile-link {
+  padding: 0;
+  width: 36px;
+}
+
+.sidebar-profile-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-profile-pic {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sidebar-logout-btn {
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  font-family: inherit;
+  flex-shrink: 0;
+  /* fade baseline */
+  opacity: 0;
+  transform: translateY(6px);
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  transition:
+    opacity 220ms ease,
+    transform 260ms ease,
+    width 0ms ease,
+    height 0ms ease,
+    padding 0ms ease;
+}
+
+.sidebar-logout-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar.open .sidebar-logout-btn {
+  opacity: 1;
+  transform: translateY(0);
+  height: 36px;
+  width: 36px;
+  padding: 8px;
+  margin-right: 0.5rem;
+  transition:
+    opacity 200ms ease 450ms,
+    transform 260ms ease 450ms,
+    width 0ms ease 450ms,
+    height 0ms ease 450ms,
+    padding 0ms ease 450ms;
+}
+
+.sidebar.closed .sidebar-logout-btn {
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  /* Collapse size immediately, fade opacity smoothly */
+  transition:
+    width 0ms ease 0ms,
+    height 0ms ease 0ms,
+    padding 0ms ease 0ms,
+    opacity 220ms ease 0ms,
+    transform 260ms ease 0ms;
+}
+
+.sidebar-logout-btn:hover {
+  opacity: 0.8;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 8px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .sidebar.open {
+    width: min(260px, 85vw);
+  }
+
+  .action-label {
+    font-size: clamp(0.8rem, 2vw, 0.95rem);
+  }
+
+  .action-btn.expanded {
+    padding: clamp(0.75rem, 2vw, 10px) clamp(0.875rem, 2.5vw, 12px);
+  }
 }

@@ -86,9 +86,6 @@ export async function apiLogout(): Promise<ApiResult<void>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/account/logout`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		return { result: null, status: response.status };
@@ -112,9 +109,6 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/account/validate`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
 		return { result: null, status: response.status };
@@ -143,7 +137,10 @@ export async function apiUpdateAccount(
 			credentials: "include",
 			body: JSON.stringify(payload)
 		});
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Update Account API error: ", error);
 		return { result: null, status: -1 };
@@ -167,15 +164,12 @@ export async function apiCurrent(): Promise<ApiResult<CurrentResponse>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/account/current`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("Current API error: ", error);
 		return { result: null, status: -1 };

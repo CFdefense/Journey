@@ -10,19 +10,14 @@ import {
   checkIfPasswordsMatch,
   checkIfValidName
 } from "../helpers/account";
+import { toast } from "../components/Toast";
 
 export default function Account() {
-
   const navigate = useNavigate();
   const location = useLocation();
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  //const [profile_picture, setProfilePicture] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,7 +30,7 @@ export default function Account() {
   // Use same profile picture asset as Navbar for consistency
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
-  const [newProfilePicture, setNewProfilePicture] = useState<string>("")
+  const [newProfilePicture, setNewProfilePicture] = useState<string>("");
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -66,10 +61,7 @@ export default function Account() {
           "API call to /api/account/current failed with status: ",
           currentResult.status
         );
-        setStatusMessage({
-          message: "Failed to load account details. Please log in again.",
-          type: "error"
-        });
+        toast.error("Failed to load account details. Please log in again.");
         return;
       }
 
@@ -79,9 +71,7 @@ export default function Account() {
       setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
       // Optional stats from backend; otherwise, provide demo values
       const maybeTrips = (account as any).trips_planned;
-      setTripsPlanned(
-        typeof maybeTrips === "number" ? maybeTrips : 5
-      );
+      setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
       const maybeCreated = (account as any).created_at;
       setAccountCreated(
         maybeCreated ? formatDate(maybeCreated) : formatDate(new Date())
@@ -91,9 +81,9 @@ export default function Account() {
 
     fetchProfile();
   }, []);
+
   // Core submit/update logic used by form submit and inline "Done" buttons
   const submitUpdate = async () => {
-    setStatusMessage(null);
     setPasswordErrors({});
 
     // Validate name fields
@@ -101,10 +91,7 @@ export default function Account() {
     const trimmedLast = lastName.trim();
     const nameError = checkIfValidName(trimmedFirst, trimmedLast);
     if (nameError) {
-      setStatusMessage({
-        message: nameError,
-        type: "error"
-      });
+      toast.error(nameError);
       return;
     }
 
@@ -118,20 +105,14 @@ export default function Account() {
         setPasswordErrors({
           current: "Current password is required to change your password."
         });
-        setStatusMessage({
-          message: "Please provide your current password to change it.",
-          type: "error"
-        });
+        toast.error("Please provide your current password to change it.");
         return;
       }
 
       // Validate new password is provided
       if (!newPassword) {
         setPasswordErrors({ new: "New password is required." });
-        setStatusMessage({
-          message: "Please enter a new password.",
-          type: "error"
-        });
+        toast.error("Please enter a new password.");
         return;
       }
 
@@ -139,10 +120,7 @@ export default function Account() {
       const passwordValidationError = checkIfValidPassword(newPassword);
       if (passwordValidationError) {
         setPasswordErrors({ new: passwordValidationError });
-        setStatusMessage({
-          message: passwordValidationError,
-          type: "error"
-        });
+        toast.error(passwordValidationError);
         return;
       }
 
@@ -150,10 +128,7 @@ export default function Account() {
       const matchError = checkIfPasswordsMatch(newPassword, confirmPassword);
       if (matchError) {
         setPasswordErrors({ confirm: matchError });
-        setStatusMessage({
-          message: matchError,
-          type: "error"
-        });
+        toast.error(matchError);
         return;
       }
     }
@@ -171,52 +146,50 @@ export default function Account() {
       profile_picture: newProfilePicture.trim().length > 0 ? newProfilePicture.trim() : null
     };
 
-    const updateResult = await apiUpdateAccount(payload);
+    try {
+      const updateResult = await apiUpdateAccount(payload);
 
-    if (updateResult.status !== 200) {
-      console.error(
-        "API call to /api/account/update failed with status: ",
-        updateResult.status
+      if (updateResult.status !== 200) {
+        console.error(
+          "API call to /api/account/update failed with status: ",
+          updateResult.status
+        );
+
+        // Handle password-related errors (400 Bad Request)
+        if (updateResult.status === 400 && isChangingPassword) {
+          toast.error("Current password is incorrect. Please try again.");
+          setPasswordErrors({ current: "Current password is incorrect." });
+        } else {
+          toast.error("Update failed. Please try again.");
+        }
+        return;
+      }
+
+      toast.success(
+        isChangingPassword
+          ? "Password updated successfully!"
+          : "Account updated successfully!"
       );
 
-      // Handle password-related errors (400 Bad Request)
-      if (updateResult.status === 400 && isChangingPassword) {
-        setStatusMessage({
-          message: "Current password is incorrect. Please try again.",
-          type: "error"
-        });
-        setPasswordErrors({ current: "Current password is incorrect." });
-      } else {
-        setStatusMessage({
-          message: "Update failed. Please try again.",
-          type: "error"
-        });
+      // Update UI with any returned account info
+      if (updateResult.result) {
+        setFirstName(updateResult.result.first_name || trimmedFirst);
+        setLastName(updateResult.result.last_name || trimmedLast);
+        if (updateResult.result.profile_picture) {
+          setProfileImageUrl(updateResult.result.profile_picture);
+        }
       }
-      return;
-    }
 
-    setStatusMessage({
-      message: isChangingPassword
-        ? "Password updated successfully!"
-        : "Account settings updated successfully!",
-      type: "success"
-    });
-
-    // Update UI with any returned account info
-    if (updateResult.result) {
-      setFirstName(updateResult.result.first_name || trimmedFirst);
-      setLastName(updateResult.result.last_name || trimmedLast);
-      if (updateResult.result.profile_picture) {
-        setProfileImageUrl(updateResult.result.profile_picture);
-      }
+      // Clear password fields and profile picture temp state
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors({});
       setNewProfilePicture("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update account. Please try again.");
     }
-
-    // Clear password fields
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordErrors({});
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -227,302 +200,305 @@ export default function Account() {
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
       <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
+
       <div className="auth-content">
         {loaded && (
-        <div className="account-wrapper fade-in">
-          {/* Main Content */}
-          <main className="main-content">
-            <div className="account-container">
-              <div className="account-box">
-                <div className="hs-hero-card">
-                  <div className="profile-header">
-                    <div className="avatar-wrapper">
-                      <img
-                        src={profileImageUrl}
-                        alt={`${firstName || "User"} ${lastName || ""}`.trim()}
-                        className="avatar"
-                        onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                      />
-                      <button
-                        type="button"
-                        className="avatar-edit-button"
-                        onClick={() => {
-                          setNewProfilePicture(profileImageUrl === navbarAvatarUrl ? "" : profileImageUrl);
-                          setShowProfilePicModal(true);
-                        }}
-                        aria-label="Edit profile picture"
-                      >
-                        ✒️
-                      </button>
-                    </div>
-                    <div className="profile-meta">
-                      <h1 className="profile-name">
-                        {(firstName || "Your") + " " + (lastName || "Name")}
-                      </h1>
-                      <p className="profile-email">Account &amp; Settings</p>
-                    </div>
-                  </div>
-                  <div className="hs-stats">
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {tripsPlanned ?? 5}
-                      </div>
-                      <div className="hs-stat__label">Trips planned</div>
-                    </div>
-                    <div className="hs-stat">
-                      <div className="hs-stat__value">
-                        {accountCreated ?? formatDate(new Date())}
-                      </div>
-                      <div className="hs-stat__label">Account created</div>
-                    </div>
-                  </div>
-                </div>
-
-                {statusMessage && (
-                  <div
-                    className={`status-message status-message--${statusMessage.type}`}
-                  >
-                    {statusMessage.message}
-                  </div>
-                )}
-
-                <form onSubmit={handleUpdate}>
-                  <div className="field-list">
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">First name</div>
-                        {isEditingFirst ? (
-                          <input
-                            type="text"
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {firstName || "—"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="field-row__action">
+          <div className="account-wrapper fade-in">
+            {/* Main Content */}
+            <main className="main-content">
+              <div className="account-container">
+                <div className="account-box">
+                  <div className="hs-hero-card">
+                    <div className="profile-header">
+                      <div className="avatar-wrapper">
+                        <img
+                          src={profileImageUrl}
+                          alt={`${firstName || "User"} ${lastName || ""}`.trim()}
+                          className="avatar"
+                          onError={() => setProfileImageUrl(navbarAvatarUrl)}
+                        />
                         <button
                           type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingFirst) {
-                              await submitUpdate();
-                            }
-                            setIsEditingFirst(!isEditingFirst);
+                          className="avatar-edit-button"
+                          onClick={() => {
+                            setNewProfilePicture(profileImageUrl === navbarAvatarUrl ? "" : profileImageUrl);
+                            setShowProfilePicModal(true);
                           }}
+                          aria-label="Edit profile picture"
                         >
-                          {isEditingFirst ? "Done" : "Edit"}
+                          ✒️
                         </button>
+                      </div>
+                      <div className="profile-meta">
+                        <h1 className="profile-name">
+                          {(firstName || "Your") + " " + (lastName || "Name")}
+                        </h1>
+                        <p className="profile-email">Account &amp; Settings</p>
                       </div>
                     </div>
-
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">Last name</div>
-                        {isEditingLast ? (
-                          <input
-                            type="text"
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                          />
-                        ) : (
-                          <div className="field-row__value">
-                            {lastName || "—"}
-                          </div>
-                        )}
+                    <div className="hs-stats">
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {tripsPlanned ?? 5}
+                        </div>
+                        <div className="hs-stat__label">Trips planned</div>
                       </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingLast) {
-                              await submitUpdate();
-                            }
-                            setIsEditingLast(!isEditingLast);
-                          }}
-                        >
-                          {isEditingLast ? "Done" : "Edit"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="field-row">
-                      <div className="field-row__meta">
-                        <div className="field-row__label">Email address</div>
-                        <div className="field-row__value">{email}</div>
-                      </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button pill-button--disabled"
-                          disabled
-                        >
-                          Edit
-                        </button>
+                      <div className="hs-stat">
+                        <div className="hs-stat__value">
+                          {accountCreated ?? formatDate(new Date())}
+                        </div>
+                        <div className="hs-stat__label">Account created</div>
                       </div>
                     </div>
                   </div>
-                  <div className="field-section">
-                    <button
-                      type="button"
-                      className="field-section__header"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-expanded={showPassword}
-                    >
-                      Password
-                      <span className={`chevron ${showPassword ? "up" : "down"}`}></span>
-                    </button>
-                    {showPassword && (
-                      <div className="password-fields">
-                        <div className="field-group">
-                          <label htmlFor="currentPassword">Current Password:</label>
-                          <input
-                            type="password"
-                            id="currentPassword"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            placeholder="Enter your current password"
-                          />
-                          {passwordErrors.current && (
-                            <small className="error-message">
-                              {passwordErrors.current}
-                            </small>
+
+                  <form onSubmit={handleUpdate}>
+                    <div className="field-list">
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">First name</div>
+                          {isEditingFirst ? (
+                            <input
+                              type="text"
+                              id="firstName"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                            />
+                          ) : (
+                            <div className="field-row__value">
+                              {firstName || "—"}
+                            </div>
                           )}
                         </div>
-
-                        <div className="field-group">
-                          <label htmlFor="newPassword">New Password:</label>
-                          <input
-                            type="password"
-                            id="newPassword"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Enter new password"
-                          />
-                          {passwordErrors.new && (
-                            <small className="error-message">
-                              {passwordErrors.new}
-                            </small>
-                          )}
-                          {!passwordErrors.new && newPassword && (
-                            <small className="helper-text">
-                              Password must be 8-128 characters, contain uppercase,
-                              lowercase, and a number.
-                            </small>
-                          )}
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor="confirmPassword">
-                            Confirm New Password:
-                          </label>
-                          <input
-                            type="password"
-                            id="confirmPassword"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Confirm new password"
-                          />
-                          {passwordErrors.confirm && (
-                            <small className="error-message">
-                              {passwordErrors.confirm}
-                            </small>
-                          )}
-                        </div>
-
-                        <div className="password-actions">
+                        <div className="field-row__action">
                           <button
                             type="button"
-                            className="btn-primary"
-                            onClick={submitUpdate}
+                            className="pill-button"
+                            onClick={async () => {
+                              if (isEditingFirst) {
+                                await submitUpdate();
+                              }
+                              setIsEditingFirst(!isEditingFirst);
+                            }}
                           >
-                            Change password
+                            {isEditingFirst ? "Done" : "Edit"}
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </form>
-                {showProfilePicModal && (
-                  <div className="modal-overlay" onClick={() => {
-                    setShowProfilePicModal(false);
-                    setNewProfilePicture("");
-                  }}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                      <h2>Change Profile Picture</h2>
-                      
-                      {/* File input */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Check file size (limit to 5MB)
-                            if (file.size > 5 * 1024 * 1024) {
-                              setStatusMessage({
-                                type: "error",
-                                message: "Image must be smaller than 5MB"
-                              });
-                              return;
-                            }
-                            
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setNewProfilePicture(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="modal-file-input"
-                      />
-                      
-                      {/* Preview */}
-                      {newProfilePicture && (
-                        <div className="preview-container">
-                          <img 
-                            src={newProfilePicture} 
-                            alt="Preview" 
-                            className="preview-image"
-                          />
+
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">Last name</div>
+                          {isEditingLast ? (
+                            <input
+                              type="text"
+                              id="lastName"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                            />
+                          ) : (
+                            <div className="field-row__value">
+                              {lastName || "—"}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      
-                      <div className="modal-actions">
-                        <button 
-                          className="modal-btn modal-btn--secondary"
-                          onClick={() => {
-                            setShowProfilePicModal(false);
-                            setNewProfilePicture("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          className="modal-btn modal-btn--primary"
-                          onClick={async () => {
-                            await submitUpdate();
-                            setShowProfilePicModal(false);
-                          }}
-                          disabled={!newProfilePicture}
-                        >
-                          Save
-                        </button>
+                        <div className="field-row__action">
+                          <button
+                            type="button"
+                            className="pill-button"
+                            onClick={async () => {
+                              if (isEditingLast) {
+                                await submitUpdate();
+                              }
+                              setIsEditingLast(!isEditingLast);
+                            }}
+                          >
+                            {isEditingLast ? "Done" : "Edit"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="field-row">
+                        <div className="field-row__meta">
+                          <div className="field-row__label">Email address</div>
+                          <div className="field-row__value">{email}</div>
+                        </div>
+                        <div className="field-row__action">
+                          <button
+                            type="button"
+                            className="pill-button pill-button--disabled"
+                            disabled
+                            title="Cannot edit email associated with your account"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+
+                    <div className="field-section">
+                      <button
+                        type="button"
+                        className="field-section__header"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-expanded={showPassword}
+                      >
+                        Password
+                        <span
+                          className={`chevron ${showPassword ? "up" : "down"}`}
+                        ></span>
+                      </button>
+                      {showPassword && (
+                        <div className="password-fields">
+                          <div className="field-group">
+                            <label htmlFor="currentPassword">
+                              Current Password:
+                            </label>
+                            <input
+                              type="password"
+                              id="currentPassword"
+                              value={currentPassword}
+                              onChange={(e) =>
+                                setCurrentPassword(e.target.value)
+                              }
+                              placeholder="Enter your current password"
+                            />
+                            {passwordErrors.current && (
+                              <small className="error-message">
+                                {passwordErrors.current}
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="field-group">
+                            <label htmlFor="newPassword">New Password:</label>
+                            <input
+                              type="password"
+                              id="newPassword"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Enter new password"
+                            />
+                            {passwordErrors.new && (
+                              <small className="error-message">
+                                {passwordErrors.new}
+                              </small>
+                            )}
+                            {!passwordErrors.new && newPassword && (
+                              <small className="helper-text">
+                                Password must be 8-128 characters, contain
+                                uppercase, lowercase, and a number.
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="field-group">
+                            <label htmlFor="confirmPassword">
+                              Confirm New Password:
+                            </label>
+                            <input
+                              type="password"
+                              id="confirmPassword"
+                              value={confirmPassword}
+                              onChange={(e) =>
+                                setConfirmPassword(e.target.value)
+                              }
+                              placeholder="Confirm new password"
+                            />
+                            {passwordErrors.confirm && (
+                              <small className="error-message">
+                                {passwordErrors.confirm}
+                              </small>
+                            )}
+                          </div>
+
+                          <div className="password-actions">
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              onClick={submitUpdate}
+                            >
+                              Change password
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </main>
+          </div>
+        )}
+
+        {/* Profile Picture Modal */}
+        {showProfilePicModal && (
+          <div className="modal-overlay" onClick={() => {
+            setShowProfilePicModal(false);
+            setNewProfilePicture("");
+          }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h2>Change Profile Picture</h2>
+              
+              {/* File input */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Check file size (limit to 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast.error("Image must be smaller than 5MB");
+                      return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setNewProfilePicture(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="modal-file-input"
+              />
+              
+              {/* Preview */}
+              {newProfilePicture && (
+                <div className="preview-container">
+                  <img 
+                    src={newProfilePicture} 
+                    alt="Preview" 
+                    className="preview-image"
+                  />
+                </div>
+              )}
+              
+              <div className="modal-actions">
+                <button 
+                  className="modal-btn modal-btn--secondary"
+                  onClick={() => {
+                    setShowProfilePicModal(false);
+                    setNewProfilePicture("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="modal-btn modal-btn--primary"
+                  onClick={async () => {
+                    await submitUpdate();
+                    setShowProfilePicModal(false);
+                  }}
+                  disabled={!newProfilePicture}
+                >
+                  Save
+                </button>
               </div>
             </div>
-          </main>
-        </div>
+          </div>
         )}
+
         {/* Bottom tab bar */}
         <footer className="account-bottom-bar">
           <div className="account-bottom-inner">

@@ -22,6 +22,7 @@ export default function ChatMessage({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function getItinerary() {
@@ -40,6 +41,36 @@ export default function ChatMessage({
 
     getItinerary();
   }, [message.itinerary_id]);
+
+  // Constrain edit container to not overlap input bar
+  useEffect(() => {
+    if (isEditing && editContainerRef.current) {
+      const updateMaxHeight = () => {
+        const container = editContainerRef.current;
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        const inputBar = document.querySelector(
+          ".message-input"
+        ) as HTMLElement;
+        if (!inputBar) return;
+
+        const inputRect = inputBar.getBoundingClientRect();
+        const availableHeight = inputRect.top - rect.top - 20; // 20px margin
+        const maxHeight = Math.min(400, Math.max(150, availableHeight));
+        container.style.maxHeight = `${maxHeight}px`;
+      };
+
+      updateMaxHeight();
+      window.addEventListener("resize", updateMaxHeight);
+      window.addEventListener("scroll", updateMaxHeight, true);
+
+      return () => {
+        window.removeEventListener("resize", updateMaxHeight);
+        window.removeEventListener("scroll", updateMaxHeight, true);
+      };
+    }
+  }, [isEditing]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -85,7 +116,7 @@ export default function ChatMessage({
         <div className={`chat-message ${message.is_user ? "user" : "bot"}`}>
           <div className="message-text">
             {isEditing ? (
-              <div className="edit-message-container">
+              <div className="edit-message-container" ref={editContainerRef}>
                 <textarea
                   ref={textareaRef}
                   className="edit-message-input"

@@ -1,10 +1,9 @@
 // Home.tsx
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
-import Navbar from "../components/Navbar";
 import "../styles/Home.css";
 import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import {
@@ -17,30 +16,28 @@ import {
 import type {
   MessagePageRequest,
   SendMessageRequest,
-  UpdateMessageRequest
+  UpdateMessageRequest,
+  Message
 } from "../models/chat";
 import type { ChatSession } from "../models/home";
-import type { Message } from "../models/chat";
 import { apiCurrent } from "../api/account";
 import { fetchItinerary, convertToApiFormat } from "../helpers/itinerary";
-import type { DayItinerary } from "../helpers/itinerary";
+import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
-  const location = useLocation();
   const navigate = useNavigate();
-  
+  const location = useLocation();
   const [chats, setChats] = useState<ChatSession[] | null>(null);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [showFinishPopup, setShowFinishPopup] = useState(false);
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
-  const [firstName, setFirstName] = useState<string>("");
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
     null
   );
@@ -48,7 +45,7 @@ export default function Home() {
   const [itineraryStartDate, setItineraryStartDate] = useState<string>("");
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
-  
+
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
   // Track the initial chat ID to know when it actually changes
@@ -57,33 +54,34 @@ export default function Home() {
   // Handle navigation state from ViewItinerary
   useEffect(() => {
     if (location.state && !initialStateProcessed) {
-      const { selectedItineraryId, chatSessionId, openItinerarySidebar } = location.state;
+      const { selectedItineraryId, chatSessionId, openItinerarySidebar } =
+        location.state;
       console.log("Navigation state - itinerary ID:", selectedItineraryId);
-      
+
       // Set the flag if we have an itinerary ID from navigation
       if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
         setCameFromViewItinerary(true);
       }
-      
+
       if (chatSessionId !== undefined && chatSessionId !== null) {
         initialChatIdRef.current = chatSessionId;
         setActiveChatId(chatSessionId);
         sessionStorage.setItem(ACTIVE_CHAT_SESSION, chatSessionId.toString());
       }
-      
+
       if (openItinerarySidebar !== undefined) {
         setItinerarySidebarVisible(openItinerarySidebar);
       }
-      
+
       // Set itinerary ID last and trigger a load
       if (selectedItineraryId !== undefined && selectedItineraryId !== null) {
         setSelectedItineraryId(selectedItineraryId);
         // Manually load itinerary data since we're setting the ID in initial state
         loadItineraryData(selectedItineraryId);
       }
-      
+
       setInitialStateProcessed(true);
-      
+
       // Clear navigation state after processing
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -94,29 +92,29 @@ export default function Home() {
       if (showFinishPopup) {
         return;
       }
-      const currentResult = await apiCurrent();
-      // TODO 401 -> navigate to /login
+      apiCurrent()
+        .then((currentResult) => {
+          const account = currentResult.result;
+          if (account === null || currentResult.status !== 200) {
+            console.error(
+              "API call to /api/account/current failed with status: ",
+              currentResult.status
+            );
+            navigate("/login");
+            return;
+          }
+          setShowFinishPopup(
+            account.budget_preference === null &&
+            account.disabilities === "" &&
+            account.food_allergies === "" &&
+            account.risk_preference === null
 
-      const account = currentResult.result;
-      if (account === null || currentResult.status !== 200) {
-        console.error(
-          "API call to /api/account/current failed with status: ",
-          currentResult.status
-        );
-        setShowFinishPopup(false);
-        return; // TODO handle and display error
-      }
-
-      // Set the first name
-      setFirstName(account.first_name || "");
-
-      // check if any preferences were not yet filled out
-      setShowFinishPopup(
-        account.budget_preference === null ||
-          account.disabilities === null ||
-          account.food_allergies === null ||
-          account.risk_preference === null
-      );
+          );
+        })
+        .catch((err) => {
+          console.error("Failed to fetch account:", err);
+          navigate("/login");
+        });
     }
 
     async function fetchChats() {
@@ -216,19 +214,18 @@ export default function Home() {
 
   // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
   useEffect(() => {
-    
     // Don't clear on initial mount when activeChatId is null
     if (activeChatId === null && !initialStateProcessed) {
       return;
     }
-    
+
     // If we came from ViewItinerary and this is the initial chat ID, don't clear
     if (cameFromViewItinerary && activeChatId === initialChatIdRef.current) {
       // Reset the flag so subsequent chat changes will clear itinerary data
       setCameFromViewItinerary(false);
       return;
     }
-    
+
     // For normal chat switches, clear itinerary data
     setSelectedItineraryId(null);
     setItineraryData(null);
@@ -290,7 +287,12 @@ export default function Home() {
 
     // If we came from ViewItinerary and created a new chat with an itinerary in view,
     // associate the itinerary with this new chat session
-    if (cameFromViewItinerary && isNewChat && selectedItineraryId !== null && itineraryData !== null) {
+    if (
+      cameFromViewItinerary &&
+      isNewChat &&
+      selectedItineraryId !== null &&
+      itineraryData !== null
+    ) {
       try {
         const apiPayload = convertToApiFormat(
           itineraryData,
@@ -302,7 +304,6 @@ export default function Home() {
         );
 
         await apiSaveItineraryChanges(apiPayload);
-        
       } catch (error) {
         console.error("Failed to associate itinerary with new chat:", error);
         // Don't block the message send if this fails
@@ -447,7 +448,6 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Navbar page="home" firstName={firstName} />
       <div
         className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
       >
@@ -466,10 +466,12 @@ export default function Home() {
 
         <div className="chat-window-wrapper">
           <ChatWindow
+            key={activeChatId ?? "empty"}
             messages={activeChat?.messages ?? []}
             onSend={handleSendMessage}
             onItinerarySelect={handleItinerarySelect}
             onEditMessage={handleEditMessage}
+            hasActiveChat={activeChatId !== null}
           />
         </div>
 

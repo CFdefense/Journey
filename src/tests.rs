@@ -4,7 +4,8 @@ use crate::{
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
 		chat_session::RenameRequest,
-		itinerary::Itinerary,
+		event::{SearchEventRequest, UserEventRequest, UserEventResponse},
+		itinerary::{Itinerary, UnsaveRequest},
 		message::{MessagePageRequest, SendMessageRequest, UpdateMessageRequest},
 	},
 	log,
@@ -16,7 +17,7 @@ use argon2::{
 	password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use axum::{Extension, Json, Router};
-use chrono::{NaiveDate, Utc};
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde_json::json;
 use serial_test::serial;
 use sqlx::{PgPool, migrate};
@@ -609,6 +610,10 @@ async fn test_controllers() {
 		test_saved_itineraries_endpoint(cookies.clone(), key.clone(), pool.clone()),
 		test_save_itineraries(cookies.clone(), key.clone(), pool.clone()),
 		test_chat_flow(cookies.clone(), key.clone(), pool.clone()),
+		test_user_event_flow(cookies.clone(), key.clone(), pool.clone()),
+		test_unsave_itinerary_success(cookies.clone(), key.clone(), pool.clone()),
+		test_unsave_itinerary_not_found(cookies.clone(), key.clone(), pool.clone()),
+		test_unsave_already_unsaved_itinerary(cookies.clone(), key.clone(), pool.clone()),
 	);
 }
 
@@ -1234,6 +1239,133 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	assert_eq!(latest_page.message_page.len(), 0);
 }
 
+async fn test_user_event_flow(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>,
+) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_user_event_flow+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Saved"),
+		last_name: String::from("Itineraries"),
+		password: String::from("Password123"),
+	});
+	// Signup user
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+		.await
+		.unwrap();
+
+	// create event
+	let cookie = cookies.get("auth-token").unwrap();
+	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+	let user = Extension(AuthUser {
+		id: parts[1].parse().unwrap(),
+	});
+	let test = String::from("test");
+	let description = String::from("Unit test event");
+	let json = Json(UserEventRequest {
+		id: None,
+		event_name: test.clone(),
+		street_address: Some(test.clone()),
+		postal_code: Some(1),
+		city: Some(test.clone()),
+		country: Some(test.clone()),
+		event_type: Some(test.clone()),
+		event_description: Some(description.clone()),
+		hard_start: Some(
+			NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end: Some(
+			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		timezone: Some(String::from("UTC")),
+	});
+	let Json(UserEventResponse { id }) =
+		controllers::itinerary::api_user_event(user, pool.clone(), json)
+			.await
+			.unwrap();
+
+	// update event
+	let update_str = String::from("test updated");
+	let json = Json(UserEventRequest {
+		id: Some(id),
+		event_name: update_str.clone(),
+		event_description: Some(description),
+		street_address: Some(test.clone()),
+		postal_code: Some(1),
+		city: Some(test.clone()),
+		country: Some(test.clone()),
+		event_type: Some(test.clone()),
+		hard_start: Some(
+			NaiveDateTime::parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end: Some(
+			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		timezone: Some(String::from("UTC")),
+	});
+	let Json(res) = controllers::itinerary::api_user_event(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert_eq!(id, res.id);
+
+	// search event
+	let json = Json(SearchEventRequest {
+		id: Some(id),
+		..Default::default()
+	});
+	let Json(res) = controllers::itinerary::api_search_event(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(res.events.iter().any(|e| e.event_name == update_str));
+
+	// comprehensive search
+	let json = Json(SearchEventRequest {
+		id: Some(id),
+		street_address: Some(test.clone()),
+		postal_code: Some(1),
+		city: Some(test.clone()),
+		country: Some(test.clone()),
+		event_type: Some(test.clone()),
+		event_description: Some(test.clone()),
+		event_name: Some(test.clone()),
+		hard_start_before: Some(
+			NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_start_after: Some(
+			NaiveDateTime::parse_from_str("2010-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end_before: Some(
+			NaiveDateTime::parse_from_str("2030-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		hard_end_after: Some(
+			NaiveDateTime::parse_from_str("2020-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
+		),
+		timezone: Some(String::from("UTC")),
+	});
+	let Json(res) = controllers::itinerary::api_search_event(user, pool.clone(), json)
+		.await
+		.unwrap();
+	assert!(res.events.iter().any(|e| e.event_name == update_str));
+
+	// delete event
+	controllers::itinerary::api_delete_user_event(user, pool.clone(), axum::extract::Path(id))
+		.await
+		.unwrap();
+
+	// verify deletion
+	let json = Json(SearchEventRequest {
+		id: Some(id),
+		..Default::default()
+	});
+	let Json(res) = controllers::itinerary::api_search_event(user, pool, json)
+		.await
+		.unwrap();
+	assert!(!res.events.iter().any(|e| e.event_name == update_str));
+}
+
 // INTEGRATION TESTS
 
 static mut PORT: u16 = 0;
@@ -1404,6 +1536,12 @@ async fn test_auth_for_all_required() {
 		"afternoon_events": [],
 		"evening_events": []
 	});
+	let itinerary_user_event_payload = json!({
+		"event_name": "Test Event"
+	});
+	let itinerary_search_event_payload = json!({
+		"event_description": "test"
+	});
 
 	for res in futures::future::join_all([
 		hc.do_get("/api/account/current"),
@@ -1431,6 +1569,22 @@ async fn test_auth_for_all_required() {
 		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
 		hc.do_post("/api/chat/rename", chat_rename_payload),
 		hc.do_post("/api/itinerary/save", itinerary_save_payload),
+		hc.do_post("/api/itinerary/userEvent", itinerary_user_event_payload),
+		hc.do_post("/api/itinerary/searchEvent", itinerary_search_event_payload),
+	])
+	.await
+	.iter()
+	{
+		assert_eq!(
+			res.as_ref().unwrap().status().as_u16(),
+			401,
+			"Protected route should require authentication"
+		);
+	}
+
+	for res in futures::future::join_all([
+		hc.do_delete("/api/itinerary/userEvent/1"),
+		hc.do_delete("/api/chat/1"),
 	])
 	.await
 	.iter()
@@ -1659,4 +1813,143 @@ async fn test_cookie_exp_extended() {
 				.checked_add(Duration::from_secs(3600))
 				.unwrap()
 	);
+}
+
+async fn test_unsave_itinerary_success(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>,
+) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_unsave_success+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Unsave"),
+		last_name: String::from("Success"),
+		password: String::from("Password123"),
+	});
+	// Signup user
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+		.await
+		.unwrap();
+
+	let cookie = cookies.get("auth-token").unwrap();
+	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+	let user = Extension(AuthUser {
+		id: parts[1].parse().unwrap(),
+	});
+
+	// First, save an itinerary
+	let json = Json(Itinerary {
+		id: 0,
+		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
+		event_days: vec![],
+		chat_session_id: None,
+		title: String::from("Test Itinerary to Unsave"),
+	});
+	let itinerary_id = controllers::itinerary::api_save(user, pool.clone(), json)
+		.await
+		.unwrap()
+		.id;
+	assert_ne!(itinerary_id, 0);
+
+	// Now unsave it
+	let json = Json(UnsaveRequest { id: itinerary_id });
+	controllers::itinerary::api_unsave(user, pool.clone(), json)
+		.await
+		.unwrap();
+
+	// Verify it's no longer in saved itineraries
+	let saved = controllers::itinerary::api_saved_itineraries(user, pool)
+		.await
+		.unwrap();
+	assert!(!saved.itineraries.iter().any(|i| i.id == itinerary_id));
+}
+
+async fn test_unsave_itinerary_not_found(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>,
+) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_unsave_not_found+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Unsave"),
+		last_name: String::from("NotFound"),
+		password: String::from("Password123"),
+	});
+	// Signup user
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+		.await
+		.unwrap();
+
+	let cookie = cookies.get("auth-token").unwrap();
+	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+	let user = Extension(AuthUser {
+		id: parts[1].parse().unwrap(),
+	});
+
+	// Try to unsave a non-existent itinerary
+	let json = Json(UnsaveRequest { id: 999999 });
+	assert_eq!(
+		controllers::itinerary::api_unsave(user, pool, json)
+			.await
+			.unwrap_err()
+			.status_code()
+			.as_u16(),
+		404
+	);
+}
+
+async fn test_unsave_already_unsaved_itinerary(
+	mut cookies: CookieJar,
+	key: Extension<Key>,
+	pool: Extension<PgPool>,
+) {
+	let unique = Utc::now().timestamp_nanos_opt().unwrap();
+	let email = format!("test_unsave_already_unsaved+{}@example.com", unique);
+	let json = Json(SignupRequest {
+		email,
+		first_name: String::from("Unsave"),
+		last_name: String::from("Already"),
+		password: String::from("Password123"),
+	});
+	// Signup user
+	controllers::account::api_signup(&mut cookies, key.clone(), pool.clone(), json)
+		.await
+		.unwrap();
+
+	let cookie = cookies.get("auth-token").unwrap();
+	let parts: Vec<&str> = cookie.value().split(&['-', '.']).collect();
+	let user = Extension(AuthUser {
+		id: parts[1].parse().unwrap(),
+	});
+
+	// Save an itinerary
+	let json = Json(Itinerary {
+		id: 0,
+		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
+		event_days: vec![],
+		chat_session_id: None,
+		title: String::from("Test Itinerary"),
+	});
+	let itinerary_id = controllers::itinerary::api_save(user, pool.clone(), json)
+		.await
+		.unwrap()
+		.id;
+
+	// Unsave it once
+	let json = Json(UnsaveRequest { id: itinerary_id });
+	controllers::itinerary::api_unsave(user, pool.clone(), json)
+		.await
+		.unwrap();
+
+	// Try to unsave it again
+	let json = Json(UnsaveRequest { id: itinerary_id });
+	controllers::itinerary::api_unsave(user, pool, json)
+		.await
+		.unwrap();
 }

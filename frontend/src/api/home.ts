@@ -27,15 +27,12 @@ export async function apiChats(): Promise<ApiResult<ChatsResponse>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/chats`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: await response.json(), status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiChats error:", error);
 		return { result: null, status: -1 };
@@ -139,16 +136,12 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/newChat`, {
 			method: "GET",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
 		return {
-			result: (await response.json()).chat_session_id,
+			result: response.ok
+				? (await response.json()).chat_session_id
+				: null,
 			status: response.status
 		};
 	} catch (error) {
@@ -169,21 +162,13 @@ export async function apiNewChatId(): Promise<ApiResult<number>> {
 ///
 /// # Exceptions
 /// Never throws an exception
-export async function apiDeleteChat(
-	payload: number
-): Promise<ApiResult<number>> {
+export async function apiDeleteChat(payload: number): Promise<ApiResult<void>> {
 	try {
 		const response = await fetch(`${API_BASE_URL}/api/chat/${payload}`, {
 			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json"
-			},
 			credentials: import.meta.env.DEV ? "include" : "same-origin"
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		return { result: payload, status: response.status };
+		return { result: null, status: response.status };
 	} catch (error) {
 		console.error("apiDeleteChat error:", error);
 		return { result: null, status: -1 };
@@ -218,9 +203,6 @@ export async function apiRenameChat(
 			credentials: import.meta.env.DEV ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
 		return { result: null, status: response.status };
 	} catch (error) {
 		console.error("apiRenameChat error:", error);

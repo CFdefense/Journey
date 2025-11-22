@@ -1,9 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext, type Context } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles/PrevChatSideBar.css";
 import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 import { apiDeleteChat, apiRenameChat } from "../api/home";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
+import userPfp from "../assets/user-pfp-temp.png";
+import { GlobalContext } from "../helpers/global";
+import type { GlobalState } from "./GlobalProvider";
+import { apiLogout } from "../api/account";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -34,6 +39,10 @@ export default function PrevChatSideBar({
   const [editingChatId, setEditingChatId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { setAuthorized } = useContext<GlobalState>(
+    GlobalContext as Context<GlobalState>
+  );
 
   useEffect(() => {
     if (editingChatId !== null && inputRef.current) {
@@ -44,9 +53,14 @@ export default function PrevChatSideBar({
 
   const handleContextMenu = (e: React.MouseEvent, chatId: number) => {
     e.stopPropagation();
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    // Get the button element, not the SVG child
+    const buttonElement = e.currentTarget as HTMLElement;
+    const rect = buttonElement.getBoundingClientRect();
+    const contextWindowWidth = 140; // Match the width in ContextWindow.css
+    // Center the context window relative to the button
+    const centeredX = rect.left + rect.width / 2 - contextWindowWidth / 2;
     setContextMenu({
-      x: rect.left + 5,
+      x: centeredX,
       y: rect.bottom + 7,
       chatId
     });
@@ -125,67 +139,283 @@ export default function PrevChatSideBar({
     }
   };
 
+  const handleLogout = async () => {
+    const { status } = await apiLogout();
+    if (status !== 200) {
+      console.error("Logout failed with status", status);
+    }
+    setAuthorized(false);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
+    navigate("/login");
+  };
+
   return (
     <div className={`sidebar ${sidebarVisible ? "open" : "closed"}`}>
-      <div className="sidebar-top">
-        {sidebarVisible && <div className="sidebar-title">Chat History</div>}
-        <button className="sidebar-toggle-btn" onClick={onToggleSidebar}>
-          ☰
+      <div className="sidebar-actions">
+        <div className="sidebar-header-top">
+          <Link
+            to="/"
+            className={`action-btn menu-toggle-btn logo-link ${sidebarVisible ? "visible" : "hidden"}`}
+            aria-label="Go to home"
+            title="Home"
+          >
+            <img
+              src="/logo.png"
+              alt="Journey Logo"
+              className="sidebar-logo"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (
+                  fallback &&
+                  fallback.classList.contains("sidebar-logo-fallback")
+                ) {
+                  target.style.display = "none";
+                  fallback.style.display = "flex";
+                }
+              }}
+            />
+            <div className="sidebar-logo-fallback">
+              <img src="/logo.png" alt="Journey Logo" />
+            </div>
+          </Link>
+          <button
+            className={`action-btn menu-toggle-btn hamburger-btn ${sidebarVisible ? "hidden" : "visible"}`}
+            onClick={onToggleSidebar}
+            aria-label="Toggle menu"
+            title="Menu"
+          >
+            <span className="action-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M3 6H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M3 12H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M3 18H21"
+                  stroke="#0b1220"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+          </button>
+          <button
+            className="action-btn menu-close-btn"
+            onClick={onToggleSidebar}
+            aria-label="Close menu"
+            title="Close menu"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 6H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M3 12H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M3 18H21"
+                stroke="#0b1220"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          className={`action-btn primary ${sidebarVisible ? "expanded" : "icon-only"}`}
+          onClick={onNewChat}
+          aria-label="New chat"
+          title="New chat"
+        >
+          <span className="action-icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 5V19"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M5 12H19"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="action-label">New chat</span>
+        </button>
+
+        <button
+          className={`action-btn ${sidebarVisible ? "expanded" : "icon-only"}`}
+          aria-label="Search chats"
+          title="Search chats"
+        >
+          <span className="action-icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="6"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M16.5 16.5L20 20"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="action-label">Search chats</span>
         </button>
       </div>
 
-      {sidebarVisible && (
-        <>
-          <div className="new-chat-btn-wrapper">
-            <button className="new-chat-btn" onClick={onNewChat}>
-              + New Chat
-            </button>
-          </div>
-
-          <ul className="chat-list">
-            {chats === null || chats.length === 0 ? (
-              <p className="empty">No previous chats yet</p>
-            ) : (
-              chats.map((chat) => (
-                <li
-                  key={chat.id}
-                  className={chat.id === activeChatId ? "active" : ""}
-                  onClick={() => {
-                    if (editingChatId !== chat.id) {
-                      onSelectChat(chat.id);
-                      sessionStorage.setItem(
-                        ACTIVE_CHAT_SESSION,
-                        chat.id.toString()
-                      );
-                    }
-                  }}
+      <ul className="chat-list">
+        {chats === null || chats.length === 0 ? (
+          <p className="empty">No previous chats yet</p>
+        ) : (
+          chats.map((chat, index) => (
+            <li
+              key={chat.id}
+              className={chat.id === activeChatId ? "active" : ""}
+              style={{
+                transitionDelay:
+                  chat.id === activeChatId ? "0ms" : `${450 + index * 150}ms`
+              }}
+              onClick={() => {
+                if (editingChatId !== chat.id) {
+                  onSelectChat(chat.id);
+                  sessionStorage.setItem(
+                    ACTIVE_CHAT_SESSION,
+                    chat.id.toString()
+                  );
+                }
+              }}
+            >
+              {editingChatId === chat.id ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="chat-title-input"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onBlur={() => handleTitleSubmit(chat.id)}
+                  onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="chat-title">{chat.title}</span>
+              )}
+              <button
+                className="chat-menu-btn"
+                aria-label="More options"
+                title="More options"
+                onClick={(e) => handleContextMenu(e, chat.id)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  aria-hidden="true"
                 >
-                  {editingChatId === chat.id ? (
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      className="chat-title-input"
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      onBlur={() => handleTitleSubmit(chat.id)}
-                      onKeyDown={(e) => handleTitleKeyDown(e, chat.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span className="chat-title">{chat.title}</span>
-                  )}
-                  <button
-                    className="chat-menu-btn"
-                    onClick={(e) => handleContextMenu(e, chat.id)}
-                  >
-                    ...
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </>
-      )}
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+
+      <div className="sidebar-bottom">
+        <Link to="/account" className="sidebar-profile-link">
+          <img
+            src={userPfp}
+            alt="User profile"
+            className="sidebar-profile-pic"
+          />
+        </Link>
+        <button
+          className="sidebar-logout-btn"
+          onClick={handleLogout}
+          title="Logout"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M16 17L21 12L16 7"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M21 12H9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
 
       {contextMenu && (
         <ContextWindow

@@ -13,6 +13,12 @@
   background:
     radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
     linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.auth-page--account::-webkit-scrollbar {
+  display: none;
 }
 
 .auth-content {
@@ -32,17 +38,15 @@
 .auth-navbar {
   position: sticky;
   top: 0;
-  width: 100%;
   background: transparent;
-  padding: 16px 24px;
   z-index: 2;
+  padding: 16px clamp(16px, 4vw, 56px) !important;
 }
 
 .auth-page--account .auth-navbar .auth-navbar-content {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -73,14 +77,10 @@
   transition: color 0.2s;
 }
 
-.auth-brand:hover {
-  color: #34495e;
-}
-
 .auth-page--account .auth-brand {
   color: #ffffff;
 }
-.auth-page--account .auth-brand:hover {
+.auth-page--account {
   color: #ffffff;
   opacity: 0.9;
 }
@@ -95,7 +95,7 @@
   text-decoration: none;
   font-weight: 700;
 }
-.auth-page--account .auth-cta-link:hover {
+.auth-page--account {
   opacity: 0.8;
 }
 
@@ -335,6 +335,34 @@
   background: #f7f7f7;
 }
 
+/* Avatar Edit Button (Profile Picture Feature) */
+.avatar-edit-button {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0b1220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-edit-button:hover {
+  background: #0b1220;
+  transform: scale(1.1);
+}
+
+.avatar-edit-button:active {
+  transform: scale(0.95);
+}
+
 .profile-meta {
   text-align: center;
 }
@@ -492,12 +520,14 @@
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.06s ease;
-  min-height: 40px;               /* match input height */
+  transition:
+    background 0.2s ease,
+    transform 0.06s ease;
+  min-height: 40px; /* match input height */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;                  /* keep text vertically centered */
+  line-height: 1; /* keep text vertically centered */
   min-width: 72px;
 }
 
@@ -707,6 +737,15 @@
   transform: translateY(-1px);
 }
 
+.btn-secondary {
+  background: #eef1f4;
+  color: #0b1220;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e4e8ec;
+}
+
 /* Section Divider */
 .section-divider {
   margin: 2.5rem 0;
@@ -768,10 +807,255 @@
   font-size: 0.9rem;
 }
 
+/* Three-dot menu button on itinerary cards */
+.itinerary-menu-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 5;
+}
+
+.itinerary-menu-button:hover {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.itinerary-menu-button svg {
+  color: #0b1220;
+}
+
+/* Dropdown menu */
+.itinerary-menu-dropdown {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 18, 32, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.itinerary-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0b1220;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.itinerary-menu-item:hover {
+  background: rgba(11, 18, 32, 0.05);
+}
+
+.itinerary-menu-item--delete {
+  color: #dc3545;
+}
+
+.itinerary-menu-item--delete:hover {
+  background: rgba(220, 53, 69, 0.1);
+}
+
 .empty-state {
   text-align: center;
   padding: 48px 24px;
   color: #666;
+}
+
+/* Modal Overlay - Shared by both profile picture and itinerary delete */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content h2 {
+  margin: 0 0 20px 0;
+  color: #0b1220;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-content p {
+  margin: 0 0 24px 0;
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Profile Picture Modal Specific Styles */
+.modal-file-input {
+  width: 100%;
+  padding: 4px;
+  border: 2px dashed #d87f75;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #0b1220;
+}
+
+.modal-file-input::file-selector-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #0b1220;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: background 0.2s ease;
+}
+
+.modal-file-input::file-selector-button:hover {
+  background: #1a1a1a;
+}
+
+.preview-container {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.preview-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #0b1220;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-actions button {
+  flex: 1;
+  max-width: 160px;
+  padding: 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.modal-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-btn--secondary {
+  background: #eef1f4;
+  color: #0b1220;
+}
+
+.modal-btn--secondary:hover {
+  background: #e4e8ec;
+}
+
+.modal-btn--primary {
+  background: #0b1220;
+  color: #ffffff;
+}
+
+.modal-btn--primary:hover {
+  background: #1a1a1a;
+  transform: translateY(-1px);
+}
+
+.modal-btn:active {
+  transform: translateY(0);
+}
+
+.modal-btn:disabled,
+.modal-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Itinerary Delete Modal Specific Styles */
+.modal-actions .btn-danger {
+  background: #dc3545;
+  color: #ffffff;
+}
+
+.modal-actions .btn-danger:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.modal-actions .btn-danger:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 /* Mobile Responsive */
@@ -832,6 +1116,19 @@
     width: 94vw;
     padding: 1.75rem;
   }
+
+  .modal-content {
+    padding: 24px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions button {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -840,183 +1137,4 @@
       radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
       linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
   }
-}
-.avatar-edit-button {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #0b1220;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.avatar-edit-button:hover {
-  background: #0b1220;
-  transform: scale(1.1);
-}
-
-.avatar-edit-button:active {
-  transform: scale(0.95);
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  /*backdrop-filter: blur(4px);*/
-}
-
-.modal-content {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 32px;
-  width: 90%;
-  max-width: 480px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modal-content h2 {
-  margin: 0 0 20px 0;
-  color: #0b1220;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-.modal-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid rgba(11, 18, 32, 0.15);
-  border-radius: 10px;
-  font-size: 1rem;
-  margin-bottom: 24px;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease;
-}
-
-.modal-input:focus {
-  outline: none;
-  border-color: #d87f75;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.modal-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.modal-btn--secondary {
-  background: #eef1f4;
-  color: #0b1220;
-}
-
-.modal-btn--secondary:hover {
-  background: #e4e8ec;
-}
-
-.modal-btn--primary {
-  background: #0b1220;
-  color: #ffffff;
-}
-
-.modal-btn--primary:hover {
-  background: #1a1a1a;
-  transform: translateY(-1px);
-}
-
-.modal-btn:active {
-  transform: translateY(0);
-}
-
-.modal-file-input {
-  width: 100%;
-  padding: 4px;
-  border: 2px dashed #d87f75;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: transparent;
-  text-align: center;
-  font-size: 0.95rem;
-  color: #0b1220;
-}
-/*
-.modal-file-input:hover {
-  border-color: #0b1220;
-  background: rgba(216, 127, 117, 0.05);
-}
-*/
-.modal-file-input::file-selector-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background: #0b1220;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-  margin-right: 12px;
-  transition: background 0.2s ease;
-}
-
-.modal-file-input::file-selector-button:hover {
-  background: #1a1a1a;
-}
-
-.preview-container {
-  margin: 16px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.preview-image {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #0b1220;
-}
-
-.modal-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
