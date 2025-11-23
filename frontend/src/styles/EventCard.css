@@ -1,10 +1,4 @@
 /* === EVENT CARD === */
-.event-card-wrapper {
-  position: relative;
-  width: 100%;
-  padding: 28px 0; /* give each card breathing room on the timeline */
-}
-
 .event-card {
   /* Solid very light background so no colored band peeks through at seams */
   background: #ffffff;
@@ -21,7 +15,7 @@
   justify-content: flex-start;
   align-items: stretch;
   gap: 0;
-  min-height: 230px; /* make cards visually taller */
+  min-height: 230px; /* full-height card for main timeline */
   max-width: 100%; /* allow wrapper to control overall width */
   width: 100%;
   box-sizing: border-box;
@@ -120,6 +114,32 @@
   justify-content: flex-start;
   align-items: flex-start;
   gap: 8px;
+}
+
+/* Compact variant when used in the unassigned workspace bar */
+.event-card--workspace {
+  min-height: 80px;
+  max-height: 100px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.event-card--workspace .event-image-container {
+  flex: 0 0 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.event-card--workspace .event-content {
+  padding: 14px 18px;
+}
+
+.event-card--workspace .event-title {
+  font-size: 1.2rem;
+}
+
+.event-card--workspace .event-description {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 /* Text alignment follows the image side:

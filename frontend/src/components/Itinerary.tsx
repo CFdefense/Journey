@@ -504,18 +504,23 @@ const Itinerary: React.FC<ItineraryProps> = ({
             onDragOver={onDragOver}
           >
             <div className="events-area">
-              {unassignedEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  unassignedEvents={unassignedEvents}
-                  setUnassignedEvents={setUnassignedEvents}
-                  localDays={localDays}
-                  setLocalDays={setLocalDays}
-                  draggable={editMode}
-                  onDragStart={(e) => onDragStart(e, event, -1)}
-                />
-              ))}
+              {unassignedEvents.length === 0 ? (
+                <p className="workspace-empty-text">Workspace is empty</p>
+              ) : (
+                unassignedEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    variant="workspace"
+                    unassignedEvents={unassignedEvents}
+                    setUnassignedEvents={setUnassignedEvents}
+                    localDays={localDays}
+                    setLocalDays={setLocalDays}
+                    draggable={editMode}
+                    onDragStart={(e) => onDragStart(e, event, -1)}
+                  />
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -526,11 +531,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
         <div className="timeline-events">
           {getAllEventsForDay().map((item, index, array) => {
             const isLast = index === array.length - 1;
-            const isEven = index % 2 === 0;
+            // Start the sequence with a right-aligned card and then alternate
+            const isRightSide = index % 2 === 0;
             return (
               <React.Fragment key={`${item.event.id}-${index}`}>
                 <div
-                  className={`timeline-event-wrapper ${isEven ? "left-aligned" : "right-aligned"} ${editMode ? "editable" : ""}`}
+                  className={`timeline-event-wrapper ${
+                    isRightSide ? "right-aligned" : "left-aligned"
+                  } ${editMode ? "editable" : ""}`}
                   onDrop={(e) => onDrop(e, item.timeIndex)}
                   onDragOver={onDragOver}
                 >
@@ -544,14 +552,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     draggable={editMode ?? false}
                     onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
                     displayTime={formatEventTime(item.event, item.timeBlock)}
-                    imageOnLeft={!isEven}
+                    // Keep the image toward the center of the timeline:
+                    // when the card is on the right, image is on the left, and vice versa.
+                    imageOnLeft={isRightSide}
                   />
                 </div>
                 {!isLast && (
-                  <div className={`timeline-arrow ${isEven ? "left-to-right" : "right-to-left"}`}>
-                    <img 
-                      src={isEven ? "/left-arrow.png" : "/rightarrow.png"} 
-                      alt="timeline arrow" 
+                  <div
+                    className={`timeline-arrow ${
+                      isRightSide ? "right-to-left" : "left-to-right"
+                    }`}
+                  >
+                    <img
+                      src={isRightSide ? "/rightarrow.png" : "/left-arrow.png"}
+                      alt="timeline arrow"
                       className="arrow-image"
                     />
                   </div>
