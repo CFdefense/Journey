@@ -19,6 +19,8 @@ interface PrevChatSideBarProps {
   onDeleteChat: (id: number) => void;
   onRenameChat: (id: number, newTitle: string) => void;
   sidebarVisible: boolean;
+  firstName?: string;           
+  profileImageUrl?: string;
 }
 
 export default function PrevChatSideBar({
@@ -29,7 +31,9 @@ export default function PrevChatSideBar({
   onToggleSidebar,
   onDeleteChat,
   onRenameChat,
-  sidebarVisible
+  sidebarVisible,
+  firstName,              
+  profileImageUrl 
 }: PrevChatSideBarProps) {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -375,9 +379,10 @@ export default function PrevChatSideBar({
       <div className="sidebar-bottom">
         <Link to="/account" className="sidebar-profile-link">
           <img
-            src={userPfp}
-            alt="User profile"
+            src={profileImageUrl || userPfp}
+            alt={firstName ? `${firstName}'s profile` : "User profile"}
             className="sidebar-profile-pic"
+            onError={(e) => { e.currentTarget.src = userPfp; }}
           />
         </Link>
         <button
