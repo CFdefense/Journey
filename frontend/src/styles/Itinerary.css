@@ -13,9 +13,7 @@
 .view-page--gradient {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
-    linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
+  background: #ffa366;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -120,7 +118,7 @@
   max-width: 1400px;
   background-color: transparent;
   border-radius: 12px;
-  padding: 32px;
+  padding: 32px 16px; /* slightly smaller horizontal padding so cards can reach further */
   box-shadow: none;
   margin-bottom: 24px;
   box-sizing: border-box;
@@ -281,7 +279,7 @@
 /* Timeline Layout */
 .timeline-container {
   width: 100%;
-  padding: 50px 20px;
+  padding: 40px 20px 80px;
   min-height: 400px;
   background: transparent;
   border-radius: 12px;
@@ -301,7 +299,6 @@
   position: relative;
   width: 100%;
   max-width: 800px;
-  padding: 5px 30px;
 }
 
 .timeline-event-wrapper.left-aligned {
@@ -331,18 +328,32 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  margin: -120px auto;
+  margin: -150px auto;
   position: relative;
   justify-content: center;
   padding: 0;
+  pointer-events: none;
 }
 
 .arrow-image {
-  width: 100%;
+  width: 70%;
+  max-width: 1000px;
   height: auto;
   max-height: 400px;
   object-fit: contain;
   opacity: 1;
+}
+
+/* On large screens, push cards further toward the edges,
+   while keeping the arrow centered between them */
+@media (min-width: 1200px) {
+  .timeline-event-wrapper.left-aligned {
+    transform: translateX(-175px);
+  }
+
+  .timeline-event-wrapper.right-aligned {
+    transform: translateX(140px);
+  }
 }
 
 .timeline-empty {
@@ -360,59 +371,62 @@
   gap: 10px;
   margin-top: 40px;
   padding: 20px;
-  background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
+  background-color: transparent;
+  border-radius: 16px;
   flex-wrap: wrap;
   position: sticky;
   bottom: 20px;
   z-index: 10;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .day-nav-item {
-  background: #f0f0f0;
-  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #555;
+  color: #2c3e50;
   font-size: 0.95rem;
   font-weight: 600;
   position: relative;
 }
 
 .day-nav-item:hover {
-  background: var(--pale-yellow);
-  color: #333;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #1a252f;
 }
 
 .day-nav-item.active {
-  background: var(--blue);
+  background: #006bbb;
+  border-color: #006bbb;
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 107, 187, 0.3);
 }
 
 .day-nav-item.active:hover {
   background: #005a9e;
+  border-color: #005a9e;
 }
 
 .day-nav-button {
-  background: #e0e0e0;
-  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #555;
+  color: #2c3e50;
   font-size: 1.2rem;
   font-weight: 600;
   min-width: 50px;
 }
 
 .day-nav-button:hover {
-  background: var(--pale-yellow);
-  color: #333;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #1a252f;
 }
 
 /* Itinerary list - HORIZONTAL layout (kept for backward compatibility) */

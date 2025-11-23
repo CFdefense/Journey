@@ -51,6 +51,31 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const navigate = useNavigate();
 
+  const getDateTimeLabel = () => {
+    if (eventData.hard_start) {
+      try {
+        const date = new Date(eventData.hard_start);
+        if (!isNaN(date.getTime())) {
+          const today = new Date();
+          const sameYear = date.getFullYear() === today.getFullYear();
+          const options: Intl.DateTimeFormatOptions = {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+          };
+          if (!sameYear) {
+            options.year = "numeric";
+          }
+          return date.toLocaleString(undefined, options);
+        }
+      } catch {
+        // fall through
+      }
+    }
+    return displayTime || "";
+  };
+
   const openModal = () => {
     if (!isDragging) setIsOpen(true);
   };
@@ -169,12 +194,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
   return (
     <>
-      <div
-        className={`event-card-wrapper ${imageOnLeft ? "image-left" : "image-right"}`}
-      >
-        {displayTime && (
-          <p className={`event-time-outer ${imageOnLeft ? "time-right" : "time-left"}`}>{displayTime}</p>
-        )}
+      <div className={`event-card-wrapper ${imageOnLeft ? "image-left" : "image-right"}`}>
         <div
           className={`event-card ${draggable ? "draggable" : ""} ${imageOnLeft ? "image-left" : "image-right"}`}
           draggable={draggable}
@@ -193,11 +213,14 @@ const EventCard: React.FC<EventCardProps> = ({
           </div>
           <div className="event-content">
             <h3 className="event-title">{eventData.event_name}</h3>
-          {eventData.event_type && (
-            <p className="event-type">{eventData.event_type}</p>
-          )}
+            {getDateTimeLabel() && (
+              <p className="event-datetime">{getDateTimeLabel()}</p>
+            )}
           {eventData.event_description && (
             <p className="event-description">{eventData.event_description}</p>
+          )}
+          {eventData.event_type && (
+            <p className="event-type">{eventData.event_type}</p>
           )}
           {(eventData.street_address ||
             eventData.city ||
