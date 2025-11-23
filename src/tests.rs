@@ -756,7 +756,9 @@ async fn test_update_endpoint_returns_account(
 		risk_preference: Some(RiskTolerence::Adventurer),
 		food_allergies: Some(String::from("Peanuts, shellfish")),
 		disabilities: Some(String::from("Wheelchair accessible")),
-		profile_picture: Some(String::from("https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images")),
+		profile_picture: Some(String::from(
+			"https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images",
+		)),
 	});
 	_ = controllers::account::api_update(pool, user, json)
 		.await
@@ -1747,7 +1749,7 @@ async fn test_signup_logout() {
 		.await
 		.unwrap();
 	assert_eq!(update_resp.status().as_u16(), 200);
-	
+
 	let body = update_resp.json_body().unwrap();
 	assert_eq!(body["profile_picture"], "https://example.com/pic.jpg");
 
