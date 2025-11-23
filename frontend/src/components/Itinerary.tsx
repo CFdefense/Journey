@@ -17,6 +17,7 @@ interface ItineraryProps {
   unassigned?: Event[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
   onSave?: (updatedDays: DayItinerary[]) => Promise<void>;
+  onEditWithAI?: () => void;
   editMode?: boolean;
   title?: string;
   compact?: boolean;
@@ -27,6 +28,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   unassigned,
   onUpdate,
   onSave,
+  onEditWithAI,
   editMode,
   title,
   compact = false
@@ -34,7 +36,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [localDays, setLocalDays] = useState<DayItinerary[]>(days || []);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
-  const [buttonsDisabled, setButtonsDisabled] = useState<boolean>(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [userEventForm, setUserEventForm] = useState({
@@ -66,6 +67,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   });
   const [searchResult, setSearchResult] = useState<Event[] | null>(null);
   const [searchResultCaption, setSearchResultCaption] = useState<string>("");
+  const [plusMenuOpen, setPlusMenuOpen] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -78,6 +80,23 @@ const Itinerary: React.FC<ItineraryProps> = ({
   useEffect(() => {
     setUnassignedEvents(unassigned || []);
   }, [unassigned]);
+
+  // Close plus menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (plusMenuOpen && !target.closest('.plus-menu-container')) {
+        setPlusMenuOpen(false);
+      }
+    };
+
+    if (plusMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [plusMenuOpen]);
 
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id.toString());
@@ -170,44 +189,10 @@ const Itinerary: React.FC<ItineraryProps> = ({
     // Update local state immediately for UI responsiveness
     setLocalDays(updatedDays);
     setUnassignedEvents(unassigned_events);
-    setButtonsDisabled(false);
   };
 
   const onDragOver = (e: React.DragEvent) => {
     if (editMode) e.preventDefault();
-  };
-
-  const handleSave = async () => {
-    console.log("Saving updated itinerary:", {
-      day: localDays[selectedDayIndex].date,
-      updatedTimeBlocks: localDays[selectedDayIndex].timeBlocks
-    });
-
-    // Update parent state
-    if (onUpdate) {
-      onUpdate(localDays);
-    }
-
-    // Call parent's save function (which handles API call)
-    if (onSave) {
-      try {
-        await onSave(localDays);
-      } catch (error) {
-        console.error("Save failed:", error);
-        // show error
-      }
-    }
-
-    setButtonsDisabled(true);
-  };
-
-  const handleCancel = () => {
-    // Revert to original days
-    if (days) {
-      setLocalDays(days);
-    }
-    setUnassignedEvents(unassigned || []);
-    setButtonsDisabled(true);
   };
 
   if (!localDays || localDays.length === 0) {
@@ -227,6 +212,51 @@ const Itinerary: React.FC<ItineraryProps> = ({
       default:
         return "";
     }
+  };
+
+  // Get all events for the current day in chronological order
+  const getAllEventsForDay = (): Array<{ event: Event; timeBlock: string; timeIndex: number }> => {
+    const allEvents: Array<{ event: Event; timeBlock: string; timeIndex: number }> = [];
+    
+    currentDay.timeBlocks.forEach((block, timeIndex) => {
+      block.events.forEach((event) => {
+        allEvents.push({ event, timeBlock: block.time, timeIndex });
+      });
+    });
+
+    // Sort events by hard_start if available, otherwise by time block order
+    allEvents.sort((a, b) => {
+      if (a.event.hard_start && b.event.hard_start) {
+        return new Date(a.event.hard_start).getTime() - new Date(b.event.hard_start).getTime();
+      }
+      if (a.event.hard_start) return -1;
+      if (b.event.hard_start) return 1;
+      
+      // Fallback to time block order: Morning < Afternoon < Evening
+      const timeOrder: { [key: string]: number } = { Morning: 0, Afternoon: 1, Evening: 2 };
+      return timeOrder[a.timeBlock] - timeOrder[b.timeBlock];
+    });
+
+    return allEvents;
+  };
+
+  const formatEventTime = (event: Event, timeBlock: string): string => {
+    if (event.hard_start) {
+      try {
+        const date = new Date(event.hard_start);
+        if (!isNaN(date.getTime())) {
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          const displayMinutes = minutes.toString().padStart(2, '0');
+          return `${displayHours}:${displayMinutes} ${ampm}`;
+        }
+      } catch (e) {
+        // Fall through to time block display
+      }
+    }
+    return getTimeRange(timeBlock);
   };
 
   const onCreateEvent = () => setCreateModalOpen(true);
@@ -367,17 +397,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
 
-  const addDayBefore = () => {
-    const first = new Date(localDays[0].date);
-    first.setDate(first.getDate() - 1);
-    const newDay: DayItinerary = {
-      date: first.toISOString().slice(0, 10),
-      timeBlocks: []
-    };
-    setLocalDays([newDay, ...localDays]);
-    setButtonsDisabled(false);
-  };
-
   const addDayAfter = () => {
     const last = new Date(localDays[localDays.length - 1].date);
     last.setDate(last.getDate() + 1);
@@ -386,7 +405,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
       timeBlocks: []
     };
     setLocalDays([...localDays, newDay]);
-    setButtonsDisabled(false);
+  };
+
+  const addDay = () => {
+    addDayAfter();
+    setPlusMenuOpen(false);
   };
 
   const deleteDay = (first: boolean) => {
@@ -401,7 +424,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
         (b) => b.events
       )
     ]);
-    setButtonsDisabled(false);
   };
 
   return (
@@ -411,37 +433,64 @@ const Itinerary: React.FC<ItineraryProps> = ({
         <h3>{title || "Itinerary"}</h3>
 
         {editMode && (
-          <div className="itinerary-edit-buttons-container">
-            <button
-              className="itinerary-edit-button"
-              id="itinerary-create"
-              onClick={onCreateEvent}
-            >
-              Create Event
-            </button>
-            <button
-              className="itinerary-edit-button"
-              id="itinerary-search"
-              onClick={onSearchEvents}
-            >
-              Search Events
-            </button>
-            <button
-              className="itinerary-edit-button"
-              id="itinerary-save"
-              onClick={handleSave}
-              disabled={buttonsDisabled}
-            >
-              Save
-            </button>
-            <button
-              className="itinerary-edit-button"
-              id="itinerary-cancel"
-              onClick={handleCancel}
-              disabled={buttonsDisabled}
-            >
-              Cancel
-            </button>
+          <div className="itinerary-header-actions">
+            {onEditWithAI && (
+              <button
+                className="edit-ai-button-header"
+                onClick={onEditWithAI}
+              >
+                Edit with AI
+              </button>
+            )}
+            <div className="plus-menu-container">
+              <button
+                className="plus-button"
+                onClick={() => setPlusMenuOpen(!plusMenuOpen)}
+                aria-label="Add"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              {plusMenuOpen && (
+                <div className="plus-menu-dropdown">
+                  <button
+                    className="plus-menu-item"
+                    onClick={() => {
+                      onCreateEvent();
+                      setPlusMenuOpen(false);
+                    }}
+                  >
+                    Create Event
+                  </button>
+                  <button
+                    className="plus-menu-item"
+                    onClick={() => {
+                      onSearchEvents();
+                      setPlusMenuOpen(false);
+                    }}
+                  >
+                    Search Events
+                  </button>
+                  <button
+                    className="plus-menu-item"
+                    onClick={addDay}
+                  >
+                    Add Day
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -472,17 +521,58 @@ const Itinerary: React.FC<ItineraryProps> = ({
         </div>
       )}
 
-      {/* Day Tabs */}
-      <div className="day-tabs">
-        {editMode && (
-          <button className="day-tab" onClick={addDayBefore}>
-            +
-          </button>
-        )}
+      {/* Timeline Layout */}
+      <div className="timeline-container">
+        <div className="timeline-events">
+          {getAllEventsForDay().map((item, index, array) => {
+            const isLast = index === array.length - 1;
+            const isEven = index % 2 === 0;
+            return (
+              <React.Fragment key={`${item.event.id}-${index}`}>
+                <div
+                  className={`timeline-event-wrapper ${isEven ? "left-aligned" : "right-aligned"} ${editMode ? "editable" : ""}`}
+                  onDrop={(e) => onDrop(e, item.timeIndex)}
+                  onDragOver={onDragOver}
+                >
+                  <EventCard
+                    time={item.timeBlock}
+                    event={item.event}
+                    unassignedEvents={unassignedEvents}
+                    setUnassignedEvents={setUnassignedEvents}
+                    localDays={localDays}
+                    setLocalDays={setLocalDays}
+                    draggable={editMode ?? false}
+                    onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
+                    displayTime={formatEventTime(item.event, item.timeBlock)}
+                    imageOnLeft={!isEven}
+                  />
+                </div>
+                {!isLast && (
+                  <div className={`timeline-arrow ${isEven ? "left-to-right" : "right-to-left"}`}>
+                    <img 
+                      src={isEven ? "/left-arrow.png" : "/rightarrow.png"} 
+                      alt="timeline arrow" 
+                      className="arrow-image"
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+          {getAllEventsForDay().length === 0 && (
+            <div className="timeline-empty">
+              <p>No events scheduled for this day</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Day Navigation - Bottom */}
+      <div className="day-navigation-bottom">
         {localDays.map((day, index) => (
           <div
             key={day.date.toString()}
-            className={`day-tab ${index === selectedDayIndex ? "active" : ""}`}
+            className={`day-nav-item ${index === selectedDayIndex ? "active" : ""}`}
             onClick={() => setSelectedDayIndex(index)}
           >
             Day {index + 1} ({day.date.toString()})
@@ -506,43 +596,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   -
                 </button>
               )}
-          </div>
-        ))}
-        {editMode && (
-          <button className="day-tab" onClick={addDayAfter}>
-            +
-          </button>
-        )}
-      </div>
-
-      {/* Time Blocks */}
-      <div className="itinerary-list">
-        {currentDay.timeBlocks.map((block, timeIndex) => (
-          <div
-            key={block.time}
-            className={`time-block ${editMode ? "editable" : ""}`}
-            onDrop={(e) => onDrop(e, timeIndex)}
-            onDragOver={onDragOver}
-          >
-            <div className="time-label">
-              <span>{block.time}</span>
-              <span className="time-range">{getTimeRange(block.time)}</span>
-            </div>
-            <div className="events-area">
-              {block.events.map((event) => (
-                <EventCard
-                  key={event.id}
-                  time={block.time}
-                  event={event}
-                  unassignedEvents={unassignedEvents}
-                  setUnassignedEvents={setUnassignedEvents}
-                  localDays={localDays}
-                  setLocalDays={setLocalDays}
-                  draggable={editMode ?? false}
-                  onDragStart={(e) => onDragStart(e, event, timeIndex)}
-                />
-              ))}
-            </div>
           </div>
         ))}
       </div>

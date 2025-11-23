@@ -97,18 +97,18 @@ function ViewItineraryPage() {
   }, [itineraryId, navigate]);
 
   return (
-    <div className="view-page">
+    <div className="view-page view-page--gradient">
       <Navbar page="view" />
-      <Itinerary
-        days={days}
-        onUpdate={handleItineraryUpdate}
-        onSave={handleSave}
-        title={itineraryMetadata.title}
-        editMode={true}
-      />
-      <button className="edit-ai-button" onClick={handleEditWithAI}>
-        Edit with AI
-      </button>
+      <div className="view-content">
+        <Itinerary
+          days={days}
+          onUpdate={handleItineraryUpdate}
+          onSave={handleSave}
+          onEditWithAI={handleEditWithAI}
+          title={itineraryMetadata.title}
+          editMode={true}
+        />
+      </div>
     </div>
   );
 }

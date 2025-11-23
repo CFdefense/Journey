@@ -14,6 +14,8 @@ interface EventCardProps {
   draggable: boolean;
   time?: string;
   event: Event;
+  displayTime?: string;
+  imageOnLeft?: boolean;
 
   localDays: DayItinerary[];
   setLocalDays: React.Dispatch<React.SetStateAction<DayItinerary[]>>;
@@ -30,6 +32,8 @@ const EventCard: React.FC<EventCardProps> = ({
   time,
   event,
   draggable = false,
+  displayTime,
+  imageOnLeft = true,
   localDays,
   setLocalDays,
   unassignedEvents,
@@ -166,22 +170,43 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <>
       <div
-        className={`event-card ${draggable ? "draggable" : ""}`}
-        draggable={draggable}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onClick={openModal}
+        className={`event-card-wrapper ${imageOnLeft ? "image-left" : "image-right"}`}
       >
-        <h3 className="event-title">{eventData.event_name}</h3>
-        {eventData.event_type && (
-          <p className="event-type">{eventData.event_type}</p>
+        {displayTime && (
+          <p className={`event-time-outer ${imageOnLeft ? "time-right" : "time-left"}`}>{displayTime}</p>
         )}
-        {(eventData.street_address ||
-          eventData.city ||
-          eventData.country ||
-          eventData.postal_code) && (
-          <p className="event-location">{formatAddress()}</p>
-        )}
+        <div
+          className={`event-card ${draggable ? "draggable" : ""} ${imageOnLeft ? "image-left" : "image-right"}`}
+          draggable={draggable}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onClick={openModal}
+        >
+          <div className="event-image-container">
+            <div className="event-image-placeholder">
+              <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="200" height="200" fill="#f0f0f0"/>
+                <path d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z" fill="#d0d0d0"/>
+                <circle cx="70" cy="60" r="15" fill="#d0d0d0"/>
+              </svg>
+            </div>
+          </div>
+          <div className="event-content">
+            <h3 className="event-title">{eventData.event_name}</h3>
+          {eventData.event_type && (
+            <p className="event-type">{eventData.event_type}</p>
+          )}
+          {eventData.event_description && (
+            <p className="event-description">{eventData.event_description}</p>
+          )}
+          {(eventData.street_address ||
+            eventData.city ||
+            eventData.country ||
+            eventData.postal_code) && (
+            <p className="event-location">{formatAddress()}</p>
+          )}
+        </div>
+      </div>
       </div>
 
       {isOpen && (

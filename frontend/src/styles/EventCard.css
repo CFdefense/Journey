@@ -1,22 +1,57 @@
 /* === EVENT CARD === */
+.event-card-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .event-card {
-  background: #f0f0f0;
-  border: 1px solid #d8d8d8;
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: 0.9rem;
+  background: #ffffff;
+  border: 2px dashed #30a0e0;
+  border-radius: 16px;
+  padding: 0;
+  font-size: 1rem;
   cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  min-height: 100px;
-  height: 100px;
-  text-align: center;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0;
+  min-height: 200px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+.event-time-outer {
+  position: absolute;
+  top: 0;
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 500;
+  z-index: 10;
+  margin: 0;
+  padding: 4px 8px;
+  background: transparent;
+}
+
+.event-time-outer.time-left {
+  left: 0;
+}
+
+.event-time-outer.time-right {
+  right: 0;
+}
+
+.event-card.image-left {
+  flex-direction: row;
+}
+
+.event-card.image-right {
+  flex-direction: row-reverse;
 }
 
 .event-card:hover {
@@ -44,11 +79,57 @@
   border-color: var(--blue);
 }
 
-.event-title {
-  font-weight: 600;
-  color: #444;
-  margin: 0;
+.event-image-container {
+  flex: 0 0 200px;
+  min-width: 200px;
+  max-width: 200px;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: #f8f8f8;
+}
+
+.event-image-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px 0 0 14px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.event-card.image-right .event-image-placeholder {
+  border-radius: 0 14px 14px 0;
+}
+
+.event-content {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.event-time {
   font-size: 0.95rem;
+  color: #666;
+  margin: 0 0 8px 0;
+  font-weight: 500;
+  text-align: left;
+}
+
+.event-title {
+  font-weight: 700;
+  color: #d87f75;
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -59,11 +140,25 @@
   width: 100%;
 }
 
+.event-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  width: 100%;
+}
+
 .event-location {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #666;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -71,11 +166,11 @@
 }
 
 .event-type {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #888;
   margin: 0;
   font-style: italic;
-  line-height: 1.2;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -83,7 +178,7 @@
 }
 
 .event-card:hover .event-title {
-  color: var(--blue);
+  color: #c76a5f;
 }
 
 /* === MODAL === */
@@ -285,10 +380,39 @@
   .event-modal {
     padding: 16px 20px;
   }
+
+  .event-card {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .event-card.image-left,
+  .event-card.image-right {
+    flex-direction: column;
+  }
+
+  .event-image-container {
+    flex: 0 0 180px;
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .event-image-placeholder {
+    border-radius: 12px 12px 0 0;
+  }
+
+  .event-content {
+    padding: 20px;
+  }
 }
 
 @media (max-width: 600px) {
   .editable-card-components-grid {
     grid-template-columns: 1fr;
+  }
+
+  .event-image-container {
+    flex: 0 0 150px;
   }
 }
