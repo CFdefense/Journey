@@ -1,6 +1,6 @@
 import { apiUpdateAccount, apiCurrent } from "../api/account";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
@@ -37,7 +37,8 @@ export default function Account() {
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [showProfilePicModal, setShowProfilePicModal] = useState<boolean>(false);
+  const [isUploadingPicture, setIsUploadingPicture] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatDate = (dateInput: string | number | Date): string => {
     const date = new Date(dateInput);
@@ -81,6 +82,80 @@ export default function Account() {
 
     fetchProfile();
   }, []);
+
+  // Handle profile picture file selection
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be smaller than 5MB");
+      return;
+    }
+
+    setIsUploadingPicture(true);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Image = reader.result as string;
+      setNewProfilePicture(base64Image);
+
+      // Auto-save the profile picture
+      const payload: UpdateRequest = {
+        email: null,
+        first_name: null,
+        last_name: null,
+        password: null,
+        current_password: null,
+        budget_preference: null,
+        risk_preference: null,
+        food_allergies: null,
+        disabilities: null,
+        profile_picture: base64Image
+      };
+
+      try {
+        const updateResult = await apiUpdateAccount(payload);
+
+        if (updateResult.status !== 200) {
+          console.error(
+            "API call to /api/account/update failed with status: ",
+            updateResult.status
+          );
+          toast.error("Failed to update profile picture. Please try again.");
+          setIsUploadingPicture(false);
+          return;
+        }
+
+        toast.success("Profile picture updated successfully!");
+        
+        // Update the displayed image
+        if (updateResult.result?.profile_picture) {
+          setProfileImageUrl(updateResult.result.profile_picture);
+        } else {
+          setProfileImageUrl(base64Image);
+        }
+        
+        setNewProfilePicture("");
+        setIsUploadingPicture(false);
+      } catch (err) {
+        console.error(err);
+        toast.error("Unable to update profile picture. Please try again.");
+        setIsUploadingPicture(false);
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error("Failed to read file. Please try again.");
+      setIsUploadingPicture(false);
+    };
+
+    reader.readAsDataURL(file);
+    
+    // Reset file input so the same file can be selected again
+    e.target.value = "";
+  };
 
   // Core submit/update logic used by form submit and inline "Done" buttons
   const submitUpdate = async () => {
@@ -143,7 +218,7 @@ export default function Account() {
       risk_preference: null,
       food_allergies: null,
       disabilities: null,
-      profile_picture: newProfilePicture.trim().length > 0 ? newProfilePicture.trim() : null
+      profile_picture: null // Profile picture handled separately now
     };
 
     try {
@@ -175,17 +250,13 @@ export default function Account() {
       if (updateResult.result) {
         setFirstName(updateResult.result.first_name || trimmedFirst);
         setLastName(updateResult.result.last_name || trimmedLast);
-        if (updateResult.result.profile_picture) {
-          setProfileImageUrl(updateResult.result.profile_picture);
-        }
       }
 
-      // Clear password fields and profile picture temp state
+      // Clear password fields
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setPasswordErrors({});
-      setNewProfilePicture("");
     } catch (err) {
       console.error(err);
       toast.error("Unable to update account. Please try again.");
@@ -210,24 +281,30 @@ export default function Account() {
                 <div className="account-box">
                   <div className="hs-hero-card">
                     <div className="profile-header">
-                      <div className="avatar-wrapper">
+                      <div 
+                        className={`avatar-wrapper ${isUploadingPicture ? "uploading" : ""}`}
+                        onClick={() => !isUploadingPicture && fileInputRef.current?.click()}
+                      >
                         <img
                           src={profileImageUrl}
                           alt={`${firstName || "User"} ${lastName || ""}`.trim()}
                           className="avatar"
                           onError={() => setProfileImageUrl(navbarAvatarUrl)}
                         />
-                        <button
-                          type="button"
-                          className="avatar-edit-button"
-                          onClick={() => {
-                            setNewProfilePicture(profileImageUrl === navbarAvatarUrl ? "" : profileImageUrl);
-                            setShowProfilePicModal(true);
-                          }}
-                          aria-label="Edit profile picture"
-                        >
-                          ✒️
-                        </button>
+                        <div className="avatar-overlay">
+                          {isUploadingPicture ? (
+                            <div className="upload-spinner"></div>
+                          ) : (
+                            <span className="avatar-edit-icon"></span>
+                          )}
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          style={{ display: 'none' }}
+                        />
                       </div>
                       <div className="profile-meta">
                         <h1 className="profile-name">
@@ -428,74 +505,6 @@ export default function Account() {
                 </div>
               </div>
             </main>
-          </div>
-        )}
-
-        {/* Profile Picture Modal */}
-        {showProfilePicModal && (
-          <div className="modal-overlay" onClick={() => {
-            setShowProfilePicModal(false);
-            setNewProfilePicture("");
-          }}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h2>Change Profile Picture</h2>
-              
-              {/* File input */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    // Check file size (limit to 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                      toast.error("Image must be smaller than 5MB");
-                      return;
-                    }
-                    
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      setNewProfilePicture(reader.result as string);
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-                className="modal-file-input"
-              />
-              
-              {/* Preview */}
-              {newProfilePicture && (
-                <div className="preview-container">
-                  <img 
-                    src={newProfilePicture} 
-                    alt="Preview" 
-                    className="preview-image"
-                  />
-                </div>
-              )}
-              
-              <div className="modal-actions">
-                <button 
-                  className="modal-btn modal-btn--secondary"
-                  onClick={() => {
-                    setShowProfilePicModal(false);
-                    setNewProfilePicture("");
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="modal-btn modal-btn--primary"
-                  onClick={async () => {
-                    await submitUpdate();
-                    setShowProfilePicModal(false);
-                  }}
-                  disabled={!newProfilePicture}
-                >
-                  Save
-                </button>
-              </div>
-            </div>
           </div>
         )}
 

@@ -23,8 +23,7 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [displayName, setDisplayName] = useState<string>(firstName || "");
-  const [avatarUrl, setAvatarUrl] = useState<string>(profileImageUrl || userPfp);  // Add this
-  const nameReady = (displayName || "").trim().length > 0;
+  const [avatarUrl, setAvatarUrl] = useState<string>(profileImageUrl || userPfp); 
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

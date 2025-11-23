@@ -335,33 +335,6 @@
   background: #f7f7f7;
 }
 
-/* Avatar Edit Button (Profile Picture Feature) */
-.avatar-edit-button {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #0b1220;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.avatar-edit-button:hover {
-  background: #0b1220;
-  transform: scale(1.1);
-}
-
-.avatar-edit-button:active {
-  transform: scale(0.95);
-}
 
 .profile-meta {
   text-align: center;
@@ -1136,5 +1109,82 @@
     background:
       radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
       linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
+  }
+}
+.avatar-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.avatar-wrapper:hover {
+  transform: scale(1.02);
+}
+
+.avatar-wrapper.uploading {
+  cursor: wait;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  background: #f7f7f7;
+  transition: opacity 0.2s ease;
+}
+
+/* Overlay that appears on hover */
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-wrapper.uploading .avatar-overlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.avatar-edit-icon {
+  font-size: 32px;
+  color: #ffffff;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Upload spinner */
+.upload-spinner {
+  font-size: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
