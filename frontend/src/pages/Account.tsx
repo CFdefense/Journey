@@ -30,7 +30,6 @@ export default function Account() {
   // Use same profile picture asset as Navbar for consistency
   const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
-  const [newProfilePicture, setNewProfilePicture] = useState<string>("");
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -99,7 +98,6 @@ export default function Account() {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64Image = reader.result as string;
-      setNewProfilePicture(base64Image);
 
       // Auto-save the profile picture
       const payload: UpdateRequest = {
@@ -137,7 +135,6 @@ export default function Account() {
           setProfileImageUrl(base64Image);
         }
         
-        setNewProfilePicture("");
         setIsUploadingPicture(false);
       } catch (err) {
         console.error(err);
