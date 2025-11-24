@@ -21,6 +21,10 @@ interface ItineraryProps {
   editMode?: boolean;
   title?: string;
   compact?: boolean;
+  externalCreateModal?: boolean;
+  externalSearchModal?: boolean;
+  onCreateModalChange?: (open: boolean) => void;
+  onSearchModalChange?: (open: boolean) => void;
 }
 
 const Itinerary: React.FC<ItineraryProps> = ({
@@ -31,13 +35,37 @@ const Itinerary: React.FC<ItineraryProps> = ({
   onEditWithAI,
   editMode,
   title,
-  compact = false
+  compact = false,
+  externalCreateModal,
+  externalSearchModal,
+  onCreateModalChange,
+  onSearchModalChange
 }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [localDays, setLocalDays] = useState<DayItinerary[]>(days || []);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [internalCreateModalOpen, setInternalCreateModalOpen] = useState(false);
+  const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
+  
+  // Use external modal state if provided, otherwise use internal state
+  const createModalOpen = externalCreateModal !== undefined ? externalCreateModal : internalCreateModalOpen;
+  const searchModalOpen = externalSearchModal !== undefined ? externalSearchModal : internalSearchModalOpen;
+  
+  const setCreateModalOpen = (open: boolean) => {
+    if (onCreateModalChange) {
+      onCreateModalChange(open);
+    } else {
+      setInternalCreateModalOpen(open);
+    }
+  };
+  
+  const setSearchModalOpen = (open: boolean) => {
+    if (onSearchModalChange) {
+      onSearchModalChange(open);
+    } else {
+      setInternalSearchModalOpen(open);
+    }
+  };
   const [userEventForm, setUserEventForm] = useState({
     name: "",
     description: "",
@@ -431,68 +459,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
       {/* Header Row */}
       <div className="itinerary-header">
         <h3>{title || "Itinerary"}</h3>
-
-        {editMode && (
-          <div className="itinerary-header-actions">
-            {onEditWithAI && (
-              <button
-                className="edit-ai-button-header"
-                onClick={onEditWithAI}
-              >
-                Edit with AI
-              </button>
-            )}
-            <div className="plus-menu-container">
-              <button
-                className="plus-button"
-                onClick={() => setPlusMenuOpen(!plusMenuOpen)}
-                aria-label="Add"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-              {plusMenuOpen && (
-                <div className="plus-menu-dropdown">
-                  <button
-                    className="plus-menu-item"
-                    onClick={() => {
-                      onCreateEvent();
-                      setPlusMenuOpen(false);
-                    }}
-                  >
-                    Create Event
-                  </button>
-                  <button
-                    className="plus-menu-item"
-                    onClick={() => {
-                      onSearchEvents();
-                      setPlusMenuOpen(false);
-                    }}
-                  >
-                    Search Events
-                  </button>
-                  <button
-                    className="plus-menu-item"
-                    onClick={addDay}
-                  >
-                    Add Day
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Unassigned Events */}

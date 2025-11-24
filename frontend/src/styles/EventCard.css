@@ -98,14 +98,8 @@
   justify-content: center;
   border-radius: 22px 0 0 22px;
   overflow: hidden;
-  /* Neutral placeholder so card background doesn't show as blue at rounded corners */
   background: #dde5ef;
 }
-
-.event-card.image-right .event-image-placeholder {
-  border-radius: 0 22px 22px 0;
-}
-
 .event-content {
   flex: 1;
   padding: 22px 26px;
@@ -120,13 +114,19 @@
 .event-card--workspace {
   min-height: 80px;
   max-height: 100px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  /* Workspace cards sit flat in the bar – no drop shadow */
+  box-shadow: none;
 }
 
 .event-card--workspace .event-image-container {
-  flex: 0 0 110px;
-  min-width: 110px;
-  max-width: 110px;
+  flex: 0 0 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.event-card--workspace .event-image-placeholder {
+  /* Keep only the left corners rounded so the right edge is straight */
+  border-radius: 22px 0 0 22px;
 }
 
 .event-card--workspace .event-content {
@@ -140,6 +140,13 @@
 .event-card--workspace .event-description {
   -webkit-line-clamp: 2;
   line-clamp: 2;
+}
+
+/* Disable lift/shadow effect on hover in the unassigned workspace */
+.event-card--workspace:hover {
+  box-shadow: none;
+  transform: none;
+  background: #ffffff;
 }
 
 /* Text alignment follows the image side:
@@ -441,9 +448,6 @@
     width: 100%;
   }
 
-  .event-image-placeholder {
-    border-radius: 12px 12px 0 0;
-  }
 
   .event-content {
     padding: 20px;

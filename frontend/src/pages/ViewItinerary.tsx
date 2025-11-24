@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
+import ViewPageSidebar from "../components/ViewPageSidebar";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
 import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
@@ -11,6 +12,8 @@ function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [days, setDays] = useState<DayItinerary[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -49,6 +52,10 @@ function ViewItineraryPage() {
   };
 
   const handleEditWithAI = () => {
+    console.log("Edit with AI clicked", {
+      itineraryId: itineraryMetadata.id,
+      chatSessionId: itineraryMetadata.chatSessionId
+    });
     // Navigate to home with both the itinerary ID and chat session ID
     navigate("/home", {
       state: {
@@ -57,6 +64,16 @@ function ViewItineraryPage() {
         openItinerarySidebar: true
       }
     });
+  };
+
+  const handleAddDay = () => {
+    const last = new Date(days[days.length - 1].date);
+    last.setDate(last.getDate() + 1);
+    const newDay: DayItinerary = {
+      date: last.toISOString().slice(0, 10),
+      timeBlocks: []
+    };
+    setDays([...days, newDay]);
   };
 
   useEffect(() => {
@@ -97,9 +114,15 @@ function ViewItineraryPage() {
   }, [itineraryId, navigate]);
 
   return (
-    <div className="view-page view-page--gradient">
+    <div className="view-page view-page--gradient with-sidebar">
       <Navbar page="view" />
-      <div className="view-content">
+      <ViewPageSidebar
+        onCreateEvent={() => setCreateModalOpen(true)}
+        onSearchEvents={() => setSearchModalOpen(true)}
+        onAddDay={handleAddDay}
+        onEditWithAI={handleEditWithAI}
+      />
+      <div className="view-content with-sidebar">
         <Itinerary
           days={days}
           onUpdate={handleItineraryUpdate}
@@ -107,6 +130,10 @@ function ViewItineraryPage() {
           onEditWithAI={handleEditWithAI}
           title={itineraryMetadata.title}
           editMode={true}
+          externalCreateModal={createModalOpen}
+          externalSearchModal={searchModalOpen}
+          onCreateModalChange={setCreateModalOpen}
+          onSearchModalChange={setSearchModalOpen}
         />
       </div>
     </div>

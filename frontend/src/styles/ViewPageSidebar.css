@@ -1,0 +1,238 @@
+.view-page-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 60px;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  z-index: 150;
+}
+
+.view-sidebar-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Journey Logo */
+.view-sidebar-logo {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.view-sidebar-logo .logo-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.view-sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Button Styles - Consistent for all buttons */
+.view-sidebar-button {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 0;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.view-sidebar-button:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+/* Remove specific hover styles - keep consistent */
+.view-sidebar-button.ai-button:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.view-sidebar-button.plus-button:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.view-sidebar-button svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+/* Consistent icon sizing */
+.view-sidebar-button .robot-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  opacity: 0.8;
+  transition: all 0.2s;
+  pointer-events: none;
+}
+
+.view-sidebar-button.ai-button:hover .robot-icon {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Tooltip */
+.view-sidebar-tooltip {
+  position: absolute;
+  left: 70px;
+  background: #333;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 0;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.view-sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent #333 transparent transparent;
+}
+
+.view-sidebar-button:hover .view-sidebar-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Plus Menu Container */
+.view-sidebar-menu-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dropdown Menu */
+.view-sidebar-dropdown {
+  position: absolute;
+  left: 70px;
+  top: 0;
+  background: white;
+  border-radius: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 200;
+  min-width: 160px;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.view-sidebar-menu-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  color: #333;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.view-sidebar-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.view-sidebar-menu-item:not(:last-child) {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Profile Picture */
+.view-sidebar-profile {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e0e0e0;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.view-sidebar-profile:hover {
+  border-color: #006bbb;
+}
+
+.view-sidebar-profile-pic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .view-page-sidebar {
+    width: 50px;
+    padding: 12px 0;
+  }
+
+  .view-sidebar-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .view-sidebar-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .view-sidebar-profile {
+    width: 38px;
+    height: 38px;
+  }
+}
+

@@ -27,6 +27,17 @@
   padding: 24px 16px 100px;
   position: relative;
   z-index: 1;
+  transition: margin-left 0.3s ease;
+}
+
+.view-content.with-sidebar {
+  margin-left: 60px;
+}
+
+@media (max-width: 768px) {
+  .view-content.with-sidebar {
+    margin-left: 50px;
+  }
 }
 
 /* Navbar styling for view page */
@@ -42,6 +53,17 @@
   flex-shrink: 0;
 }
 
+/* Adjust navbar to not overlap sidebar */
+.view-page.with-sidebar .auth-navbar {
+  padding-left: calc(60px + clamp(16px, 4vw, 56px) + 16px);
+}
+
+@media (max-width: 768px) {
+  .view-page.with-sidebar .auth-navbar {
+    padding-left: calc(50px + clamp(16px, 4vw, 56px) + 12px);
+  }
+}
+
 .view-page .auth-navbar .auth-navbar-content {
   width: 100%;
   max-width: none;
@@ -53,11 +75,12 @@
 }
 
 .view-page--gradient .auth-brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #ffffff;
-  text-decoration: none;
-  transition: opacity 0.2s;
+  display: none;
+}
+
+/* Hide user menu/profile picture in navbar on view page */
+.view-page .auth-cta .user-menu {
+  display: none;
 }
 
 .view-page--gradient .auth-brand:hover {
@@ -128,20 +151,25 @@
 /* Header with title and menu */
 .itinerary-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   margin-bottom: 32px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 0;
+  border-bottom: none;
+  gap: 12px;
+  margin-bottom: 50px;
 }
 
 .itinerary-header h3 {
-  font-size: 3.5rem;
-  font-weight: 700;
+  font-size: clamp(3rem, 4.6vw, 4.8rem); /* large, responsive display type */
+  font-weight: 800;
   margin: 0;
-  color: #2c3e50;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  color: #1f2933;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 20px;
 }
 
 /* Header Actions */
@@ -545,7 +573,6 @@
 .unassigned-events .events-area {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
 }
 
 .workspace-empty-text {
