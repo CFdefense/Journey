@@ -10,9 +10,10 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
+  padding: 16px 0 8px 0;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
   z-index: 150;
+  box-sizing: border-box;
 }
 
 .view-sidebar-top {
