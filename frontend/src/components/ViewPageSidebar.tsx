@@ -38,9 +38,9 @@ const ViewPageSidebar: React.FC<ViewPageSidebarProps> = ({
     <div className="view-page-sidebar">
       <div className="view-sidebar-top">
         {/* Journey Logo */}
-        <div className="view-sidebar-logo">
+        <a href="/home" className="view-sidebar-logo">
           <img src="/logo.png" alt="Journey" className="logo-icon" />
-        </div>
+        </a>
 
         {/* AI Button */}
         <button
