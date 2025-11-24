@@ -48,6 +48,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [internalCreateModalOpen, setInternalCreateModalOpen] = useState(false);
   const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragY, setDragY] = useState(0);
   
   // Use external modal state if provided, otherwise use internal state
   const createModalOpen = externalCreateModal !== undefined ? externalCreateModal : internalCreateModalOpen;
@@ -128,15 +130,72 @@ const Itinerary: React.FC<ItineraryProps> = ({
     }
   }, [plusMenuOpen]);
 
+  // Track mouse position globally during drag
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleDragMove = (e: DragEvent) => {
+      setDragY(e.clientY);
+    };
+
+    document.addEventListener('drag', handleDragMove);
+    document.addEventListener('dragover', handleDragMove);
+
+    return () => {
+      document.removeEventListener('drag', handleDragMove);
+      document.removeEventListener('dragover', handleDragMove);
+    };
+  }, [isDragging]);
+
+  // Auto-scroll when dragging near edges
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const scrollThreshold = 200; // pixels from edge to trigger scroll
+    const maxScrollSpeed = 15; // max pixels per frame
+
+    const autoScroll = () => {
+      const windowHeight = window.innerHeight;
+      
+      // Scroll down if near bottom
+      if (dragY > windowHeight - scrollThreshold) {
+        // Calculate speed based on distance from edge (faster when closer to edge)
+        const distanceFromEdge = windowHeight - dragY;
+        const speedFactor = 1 - (distanceFromEdge / scrollThreshold);
+        const scrollSpeed = Math.max(5, maxScrollSpeed * speedFactor);
+        window.scrollBy(0, scrollSpeed);
+      }
+      // Scroll up if near top
+      else if (dragY < scrollThreshold) {
+        // Calculate speed based on distance from edge (faster when closer to edge)
+        const speedFactor = 1 - (dragY / scrollThreshold);
+        const scrollSpeed = Math.max(5, maxScrollSpeed * speedFactor);
+        window.scrollBy(0, -scrollSpeed);
+      }
+    };
+
+    const intervalId = setInterval(autoScroll, 16); // ~60fps
+
+    return () => clearInterval(intervalId);
+  }, [isDragging, dragY]);
+
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id.toString());
     e.dataTransfer.setData("eventName", event.event_name);
     e.dataTransfer.setData("eventDescription", event.event_description || "");
     e.dataTransfer.setData("sourceTimeIndex", timeIndex.toString());
+    setIsDragging(true);
+    setDragY(e.clientY);
+  };
+  
+  const onDragEnd = () => {
+    setIsDragging(false);
+    setDragY(0);
   };
 
   const onDrop = (e: React.DragEvent, targetTimeIndex: number) => {
     e.preventDefault();
+    onDragEnd(); // Reset dragging state
 
     const eventIdStr = e.dataTransfer.getData("eventId");
     const eventName = e.dataTransfer.getData("eventName");
@@ -230,7 +289,10 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const onDragOver = (e: React.DragEvent) => {
-    if (editMode) e.preventDefault();
+    if (editMode) {
+      e.preventDefault();
+      setDragY(e.clientY);
+    }
   };
 
   if (!localDays || localDays.length === 0) {
@@ -501,11 +563,34 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   return (
-    <div className={`itinerary-section ${compact ? "compact" : ""}`}>
-      {/* Header Row */}
-      <div className="itinerary-header">
-        <h3>{title || "Itinerary"}</h3>
-      </div>
+    <>
+      {/* Scroll indicators when dragging - outside main container for proper fixed positioning */}
+      {isDragging && (
+        <>
+          <div className="scroll-indicator scroll-indicator-top">
+            <div className="scroll-indicator-content">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Scroll Up</span>
+            </div>
+          </div>
+          <div className="scroll-indicator scroll-indicator-bottom">
+            <div className="scroll-indicator-content">
+              <span>Scroll Down</span>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M12 19L19 12M12 19L5 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </>
+      )}
+      
+      <div className={`itinerary-section ${compact ? "compact" : ""}`}>
+        {/* Header Row */}
+        <div className="itinerary-header">
+          <h3>{title || "Itinerary"}</h3>
+        </div>
 
       {/* Unassigned Events */}
       {editMode && (
@@ -520,19 +605,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 <p className="workspace-empty-text">Workspace is empty</p>
               ) : (
                 unassignedEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    variant="workspace"
-                    unassignedEvents={unassignedEvents}
-                    setUnassignedEvents={setUnassignedEvents}
-                    localDays={localDays}
-                    setLocalDays={setLocalDays}
-                    onDaysUpdate={onUpdate}
-                    onUnassignedUpdate={onUnassignedUpdate}
-                    draggable={editMode}
-                    onDragStart={(e) => onDragStart(e, event, -1)}
-                  />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  variant="workspace"
+                  unassignedEvents={unassignedEvents}
+                  setUnassignedEvents={setUnassignedEvents}
+                  localDays={localDays}
+                  setLocalDays={setLocalDays}
+                  onDaysUpdate={onUpdate}
+                  onUnassignedUpdate={onUnassignedUpdate}
+                  draggable={editMode}
+                  onDragStart={(e) => onDragStart(e, event, -1)}
+                  onDragEnd={onDragEnd}
+                />
                 ))
               )}
             </div>
@@ -609,6 +695,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
                               onUnassignedUpdate={onUnassignedUpdate}
                               draggable={editMode ?? false}
                               onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
+                              onDragEnd={onDragEnd}
                               displayTime={formatEventTime(item.event, item.timeBlock)}
                               imageOnLeft={isRightSide}
                             />
@@ -1169,7 +1256,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
