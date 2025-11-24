@@ -130,8 +130,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
   useEffect(() => {
     if (!isDragging) return;
 
-    const scrollThreshold = 200; // pixels from edge to trigger scroll
-    const maxScrollSpeed = 15; // max pixels per frame
+    // Adjusted for zoom factor (0.75) and scroll indicator height (120px * 1.333 zoom)
+    const scrollThreshold = 160; // pixels from edge to trigger scroll (matches zoom-adjusted indicator)
+    const maxScrollSpeed = 20; // max pixels per frame (increased for better responsiveness)
 
     const autoScroll = () => {
       const windowHeight = window.innerHeight;
@@ -141,14 +142,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
         // Calculate speed based on distance from edge (faster when closer to edge)
         const distanceFromEdge = windowHeight - dragY;
         const speedFactor = 1 - (distanceFromEdge / scrollThreshold);
-        const scrollSpeed = Math.max(5, maxScrollSpeed * speedFactor);
+        const scrollSpeed = Math.max(8, maxScrollSpeed * speedFactor);
         window.scrollBy(0, scrollSpeed);
       }
       // Scroll up if near top
       else if (dragY < scrollThreshold) {
         // Calculate speed based on distance from edge (faster when closer to edge)
         const speedFactor = 1 - (dragY / scrollThreshold);
-        const scrollSpeed = Math.max(5, maxScrollSpeed * speedFactor);
+        const scrollSpeed = Math.max(8, maxScrollSpeed * speedFactor);
         window.scrollBy(0, -scrollSpeed);
       }
     };
@@ -554,7 +555,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
       {/* Unassigned Events */}
       {editMode && (
-        <div className="unassigned-events">
+        <div className="unassigned-events" key={`unassigned-${selectedDayIndex}`}>
           <div
             className={"time-block editable"}
             onDrop={(e) => onDrop(e, -1)}
@@ -587,7 +588,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       )}
 
       {/* Timeline Layout */}
-      <div className="timeline-container">
+      <div className="timeline-container" key={`timeline-${selectedDayIndex}`}>
         <div className="timeline-events">
           {(() => {
             const grouped = getEventsByTimeBlock();
