@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
 import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
-import type { DayItinerary } from "../models/itinerary";
+import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
@@ -12,6 +12,7 @@ function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [days, setDays] = useState<DayItinerary[]>([]);
+  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
@@ -29,6 +30,10 @@ function ViewItineraryPage() {
 
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
     setDays(updatedDays);
+  };
+
+  const handleUnassignedUpdate = (updatedUnassigned: Event[]) => {
+    setUnassignedEvents(updatedUnassigned);
   };
 
   const handleSave = async (updatedDays: DayItinerary[]) => {
@@ -125,7 +130,9 @@ function ViewItineraryPage() {
       <div className="view-content with-sidebar">
         <Itinerary
           days={days}
+          unassigned={unassignedEvents}
           onUpdate={handleItineraryUpdate}
+          onUnassignedUpdate={handleUnassignedUpdate}
           onSave={handleSave}
           onEditWithAI={handleEditWithAI}
           title={itineraryMetadata.title}

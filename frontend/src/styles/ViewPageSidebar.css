@@ -211,6 +211,7 @@
 
 /* Profile Picture */
 .view-sidebar-profile {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -218,10 +219,23 @@
   border: 2px solid #e0e0e0;
   transition: border-color 0.2s;
   cursor: pointer;
+  text-decoration: none;
+  display: block;
 }
 
 .view-sidebar-profile:hover {
   border-color: #006bbb;
+}
+
+.view-sidebar-profile .profile-tooltip {
+  left: 60px;
+  bottom: 50%;
+  transform: translateY(50%);
+}
+
+.view-sidebar-profile:hover .profile-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .view-sidebar-profile-pic {

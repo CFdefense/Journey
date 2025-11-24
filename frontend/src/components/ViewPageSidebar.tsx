@@ -111,9 +111,10 @@ const ViewPageSidebar: React.FC<ViewPageSidebarProps> = ({
 
       {/* Profile Picture at Bottom */}
       <div className="view-sidebar-bottom">
-        <div className="view-sidebar-profile">
+        <a href="/account" className="view-sidebar-profile" title="Account">
           <img src={userPfp} alt="Profile" className="view-sidebar-profile-pic" />
-        </div>
+          <span className="view-sidebar-tooltip profile-tooltip">Account</span>
+        </a>
       </div>
     </div>
   );

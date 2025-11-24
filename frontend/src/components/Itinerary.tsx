@@ -16,6 +16,7 @@ interface ItineraryProps {
   days?: DayItinerary[];
   unassigned?: Event[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
+  onUnassignedUpdate?: (unassignedEvents: Event[]) => void;
   onSave?: (updatedDays: DayItinerary[]) => Promise<void>;
   onEditWithAI?: () => void;
   editMode?: boolean;
@@ -31,6 +32,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   days,
   unassigned,
   onUpdate,
+  onUnassignedUpdate,
   onSave,
   onEditWithAI,
   editMode,
@@ -217,6 +219,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
     // Update local state immediately for UI responsiveness
     setLocalDays(updatedDays);
     setUnassignedEvents(unassigned_events);
+    
+    // Notify parent component of changes
+    if (onUpdate) {
+      onUpdate(updatedDays);
+    }
+    if (onUnassignedUpdate) {
+      onUnassignedUpdate(unassigned_events);
+    }
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -266,6 +276,24 @@ const Itinerary: React.FC<ItineraryProps> = ({
     });
 
     return allEvents;
+  };
+
+  // Group events by time block
+  const getEventsByTimeBlock = (): { [key: string]: Array<{ event: Event; timeBlock: string; timeIndex: number }> } => {
+    const allEvents = getAllEventsForDay();
+    const grouped: { [key: string]: Array<{ event: Event; timeBlock: string; timeIndex: number }> } = {
+      Morning: [],
+      Afternoon: [],
+      Evening: []
+    };
+
+    allEvents.forEach((item) => {
+      if (grouped[item.timeBlock]) {
+        grouped[item.timeBlock].push(item);
+      }
+    });
+
+    return grouped;
   };
 
   const formatEventTime = (event: Event, timeBlock: string): string => {
@@ -335,6 +363,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
     event.user_created = true;
     unassignedEvents.push(event);
     setUnassignedEvents(unassignedEvents);
+    if (onUnassignedUpdate) {
+      onUnassignedUpdate(unassignedEvents);
+    }
     setCreateModalOpen(false);
   };
 
@@ -421,6 +452,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
     if (!unassignedEvents.some((e) => e.id === event.id)) {
       unassignedEvents.push(event);
       setUnassignedEvents(unassignedEvents);
+      if (onUnassignedUpdate) {
+        onUnassignedUpdate(unassignedEvents);
+      }
     }
     setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
@@ -432,7 +466,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
       date: last.toISOString().slice(0, 10),
       timeBlocks: []
     };
-    setLocalDays([...localDays, newDay]);
+    const updatedDays = [...localDays, newDay];
+    setLocalDays(updatedDays);
+    if (onUpdate) {
+      onUpdate(updatedDays);
+    }
   };
 
   const addDay = () => {
@@ -441,17 +479,25 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const deleteDay = (first: boolean) => {
-    setLocalDays(
-      first
-        ? localDays.slice(1, localDays.length)
-        : localDays.slice(0, localDays.length - 1)
-    );
-    setUnassignedEvents([
+    const updatedDays = first
+      ? localDays.slice(1, localDays.length)
+      : localDays.slice(0, localDays.length - 1);
+    const updatedUnassigned = [
       ...unassignedEvents,
       ...localDays[first ? 0 : localDays.length - 1].timeBlocks.flatMap(
         (b) => b.events
       )
-    ]);
+    ];
+    
+    setLocalDays(updatedDays);
+    setUnassignedEvents(updatedUnassigned);
+    
+    if (onUpdate) {
+      onUpdate(updatedDays);
+    }
+    if (onUnassignedUpdate) {
+      onUnassignedUpdate(updatedUnassigned);
+    }
   };
 
   return (
@@ -482,6 +528,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     setUnassignedEvents={setUnassignedEvents}
                     localDays={localDays}
                     setLocalDays={setLocalDays}
+                    onDaysUpdate={onUpdate}
+                    onUnassignedUpdate={onUnassignedUpdate}
                     draggable={editMode}
                     onDragStart={(e) => onDragStart(e, event, -1)}
                   />
@@ -495,50 +543,98 @@ const Itinerary: React.FC<ItineraryProps> = ({
       {/* Timeline Layout */}
       <div className="timeline-container">
         <div className="timeline-events">
-          {getAllEventsForDay().map((item, index, array) => {
-            const isLast = index === array.length - 1;
-            // Start the sequence with a right-aligned card and then alternate
-            const isRightSide = index % 2 === 0;
-            return (
-              <React.Fragment key={`${item.event.id}-${index}`}>
-                <div
-                  className={`timeline-event-wrapper ${
-                    isRightSide ? "right-aligned" : "left-aligned"
-                  } ${editMode ? "editable" : ""}`}
-                  onDrop={(e) => onDrop(e, item.timeIndex)}
-                  onDragOver={onDragOver}
-                >
-                  <EventCard
-                    time={item.timeBlock}
-                    event={item.event}
-                    unassignedEvents={unassignedEvents}
-                    setUnassignedEvents={setUnassignedEvents}
-                    localDays={localDays}
-                    setLocalDays={setLocalDays}
-                    draggable={editMode ?? false}
-                    onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
-                    displayTime={formatEventTime(item.event, item.timeBlock)}
-                    // Keep the image toward the center of the timeline:
-                    // when the card is on the right, image is on the left, and vice versa.
-                    imageOnLeft={isRightSide}
-                  />
-                </div>
-                {!isLast && (
-                  <div
-                    className={`timeline-arrow ${
-                      isRightSide ? "right-to-left" : "left-to-right"
-                    }`}
-                  >
-                    <img
-                      src={isRightSide ? "/rightarrow.png" : "/left-arrow.png"}
-                      alt="timeline arrow"
-                      className="arrow-image"
-                    />
+          {(() => {
+            const grouped = getEventsByTimeBlock();
+            
+            return ["Morning", "Afternoon", "Evening"].map((timeBlockName) => {
+              const blockEvents = grouped[timeBlockName];
+              const hasEvents = blockEvents.length > 0;
+              
+              // Find the corresponding time block index from currentDay.timeBlocks
+              const timeBlockIndex = currentDay.timeBlocks.findIndex(
+                (block) => block.time === timeBlockName
+              );
+              
+              if (!hasEvents) {
+                return (
+                  <div key={timeBlockName} className="time-block-empty-section">
+                    <div className="time-block-header">
+                      <h3 className="time-block-title">{timeBlockName}</h3>
+                      <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
+                    </div>
+                    <div 
+                      className={`time-block-glass-container ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
+                      onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
+                      onDragOver={onDragOver}
+                    >
+                      <div className="time-block-empty">
+                        <p>No {timeBlockName.toLowerCase()} events</p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </React.Fragment>
-            );
-          })}
+                );
+              }
+              
+              return (
+                <div key={timeBlockName} className="time-block-group">
+                  <div className="time-block-header">
+                    <h3 className="time-block-title">{timeBlockName}</h3>
+                    <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
+                  </div>
+                  
+                  <div 
+                    className={`time-block-events-wrapper ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
+                    onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
+                    onDragOver={onDragOver}
+                  >
+                    {blockEvents.map((item, blockIndex) => {
+                      const isLastInBlock = blockIndex === blockEvents.length - 1;
+                      const isRightSide = blockIndex % 2 === 0;
+                      
+                      return (
+                        <React.Fragment key={`${item.event.id}-${blockIndex}`}>
+                          <div
+                            className={`timeline-event-wrapper ${
+                              isRightSide ? "right-aligned" : "left-aligned"
+                            } ${editMode ? "editable" : ""}`}
+                          >
+                            <EventCard
+                              time={item.timeBlock}
+                              event={item.event}
+                              unassignedEvents={unassignedEvents}
+                              setUnassignedEvents={setUnassignedEvents}
+                              localDays={localDays}
+                              setLocalDays={setLocalDays}
+                              onDaysUpdate={onUpdate}
+                              onUnassignedUpdate={onUnassignedUpdate}
+                              draggable={editMode ?? false}
+                              onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
+                              displayTime={formatEventTime(item.event, item.timeBlock)}
+                              imageOnLeft={isRightSide}
+                            />
+                          </div>
+                          {!isLastInBlock && (
+                            <div
+                              className={`timeline-arrow ${
+                                isRightSide ? "right-to-left" : "left-to-right"
+                              }`}
+                            >
+                              <img
+                                src={isRightSide ? "/rightarrow.png" : "/left-arrow.png"}
+                                alt="timeline arrow"
+                                className="arrow-image"
+                              />
+                            </div>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            });
+          })()}
+          
           {getAllEventsForDay().length === 0 && (
             <div className="timeline-empty">
               <p>No events scheduled for this day</p>
@@ -573,7 +669,49 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     }
                   }}
                 >
-                  -
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 6H21"
+                      stroke="#dc2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6"
+                      stroke="#dc2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6"
+                      stroke="#dc2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M10 11V17"
+                      stroke="#dc2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 11V17"
+                      stroke="#dc2626"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               )}
           </div>

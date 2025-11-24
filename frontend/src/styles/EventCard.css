@@ -15,7 +15,8 @@
   justify-content: flex-start;
   align-items: stretch;
   gap: 0;
-  min-height: 230px; /* full-height card for main timeline */
+  min-height: 200px; /* full-height card for main timeline */
+  max-height: 250px; /* constrain height to fit within segments */
   max-width: 100%; /* allow wrapper to control overall width */
   width: 100%;
   box-sizing: border-box;
@@ -78,9 +79,9 @@
 }
 
 .event-image-container {
-  flex: 0 0 260px;
-  min-width: 260px;
-  max-width: 260px;
+  flex: 0 0 220px;
+  min-width: 220px;
+  max-width: 220px;
   height: 100%;
   min-height: 100%;
   display: flex;
@@ -96,7 +97,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 22px 0 0 22px;
+  border-radius: 22px;
   overflow: hidden;
   background: #dde5ef;
 }
@@ -116,6 +117,7 @@
   max-height: 100px;
   /* Workspace cards sit flat in the bar – no drop shadow */
   box-shadow: none;
+  position: relative;
 }
 
 .event-card--workspace .event-image-container {
@@ -125,8 +127,8 @@
 }
 
 .event-card--workspace .event-image-placeholder {
-  /* Keep only the left corners rounded so the right edge is straight */
-  border-radius: 22px 0 0 22px;
+  /* All corners rounded */
+  border-radius: 22px;
 }
 
 .event-card--workspace .event-content {
@@ -147,6 +149,35 @@
   box-shadow: none;
   transform: none;
   background: #ffffff;
+}
+
+/* Delete button for workspace events */
+.event-card-delete-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.event-card-delete-btn:hover {
+  background: transparent;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.event-card-delete-btn svg {
+  color: #dc2626;
+  stroke: #dc2626;
+  fill: none;
 }
 
 /* Text alignment follows the image side:

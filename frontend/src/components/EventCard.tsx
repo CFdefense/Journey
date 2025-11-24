@@ -23,6 +23,10 @@ interface EventCardProps {
   unassignedEvents: Event[];
   setUnassignedEvents: React.Dispatch<React.SetStateAction<Event[]>>;
 
+  // Callbacks to notify parent of changes
+  onDaysUpdate?: (updatedDays: DayItinerary[]) => void;
+  onUnassignedUpdate?: (updatedUnassigned: Event[]) => void;
+
   // Added handlers for drag logic
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
@@ -40,6 +44,8 @@ const EventCard: React.FC<EventCardProps> = ({
   setLocalDays,
   unassignedEvents,
   setUnassignedEvents,
+  onDaysUpdate,
+  onUnassignedUpdate,
   onDragStart,
   onDragEnd
 }) => {
@@ -180,9 +186,9 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("TODO: handle error properly - could not delete user event");
       return;
     }
-    unassignedEvents = unassignedEvents.filter((e) => e.id !== event.id);
-    setUnassignedEvents(unassignedEvents);
-    localDays = localDays.map((d) => {
+    const updatedUnassigned = unassignedEvents.filter((e) => e.id !== event.id);
+    setUnassignedEvents(updatedUnassigned);
+    const updatedDays = localDays.map((d) => {
       return {
         ...d,
         timeBlocks: d.timeBlocks.map((b) => {
@@ -190,7 +196,16 @@ const EventCard: React.FC<EventCardProps> = ({
         })
       };
     });
-    setLocalDays(localDays);
+    setLocalDays(updatedDays);
+    
+    // Notify parent of changes
+    if (onUnassignedUpdate) {
+      onUnassignedUpdate(updatedUnassigned);
+    }
+    if (onDaysUpdate) {
+      onDaysUpdate(updatedDays);
+    }
+    
     setIsOpen(false);
   };
 
@@ -249,6 +264,41 @@ const EventCard: React.FC<EventCardProps> = ({
               <p className="event-location">{formatAddress()}</p>
             )}
         </div>
+        
+        {/* Delete button for workspace events */}
+        {variant === "workspace" && (
+          <button
+            className="event-card-delete-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (event.user_created) {
+                onDeleteUserEvent();
+              } else {
+                // For non-user-created events, just remove from workspace
+                const updatedUnassigned = unassignedEvents.filter((ev) => ev.id !== event.id);
+                setUnassignedEvents(updatedUnassigned);
+                if (onUnassignedUpdate) {
+                  onUnassignedUpdate(updatedUnassigned);
+                }
+              }
+            }}
+            title="Remove from workspace"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {isOpen && (
