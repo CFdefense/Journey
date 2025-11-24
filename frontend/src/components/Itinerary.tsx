@@ -17,8 +17,6 @@ interface ItineraryProps {
   unassigned?: Event[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
   onUnassignedUpdate?: (unassignedEvents: Event[]) => void;
-  onSave?: (updatedDays: DayItinerary[]) => Promise<void>;
-  onEditWithAI?: () => void;
   editMode?: boolean;
   title?: string;
   compact?: boolean;
@@ -33,8 +31,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   unassigned,
   onUpdate,
   onUnassignedUpdate,
-  onSave,
-  onEditWithAI,
   editMode,
   title,
   compact = false,
@@ -70,6 +66,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setInternalSearchModalOpen(open);
     }
   };
+  
   const [userEventForm, setUserEventForm] = useState({
     name: "",
     description: "",
@@ -99,7 +96,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   });
   const [searchResult, setSearchResult] = useState<Event[] | null>(null);
   const [searchResultCaption, setSearchResultCaption] = useState<string>("");
-  const [plusMenuOpen, setPlusMenuOpen] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -112,23 +108,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   useEffect(() => {
     setUnassignedEvents(unassigned || []);
   }, [unassigned]);
-
-  // Close plus menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (plusMenuOpen && !target.closest('.plus-menu-container')) {
-        setPlusMenuOpen(false);
-      }
-    };
-
-    if (plusMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [plusMenuOpen]);
 
   // Track mouse position globally during drag
   useEffect(() => {
@@ -377,7 +356,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
     return getTimeRange(timeBlock);
   };
 
-  const onCreateEvent = () => setCreateModalOpen(true);
   const closeCreateModal = () => setCreateModalOpen(false);
   const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -423,15 +401,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
     const event = userEvent as Event;
     event.id = result.result.id;
     event.user_created = true;
-    unassignedEvents.push(event);
-    setUnassignedEvents(unassignedEvents);
+    
+    // Create a new array instead of mutating the existing one
+    const updatedUnassigned = [...unassignedEvents, event];
+    setUnassignedEvents(updatedUnassigned);
     if (onUnassignedUpdate) {
-      onUnassignedUpdate(unassignedEvents);
+      onUnassignedUpdate(updatedUnassigned);
     }
     setCreateModalOpen(false);
   };
 
-  const onSearchEvents = () => setSearchModalOpen(true);
   const closeSearchModal = () => setSearchModalOpen(false);
   const onSearchSend = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -512,43 +491,24 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const addEventFromSearch = (event: Event) => {
     if (!unassignedEvents.some((e) => e.id === event.id)) {
-      unassignedEvents.push(event);
-      setUnassignedEvents(unassignedEvents);
+      // Create a new array instead of mutating the existing one
+      const updatedUnassigned = [...unassignedEvents, event];
+      setUnassignedEvents(updatedUnassigned);
       if (onUnassignedUpdate) {
-        onUnassignedUpdate(unassignedEvents);
+        onUnassignedUpdate(updatedUnassigned);
       }
     }
     setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
 
-  const addDayAfter = () => {
-    const last = new Date(localDays[localDays.length - 1].date);
-    last.setDate(last.getDate() + 1);
-    const newDay: DayItinerary = {
-      date: last.toISOString().slice(0, 10),
-      timeBlocks: []
-    };
-    const updatedDays = [...localDays, newDay];
-    setLocalDays(updatedDays);
-    if (onUpdate) {
-      onUpdate(updatedDays);
-    }
-  };
-
-  const addDay = () => {
-    addDayAfter();
-    setPlusMenuOpen(false);
-  };
-
-  const deleteDay = (first: boolean) => {
-    const updatedDays = first
-      ? localDays.slice(1, localDays.length)
-      : localDays.slice(0, localDays.length - 1);
+  const deleteDay = (indexToDelete: number) => {
+    // Create a new array without the day at indexToDelete
+    const updatedDays = localDays.filter((_, index) => index !== indexToDelete);
+    
+    // Move all events from the deleted day to unassigned
     const updatedUnassigned = [
       ...unassignedEvents,
-      ...localDays[first ? 0 : localDays.length - 1].timeBlocks.flatMap(
-        (b) => b.events
-      )
+      ...localDays[indexToDelete].timeBlocks.flatMap((b) => b.events)
     ];
     
     setLocalDays(updatedDays);
@@ -721,12 +681,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
               );
             });
           })()}
-          
-          {getAllEventsForDay().length === 0 && (
-            <div className="timeline-empty">
-              <p>No events scheduled for this day</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -739,21 +693,28 @@ const Itinerary: React.FC<ItineraryProps> = ({
             onClick={() => setSelectedDayIndex(index)}
           >
             Day {index + 1} ({day.date.toString()})
-            {editMode &&
-              localDays.length > 1 &&
-              (index === 0 || index === localDays.length - 1) && (
+            {editMode && localDays.length > 1 && (
                 <button
                   className="day-delete"
                   onClick={(e) => {
                     e.stopPropagation();
-                    deleteDay(index === 0);
-                    if (
-                      index !== selectedDayIndex ||
-                      (index === selectedDayIndex &&
-                        index === localDays.length - 1)
-                    ) {
+                    
+                    deleteDay(index);
+                    
+                    // Update selected day index after deletion
+                    if (index < selectedDayIndex) {
+                      // Deleted a day before the currently selected day
                       setSelectedDayIndex(selectedDayIndex - 1);
+                    } else if (index === selectedDayIndex) {
+                      // Deleted the currently selected day
+                      // If it was the last day, select the new last day
+                      // Otherwise, keep the same index (next day shifts into this position)
+                      if (selectedDayIndex === localDays.length - 1) {
+                        setSelectedDayIndex(selectedDayIndex - 1);
+                      }
+                      // else: keep selectedDayIndex the same
                     }
+                    // If index > selectedDayIndex, no change needed
                   }}
                 >
                   <svg

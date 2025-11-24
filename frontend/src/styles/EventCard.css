@@ -466,11 +466,13 @@
 @media (max-width: 768px) {
   .event-modal {
     padding: 16px 20px;
+    max-width: 90vw;
   }
 
   .event-card {
     flex-direction: column;
     min-height: auto;
+    max-width: 100%;
   }
 
   .event-card.image-left,
@@ -498,5 +500,30 @@
 
   .event-image-container {
     flex: 0 0 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .event-card {
+    min-height: auto;
+    max-height: none;
+  }
+
+  .event-content {
+    padding: 12px;
+  }
+
+  .event-title {
+    font-size: 1rem;
+  }
+
+  .event-datetime {
+    font-size: 0.75rem;
+  }
+
+  .event-description,
+  .event-type,
+  .event-location {
+    font-size: 0.8rem;
   }
 }

@@ -68,13 +68,19 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 	}));
 }
 
+// Extract unassigned events from the itinerary
+export function getUnassignedEvents(apiItinerary: ApiItinerary): Event[] {
+	return apiItinerary.unassigned_events || [];
+}
+
 export function convertToApiFormat(
 	days: DayItinerary[],
 	itineraryId: number,
 	startDate: string,
 	endDate: string,
 	title: string,
-	chatSessionId: number | null = null
+	chatSessionId: number | null = null,
+	unassignedEvents: Event[] = []
 ): ApiItinerary {
 	return {
 		id: itineraryId,
@@ -82,6 +88,7 @@ export function convertToApiFormat(
 		end_date: endDate,
 		chat_session_id: chatSessionId,
 		title: title,
+		unassigned_events: unassignedEvents,
 		event_days: days.map((day) => {
 			const morningBlock = day.timeBlocks.find(
 				(tb) => tb.time === "Morning"
@@ -96,7 +103,7 @@ export function convertToApiFormat(
 			return {
 				date: day.date,
 				morning_events: morningBlock?.events || [],
-				noon_events: [], // Empty if not used
+				noon_events: [],
 				afternoon_events: afternoonBlock?.events || [],
 				evening_events: eveningBlock?.events || []
 			};

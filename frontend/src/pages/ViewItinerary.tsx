@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
-import { convertToApiFormat, fetchItinerary } from "../helpers/itinerary";
+import { convertToApiFormat, fetchItinerary, getUnassignedEvents } from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import Navbar from "../components/Navbar";
@@ -28,31 +28,68 @@ function ViewItineraryPage() {
     chatSessionId: null as number | null
   });
 
+  // Use refs to track the latest values for autosave
+  const daysRef = useRef(days);
+  const unassignedEventsRef = useRef(unassignedEvents);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    daysRef.current = days;
+  }, [days]);
+
+  useEffect(() => {
+    unassignedEventsRef.current = unassignedEvents;
+  }, [unassignedEvents]);
+
+  const debouncedAutoSave = () => {
+    // Clear any pending save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Schedule a new save with the latest values from refs
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSave(daysRef.current, unassignedEventsRef.current);
+    }, 500); // Wait 500ms after last update
+  };
+
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
     setDays(updatedDays);
+    // Update ref immediately before debounced save
+    daysRef.current = updatedDays;
+    debouncedAutoSave();
   };
 
   const handleUnassignedUpdate = (updatedUnassigned: Event[]) => {
     setUnassignedEvents(updatedUnassigned);
+    // Update ref immediately before debounced save
+    unassignedEventsRef.current = updatedUnassigned;
+    debouncedAutoSave();
   };
 
-  const handleSave = async (updatedDays: DayItinerary[]) => {
+  const autoSave = async (updatedDays: DayItinerary[], updatedUnassigned?: Event[]) => {
     try {
+      const unassignedToUse = updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
+      
+      // Calculate start_date and end_date from the days array
+      const startDate = updatedDays.length > 0 ? updatedDays[0].date : itineraryMetadata.startDate;
+      const endDate = updatedDays.length > 0 ? updatedDays[updatedDays.length - 1].date : itineraryMetadata.endDate;
+      
       const apiPayload = convertToApiFormat(
         updatedDays,
         itineraryMetadata.id,
-        itineraryMetadata.startDate,
-        itineraryMetadata.endDate,
+        startDate,
+        endDate,
         itineraryMetadata.title,
-        itineraryMetadata.chatSessionId
+        itineraryMetadata.chatSessionId,
+        unassignedToUse
       );
 
-      const result = await apiSaveItineraryChanges(apiPayload);
-      console.log("Save result:", result);
-      alert("Itinerary saved successfully!");
+      await apiSaveItineraryChanges(apiPayload);
     } catch (error) {
-      console.error("Failed to save itinerary:", error);
-      alert("Failed to save changes. Please try again.");
+      console.error("Auto-save failed:", error);
+      // Silent fail - don't interrupt user with alerts
     }
   };
 
@@ -78,7 +115,11 @@ function ViewItineraryPage() {
       date: last.toISOString().slice(0, 10),
       timeBlocks: []
     };
-    setDays([...days, newDay]);
+    const updatedDays = [...days, newDay];
+    setDays(updatedDays);
+    // Update ref immediately before debounced save
+    daysRef.current = updatedDays;
+    debouncedAutoSave();
   };
 
   useEffect(() => {
@@ -107,6 +148,10 @@ function ViewItineraryPage() {
           // Transform and store days
           const data = await fetchItinerary(itineraryId);
           setDays(data);
+          
+          // Load unassigned events
+          const unassigned = getUnassignedEvents(apiResponse.result);
+          setUnassignedEvents(unassigned);
         }
       } catch (error) {
         console.error("Failed to load itinerary:", error);
@@ -133,8 +178,6 @@ function ViewItineraryPage() {
           unassigned={unassignedEvents}
           onUpdate={handleItineraryUpdate}
           onUnassignedUpdate={handleUnassignedUpdate}
-          onSave={handleSave}
-          onEditWithAI={handleEditWithAI}
           title={itineraryMetadata.title}
           editMode={true}
           externalCreateModal={createModalOpen}

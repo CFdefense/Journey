@@ -9,6 +9,7 @@
 
 use axum::routing::{delete, post};
 use axum::{Extension, Json, extract::Path, routing::get};
+use chrono::NaiveDate;
 use sqlx::PgPool;
 use tracing::debug;
 use utoipa::OpenApi;
@@ -48,7 +49,23 @@ use crate::swagger::SecurityAddon;
 pub struct ItineraryApiDoc;
 
 /// Returns the [EventDay]s associated with this itinerary
-async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<EventDay>> {
+/// Returns only the days that exist in event_list (including empty days with NULL event_id)
+async fn itinerary_events(itinerary_id: i32, _start_date: NaiveDate, _end_date: NaiveDate, pool: &PgPool) -> ApiResult<Vec<EventDay>> {
+	// First, get all dates that have entries (including NULL event_id for empty days)
+	let all_dates: Vec<NaiveDate> = sqlx::query_scalar!(
+		r#"
+		SELECT DISTINCT date
+		FROM event_list
+		WHERE itinerary_id = $1
+		ORDER BY date
+		"#,
+		itinerary_id
+	)
+	.fetch_all(pool)
+	.await
+	.map_err(AppError::from)?;
+	
+	// Now get all events (excluding placeholders with NULL event_id)
 	let event_list: Vec<EventListJoinRow> = sqlx::query_as!(
 		EventListJoinRow,
 		r#"
@@ -69,7 +86,8 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 			e.timezone
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
-		WHERE el.itinerary_id = $1
+		WHERE el.itinerary_id = $1 AND el.event_id IS NOT NULL
+		ORDER BY el.date, el.time_of_day
 		"#,
 		itinerary_id
 	)
@@ -77,62 +95,120 @@ async fn itinerary_events(itinerary_id: i32, pool: &PgPool) -> ApiResult<Vec<Eve
 	.await
 	.map_err(AppError::from)?;
 
-	let mut event_days = Vec::with_capacity(event_list.len());
-	for event_day in event_list.chunk_by(|a, b| a.date == b.date) {
-		let mut morning_events = Vec::with_capacity(event_list.len());
-		let mut afternoon_events = Vec::with_capacity(event_list.len());
-		let mut evening_events = Vec::with_capacity(event_list.len());
+	// Create a map of date -> events for quick lookup
+	use std::collections::HashMap;
+	let mut events_by_date: HashMap<NaiveDate, Vec<&EventListJoinRow>> = HashMap::new();
+	for event in event_list.iter() {
+		events_by_date.entry(event.date).or_default().push(event);
+	}
 
-		for event in event_day.into_iter() {
-			match event.time_of_day {
-				TimeOfDay::Morning => morning_events.push(event.into()),
-				TimeOfDay::Afternoon => afternoon_events.push(event.into()),
-				TimeOfDay::Evening => evening_events.push(event.into()),
+	// Create EventDay for each date that exists in event_list
+	let mut event_days = Vec::new();
+	
+	for date in all_dates {
+		let mut morning_events = Vec::new();
+		let mut afternoon_events = Vec::new();
+		let mut evening_events = Vec::new();
+
+		// If there are events for this date, populate them
+		if let Some(day_events) = events_by_date.get(&date) {
+			for event in day_events {
+				match event.time_of_day {
+					TimeOfDay::Morning => morning_events.push((*event).into()),
+					TimeOfDay::Afternoon => afternoon_events.push((*event).into()),
+					TimeOfDay::Evening => evening_events.push((*event).into()),
+				}
 			}
 		}
 
-		if let Some(event) = event_day.first() {
-			event_days.push(EventDay {
-				morning_events,
-				afternoon_events,
-				evening_events,
-				date: event.date,
-			});
-		}
+		event_days.push(EventDay {
+			morning_events,
+			afternoon_events,
+			evening_events,
+			date,
+		});
 	}
-	event_days.sort_by(|a, b| a.date.cmp(&b.date));
-
+	
 	Ok(event_days)
+}
+
+/// Returns the unassigned events for this itinerary
+async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<crate::http_models::event::Event>> {
+	use crate::http_models::event::Event;
+	
+	if event_ids.is_empty() {
+		return Ok(Vec::new());
+	}
+
+	let events = sqlx::query_as!(
+		Event,
+		r#"
+		SELECT
+			id,
+			street_address,
+			postal_code,
+			city,
+			country,
+			event_type,
+			event_description,
+			event_name,
+			user_created,
+			hard_start,
+			hard_end,
+			timezone
+		FROM events
+		WHERE id = ANY($1)
+		"#,
+		event_ids
+	)
+	.fetch_all(pool)
+	.await
+	.map_err(AppError::from)?;
+
+	Ok(events)
 }
 
 /// Inserts the events associated with this itinerary into the `event_list` table.
 /// Assumes the itinerary was already inserted into `itineraries` table.
+/// Also inserts placeholder entries (event_id = NULL) for empty days to preserve them.
 pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult<()> {
 	let mut cap = 0;
 	for day in itinerary.event_days.iter() {
 		cap += day.morning_events.len();
 		cap += day.afternoon_events.len();
 		cap += day.evening_events.len();
+		// Add 1 for empty days (we'll insert a placeholder)
+		if day.morning_events.is_empty() && day.afternoon_events.is_empty() && day.evening_events.is_empty() {
+			cap += 1;
+		}
 	}
 
 	let mut times = Vec::with_capacity(cap);
 	let mut dates = Vec::with_capacity(cap);
-	let mut events = Vec::with_capacity(cap);
+	let mut events: Vec<Option<i32>> = Vec::with_capacity(cap);
+	
 	for day in itinerary.event_days.into_iter() {
 		let morning_len = day.morning_events.len();
 		let afternoon_len = day.afternoon_events.len();
 		let evening_len = day.evening_events.len();
-		let len = morning_len + afternoon_len + evening_len;
+		let is_empty_day = morning_len == 0 && afternoon_len == 0 && evening_len == 0;
 
-		times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
-		times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
-		times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
+		if is_empty_day {
+			// Insert a placeholder entry with NULL event_id to preserve the empty day
+			times.push(TimeOfDay::Morning);
+			dates.push(day.date);
+			events.push(None);
+		} else {
+			times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
+			times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
+			times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
 
-		dates.extend(std::iter::repeat_n(day.date, len));
+			dates.extend(std::iter::repeat_n(day.date, morning_len + afternoon_len + evening_len));
 
-		events.extend(day.morning_events.into_iter().map(|event| event.id));
-		events.extend(day.afternoon_events.into_iter().map(|event| event.id));
-		events.extend(day.evening_events.into_iter().map(|event| event.id));
+			events.extend(day.morning_events.into_iter().map(|event| Some(event.id)));
+			events.extend(day.afternoon_events.into_iter().map(|event| Some(event.id)));
+			events.extend(day.evening_events.into_iter().map(|event| Some(event.id)));
+		}
 	}
 
 	sqlx::query!(
@@ -142,7 +218,7 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 		FROM UNNEST($2::int4[], $3::time_of_day[], $4::date[]) as u(events, times, dates);
 		"#,
 		itinerary.id,
-		events.as_slice(),
+		events.as_slice() as &[Option<i32>],
 		times.as_slice() as &[TimeOfDay],
 		dates.as_slice()
 	)
@@ -213,7 +289,8 @@ pub async fn api_saved_itineraries(
           	start_date,
            	end_date,
             chat_session_id,
-            title
+            title,
+            unassigned_event_ids
         FROM itineraries WHERE account_id=$1 AND saved=TRUE"#,
 		user.id
 	)
@@ -223,13 +300,15 @@ pub async fn api_saved_itineraries(
 
 	let mut res = Vec::with_capacity(itineraries.len());
 	for itinerary in itineraries.into_iter() {
+		let unassigned_ids = itinerary.unassigned_event_ids.unwrap_or_default();
 		res.push(Itinerary {
 			id: itinerary.id,
 			start_date: itinerary.start_date,
 			end_date: itinerary.end_date,
-			event_days: itinerary_events(itinerary.id, &pool).await?,
+			event_days: itinerary_events(itinerary.id, itinerary.start_date, itinerary.end_date, &pool).await?,
 			chat_session_id: itinerary.chat_session_id,
 			title: itinerary.title,
+			unassigned_events: unassigned_events(&unassigned_ids, &pool).await?,
 		});
 	}
 
@@ -298,7 +377,8 @@ pub async fn api_get_itinerary(
           	start_date,
            	end_date,
             chat_session_id,
-            title
+            title,
+            unassigned_event_ids
         FROM itineraries WHERE id = $1 AND (account_id = $2 OR is_public=TRUE)"#,
 		itinerary_id,
 		user.id
@@ -308,13 +388,15 @@ pub async fn api_get_itinerary(
 	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
 
+	let unassigned_ids = itinerary.unassigned_event_ids.unwrap_or_default();
 	Ok(Json(Itinerary {
 		id: itinerary.id,
 		start_date: itinerary.start_date,
 		end_date: itinerary.end_date,
-		event_days: itinerary_events(itinerary_id, &pool).await?,
+		event_days: itinerary_events(itinerary_id, itinerary.start_date, itinerary.end_date, &pool).await?,
 		chat_session_id: itinerary.chat_session_id,
 		title: itinerary.title,
+		unassigned_events: unassigned_events(&unassigned_ids, &pool).await?,
 	}))
 }
 
@@ -406,6 +488,9 @@ pub async fn api_save(
 	.map_err(AppError::from)?
 	.map(|record| record.id);
 
+	// Extract unassigned event IDs
+	let unassigned_event_ids: Vec<i32> = itinerary.unassigned_events.iter().map(|e| e.id).collect();
+	
 	// if it doesn't exist, insert a new one
 	let id = match id_opt {
 		Some(id) => {
@@ -413,7 +498,7 @@ pub async fn api_save(
 			sqlx::query!(
 				r#"
 				UPDATE itineraries
-				SET start_date = $1, end_date = $2, title = $3, chat_session_id = $4, saved = TRUE
+				SET start_date = $1, end_date = $2, title = $3, chat_session_id = $4, saved = TRUE, unassigned_event_ids = $7
 				WHERE id = $5 AND account_id = $6;
 				"#,
 				itinerary.start_date,
@@ -421,7 +506,8 @@ pub async fn api_save(
 				itinerary.title,
 				itinerary.chat_session_id,
 				id,
-				user.id
+				user.id,
+				&unassigned_event_ids
 			)
 			.execute(&pool)
 			.await
@@ -432,15 +518,16 @@ pub async fn api_save(
 		None => {
 			sqlx::query!(
 				r#"
-				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
-				VALUES ($1, FALSE, $2, $3, $4, TRUE, $5)
+				INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title, unassigned_event_ids)
+				VALUES ($1, FALSE, $2, $3, $4, TRUE, $5, $6)
 				RETURNING id;
 				"#,
 				user.id,
 				itinerary.start_date,
 				itinerary.end_date,
 				itinerary.chat_session_id,
-				itinerary.title
+				itinerary.title,
+				&unassigned_event_ids
 			)
 			.fetch_one(&pool)
 			.await

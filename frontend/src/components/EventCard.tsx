@@ -50,7 +50,6 @@ const EventCard: React.FC<EventCardProps> = ({
   onDragEnd
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [eventData, setEventData] = useState(event);
   const [inputEvent, setInputEvent] = useState({
     ...JSON.parse(JSON.stringify(event)),
@@ -84,17 +83,12 @@ const EventCard: React.FC<EventCardProps> = ({
     return displayTime || "";
   };
 
-  const openModal = () => {
-    if (!isDragging) setIsOpen(true);
-  };
-
   const closeModal = () => {
     setInputEvent(eventData);
     setIsOpen(false);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    setIsDragging(true);
     if (onDragStart) {
       onDragStart(e, {
         event_name: eventData.event_name,
@@ -105,7 +99,6 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    setIsDragging(false);
     if (onDragEnd) {
       onDragEnd(e);
     }

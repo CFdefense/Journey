@@ -234,6 +234,7 @@ async fn send_message_to_llm(
 		],
 		chat_session_id: None,
 		title: String::from("World Tour 11/5-15 2025"),
+		unassigned_events: vec![],
 	};
 
 	// Insert generated itinerary into db

@@ -4,10 +4,12 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  max-width: 100vw;
   padding: 0;
   background-color: #f8f8f8;
   min-height: 100vh;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .view-page--gradient {
@@ -18,6 +20,7 @@
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  max-width: 100vw;
 }
 
 .view-page--gradient::-webkit-scrollbar {
@@ -30,10 +33,13 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  max-width: 100%;
   padding: 24px 16px 100px;
   position: relative;
   z-index: 1;
   transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .view-content.with-sidebar {
@@ -147,26 +153,30 @@
   max-width: 1700px;
   background-color: transparent;
   border-radius: 12px;
-  padding: 32px 16px; /* slightly smaller horizontal padding so cards can reach further */
+  padding: 32px 16px;
   box-shadow: none;
-  margin-bottom: 24px;
-  margin-right: auto;
-  margin-left: 100px;
+  margin: 0 auto 24px auto;
   box-sizing: border-box;
   color: #000000;
-  transform: translateX(-40px);
   position: relative;
 }
 
 @media (max-width: 1200px) {
   .itinerary-section {
-    transform: translateX(-20px);
+    max-width: 100%;
   }
 }
 
 @media (max-width: 768px) {
   .itinerary-section {
-    transform: translateX(0);
+    padding: 20px 8px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .itinerary-section {
+    padding: 16px 4px;
   }
 }
 
@@ -404,12 +414,15 @@
 /* Timeline Layout */
 .timeline-container {
   width: 100%;
+  max-width: 100%;
   padding: 40px 20px 80px;
   min-height: 400px;
   background: transparent;
   border-radius: 12px;
   margin: 20px 0;
   position: relative;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Continuous event chain */
@@ -821,13 +834,69 @@
 
 .unassigned-events {
   height: auto;
-  margin-bottom: 20px;
-  margin-left: 30px;
+  margin-left: 20px;
+  max-width: 1630px;
+  width: 100%;
+}
+
+.unassigned-events .time-block {
+  /* Match the horizontal padding of time-block-events-wrapper */
+  padding: 20px 300px !important;
+  box-sizing: border-box;
 }
 
 .unassigned-events .events-area {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0;
+}
+
+@media (max-width: 1600px) {
+  .unassigned-events .time-block {
+    padding: 20px 200px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .unassigned-events .time-block {
+    padding: 20px 140px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .unassigned-events .time-block {
+    padding: 20px 100px !important;
+  }
+
+  .unassigned-events .events-area {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .unassigned-events {
+    margin-bottom: 16px;
+  }
+
+  .unassigned-events .time-block {
+    padding: 20px 60px !important;
+  }
+
+  .unassigned-events .events-area {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .unassigned-events .time-block {
+    padding: 20px !important;
+  }
+
+  .unassigned-events .events-area {
+    grid-template-columns: 1fr;
+  }
 }
 
 .workspace-empty-text {
@@ -1149,55 +1218,119 @@
     padding: 20px 12px;
   }
 
-  .itinerary-section {
-    padding: 20px;
+  .view-content.with-sidebar {
+    margin-left: 50px;
+    padding: 16px 8px 100px;
   }
 
   .itinerary-header h3 {
     font-size: 2.5rem;
+    margin-left: 0;
   }
 
   .day-navigation-bottom {
-    padding: 15px 10px;
-    gap: 8px;
+    padding: 12px 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
   }
 
   .day-nav-item {
-    padding: 10px 16px;
-    font-size: 0.85rem;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .day-nav-button {
-    padding: 10px 16px;
-    min-width: 40px;
+    padding: 8px 12px;
+    min-width: 36px;
   }
 
   .timeline-container {
-    padding: 20px 10px;
+    padding: 20px 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .timeline-event-wrapper {
-    padding: 15px;
+    padding: 12px;
+    max-width: 100%;
+    transform: none !important;
   }
 
   .timeline-event-wrapper.left-aligned,
   .timeline-event-wrapper.right-aligned {
     margin-left: auto;
     margin-right: auto;
+    transform: none !important;
   }
 
   .time-label {
-    font-size: 1.1rem;
+    font-size: 1rem;
+  }
+
+  .time-block-header {
+    padding: 12px 8px;
+  }
+
+  .time-block-title {
+    font-size: 1.3rem;
+  }
+
+  .time-block-range {
+    font-size: 0.85rem;
   }
 }
 
 @media (max-width: 480px) {
+  .view-content.with-sidebar {
+    margin-left: 45px;
+    padding: 12px 4px 100px;
+  }
+
   .itinerary-header h3 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+    margin-left: 0;
   }
 
   .time-block {
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .day-navigation-bottom {
+    padding: 10px 4px;
+    gap: 4px;
+  }
+
+  .day-nav-item {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .timeline-container {
+    padding: 16px 4px;
+  }
+
+  .timeline-event-wrapper {
+    padding: 8px;
+  }
+
+  .time-block-title {
+    font-size: 1.2rem;
+  }
+
+  .time-block-range {
+    font-size: 0.75rem;
+  }
+
+  .timeline-arrow {
+    margin: 16px 0;
+  }
+
+  .arrow-image {
+    max-width: 60px;
   }
 }
 

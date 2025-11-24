@@ -85,14 +85,17 @@ CREATE TABLE itineraries (
     end_date DATE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL,
     saved BOOLEAN NOT NULL,
-    title VARCHAR(255) NOT NULL
+    title VARCHAR(255) NOT NULL,
+    -- Array of event IDs that are unassigned to any specific time slot
+    unassigned_event_ids INTEGER[] NOT NULL DEFAULT ARRAY[]::INTEGER[]
 );
 
 -- Event list table
 CREATE TABLE event_list (
     id SERIAL PRIMARY KEY,
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
-    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    -- event_id can be NULL for placeholder entries that preserve empty days
+    event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     time_of_day time_of_day NOT NULL,
     -- date of destination's local timezone
     date DATE NOT NULL

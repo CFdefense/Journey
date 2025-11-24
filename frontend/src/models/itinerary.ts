@@ -9,6 +9,8 @@ export type Itinerary = {
 	event_days: EventDay[];
 	chat_session_id: number | null;
 	title: string;
+	/// Events not assigned to any specific time slot
+	unassigned_events: Event[];
 };
 
 export type EventDay = {
