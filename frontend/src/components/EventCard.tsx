@@ -206,7 +206,6 @@ const EventCard: React.FC<EventCardProps> = ({
         draggable={draggable}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onClick={openModal}
       >
         <div className="event-image-container">
           <div className="event-image-placeholder">

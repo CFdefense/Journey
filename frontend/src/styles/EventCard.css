@@ -217,7 +217,7 @@
 }
 
 .event-card:hover .event-title {
-  color: #111827;
+  color: #f97316; /* keep title orange on hover */
 }
 
 /* Date / time text inside the card, below the title */
@@ -275,10 +275,6 @@
 
 /* Keep modal text readable without overriding per-card colors */
 .event-modal {
-  color: #222;
-}
-
-.event-card:hover {
   color: #222;
 }
 

@@ -313,14 +313,13 @@
 
 .timeline-event-wrapper.editable {
   min-height: 150px;
-  border: 2px dashed transparent;
+  border: 2px solid transparent; /* solid so no dashed outline on hover */
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .timeline-event-wrapper.editable:hover {
   background-color: rgba(0, 107, 187, 0.05);
-  border-color: rgba(0, 107, 187, 0.3);
 }
 
 .timeline-arrow {
