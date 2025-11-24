@@ -276,7 +276,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   if (!localDays || localDays.length === 0) {
-    return <div className="itinerary-section">No itinerary data available</div>;
+    return null;
   }
 
   const currentDay = localDays[selectedDayIndex];

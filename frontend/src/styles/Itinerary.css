@@ -116,6 +116,22 @@
   animation-delay: 0.6s;
 }
 
+/* Staggered delays for time block headers */
+.time-block-group:nth-child(1) .time-block-header,
+.time-block-empty-section:nth-child(1) .time-block-header {
+  animation-delay: 0.1s;
+}
+
+.time-block-group:nth-child(2) .time-block-header,
+.time-block-empty-section:nth-child(2) .time-block-header {
+  animation-delay: 0.2s;
+}
+
+.time-block-group:nth-child(3) .time-block-header,
+.time-block-empty-section:nth-child(3) .time-block-header {
+  animation-delay: 0.3s;
+}
+
 /* Overall page layout */
 .view-page {
   display: flex;
