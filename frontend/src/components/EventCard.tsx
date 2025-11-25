@@ -57,7 +57,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const navigate = useNavigate();
 
-  const getDateTimeLabel = () => {
+  const getDateTimeLabel = (short: boolean = false) => {
     if (!eventData.hard_start) {
       return undefined;
     }
@@ -77,6 +77,9 @@ const EventCard: React.FC<EventCardProps> = ({
       options.year = "numeric";
     }
     const start_date_display = start_date.toLocaleString(undefined, options);
+    if (short) {
+      return start_date_display;
+    }
     if (!eventData.hard_end) {
       return start_date_display;
     }
@@ -242,7 +245,7 @@ const EventCard: React.FC<EventCardProps> = ({
           <h3 className="event-title">{eventData.event_name}</h3>
 
           {getDateTimeLabel() && (
-            <p className="event-datetime">{getDateTimeLabel()}</p>
+            <p className="event-datetime">{getDateTimeLabel(true)}</p>
           )}
 
           {variant !== "workspace" && eventData.event_description && (
