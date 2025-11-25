@@ -36,7 +36,7 @@ export default function Home() {
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
-  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
     null
