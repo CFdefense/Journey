@@ -36,24 +36,33 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
     }
   };
 
-  const formatEventTime = (event: Event, timeBlockName: string): string => {
-    if (event.hard_start) {
-      try {
-        const date = new Date(event.hard_start);
-        if (!isNaN(date.getTime())) {
-          const hours = date.getHours();
-          const minutes = date.getMinutes();
-          const ampm = hours >= 12 ? "PM" : "AM";
-          const displayHours = hours % 12 || 12;
-          const displayMinutes = minutes.toString().padStart(2, "0");
-          return `${displayHours}:${displayMinutes} ${ampm}`;
-        }
-      } catch (e) {
-        // Fall through to time range
-      }
+  const formatEventTime = (event: Event): string | undefined => {
+    if (!event.hard_start) {
+      return undefined;
     }
-    // Return the time segment range as fallback
-    return getTimeRange(timeBlockName);
+    const start_date = new Date(event.hard_start);
+    if (isNaN(start_date.getTime())) {
+      return undefined;
+    }
+    const start_hours = start_date.getHours();
+    const start_minutes = start_date.getMinutes();
+    const start_ampm = start_hours >= 12 ? 'PM' : 'AM';
+    const start_displayHours = start_hours % 12 || 12;
+    const start_displayMinutes = start_minutes.toString().padStart(2, '0');
+    const start_display = `${start_displayHours}:${start_displayMinutes} ${start_ampm}`;
+    if (!event.hard_end) {
+      return start_display;
+    }
+    const end_date = new Date(event.hard_end);
+    if (isNaN(end_date.getTime())) {
+      return start_display;
+    }
+    const end_hours = end_date.getHours();
+    const end_minutes = end_date.getMinutes();
+    const end_ampm = end_hours >= 12 ? 'PM' : 'AM';
+    const end_displayHours = end_hours % 12 || 12;
+    const end_displayMinutes = end_minutes.toString().padStart(2, '0');
+    return `${start_display} - ${end_displayHours}:${end_displayMinutes} ${end_ampm}`;
   };
 
   const formatAddress = (event: Event): string => {
@@ -127,7 +136,7 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
       <div className="compact-time-segments">
         {["Morning", "Afternoon", "Evening"].map((timeBlockName) => {
           const events = eventsByTimeBlock[timeBlockName] || [];
-          
+
           return (
             <div key={timeBlockName} className="compact-time-segment">
               <div className="compact-segment-header">
@@ -144,7 +153,7 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
                   </p>
                 ) : (
                   events.map((event) => {
-                    const eventTime = formatEventTime(event, timeBlockName);
+                    const eventTime = formatEventTime(event);
                     const address = formatAddress(event);
 
                     return (
@@ -153,7 +162,7 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
                           <h4 className="compact-event-name">
                             {event.event_name}
                           </h4>
-                          <span className="compact-event-time">{eventTime}</span>
+                          {eventTime && <span className="compact-event-time">{eventTime}</span>}
                         </div>
 
                         {event.event_description && (
