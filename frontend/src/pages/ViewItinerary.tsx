@@ -5,7 +5,6 @@ import ViewPageSidebar from "../components/ViewPageSidebar";
 import { convertToApiFormat, fetchItinerary, getUnassignedEvents } from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
-import Navbar from "../components/Navbar";
 import "../styles/Itinerary.css";
 
 function ViewItineraryPage() {
@@ -71,11 +70,11 @@ function ViewItineraryPage() {
   const autoSave = async (updatedDays: DayItinerary[], updatedUnassigned?: Event[]) => {
     try {
       const unassignedToUse = updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
-      
+
       // Calculate start_date and end_date from the days array
       const startDate = updatedDays.length > 0 ? updatedDays[0].date : itineraryMetadata.startDate;
       const endDate = updatedDays.length > 0 ? updatedDays[updatedDays.length - 1].date : itineraryMetadata.endDate;
-      
+
       const apiPayload = convertToApiFormat(
         updatedDays,
         itineraryMetadata.id,
@@ -148,7 +147,7 @@ function ViewItineraryPage() {
           // Transform and store days
           const data = await fetchItinerary(itineraryId);
           setDays(data);
-          
+
           // Load unassigned events
           const unassigned = getUnassignedEvents(apiResponse.result);
           setUnassignedEvents(unassigned);
@@ -165,7 +164,6 @@ function ViewItineraryPage() {
 
   return (
     <div className="view-page view-page--gradient with-sidebar">
-      <Navbar page="view" />
       <ViewPageSidebar
         onCreateEvent={() => setCreateModalOpen(true)}
         onSearchEvents={() => setSearchModalOpen(true)}
