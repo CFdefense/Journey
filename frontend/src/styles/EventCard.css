@@ -233,6 +233,7 @@
   -webkit-box-orient: vertical;
   width: 100%;
   max-height: 3.875rem;
+  border-radius: 0;
 }
 
 .event-description {
@@ -248,6 +249,7 @@
   -webkit-box-orient: vertical;
   width: 100%;
   max-height: 1.4em;
+  border-radius: 0;
 }
 
 .event-location {
@@ -260,6 +262,7 @@
   white-space: nowrap;
   width: 100%;
   max-height: 1.2em;
+  border-radius: 0;
 }
 
 .event-type {
@@ -273,6 +276,7 @@
   white-space: nowrap;
   width: 100%;
   max-height: 1.4em;
+  border-radius: 0;
 }
 
 .event-card:hover .event-title {
@@ -286,6 +290,7 @@
   font-weight: 600;
   color: #fb923c; /* slightly lighter orange for date & time */
   text-align: left;
+  border-radius: 0;
 }
 
 /* === MODAL === */
