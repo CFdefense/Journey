@@ -149,7 +149,9 @@
 .view-page--gradient {
   position: fixed;
   inset: 0;
-  background: #ffa366;
+  background:
+    radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+    linear-gradient(180deg, #d87f75 0%, #e8c89f 30%, #ffffff 100%);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */

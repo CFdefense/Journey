@@ -519,6 +519,10 @@ export async function apiSaveItineraryChanges(
 			body: JSON.stringify(payload)
 		});
 
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
+
 		return { result: await response.json(), status: response.status };
 	} catch (error) {
 		console.error("apiSaveItineraryChanges error:", error);

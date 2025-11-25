@@ -50,7 +50,12 @@ pub struct ItineraryApiDoc;
 
 /// Returns the [EventDay]s associated with this itinerary
 /// Returns only the days that exist in event_list (including empty days with NULL event_id)
-async fn itinerary_events(itinerary_id: i32, _start_date: NaiveDate, _end_date: NaiveDate, pool: &PgPool) -> ApiResult<Vec<EventDay>> {
+async fn itinerary_events(
+	itinerary_id: i32,
+	_start_date: NaiveDate,
+	_end_date: NaiveDate,
+	pool: &PgPool,
+) -> ApiResult<Vec<EventDay>> {
 	// First, get all dates that have entries (including NULL event_id for empty days)
 	let all_dates: Vec<NaiveDate> = sqlx::query_scalar!(
 		r#"
@@ -64,7 +69,7 @@ async fn itinerary_events(itinerary_id: i32, _start_date: NaiveDate, _end_date: 
 	.fetch_all(pool)
 	.await
 	.map_err(AppError::from)?;
-	
+
 	// Now get all events (excluding placeholders with NULL event_id)
 	let event_list: Vec<EventListJoinRow> = sqlx::query_as!(
 		EventListJoinRow,
@@ -104,7 +109,7 @@ async fn itinerary_events(itinerary_id: i32, _start_date: NaiveDate, _end_date: 
 
 	// Create EventDay for each date that exists in event_list
 	let mut event_days = Vec::new();
-	
+
 	for date in all_dates {
 		let mut morning_events = Vec::new();
 		let mut afternoon_events = Vec::new();
@@ -128,14 +133,17 @@ async fn itinerary_events(itinerary_id: i32, _start_date: NaiveDate, _end_date: 
 			date,
 		});
 	}
-	
+
 	Ok(event_days)
 }
 
 /// Returns the unassigned events for this itinerary
-async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<crate::http_models::event::Event>> {
+async fn unassigned_events(
+	event_ids: &[i32],
+	pool: &PgPool,
+) -> ApiResult<Vec<crate::http_models::event::Event>> {
 	use crate::http_models::event::Event;
-	
+
 	if event_ids.is_empty() {
 		return Ok(Vec::new());
 	}
@@ -178,7 +186,10 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 		cap += day.afternoon_events.len();
 		cap += day.evening_events.len();
 		// Add 1 for empty days (we'll insert a placeholder)
-		if day.morning_events.is_empty() && day.afternoon_events.is_empty() && day.evening_events.is_empty() {
+		if day.morning_events.is_empty()
+			&& day.afternoon_events.is_empty()
+			&& day.evening_events.is_empty()
+		{
 			cap += 1;
 		}
 	}
@@ -186,7 +197,7 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	let mut times = Vec::with_capacity(cap);
 	let mut dates = Vec::with_capacity(cap);
 	let mut events: Vec<Option<i32>> = Vec::with_capacity(cap);
-	
+
 	for day in itinerary.event_days.into_iter() {
 		let morning_len = day.morning_events.len();
 		let afternoon_len = day.afternoon_events.len();
@@ -203,7 +214,10 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 			times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
 			times.extend(std::iter::repeat_n(TimeOfDay::Evening, evening_len));
 
-			dates.extend(std::iter::repeat_n(day.date, morning_len + afternoon_len + evening_len));
+			dates.extend(std::iter::repeat_n(
+				day.date,
+				morning_len + afternoon_len + evening_len,
+			));
 
 			events.extend(day.morning_events.into_iter().map(|event| Some(event.id)));
 			events.extend(day.afternoon_events.into_iter().map(|event| Some(event.id)));
@@ -305,7 +319,13 @@ pub async fn api_saved_itineraries(
 			id: itinerary.id,
 			start_date: itinerary.start_date,
 			end_date: itinerary.end_date,
-			event_days: itinerary_events(itinerary.id, itinerary.start_date, itinerary.end_date, &pool).await?,
+			event_days: itinerary_events(
+				itinerary.id,
+				itinerary.start_date,
+				itinerary.end_date,
+				&pool,
+			)
+			.await?,
 			chat_session_id: itinerary.chat_session_id,
 			title: itinerary.title,
 			unassigned_events: unassigned_events(&unassigned_ids, &pool).await?,
@@ -393,7 +413,13 @@ pub async fn api_get_itinerary(
 		id: itinerary.id,
 		start_date: itinerary.start_date,
 		end_date: itinerary.end_date,
-		event_days: itinerary_events(itinerary_id, itinerary.start_date, itinerary.end_date, &pool).await?,
+		event_days: itinerary_events(
+			itinerary_id,
+			itinerary.start_date,
+			itinerary.end_date,
+			&pool,
+		)
+		.await?,
 		chat_session_id: itinerary.chat_session_id,
 		title: itinerary.title,
 		unassigned_events: unassigned_events(&unassigned_ids, &pool).await?,
@@ -490,7 +516,7 @@ pub async fn api_save(
 
 	// Extract unassigned event IDs
 	let unassigned_event_ids: Vec<i32> = itinerary.unassigned_events.iter().map(|e| e.id).collect();
-	
+
 	// if it doesn't exist, insert a new one
 	let id = match id_opt {
 		Some(id) => {
