@@ -135,6 +135,8 @@
   /* Workspace cards sit flat in the bar – no drop shadow */
   box-shadow: none;
   position: relative;
+  padding-right: 40px;
+  min-width: 300px;
 }
 
 .event-card--workspace .event-image-container {
