@@ -103,7 +103,6 @@ export function convertToApiFormat(
 			return {
 				date: day.date,
 				morning_events: morningBlock?.events || [],
-				noon_events: [],
 				afternoon_events: afternoonBlock?.events || [],
 				evening_events: eveningBlock?.events || []
 			};
@@ -122,16 +121,16 @@ export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
 		timestamp = timestamp + 'Z';
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Checks if the date is valid instead of using the try catch.
 	if (isNaN(date.getTime())) {
 		return null;
 	}
-	
+
 	const hours = date.getUTCHours();
-	
+
 	if (hours >= 4 && hours < 12) {
 		return "Morning";
 	} else if (hours >= 12 && hours < 18) {
@@ -148,9 +147,9 @@ export function getDateFromTimestamp(utcTimestamp: string): string {
 	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
 		timestamp = timestamp + 'Z';
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Same date check
 	if (isNaN(date.getTime())) {
 		return "";
@@ -190,13 +189,13 @@ export function canDropEventInTimeBlock(
 // Lets you know where the event is allowed to be dropped
 export function getDropErrorMessage(event: Event): string | null {
 	if (!event.hard_start) return null;
-	
+
 	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);
 	const requiredDate = getDateFromTimestamp(event.hard_start);
-	
+
 	if (requiredTimeBlock && requiredDate) {
 		return `"${event.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`;
 	}
-	
+
 	return null;
 }

@@ -37,7 +37,6 @@ const EventCard: React.FC<EventCardProps> = ({
   time,
   event,
   draggable = false,
-  displayTime,
   imageOnLeft = true,
   variant = "timeline",
   localDays,
@@ -58,29 +57,37 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const navigate = useNavigate();
 
-  const getDateTimeLabel = () => {
-    if (eventData.hard_start) {
-      try {
-        const date = new Date(eventData.hard_start);
-        if (!isNaN(date.getTime())) {
-          const today = new Date();
-          const sameYear = date.getFullYear() === today.getFullYear();
-          const options: Intl.DateTimeFormatOptions = {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit"
-          };
-          if (!sameYear) {
-            options.year = "numeric";
-          }
-          return date.toLocaleString(undefined, options);
-        }
-      } catch {
-        // fall through
-      }
+  const getDateTimeLabel = (short: boolean = false) => {
+    if (!eventData.hard_start) {
+      return undefined;
     }
-    return displayTime || "";
+    const start_date = new Date(eventData.hard_start);
+    if (isNaN(start_date.getTime())) {
+      return undefined;
+    }
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    };
+    const sameYear = start_date.getFullYear() === today.getFullYear();
+    if (!sameYear) {
+      options.year = "numeric";
+    }
+    const start_date_display = start_date.toLocaleString(undefined, options);
+    if (short) {
+      return start_date_display;
+    }
+    if (!eventData.hard_end) {
+      return start_date_display;
+    }
+    const end_date = new Date(eventData.hard_end);
+    if (isNaN(end_date.getTime())) {
+      return start_date_display;
+    }
+    return start_date_display + " - " + end_date.toLocaleString(undefined, options);
   };
 
   const closeModal = () => {
@@ -190,7 +197,7 @@ const EventCard: React.FC<EventCardProps> = ({
       };
     });
     setLocalDays(updatedDays);
-    
+
     // Notify parent of changes
     if (onUnassignedUpdate) {
       onUnassignedUpdate(updatedUnassigned);
@@ -198,7 +205,7 @@ const EventCard: React.FC<EventCardProps> = ({
     if (onDaysUpdate) {
       onDaysUpdate(updatedDays);
     }
-    
+
     setIsOpen(false);
   };
 
@@ -238,7 +245,7 @@ const EventCard: React.FC<EventCardProps> = ({
           <h3 className="event-title">{eventData.event_name}</h3>
 
           {getDateTimeLabel() && (
-            <p className="event-datetime">{getDateTimeLabel()}</p>
+            <p className="event-datetime">{getDateTimeLabel(true)}</p>
           )}
 
           {variant !== "workspace" && eventData.event_description && (
@@ -257,7 +264,7 @@ const EventCard: React.FC<EventCardProps> = ({
               <p className="event-location">{formatAddress()}</p>
             )}
         </div>
-        
+
         {/* Delete button for workspace events */}
         {variant === "workspace" && (
           <button

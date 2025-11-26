@@ -46,11 +46,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragY, setDragY] = useState(0);
-  
+
   // Use external modal state if provided, otherwise use internal state
   const createModalOpen = externalCreateModal !== undefined ? externalCreateModal : internalCreateModalOpen;
   const searchModalOpen = externalSearchModal !== undefined ? externalSearchModal : internalSearchModalOpen;
-  
+
   const setCreateModalOpen = (open: boolean) => {
     if (onCreateModalChange) {
       onCreateModalChange(open);
@@ -58,7 +58,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setInternalCreateModalOpen(open);
     }
   };
-  
+
   const setSearchModalOpen = (open: boolean) => {
     if (onSearchModalChange) {
       onSearchModalChange(open);
@@ -66,7 +66,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setInternalSearchModalOpen(open);
     }
   };
-  
+
   const [userEventForm, setUserEventForm] = useState({
     name: "",
     description: "",
@@ -136,7 +136,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
     const autoScroll = () => {
       const windowHeight = window.innerHeight;
-      
+
       // Scroll down if near bottom
       if (dragY > windowHeight - scrollThreshold) {
         // Calculate speed based on distance from edge (faster when closer to edge)
@@ -167,7 +167,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setIsDragging(true);
     setDragY(e.clientY);
   };
-  
+
   const onDragEnd = () => {
     setIsDragging(false);
     setDragY(0);
@@ -236,7 +236,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
 		const currentDay = localDays[selectedDayIndex];
 		const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
 		const targetDate = currentDay.date;
-		
+
 		if (!canDropEventInTimeBlock(draggedEvent, targetTimeBlock, targetDate, targetTimeIndex)) {
 			const requiredTimeBlock = getTimeBlockFromTimestamp(draggedEvent.hard_start);
 			const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
@@ -258,7 +258,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     // Update local state immediately for UI responsiveness
     setLocalDays(updatedDays);
     setUnassignedEvents(unassigned_events);
-    
+
     // Notify parent component of changes
     if (onUpdate) {
       onUpdate(updatedDays);
@@ -297,7 +297,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
   // Get all events for the current day in chronological order
   const getAllEventsForDay = (): Array<{ event: Event; timeBlock: string; timeIndex: number }> => {
     const allEvents: Array<{ event: Event; timeBlock: string; timeIndex: number }> = [];
-    
+
     currentDay.timeBlocks.forEach((block, timeIndex) => {
       block.events.forEach((event) => {
         allEvents.push({ event, timeBlock: block.time, timeIndex });
@@ -311,7 +311,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       }
       if (a.event.hard_start) return -1;
       if (b.event.hard_start) return 1;
-      
+
       // Fallback to time block order: Morning < Afternoon < Evening
       const timeOrder: { [key: string]: number } = { Morning: 0, Afternoon: 1, Evening: 2 };
       return timeOrder[a.timeBlock] - timeOrder[b.timeBlock];
@@ -336,25 +336,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
     });
 
     return grouped;
-  };
-
-  const formatEventTime = (event: Event, timeBlock: string): string => {
-    if (event.hard_start) {
-      try {
-        const date = new Date(event.hard_start);
-        if (!isNaN(date.getTime())) {
-          const hours = date.getHours();
-          const minutes = date.getMinutes();
-          const ampm = hours >= 12 ? 'PM' : 'AM';
-          const displayHours = hours % 12 || 12;
-          const displayMinutes = minutes.toString().padStart(2, '0');
-          return `${displayHours}:${displayMinutes} ${ampm}`;
-        }
-      } catch (e) {
-        // Fall through to time block display
-      }
-    }
-    return getTimeRange(timeBlock);
   };
 
   const closeCreateModal = () => setCreateModalOpen(false);
@@ -402,7 +383,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     const event = userEvent as Event;
     event.id = result.result.id;
     event.user_created = true;
-    
+
     // Create a new array instead of mutating the existing one
     const updatedUnassigned = [...unassignedEvents, event];
     setUnassignedEvents(updatedUnassigned);
@@ -505,16 +486,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const deleteDay = (indexToDelete: number) => {
     // Create a new array without the day at indexToDelete
     const updatedDays = localDays.filter((_, index) => index !== indexToDelete);
-    
+
     // Move all events from the deleted day to unassigned
     const updatedUnassigned = [
       ...unassignedEvents,
       ...localDays[indexToDelete].timeBlocks.flatMap((b) => b.events)
     ];
-    
+
     setLocalDays(updatedDays);
     setUnassignedEvents(updatedUnassigned);
-    
+
     if (onUpdate) {
       onUpdate(updatedDays);
     }
@@ -546,7 +527,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
           </div>
         </>
       )}
-      
+
       <div className={`itinerary-section ${compact ? "compact" : ""}`}>
         {/* Header Row */}
         <div className="itinerary-header">
@@ -592,16 +573,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
         <div className="timeline-events">
           {(() => {
             const grouped = getEventsByTimeBlock();
-            
+
             return ["Morning", "Afternoon", "Evening"].map((timeBlockName) => {
               const blockEvents = grouped[timeBlockName];
               const hasEvents = blockEvents.length > 0;
-              
+
               // Find the corresponding time block index from currentDay.timeBlocks
               const timeBlockIndex = currentDay.timeBlocks.findIndex(
                 (block) => block.time === timeBlockName
               );
-              
+
               if (!hasEvents) {
                 return (
                   <div key={timeBlockName} className="time-block-empty-section">
@@ -609,7 +590,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
                       <h3 className="time-block-title">{timeBlockName}</h3>
                       <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
                     </div>
-                    <div 
+                    <div
                       className={`time-block-glass-container ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
                       onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
                       onDragOver={onDragOver}
@@ -621,15 +602,15 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </div>
                 );
               }
-              
+
               return (
                 <div key={timeBlockName} className="time-block-group">
                   <div className="time-block-header">
                     <h3 className="time-block-title">{timeBlockName}</h3>
                     <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`time-block-events-wrapper ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
                     onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
                     onDragOver={onDragOver}
@@ -637,7 +618,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
                     {blockEvents.map((item, blockIndex) => {
                       const isLastInBlock = blockIndex === blockEvents.length - 1;
                       const isRightSide = blockIndex % 2 === 0;
-                      
+
                       return (
                         <React.Fragment key={`${item.event.id}-${blockIndex}`}>
                           <div
@@ -657,7 +638,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
                               draggable={editMode ?? false}
                               onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
                               onDragEnd={onDragEnd}
-                              displayTime={formatEventTime(item.event, item.timeBlock)}
                               imageOnLeft={isRightSide}
                             />
                           </div>
@@ -699,9 +679,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   className="day-delete"
                   onClick={(e) => {
                     e.stopPropagation();
-                    
+
                     deleteDay(index);
-                    
+
                     // Update selected day index after deletion
                     if (index < selectedDayIndex) {
                       // Deleted a day before the currently selected day
