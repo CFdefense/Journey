@@ -31,6 +31,8 @@ interface EventCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDragStart?: (e: React.DragEvent, eventData: any) => void;
   onDragEnd?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, targetEventId: number) => void;
+  onDragOver?: (e: React.DragEvent) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -46,10 +48,13 @@ const EventCard: React.FC<EventCardProps> = ({
   onDaysUpdate,
   onUnassignedUpdate,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  onDrop,
+  onDragOver
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState(event);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [inputEvent, setInputEvent] = useState({
     ...JSON.parse(JSON.stringify(event)),
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
@@ -109,6 +114,30 @@ const EventCard: React.FC<EventCardProps> = ({
     if (onDragEnd) {
       onDragEnd(e);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (onDrop) {
+      onDrop(e, eventData.id);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+    if (onDragOver) {
+      onDragOver(e);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
   };
 
   const formatAddress = () => {
@@ -225,6 +254,10 @@ const EventCard: React.FC<EventCardProps> = ({
         draggable={draggable}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        data-drag-over={isDragOver}
       >
         <div className="event-image-container">
           <div className="event-image-placeholder">

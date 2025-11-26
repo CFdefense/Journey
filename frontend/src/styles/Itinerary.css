@@ -974,38 +974,47 @@
 
 .unassigned-events {
   height: auto;
-  margin-left: 20px;
+  margin: 0 auto;
   max-width: 1630px;
   width: 100%;
   opacity: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .unassigned-events-label {
-  grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
   color: #64748b;
   font-size: 1.1rem;
   font-weight: 500;
   margin: 0;
+  width: 100%;
 }
 
 .unassigned-events .time-block {
   /* Match the horizontal padding of time-block-events-wrapper */
   padding: 20px 180px !important;
   box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .unassigned-events .events-area {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 0;
   position: relative;
   min-height: 150px;
   overflow: visible;
-  justify-items: center;
   justify-content: center;
+  align-items: center;
+  align-content: center;
+  width: 100%;
 }
 
 @media (max-width: 1600px) {
@@ -1025,9 +1034,6 @@
     padding: 20px 80px !important;
   }
 
-  .unassigned-events .events-area {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 @media (max-width: 768px) {
@@ -1040,7 +1046,6 @@
   }
 
   .unassigned-events .events-area {
-    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 }
@@ -1050,9 +1055,6 @@
     padding: 20px !important;
   }
 
-  .unassigned-events .events-area {
-    grid-template-columns: 1fr;
-  }
 }
 
 .workspace-empty-text {
@@ -1062,11 +1064,7 @@
   color: #64748b;
   font-size: 1.1rem;
   font-weight: 500;
-  grid-column: 1 / -1;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  width: 100%;
 }
 
 /* Edit with AI button */

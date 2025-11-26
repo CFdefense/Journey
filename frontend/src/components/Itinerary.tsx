@@ -173,8 +173,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setDragY(0);
   };
 
-  const onDrop = (e: React.DragEvent, targetTimeIndex: number) => {
+  const onDrop = (e: React.DragEvent, targetTimeIndex: number, targetEventId?: number) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling
     onDragEnd(); // Reset dragging state
 
     const eventIdStr = e.dataTransfer.getData("eventId");
@@ -189,21 +190,15 @@ const Itinerary: React.FC<ItineraryProps> = ({
       ? parseInt(sourceTimeIndexStr)
       : -1;
 
+    // Don't do anything if dropping on itself
+    if (targetEventId && targetEventId === eventId) return;
+
     // Create a copy of localDays
     const updatedDays = JSON.parse(JSON.stringify(localDays)) as DayItinerary[];
     const currentDay = updatedDays[selectedDayIndex];
     let unassigned_events = JSON.parse(
       JSON.stringify(unassignedEvents)
     ) as Event[];
-
-    // Remove event from source time block if it exists
-    if (sourceTimeIndex >= 0) {
-      currentDay.timeBlocks[sourceTimeIndex].events = currentDay.timeBlocks[
-        sourceTimeIndex
-      ].events.filter((e) => e.id !== eventId);
-    } else {
-      unassigned_events = unassigned_events.filter((e) => e.id !== eventId);
-    }
 
     // Find the full event object from the source
     let draggedEvent: Event | undefined =
@@ -245,14 +240,84 @@ const Itinerary: React.FC<ItineraryProps> = ({
 		}
 	}
 
-    // Add event to target time block if not already there
-    if (targetTimeIndex >= 0) {
-      const targetBlock = currentDay.timeBlocks[targetTimeIndex];
-      if (!targetBlock.events.some((e) => e.id === eventId)) {
-        targetBlock.events.push(draggedEvent);
+    // Handle dropping on specific event (swap positions)
+    if (targetEventId !== undefined) {
+      // Check if in same container
+      const targetInSameBlock = sourceTimeIndex === targetTimeIndex;
+      
+      if (targetInSameBlock) {
+        // Swap positions within same container
+        if (targetTimeIndex >= 0) {
+          // In a time block
+          const targetBlock = currentDay.timeBlocks[targetTimeIndex];
+          const draggedIndex = targetBlock.events.findIndex((e) => e.id === eventId);
+          const targetIndex = targetBlock.events.findIndex((e) => e.id === targetEventId);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            // Swap the events
+            [targetBlock.events[draggedIndex], targetBlock.events[targetIndex]] = 
+            [targetBlock.events[targetIndex], targetBlock.events[draggedIndex]];
+          }
+        } else {
+          // In unassigned
+          const draggedIndex = unassigned_events.findIndex((e) => e.id === eventId);
+          const targetIndex = unassigned_events.findIndex((e) => e.id === targetEventId);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            // Swap the events
+            [unassigned_events[draggedIndex], unassigned_events[targetIndex]] = 
+            [unassigned_events[targetIndex], unassigned_events[draggedIndex]];
+          }
+        }
+      } else {
+        // Different containers - insert at target position
+        // Remove from source
+        if (sourceTimeIndex >= 0) {
+          currentDay.timeBlocks[sourceTimeIndex].events = currentDay.timeBlocks[
+            sourceTimeIndex
+          ].events.filter((e) => e.id !== eventId);
+        } else {
+          unassigned_events = unassigned_events.filter((e) => e.id !== eventId);
+        }
+        
+        // Add at target position
+        if (targetTimeIndex >= 0) {
+          const targetBlock = currentDay.timeBlocks[targetTimeIndex];
+          const targetIndex = targetBlock.events.findIndex((e) => e.id === targetEventId);
+          if (targetIndex !== -1) {
+            targetBlock.events.splice(targetIndex, 0, draggedEvent);
+          } else {
+            targetBlock.events.push(draggedEvent);
+          }
+        } else {
+          const targetIndex = unassigned_events.findIndex((e) => e.id === targetEventId);
+          if (targetIndex !== -1) {
+            unassigned_events.splice(targetIndex, 0, draggedEvent);
+          } else {
+            unassigned_events.push(draggedEvent);
+          }
+        }
       }
-    } else if (!unassigned_events.some((e) => e.id === eventId)) {
-      unassigned_events.push(draggedEvent);
+    } else {
+      // Regular drop on container (not on specific event)
+      // Remove event from source time block if it exists
+      if (sourceTimeIndex >= 0) {
+        currentDay.timeBlocks[sourceTimeIndex].events = currentDay.timeBlocks[
+          sourceTimeIndex
+        ].events.filter((e) => e.id !== eventId);
+      } else {
+        unassigned_events = unassigned_events.filter((e) => e.id !== eventId);
+      }
+
+      // Add event to target time block if not already there
+      if (targetTimeIndex >= 0) {
+        const targetBlock = currentDay.timeBlocks[targetTimeIndex];
+        if (!targetBlock.events.some((e) => e.id === eventId)) {
+          targetBlock.events.push(draggedEvent);
+        }
+      } else if (!unassigned_events.some((e) => e.id === eventId)) {
+        unassigned_events.push(draggedEvent);
+      }
     }
 
     // Update local state immediately for UI responsiveness
@@ -569,6 +634,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   draggable={editMode}
                   onDragStart={(e) => onDragStart(e, event, -1)}
                   onDragEnd={onDragEnd}
+                  onDrop={(e, targetEventId) => onDrop(e, -1, targetEventId)}
+                  onDragOver={onDragOver}
                 />
                 ))}
                 </>
@@ -648,6 +715,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                               draggable={editMode ?? false}
                               onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
                               onDragEnd={onDragEnd}
+                              onDrop={(e, targetEventId) => onDrop(e, item.timeIndex, targetEventId)}
+                              onDragOver={onDragOver}
                               imageOnLeft={isRightSide}
                             />
                           </div>

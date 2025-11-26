@@ -81,6 +81,7 @@
   cursor: grab;
   border: none;
   background: linear-gradient(135deg, #ffffff, #f5f9ff);
+  transition: all 0.2s ease, border 0.1s ease;
 }
 
 .event-card.draggable:hover {
@@ -91,6 +92,13 @@
   cursor: grabbing;
   opacity: 0.8;
   transform: scale(0.98);
+}
+
+/* Visual feedback when dragging over a card */
+.event-card.draggable[data-drag-over="true"] {
+  border: 2px dashed rgba(0, 107, 187, 0.6);
+  background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+  transform: scale(1.02);
 }
 
 .event-image-container {
@@ -137,6 +145,9 @@
   position: relative;
   padding-right: 40px;
   min-width: 300px;
+  max-width: 320px;
+  width: 320px;
+  flex-shrink: 0;
 }
 
 .event-card--workspace .event-image-container {
