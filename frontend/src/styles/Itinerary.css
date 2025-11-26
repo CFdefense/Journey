@@ -1254,6 +1254,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.icon-button svg {
+  color: #1a1a1a;
+  stroke: #1a1a1a;
+}
+
 .user-event-form {
   display: flex;
   flex-direction: column;
@@ -1341,6 +1346,23 @@
 
 .user-event-form input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   filter: brightness(0) saturate(100%) !important;
+  opacity: 1 !important;
+  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Date picker calendar icon */
+.user-event-form input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px;
+  filter: brightness(0) saturate(100%) invert(0) !important;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.user-event-form input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) invert(0) !important;
   opacity: 1 !important;
   transform: scale(1.1);
   background: rgba(0, 0, 0, 0.05) !important;

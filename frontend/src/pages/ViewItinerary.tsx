@@ -14,6 +14,8 @@ function ViewItineraryPage() {
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [addDayModalOpen, setAddDayModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -108,17 +110,47 @@ function ViewItineraryPage() {
   };
 
   const handleAddDay = () => {
-    const last = new Date(days[days.length - 1].date);
-    last.setDate(last.getDate() + 1);
+    // Calculate the next day as default
+    let defaultDate: string;
+    if (days.length > 0) {
+      const last = new Date(days[days.length - 1].date);
+      last.setDate(last.getDate() + 1);
+      defaultDate = last.toISOString().slice(0, 10);
+    } else {
+      // If no days exist, default to today
+      defaultDate = new Date().toISOString().slice(0, 10);
+    }
+    setSelectedDate(defaultDate);
+    setAddDayModalOpen(true);
+  };
+
+  const confirmAddDay = () => {
+    if (!selectedDate) {
+      alert("Please select a date");
+      return;
+    }
+
+    // Check if date already exists
+    if (days.some(day => day.date === selectedDate)) {
+      alert("A day with this date already exists in your itinerary");
+      return;
+    }
+
     const newDay: DayItinerary = {
-      date: last.toISOString().slice(0, 10),
+      date: selectedDate,
       timeBlocks: []
     };
-    const updatedDays = [...days, newDay];
+
+    // Insert the day in chronological order
+    const updatedDays = [...days, newDay].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
     setDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
     debouncedAutoSave();
+    setAddDayModalOpen(false);
   };
 
   useEffect(() => {
@@ -184,6 +216,82 @@ function ViewItineraryPage() {
           onSearchModalChange={setSearchModalOpen}
         />
       </div>
+
+      {/* Add Day Modal */}
+      {addDayModalOpen && (
+        <div className="user-event-modal-overlay" onClick={() => setAddDayModalOpen(false)}>
+          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add a Day</h2>
+              <button
+                className="icon-button"
+                onClick={() => setAddDayModalOpen(false)}
+                aria-label="Close modal"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <form
+              className="user-event-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                confirmAddDay();
+              }}
+            >
+              <label>
+                Date
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  required
+                />
+              </label>
+
+              <button 
+                type="submit" 
+                style={{ 
+                  width: '100%', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  marginTop: '16px',
+                  background: 'linear-gradient(135deg, #006bbb, #2890c8)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
+                }}
+              >
+                Add Day
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
