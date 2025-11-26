@@ -167,6 +167,15 @@
 
 .event-card--workspace .event-title {
   font-size: 1.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  -webkit-box-orient: unset;
+  max-height: none;
 }
 
 .event-card--workspace .event-description {
@@ -181,12 +190,47 @@
   background: #ffffff;
 }
 
+/* Edit button for all event cards */
+.event-card-edit-btn {
+  position: absolute;
+  top: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Position edit button opposite to image side */
+.event-card.image-left .event-card-edit-btn {
+  right: 12px;
+}
+
+.event-card.image-right .event-card-edit-btn {
+  left: 12px;
+}
+
+.event-card-edit-btn:hover {
+  background: rgba(0, 107, 187, 0.15);
+  border-color: rgba(0, 107, 187, 0.3);
+  transform: scale(1.1);
+  box-shadow: 0 3px 12px rgba(0, 107, 187, 0.2);
+}
+
+.event-card-edit-btn svg {
+  color: #1a1a1a;
+  stroke: #1a1a1a;
+}
+
 /* Delete button for workspace events */
 .event-card-delete-btn {
   position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -199,15 +243,46 @@
   z-index: 10;
 }
 
+/* Stack delete button below edit button for workspace cards */
+.event-card--workspace .event-card-delete-btn {
+  right: 12px;
+  left: auto;
+  top: 48px;
+  transform: none;
+}
+
 .event-card-delete-btn:hover {
   background: transparent;
   transform: translateY(-50%) scale(1.1);
+}
+
+.event-card--workspace .event-card-delete-btn:hover {
+  transform: scale(1.1);
 }
 
 .event-card-delete-btn svg {
   color: #dc2626;
   stroke: #dc2626;
   fill: none;
+}
+
+/* Adjust position for workspace variant - stack buttons vertically */
+.event-card--workspace .event-card-edit-btn {
+  right: 12px;
+  left: auto;
+  top: 12px;
+  transform: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+
+.event-card--workspace .event-card-edit-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  transform: scale(1.1);
+  box-shadow: none;
 }
 
 /* Text alignment follows the image side:
@@ -309,34 +384,53 @@
 /* === MODAL === */
 .event-modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
+  overflow-y: auto;
+  padding: 20px;
 }
 
 .event-modal {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 20px 32px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border-radius: 24px;
+  padding: 32px;
   max-width: 550px;
   width: 90%;
-  max-height: 80vh;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+              0 8px 32px rgba(255, 255, 255, 0.1) inset;
   animation: slideUp 0.3s ease;
-  border-top: 4px solid var(--blue);
   position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #1a1a1a;
+  margin: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.event-modal::-webkit-scrollbar {
+  display: none;
 }
 
 .event-modal h2 {
   margin: 0 0 12px;
-  color: #333;
-  font-size: 1.4rem;
-  font-weight: 600;
+  color: #0f172a;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .event-modal p {
@@ -351,16 +445,31 @@
 }
 
 /* Keep modal text readable without overriding per-card colors */
-.event-modal {
-  color: #222;
-}
-
 .event-modal input,
 .event-modal select,
 .event-modal textarea {
-  color: #222;
-  background-color: var(--pale-yellow);
-  border: 1px solid #ccc;
+  color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
+              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.event-modal input:focus,
+.event-modal select:focus,
+.event-modal textarea:focus {
+  outline: none;
+  border-color: rgba(0, 107, 187, 0.6);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.12),
+              0 4px 16px rgba(0, 107, 187, 0.15),
+              0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  transform: translateY(-1px);
 }
 
 /* === BUTTONS === */
@@ -498,8 +607,8 @@
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   .event-modal {
-    padding: 16px 20px;
-    max-width: 90vw;
+    width: 95%;
+    padding: 24px;
   }
 
   .event-card {

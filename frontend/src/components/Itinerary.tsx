@@ -834,32 +834,25 @@ const Itinerary: React.FC<ItineraryProps> = ({
           >
             <div className="modal-header">
               <h2>Create a custom event</h2>
-              <div className="event-card-buttons">
-                <button
-                  className="card-save-button"
-                  title="Save"
-                  form="user-event-form"
-                  type="submit"
+              <button
+                className="icon-button"
+                onClick={closeCreateModal}
+                aria-label="Close modal"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zM5 19V5h11v4h4v10H5z" />
-                    <path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 18h12v-2H6v2z" />
-                  </svg>
-                </button>
-                <button
-                  className="close-button"
-                  onClick={closeCreateModal}
-                  title="Close"
-                >
-                  ✕
-                </button>
-              </div>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
 
             <form
@@ -1007,6 +1000,34 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </select>
                 </label>
               )}
+
+              <button 
+                type="submit" 
+                style={{ 
+                  width: '100%', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  marginTop: '16px',
+                  background: 'linear-gradient(135deg, #006bbb, #2890c8)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
+                }}
+              >
+                Create Event
+              </button>
             </form>
           </div>
         </div>
