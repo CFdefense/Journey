@@ -615,7 +615,7 @@
 .time-block-events-wrapper {
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  padding: 30px 150px;
+  padding: 60px 250px 80px 250px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   width: 100%;
@@ -627,7 +627,6 @@
   min-height: 400px;
   box-sizing: border-box;
   transition: all 0.2s ease;
-  padding-top: 60px;
   animation: fadeUp 0.6s ease-out forwards;
   opacity: 0;
 }
@@ -643,25 +642,25 @@
 
 @media (max-width: 1600px) {
   .time-block-events-wrapper {
-    padding: 80px 100px;
+    padding: 60px 120px 80px 120px;
   }
 }
 
 @media (max-width: 1400px) {
   .time-block-events-wrapper {
-    padding: 80px 80px;
+    padding: 60px 100px 80px 100px;
   }
 }
 
 @media (max-width: 1200px) {
   .time-block-events-wrapper {
-    padding: 60px 60px;
+    padding: 60px 80px 80px 80px;
   }
 }
 
 @media (max-width: 768px) {
   .time-block-events-wrapper {
-    padding: 40px 40px;
+    padding: 40px 40px 60px 40px;
   }
 }
 
@@ -1003,7 +1002,7 @@
 
 .unassigned-events .time-block {
   /* Match the horizontal padding of time-block-events-wrapper */
-  padding: 20px 150px !important;
+  padding: 20px 180px !important;
   box-sizing: border-box;
 }
 
@@ -1016,19 +1015,19 @@
 
 @media (max-width: 1600px) {
   .unassigned-events .time-block {
-    padding: 20px 200px;
+    padding: 20px 120px !important;
   }
 }
 
 @media (max-width: 1400px) {
   .unassigned-events .time-block {
-    padding: 20px 140px !important;
+    padding: 20px 100px !important;
   }
 }
 
 @media (max-width: 1200px) {
   .unassigned-events .time-block {
-    padding: 20px 100px !important;
+    padding: 20px 80px !important;
   }
 
   .unassigned-events .events-area {
@@ -1042,7 +1041,7 @@
   }
 
   .unassigned-events .time-block {
-    padding: 20px 60px !important;
+    padding: 20px 40px !important;
   }
 
   .unassigned-events .events-area {
