@@ -179,6 +179,10 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const onDeleteUserEvent = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${event.event_name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
     const result = await apiDeleteUserEvent(event.id);
     if (result.status === 401) {
       navigate("/login");

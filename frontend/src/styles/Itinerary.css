@@ -735,8 +735,7 @@
   width: 100%;
   max-width: 700px;
   margin-bottom: 40px;
-  animation: fadeUp 0.6s ease-out forwards;
-  opacity: 0;
+  opacity: 1;
 }
 
 .timeline-event-wrapper.left-aligned {
@@ -786,21 +785,21 @@
    while keeping the arrow centered between them */
 @media (min-width: 1600px) {
   .timeline-event-wrapper.left-aligned {
-    animation: fadeUpLeft 0.6s ease-out forwards;
+    transform: translate(-200px, 0);
   }
 
   .timeline-event-wrapper.right-aligned {
-    animation: fadeUpRight 0.6s ease-out forwards;
+    transform: translate(200px, 0);
   }
 }
 
 @media (min-width: 1200px) and (max-width: 1599px) {
   .timeline-event-wrapper.left-aligned {
-    animation: fadeUpLeftMedium 0.6s ease-out forwards;
+    transform: translate(-150px, 0);
   }
 
   .timeline-event-wrapper.right-aligned {
-    animation: fadeUpRightMedium 0.6s ease-out forwards;
+    transform: translate(150px, 0);
   }
 }
 
@@ -909,8 +908,7 @@
   display: flex;
   flex-direction: column;
   transition: all 0.2s ease;
-  animation: fadeUp 0.6s ease-out forwards;
-  opacity: 0;
+  opacity: 1;
 }
 
 .time-block:hover {
@@ -919,6 +917,7 @@
 
 .time-block.editable {
   background: #f0f7ff;
+  opacity: 1;
 }
 
 .time-block.editable:hover {
@@ -969,35 +968,26 @@
   flex-direction: column;
   gap: 10px;
   padding: 8px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
-/* Custom scrollbar for events area */
-.events-area::-webkit-scrollbar {
-  width: 6px;
-}
-
-.events-area::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-radius: 3px;
-}
-
-.events-area::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
-  border-radius: 3px;
-}
-
-.events-area::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
-}
 
 .unassigned-events {
   height: auto;
   margin-left: 20px;
   max-width: 1630px;
   width: 100%;
-  animation: fadeUp 0.5s ease-out forwards;
-  opacity: 0;
+  opacity: 1;
+}
+
+.unassigned-events-label {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
 }
 
 .unassigned-events .time-block {
@@ -1011,6 +1001,11 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 0;
+  position: relative;
+  min-height: 150px;
+  overflow: visible;
+  justify-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 1600px) {
@@ -1062,13 +1057,16 @@
 
 .workspace-empty-text {
   margin: 0;
-  color: #6b7280;
-  font-size: 0.95rem;
-  font-weight: 500;
   text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
   grid-column: 1 / -1;
-  align-self: center;
-  justify-self: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Edit with AI button */

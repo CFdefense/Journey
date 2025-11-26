@@ -484,18 +484,25 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const deleteDay = (indexToDelete: number) => {
+    const dayNumber = indexToDelete + 1;
+    const dayDate = localDays[indexToDelete].date;
+    
+    if (!window.confirm(`Are you sure you want to delete Day ${dayNumber} (${dayDate})? All events from this day will be moved to unassigned events.`)) {
+      return;
+    }
+    
     // Create a new array without the day at indexToDelete
     const updatedDays = localDays.filter((_, index) => index !== indexToDelete);
-
+    
     // Move all events from the deleted day to unassigned
     const updatedUnassigned = [
       ...unassignedEvents,
       ...localDays[indexToDelete].timeBlocks.flatMap((b) => b.events)
     ];
-
+    
     setLocalDays(updatedDays);
     setUnassignedEvents(updatedUnassigned);
-
+    
     if (onUpdate) {
       onUpdate(updatedDays);
     }
@@ -544,9 +551,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
           >
             <div className="events-area">
               {unassignedEvents.length === 0 ? (
-                <p className="workspace-empty-text">Workspace is empty</p>
+                <p className="workspace-empty-text">No unassigned events</p>
               ) : (
-                unassignedEvents.map((event) => (
+                <>
+                  <p className="unassigned-events-label">Unassigned Events</p>
+                  {unassignedEvents.map((event) => (
                 <EventCard
                   key={event.id}
                   event={event}
@@ -561,7 +570,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   onDragStart={(e) => onDragStart(e, event, -1)}
                   onDragEnd={onDragEnd}
                 />
-                ))
+                ))}
+                </>
               )}
             </div>
           </div>
