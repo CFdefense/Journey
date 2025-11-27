@@ -142,7 +142,7 @@ function ViewItineraryPage() {
     };
 
     // Insert the day in chronological order
-    const updatedDays = [...days, newDay].sort((a, b) => 
+    const updatedDays = [...days, newDay].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
@@ -195,7 +195,7 @@ function ViewItineraryPage() {
   }, [itineraryId, navigate]);
 
   return (
-    <div className="view-page view-page--gradient with-sidebar">
+    <div id="view-itinerary-page" className="view-page view-page--gradient with-sidebar">
       <ViewPageSidebar
         onCreateEvent={() => setCreateModalOpen(true)}
         onSearchEvents={() => setSearchModalOpen(true)}
@@ -261,12 +261,12 @@ function ViewItineraryPage() {
                 />
               </label>
 
-              <button 
-                type="submit" 
-                style={{ 
-                  width: '100%', 
-                  height: '48px', 
-                  borderRadius: '12px', 
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  borderRadius: '12px',
                   marginTop: '16px',
                   background: 'linear-gradient(135deg, #006bbb, #2890c8)',
                   border: 'none',

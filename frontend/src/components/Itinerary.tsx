@@ -45,7 +45,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [internalCreateModalOpen, setInternalCreateModalOpen] = useState(false);
   const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragY, setDragY] = useState(0);
 
   // Use external modal state if provided, otherwise use internal state
   const createModalOpen = externalCreateModal !== undefined ? externalCreateModal : internalCreateModalOpen;
@@ -109,68 +108,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setUnassignedEvents(unassigned || []);
   }, [unassigned]);
 
-  // Track mouse position globally during drag
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleDragMove = (e: DragEvent) => {
-      setDragY(e.clientY);
-    };
-
-    document.addEventListener('drag', handleDragMove);
-    document.addEventListener('dragover', handleDragMove);
-
-    return () => {
-      document.removeEventListener('drag', handleDragMove);
-      document.removeEventListener('dragover', handleDragMove);
-    };
-  }, [isDragging]);
-
-  // Auto-scroll when dragging near edges
-  useEffect(() => {
-    if (!isDragging) return;
-
-    // Adjusted for zoom factor (0.75) and scroll indicator height (120px * 1.333 zoom)
-    const scrollThreshold = 160; // pixels from edge to trigger scroll (matches zoom-adjusted indicator)
-    const maxScrollSpeed = 20; // max pixels per frame (increased for better responsiveness)
-
-    const autoScroll = () => {
-      const windowHeight = window.innerHeight;
-
-      // Scroll down if near bottom
-      if (dragY > windowHeight - scrollThreshold) {
-        // Calculate speed based on distance from edge (faster when closer to edge)
-        const distanceFromEdge = windowHeight - dragY;
-        const speedFactor = 1 - (distanceFromEdge / scrollThreshold);
-        const scrollSpeed = Math.max(8, maxScrollSpeed * speedFactor);
-        window.scrollBy(0, scrollSpeed);
-      }
-      // Scroll up if near top
-      else if (dragY < scrollThreshold) {
-        // Calculate speed based on distance from edge (faster when closer to edge)
-        const speedFactor = 1 - (dragY / scrollThreshold);
-        const scrollSpeed = Math.max(8, maxScrollSpeed * speedFactor);
-        window.scrollBy(0, -scrollSpeed);
-      }
-    };
-
-    const intervalId = setInterval(autoScroll, 16); // ~60fps
-
-    return () => clearInterval(intervalId);
-  }, [isDragging, dragY]);
-
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id.toString());
     e.dataTransfer.setData("eventName", event.event_name);
     e.dataTransfer.setData("eventDescription", event.event_description || "");
     e.dataTransfer.setData("sourceTimeIndex", timeIndex.toString());
     setIsDragging(true);
-    setDragY(e.clientY);
   };
 
   const onDragEnd = () => {
     setIsDragging(false);
-    setDragY(0);
   };
 
   const onDrop = (e: React.DragEvent, targetTimeIndex: number, targetEventId?: number) => {
@@ -244,7 +191,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     if (targetEventId !== undefined) {
       // Check if in same container
       const targetInSameBlock = sourceTimeIndex === targetTimeIndex;
-      
+
       if (targetInSameBlock) {
         // Swap positions within same container
         if (targetTimeIndex >= 0) {
@@ -252,20 +199,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
           const targetBlock = currentDay.timeBlocks[targetTimeIndex];
           const draggedIndex = targetBlock.events.findIndex((e) => e.id === eventId);
           const targetIndex = targetBlock.events.findIndex((e) => e.id === targetEventId);
-          
+
           if (draggedIndex !== -1 && targetIndex !== -1) {
             // Swap the events
-            [targetBlock.events[draggedIndex], targetBlock.events[targetIndex]] = 
+            [targetBlock.events[draggedIndex], targetBlock.events[targetIndex]] =
             [targetBlock.events[targetIndex], targetBlock.events[draggedIndex]];
           }
         } else {
           // In unassigned
           const draggedIndex = unassigned_events.findIndex((e) => e.id === eventId);
           const targetIndex = unassigned_events.findIndex((e) => e.id === targetEventId);
-          
+
           if (draggedIndex !== -1 && targetIndex !== -1) {
             // Swap the events
-            [unassigned_events[draggedIndex], unassigned_events[targetIndex]] = 
+            [unassigned_events[draggedIndex], unassigned_events[targetIndex]] =
             [unassigned_events[targetIndex], unassigned_events[draggedIndex]];
           }
         }
@@ -279,7 +226,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         } else {
           unassigned_events = unassigned_events.filter((e) => e.id !== eventId);
         }
-        
+
         // Add at target position
         if (targetTimeIndex >= 0) {
           const targetBlock = currentDay.timeBlocks[targetTimeIndex];
@@ -336,7 +283,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const onDragOver = (e: React.DragEvent) => {
     if (editMode) {
       e.preventDefault();
-      setDragY(e.clientY);
     }
   };
 
@@ -551,23 +497,23 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const deleteDay = (indexToDelete: number) => {
     const dayNumber = indexToDelete + 1;
     const dayDate = localDays[indexToDelete].date;
-    
+
     if (!window.confirm(`Are you sure you want to delete Day ${dayNumber} (${dayDate})? All events from this day will be moved to unassigned events.`)) {
       return;
     }
-    
+
     // Create a new array without the day at indexToDelete
     const updatedDays = localDays.filter((_, index) => index !== indexToDelete);
-    
+
     // Move all events from the deleted day to unassigned
     const updatedUnassigned = [
       ...unassignedEvents,
       ...localDays[indexToDelete].timeBlocks.flatMap((b) => b.events)
     ];
-    
+
     setLocalDays(updatedDays);
     setUnassignedEvents(updatedUnassigned);
-    
+
     if (onUpdate) {
       onUpdate(updatedDays);
     }
@@ -1001,12 +947,12 @@ const Itinerary: React.FC<ItineraryProps> = ({
                 </label>
               )}
 
-              <button 
-                type="submit" 
-                style={{ 
-                  width: '100%', 
-                  height: '48px', 
-                  borderRadius: '12px', 
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  borderRadius: '12px',
                   marginTop: '16px',
                   background: 'linear-gradient(135deg, #006bbb, #2890c8)',
                   border: 'none',
