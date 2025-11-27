@@ -5,7 +5,7 @@ import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 import { apiDeleteChat, apiRenameChat } from "../api/home";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "../../public/user-pfp-temp.png";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
 import { apiLogout } from "../api/account";

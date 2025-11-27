@@ -4,7 +4,7 @@ import MessageInput from "./MessageInput";
 import "../styles/ChatWindow.css";
 import type { Message } from "../models/chat";
 import ChatMessage from "./ChatMessage";
-import aiPic from "../assets/ai-pic.png";
+import aiPic from "../../public/ai-pic.png";
 
 interface ChatWindowProps {
   messages: Message[];

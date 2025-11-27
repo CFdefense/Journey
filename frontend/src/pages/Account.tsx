@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "../../public/user-pfp-temp.png";
 import {
   checkIfValidPassword,
   checkIfPasswordsMatch,
@@ -113,34 +113,28 @@ export default function Account() {
         profile_picture: base64Image
       };
 
-      try {
-        const updateResult = await apiUpdateAccount(payload);
+      const updateResult = await apiUpdateAccount(payload);
 
-        if (updateResult.status !== 200) {
-          console.error(
-            "API call to /api/account/update failed with status: ",
-            updateResult.status
-          );
-          toast.error("Failed to update profile picture. Please try again.");
-          setIsUploadingPicture(false);
-          return;
-        }
-
-        toast.success("Profile picture updated successfully!");
-        
-        // Update the displayed image
-        if (updateResult.result?.profile_picture) {
-          setProfileImageUrl(updateResult.result.profile_picture);
-        } else {
-          setProfileImageUrl(base64Image);
-        }
-        
+      if (updateResult.status !== 200) {
+        console.error(
+          "API call to /api/account/update failed with status: ",
+          updateResult.status
+        );
+        toast.error("Failed to update profile picture. Please try again.");
         setIsUploadingPicture(false);
-      } catch (err) {
-        console.error(err);
-        toast.error("Unable to update profile picture. Please try again.");
-        setIsUploadingPicture(false);
+        return;
       }
+
+      toast.success("Profile picture updated successfully!");
+      
+      // Update the displayed image
+      if (updateResult.result?.profile_picture) {
+        setProfileImageUrl(updateResult.result.profile_picture);
+      } else {
+        setProfileImageUrl(base64Image);
+      }
+      
+      setIsUploadingPicture(false);
     };
 
     reader.onerror = () => {
@@ -154,8 +148,8 @@ export default function Account() {
     e.target.value = "";
   };
 
-  // Core submit/update logic used by form submit and inline "Done" buttons
-  const submitUpdate = async () => {
+    // Core submit/update logic used by form submit and inline "Done" buttons
+    const submitUpdate = async () => {
     setPasswordErrors({});
 
     // Validate name fields
@@ -218,46 +212,41 @@ export default function Account() {
       profile_picture: null // Profile picture handled separately now
     };
 
-    try {
-      const updateResult = await apiUpdateAccount(payload);
+    const updateResult = await apiUpdateAccount(payload);
 
-      if (updateResult.status !== 200) {
-        console.error(
-          "API call to /api/account/update failed with status: ",
-          updateResult.status
-        );
-
-        // Handle password-related errors (400 Bad Request)
-        if (updateResult.status === 400 && isChangingPassword) {
-          toast.error("Current password is incorrect. Please try again.");
-          setPasswordErrors({ current: "Current password is incorrect." });
-        } else {
-          toast.error("Update failed. Please try again.");
-        }
-        return;
-      }
-
-      toast.success(
-        isChangingPassword
-          ? "Password updated successfully!"
-          : "Account updated successfully!"
+    if (updateResult.status !== 200) {
+      console.error(
+        "API call to /api/account/update failed with status: ",
+        updateResult.status
       );
 
-      // Update UI with any returned account info
-      if (updateResult.result) {
-        setFirstName(updateResult.result.first_name || trimmedFirst);
-        setLastName(updateResult.result.last_name || trimmedLast);
+      // Handle password-related errors (400 Bad Request)
+      if (updateResult.status === 400 && isChangingPassword) {
+        toast.error("Current password is incorrect. Please try again.");
+        setPasswordErrors({ current: "Current password is incorrect." });
+      } else {
+        toast.error("Update failed. Please try again.");
       }
-
-      // Clear password fields
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordErrors({});
-    } catch (err) {
-      console.error(err);
-      toast.error("Unable to update account. Please try again.");
+      return;
     }
+
+    toast.success(
+      isChangingPassword
+        ? "Password updated successfully!"
+        : "Account updated successfully!"
+    );
+
+    // Update UI with any returned account info
+    if (updateResult.result) {
+      setFirstName(updateResult.result.first_name || trimmedFirst);
+      setLastName(updateResult.result.last_name || trimmedLast);
+    }
+
+    // Clear password fields
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordErrors({});
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -292,7 +281,21 @@ export default function Account() {
                           {isUploadingPicture ? (
                             <div className="upload-spinner"></div>
                           ) : (
-                            <span className="avatar-edit-icon"></span>
+                            <span className="avatar-edit-icon">
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="20"
+                                height="20"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </span>
                           )}
                         </div>
                         <input

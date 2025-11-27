@@ -6,7 +6,7 @@ import "../styles/Account.css";
 import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "../../public/user-pfp-temp.png";
 import { toast } from "../components/Toast";
 
 type BudgetOption =

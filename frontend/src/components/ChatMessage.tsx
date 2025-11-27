@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import type { Message } from "../models/chat";
 import type { Itinerary } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
-import aiPic from "../assets/ai-pic.png";
+import aiPic from "../../public/ai-pic.png";
 import UserMessageActions from "./UserMessageActions";
 import "../styles/ChatMessage.css";
 

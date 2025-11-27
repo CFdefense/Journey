@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "../../public/user-pfp-temp.png";
 import { apiLogout } from "../api/account";
 import { apiCurrent } from "../api/account";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";

@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import "../styles/Account.css";
 import type { EventDay, Itinerary } from "../models/itinerary";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "../../public/user-pfp-temp.png";
 
 export default function Itineraries() {
   const navigate = useNavigate();
