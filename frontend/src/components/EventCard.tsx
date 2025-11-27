@@ -267,7 +267,7 @@ const EventCard: React.FC<EventCardProps> = ({
             e.stopPropagation();
             setIsOpen(true);
           }}
-          title="Edit event"
+          title={eventData.user_created ? "Edit event" : "Event Details"}
         >
           {(eventData.user_created
             ? <svg
@@ -349,15 +349,11 @@ const EventCard: React.FC<EventCardProps> = ({
             className="event-card-delete-btn"
             onClick={(e) => {
               e.stopPropagation();
-              if (event.user_created) {
-                onDeleteUserEvent();
-              } else {
-                // For non-user-created events, just remove from workspace
-                const updatedUnassigned = unassignedEvents.filter((ev) => ev.id !== event.id);
-                setUnassignedEvents(updatedUnassigned);
-                if (onUnassignedUpdate) {
-                  onUnassignedUpdate(updatedUnassigned);
-                }
+              // Just remove from workspace
+              const updatedUnassigned = unassignedEvents.filter((ev) => ev.id !== event.id);
+              setUnassignedEvents(updatedUnassigned);
+              if (onUnassignedUpdate) {
+                onUnassignedUpdate(updatedUnassigned);
               }
             }}
             title="Remove from workspace"
@@ -384,25 +380,49 @@ const EventCard: React.FC<EventCardProps> = ({
           <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{eventData.user_created ? "Edit Event" : "Event Details"}</h2>
-              <button
-                className="icon-button"
-                onClick={closeModal}
-                aria-label="Close modal"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              <div>
+                {eventData.user_created && (<button
+                  className="icon-button"
+                  onClick={onDeleteUserEvent}
+                  aria-label="Close modal"
+                  title="Delete permanently"
                 >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 6H21" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M10 11V17" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M14 11V17" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>)}
+                <button
+                  className="icon-button"
+                  onClick={closeModal}
+                  aria-label="Close modal"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
             {eventData.user_created ? (
               <form
