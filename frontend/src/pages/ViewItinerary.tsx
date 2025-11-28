@@ -2,7 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
-import { convertToApiFormat, fetchItinerary, getUnassignedEvents } from "../helpers/itinerary";
+import {
+  convertToApiFormat,
+  fetchItinerary,
+  getUnassignedEvents
+} from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
@@ -10,12 +14,12 @@ import "../styles/Itinerary.css";
 function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [days, setDays] = useState<DayItinerary[]>([]);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [addDayModalOpen, setAddDayModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
+  const [localDays, setLocalDays] = useState<DayItinerary[]>([]);
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -30,14 +34,14 @@ function ViewItineraryPage() {
   });
 
   // Use refs to track the latest values for autosave
-  const daysRef = useRef(days);
+  const daysRef = useRef(localDays);
   const unassignedEventsRef = useRef(unassignedEvents);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => {
-    daysRef.current = days;
-  }, [days]);
+    daysRef.current = localDays;
+  }, [localDays]);
 
   useEffect(() => {
     unassignedEventsRef.current = unassignedEvents;
@@ -56,7 +60,7 @@ function ViewItineraryPage() {
   };
 
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
-    setDays(updatedDays);
+    setLocalDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
     debouncedAutoSave();
@@ -69,13 +73,23 @@ function ViewItineraryPage() {
     debouncedAutoSave();
   };
 
-  const autoSave = async (updatedDays: DayItinerary[], updatedUnassigned?: Event[]) => {
+  const autoSave = async (
+    updatedDays: DayItinerary[],
+    updatedUnassigned?: Event[]
+  ) => {
     try {
-      const unassignedToUse = updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
+      const unassignedToUse =
+        updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
 
       // Calculate start_date and end_date from the days array
-      const startDate = updatedDays.length > 0 ? updatedDays[0].date : itineraryMetadata.startDate;
-      const endDate = updatedDays.length > 0 ? updatedDays[updatedDays.length - 1].date : itineraryMetadata.endDate;
+      const startDate =
+        updatedDays.length > 0
+          ? updatedDays[0].date
+          : itineraryMetadata.startDate;
+      const endDate =
+        updatedDays.length > 0
+          ? updatedDays[updatedDays.length - 1].date
+          : itineraryMetadata.endDate;
 
       const apiPayload = convertToApiFormat(
         updatedDays,
@@ -112,8 +126,8 @@ function ViewItineraryPage() {
   const handleAddDay = () => {
     // Calculate the next day as default
     let defaultDate: string;
-    if (days.length > 0) {
-      const last = new Date(days[days.length - 1].date);
+    if (localDays.length > 0) {
+      const last = new Date(localDays[localDays.length - 1].date);
       last.setDate(last.getDate() + 1);
       defaultDate = last.toISOString().slice(0, 10);
     } else {
@@ -131,22 +145,35 @@ function ViewItineraryPage() {
     }
 
     // Check if date already exists
-    if (days.some(day => day.date === selectedDate)) {
+    if (localDays.some((day) => day.date === selectedDate)) {
       alert("A day with this date already exists in your itinerary");
       return;
     }
 
     const newDay: DayItinerary = {
       date: selectedDate,
-      timeBlocks: []
+      timeBlocks: [
+        {
+          time: "Morning",
+          events: []
+        },
+        {
+          time: "Afternoon",
+          events: []
+        },
+        {
+          time: "Evening",
+          events: []
+        }
+      ]
     };
 
     // Insert the day in chronological order
-    const updatedDays = [...days, newDay].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const updatedDays = [...localDays, newDay].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    setDays(updatedDays);
+    setLocalDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
     debouncedAutoSave();
@@ -178,7 +205,7 @@ function ViewItineraryPage() {
 
           // Transform and store days
           const data = await fetchItinerary(itineraryId);
-          setDays(data);
+          setLocalDays(data);
 
           // Load unassigned events
           const unassigned = getUnassignedEvents(apiResponse.result);
@@ -195,7 +222,10 @@ function ViewItineraryPage() {
   }, [itineraryId, navigate]);
 
   return (
-    <div className="view-page view-page--gradient with-sidebar">
+    <div
+      id="view-itinerary-page"
+      className="view-page view-page--gradient with-sidebar"
+    >
       <ViewPageSidebar
         onCreateEvent={() => setCreateModalOpen(true)}
         onSearchEvents={() => setSearchModalOpen(true)}
@@ -204,7 +234,8 @@ function ViewItineraryPage() {
       />
       <div className="view-content with-sidebar">
         <Itinerary
-          days={days}
+          localDays={localDays}
+          setLocalDays={setLocalDays}
           unassigned={unassignedEvents}
           onUpdate={handleItineraryUpdate}
           onUnassignedUpdate={handleUnassignedUpdate}
@@ -219,8 +250,14 @@ function ViewItineraryPage() {
 
       {/* Add Day Modal */}
       {addDayModalOpen && (
-        <div className="user-event-modal-overlay" onClick={() => setAddDayModalOpen(false)}>
-          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="user-event-modal-overlay"
+          onClick={() => setAddDayModalOpen(false)}
+        >
+          <div
+            className="user-event-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Add a Day</h2>
               <button
@@ -261,29 +298,31 @@ function ViewItineraryPage() {
                 />
               </label>
 
-              <button 
-                type="submit" 
-                style={{ 
-                  width: '100%', 
-                  height: '48px', 
-                  borderRadius: '12px', 
-                  marginTop: '16px',
-                  background: 'linear-gradient(135deg, #006bbb, #2890c8)',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
+              <button
+                type="submit"
+                style={{
+                  width: "100%",
+                  height: "48px",
+                  borderRadius: "12px",
+                  marginTop: "16px",
+                  background: "linear-gradient(135deg, #006bbb, #2890c8)",
+                  border: "none",
+                  color: "#ffffff",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 4px 12px rgba(0, 107, 187, 0.3)"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 16px rgba(0, 107, 187, 0.4)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(0, 107, 187, 0.3)";
                 }}
               >
                 Add Day

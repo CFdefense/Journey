@@ -46,9 +46,9 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
     }
     const start_hours = start_date.getHours();
     const start_minutes = start_date.getMinutes();
-    const start_ampm = start_hours >= 12 ? 'PM' : 'AM';
+    const start_ampm = start_hours >= 12 ? "PM" : "AM";
     const start_displayHours = start_hours % 12 || 12;
-    const start_displayMinutes = start_minutes.toString().padStart(2, '0');
+    const start_displayMinutes = start_minutes.toString().padStart(2, "0");
     const start_display = `${start_displayHours}:${start_displayMinutes} ${start_ampm}`;
     if (!event.hard_end) {
       return start_display;
@@ -59,9 +59,9 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
     }
     const end_hours = end_date.getHours();
     const end_minutes = end_date.getMinutes();
-    const end_ampm = end_hours >= 12 ? 'PM' : 'AM';
+    const end_ampm = end_hours >= 12 ? "PM" : "AM";
     const end_displayHours = end_hours % 12 || 12;
-    const end_displayMinutes = end_minutes.toString().padStart(2, '0');
+    const end_displayMinutes = end_minutes.toString().padStart(2, "0");
     return `${start_display} - ${end_displayHours}:${end_displayMinutes} ${end_ampm}`;
   };
 
@@ -146,7 +146,9 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
                 </span>
               </div>
 
-              <div className={`compact-events-list ${timeBlockName.toLowerCase()}`}>
+              <div
+                className={`compact-events-list ${timeBlockName.toLowerCase()}`}
+              >
                 {events.length === 0 ? (
                   <p className="compact-no-events">
                     No {timeBlockName.toLowerCase()} events
@@ -162,7 +164,11 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
                           <h4 className="compact-event-name">
                             {event.event_name}
                           </h4>
-                          {eventTime && <span className="compact-event-time">{eventTime}</span>}
+                          {eventTime && (
+                            <span className="compact-event-time">
+                              {eventTime}
+                            </span>
+                          )}
                         </div>
 
                         {event.event_description && (
@@ -172,9 +178,7 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
                         )}
 
                         {address && (
-                          <p className="compact-event-location">
-                            {address}
-                          </p>
+                          <p className="compact-event-location">{address}</p>
                         )}
 
                         {event.event_type && (
@@ -196,4 +200,3 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
 };
 
 export default CompactItineraryView;
-

@@ -21,15 +21,15 @@ const ViewPageSidebar: React.FC<ViewPageSidebarProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (plusMenuOpen && !target.closest('.view-sidebar-menu-container')) {
+      if (plusMenuOpen && !target.closest(".view-sidebar-menu-container")) {
         setPlusMenuOpen(false);
       }
     };
 
     if (plusMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener("mousedown", handleClickOutside);
       };
     }
   }, [plusMenuOpen]);
@@ -112,7 +112,11 @@ const ViewPageSidebar: React.FC<ViewPageSidebarProps> = ({
       {/* Profile Picture at Bottom */}
       <div className="view-sidebar-bottom">
         <a href="/account" className="view-sidebar-profile" title="Account">
-          <img src={userPfp} alt="Profile" className="view-sidebar-profile-pic" />
+          <img
+            src={userPfp}
+            alt="Profile"
+            className="view-sidebar-profile-pic"
+          />
           <span className="view-sidebar-tooltip profile-tooltip">Account</span>
         </a>
       </div>
@@ -121,4 +125,3 @@ const ViewPageSidebar: React.FC<ViewPageSidebarProps> = ({
 };
 
 export default ViewPageSidebar;
-

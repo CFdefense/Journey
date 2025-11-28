@@ -270,7 +270,7 @@ jobs:
     - name: Run Build
       run: |
         cd ./frontend
-        npm ci
+        npm i
         npm run build
 
   # front_end_tests:
@@ -418,4 +418,4 @@ jobs:
       run: |
         cd ./frontend
         npm i
-        npm run format -- -c
+        npm run chkfmt

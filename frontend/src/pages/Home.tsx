@@ -105,10 +105,9 @@ export default function Home() {
           }
           setShowFinishPopup(
             account.budget_preference === null &&
-            account.disabilities === "" &&
-            account.food_allergies === "" &&
-            account.risk_preference === null
-
+              account.disabilities === "" &&
+              account.food_allergies === "" &&
+              account.risk_preference === null
           );
         })
         .catch((err) => {

@@ -176,31 +176,55 @@
 
 /* Morning Segment */
 .compact-time-segment .compact-events-list.morning {
-  background: linear-gradient(135deg, rgba(254, 215, 170, 0.4), rgba(253, 186, 116, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(254, 215, 170, 0.4),
+    rgba(253, 186, 116, 0.3)
+  );
 }
 
 .compact-time-segment .compact-segment-header {
-  background: linear-gradient(135deg, rgba(254, 215, 170, 0.5), rgba(253, 186, 116, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(254, 215, 170, 0.5),
+    rgba(253, 186, 116, 0.4)
+  );
   margin-bottom: 0;
 }
 
 /* Afternoon Segment */
 .compact-time-segment .compact-events-list.afternoon {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.4), rgba(249, 115, 22, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(251, 146, 60, 0.4),
+    rgba(249, 115, 22, 0.3)
+  );
 }
 
 .compact-time-segment:has(.afternoon) .compact-segment-header {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.5), rgba(249, 115, 22, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(251, 146, 60, 0.5),
+    rgba(249, 115, 22, 0.4)
+  );
   margin-bottom: 0;
 }
 
 /* Evening Segment */
 .compact-time-segment .compact-events-list.evening {
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.4), rgba(194, 65, 12, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(234, 88, 12, 0.4),
+    rgba(194, 65, 12, 0.3)
+  );
 }
 
 .compact-time-segment:has(.evening) .compact-segment-header {
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.5), rgba(194, 65, 12, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(234, 88, 12, 0.5),
+    rgba(194, 65, 12, 0.4)
+  );
   margin-bottom: 0;
 }
 
@@ -321,4 +345,3 @@
     padding: 0.6rem;
   }
 }
-

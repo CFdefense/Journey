@@ -336,14 +336,22 @@
 
 .scroll-indicator-top {
   top: 0;
-  background: linear-gradient(to bottom, rgba(0, 107, 187, 0.4), rgba(0, 107, 187, 0.1));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 107, 187, 0.4),
+    rgba(0, 107, 187, 0.1)
+  );
   border-bottom: 4px dashed rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 20px rgba(0, 107, 187, 0.3);
 }
 
 .scroll-indicator-bottom {
   bottom: 0;
-  background: linear-gradient(to top, rgba(0, 107, 187, 0.4), rgba(0, 107, 187, 0.1));
+  background: linear-gradient(
+    to top,
+    rgba(0, 107, 187, 0.4),
+    rgba(0, 107, 187, 0.1)
+  );
   border-top: 4px dashed rgba(255, 255, 255, 0.8);
   box-shadow: 0 -4px 20px rgba(0, 107, 187, 0.3);
 }
@@ -356,7 +364,9 @@
   color: #ffffff;
   font-weight: 800;
   font-size: 1.1rem;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 107, 187, 0.8);
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 107, 187, 0.8);
   animation: pulse 1.5s ease-in-out infinite;
   background: rgba(0, 107, 187, 0.3);
   padding: 12px 32px;
@@ -368,11 +378,13 @@
   width: 24px;
   height: 24px;
   color: #ffffff;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px rgba(0, 107, 187, 1));
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 10px rgba(0, 107, 187, 1));
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: scale(1);
   }
@@ -438,7 +450,6 @@
 .edit-ai-button-header:active {
   transform: translateY(0);
 }
-
 
 /* Plus Button and Menu */
 .plus-menu-container {
@@ -665,15 +676,27 @@
 }
 
 .time-block-events-wrapper.morning {
-  background: linear-gradient(135deg, rgba(254, 215, 170, 0.35), rgba(253, 186, 116, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(254, 215, 170, 0.35),
+    rgba(253, 186, 116, 0.25)
+  );
 }
 
 .time-block-events-wrapper.afternoon {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.35), rgba(249, 115, 22, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(251, 146, 60, 0.35),
+    rgba(249, 115, 22, 0.25)
+  );
 }
 
 .time-block-events-wrapper.evening {
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.35), rgba(194, 65, 12, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(234, 88, 12, 0.35),
+    rgba(194, 65, 12, 0.25)
+  );
 }
 
 /* Empty time block section */
@@ -711,15 +734,27 @@
 }
 
 .time-block-glass-container.morning {
-  background: linear-gradient(135deg, rgba(254, 215, 170, 0.35), rgba(253, 186, 116, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(254, 215, 170, 0.35),
+    rgba(253, 186, 116, 0.25)
+  );
 }
 
 .time-block-glass-container.afternoon {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.35), rgba(249, 115, 22, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(251, 146, 60, 0.35),
+    rgba(249, 115, 22, 0.25)
+  );
 }
 
 .time-block-glass-container.evening {
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.35), rgba(194, 65, 12, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(234, 88, 12, 0.35),
+    rgba(194, 65, 12, 0.25)
+  );
 }
 
 .time-block-empty {
@@ -971,19 +1006,16 @@
   overflow: visible;
 }
 
-
 .unassigned-events {
   height: auto;
-  margin: 0 auto;
   max-width: 1630px;
   width: 100%;
   opacity: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 20px;
 }
 
 .unassigned-events-label {
+  grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
   color: #64748b;
@@ -997,24 +1029,18 @@
   /* Match the horizontal padding of time-block-events-wrapper */
   padding: 20px 180px !important;
   box-sizing: border-box;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .unassigned-events .events-area {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 0;
   position: relative;
   min-height: 150px;
   overflow: visible;
+  justify-items: center;
   justify-content: center;
-  align-items: center;
-  align-content: center;
-  width: 100%;
 }
 
 @media (max-width: 1600px) {
@@ -1034,6 +1060,15 @@
     padding: 20px 80px !important;
   }
 
+  .unassigned-events .events-area {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .unassigned-events .events-area {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -1055,6 +1090,9 @@
     padding: 20px !important;
   }
 
+  .unassigned-events .events-area {
+    grid-template-columns: 1fr;
+  }
 }
 
 .workspace-empty-text {
@@ -1064,7 +1102,11 @@
   color: #64748b;
   font-size: 1.1rem;
   font-weight: 500;
-  width: 100%;
+  grid-column: 1 / -1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Edit with AI button */
@@ -1179,9 +1221,10 @@
   width: 90%;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-              0 0 0 1px rgba(255, 255, 255, 0.6) inset,
-              0 8px 32px rgba(255, 255, 255, 0.1) inset;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 8px 32px rgba(255, 255, 255, 0.1) inset;
   animation: slideUp 0.3s ease;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1204,9 +1247,10 @@
   padding: 32px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-              0 0 0 1px rgba(255, 255, 255, 0.6) inset,
-              0 8px 32px rgba(255, 255, 255, 0.1) inset;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 8px 32px rgba(255, 255, 255, 0.1) inset;
   animation: slideUp 0.3s ease;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1288,8 +1332,9 @@
   resize: vertical;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
-              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   transition: all 0.2s ease;
   color: #1a1a1a;
   font-weight: 500;
@@ -1303,9 +1348,10 @@
   outline: none;
   border-color: rgba(0, 107, 187, 0.6);
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.12),
-              0 4px 16px rgba(0, 107, 187, 0.15),
-              0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  box-shadow:
+    0 0 0 3px rgba(0, 107, 187, 0.12),
+    0 4px 16px rgba(0, 107, 187, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
   transform: translateY(-1px);
 }
 
@@ -1335,7 +1381,8 @@
 }
 
 /* Datetime picker calendar icon */
-.user-event-form input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+.user-event-form
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   border-radius: 6px;
   padding: 4px;
@@ -1344,7 +1391,8 @@
   opacity: 0.7;
 }
 
-.user-event-form input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+.user-event-form
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   filter: brightness(0) saturate(100%) !important;
   opacity: 1 !important;
   transform: scale(1.1);
@@ -1413,8 +1461,9 @@
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
-              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   transition: all 0.2s ease;
   color: #1a1a1a;
   font-weight: 500;
@@ -1426,9 +1475,10 @@
   outline: none;
   border-color: rgba(0, 107, 187, 0.6);
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 3px rgba(0, 107, 187, 0.12),
-              0 4px 16px rgba(0, 107, 187, 0.15),
-              0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  box-shadow:
+    0 0 0 3px rgba(0, 107, 187, 0.12),
+    0 4px 16px rgba(0, 107, 187, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
   transform: translateY(-1px);
 }
 
@@ -1442,7 +1492,8 @@
   opacity: 0.7;
 }
 
-.location-grid input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+.location-grid
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   filter: brightness(0) saturate(100%) !important;
   opacity: 1 !important;
   transform: scale(1.1);
