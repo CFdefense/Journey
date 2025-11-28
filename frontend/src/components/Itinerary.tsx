@@ -305,6 +305,36 @@ const Itinerary: React.FC<ItineraryProps> = ({
       }
     }
 
+    // Make sure events are in a proper order
+    for (const day of updatedDays) {
+      for (const timeblock of day.timeBlocks) {
+        if (timeblock.events.length === 0) { continue; }
+
+        const sortable = timeblock.events
+          .map((ev, index) => ({ ev, index }))
+          .filter(item => item.ev.hard_start !== null);
+
+        // Sort those by datetime
+        sortable.sort((a, b) =>
+          new Date(a.ev.hard_start!).getTime() -
+          new Date(b.ev.hard_start!).getTime()
+        );
+
+        // Create a result array
+        const result = [...timeblock.events];
+
+        // Place sorted events back into their original non-null slots (in order)
+        let si = 0;
+        for (let i = 0; i < result.length; i++) {
+          if (result[i].hard_start === null) { continue; }
+          result[i] = sortable[si].ev;
+          si++;
+        }
+
+        timeblock.events = result;
+      }
+    }
+
     // Update local state immediately for UI responsiveness
     setLocalDays(updatedDays);
     setUnassignedEvents(unassigned_events);
@@ -359,26 +389,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
       block.events.forEach((event) => {
         allEvents.push({ event, timeBlock: block.time, timeIndex });
       });
-    });
-
-    // Sort events by hard_start if available, otherwise by time block order
-    allEvents.sort((a, b) => {
-      if (a.event.hard_start && b.event.hard_start) {
-        return (
-          new Date(a.event.hard_start).getTime() -
-          new Date(b.event.hard_start).getTime()
-        );
-      }
-      if (a.event.hard_start) return -1;
-      if (b.event.hard_start) return 1;
-
-      // Fallback to time block order: Morning < Afternoon < Evening
-      const timeOrder: { [key: string]: number } = {
-        Morning: 0,
-        Afternoon: 1,
-        Evening: 2
-      };
-      return timeOrder[a.timeBlock] - timeOrder[b.timeBlock];
     });
 
     return allEvents;
