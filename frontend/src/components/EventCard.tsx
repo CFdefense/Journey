@@ -93,7 +93,9 @@ const EventCard: React.FC<EventCardProps> = ({
     if (isNaN(end_date.getTime())) {
       return start_date_display;
     }
-    return start_date_display + " - " + end_date.toLocaleString(undefined, options);
+    return (
+      start_date_display + " - " + end_date.toLocaleString(undefined, options)
+    );
   };
 
   const closeModal = () => {
@@ -209,7 +211,11 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const onDeleteUserEvent = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${event.event_name}"? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${event.event_name}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -243,8 +249,7 @@ const EventCard: React.FC<EventCardProps> = ({
     setIsOpen(false);
   };
 
-  const variantClass =
-    variant === "workspace" ? "event-card--workspace" : "";
+  const variantClass = variant === "workspace" ? "event-card--workspace" : "";
 
   return (
     <>
@@ -269,34 +274,35 @@ const EventCard: React.FC<EventCardProps> = ({
           }}
           title={eventData.user_created ? "Edit event" : "Event Details"}
         >
-          {(eventData.user_created
-            ? <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            : <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="12" x2="12" y2="18" />
-                <circle cx="12" cy="7.5" r=".5" />
-              </svg>
+          {eventData.user_created ? (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          ) : (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="12" x2="12" y2="18" />
+              <circle cx="12" cy="7.5" r=".5" />
+            </svg>
           )}
         </button>
 
@@ -350,7 +356,9 @@ const EventCard: React.FC<EventCardProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               // Just remove from workspace
-              const updatedUnassigned = unassignedEvents.filter((ev) => ev.id !== event.id);
+              const updatedUnassigned = unassignedEvents.filter(
+                (ev) => ev.id !== event.id
+              );
               setUnassignedEvents(updatedUnassigned);
               if (onUnassignedUpdate) {
                 onUnassignedUpdate(updatedUnassigned);
@@ -365,294 +373,372 @@ const EventCard: React.FC<EventCardProps> = ({
               fill="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M3 6H21"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M10 11V17"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M14 11V17"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         )}
       </div>
 
-      {isOpen && createPortal(
-        <div className="event-modal-overlay" onClick={closeModal}>
-          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{eventData.user_created ? "Edit Event" : "Event Details"}</h2>
-              <div>
-                {eventData.user_created && (<button
-                  className="icon-button"
-                  onClick={onDeleteUserEvent}
-                  aria-label="Close modal"
-                  title="Delete permanently"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+      {isOpen &&
+        createPortal(
+          <div className="event-modal-overlay" onClick={closeModal}>
+            <div
+              className="user-event-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h2>
+                  {eventData.user_created ? "Edit Event" : "Event Details"}
+                </h2>
+                <div>
+                  {eventData.user_created && (
+                    <button
+                      className="icon-button"
+                      onClick={onDeleteUserEvent}
+                      aria-label="Close modal"
+                      title="Delete permanently"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path
+                          d="M3 6H21"
+                          stroke="red"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6"
+                          stroke="red"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6"
+                          stroke="red"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M10 11V17"
+                          stroke="red"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M14 11V17"
+                          stroke="red"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    className="icon-button"
+                    onClick={closeModal}
+                    aria-label="Close modal"
                   >
-                    <path d="M3 6H21" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M10 11V17" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M14 11V17" stroke="red" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>)}
-                <button
-                  className="icon-button"
-                  onClick={closeModal}
-                  aria-label="Close modal"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            {eventData.user_created ? (
-              <form
-                id="editable-card-contents"
-                className="user-event-form"
-                onSubmit={onSaveUserEvent}
-              >
-                <label>
-                  Name
-                  <input
-                    type="text"
-                    value={inputEvent.event_name}
-                    required
-                    onChange={(e) =>
-                      setInputEvent({
-                        ...inputEvent,
-                        event_name: e.target.value
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  Description
-                  <textarea
-                    value={inputEvent.event_description || ""}
-                    onChange={(e) =>
-                      setInputEvent({
-                        ...inputEvent,
-                        event_description: e.target.value
-                      })
-                    }
-                    placeholder="Description"
-                  />
-                </label>
-
-                <label>
-                  Type Of Event
-                  <input
-                    type="text"
-                    value={inputEvent.event_type || ""}
-                    onChange={(e) =>
-                      setInputEvent({
-                        ...inputEvent,
-                        event_type: e.target.value
-                      })
-                    }
-                  />
-                </label>
-
-                <div className="location-grid">
-                  <div className="location-grid-row">
-                    <label>
-                      Address
-                      <input
-                        type="text"
-                        value={inputEvent.street_address || ""}
-                        onChange={(e) =>
-                          setInputEvent({
-                            ...inputEvent,
-                            street_address: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      City
-                      <input
-                        type="text"
-                        value={inputEvent.city || ""}
-                        onChange={(e) =>
-                          setInputEvent({ ...inputEvent, city: e.target.value })
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="location-grid-row">
-                    <label>
-                      Country
-                      <input
-                        type="text"
-                        value={inputEvent.country || ""}
-                        onChange={(e) =>
-                          setInputEvent({
-                            ...inputEvent,
-                            country: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Postal Code
-                      <input
-                        type="text"
-                        value={inputEvent.postal_code || ""}
-                        onChange={(e) =>
-                          setInputEvent({
-                            ...inputEvent,
-                            postal_code: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="location-grid-row">
-                    <label>
-                      Start
-                      <input
-                        value={inputEvent.hard_start ? inputEvent.hard_start : ""}
-                        type="datetime-local"
-                        onChange={(e) => {
-                          let hard_start = e.target.value;
-                          if (hard_start !== "") {
-                            hard_start += ":00";
-                          }
-                          setInputEvent({ ...inputEvent, hard_start });
-                        }}
-                      />
-                    </label>
-                    <label>
-                      End
-                      <input
-                        value={inputEvent.hard_end ? inputEvent.hard_end : ""}
-                        type="datetime-local"
-                        onChange={(e) => {
-                          let hard_end = e.target.value;
-                          if (hard_end !== "") {
-                            hard_end += ":00";
-                          }
-                          setInputEvent({ ...inputEvent, hard_end });
-                        }}
-                      />
-                    </label>
-                  </div>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
                 </div>
-                {(inputEvent.hard_start || inputEvent.hard_end) && (
+              </div>
+              {eventData.user_created ? (
+                <form
+                  id="editable-card-contents"
+                  className="user-event-form"
+                  onSubmit={onSaveUserEvent}
+                >
                   <label>
-                    Timezone
-                    <select
-                      value={inputEvent.timezoneIndex}
+                    Name
+                    <input
+                      type="text"
+                      value={inputEvent.event_name}
+                      required
                       onChange={(e) =>
                         setInputEvent({
                           ...inputEvent,
-                          timezoneIndex: +e.target.value
+                          event_name: e.target.value
                         })
                       }
-                    >
-                      {[
-                        <option key={-1} value={-1}>
-                          No Timezone Selected
-                        </option>,
-                        ...TIMEZONES.map((tz, index) => (
-                          <option key={index} value={index}>
-                            {tz}
-                          </option>
-                        ))
-                      ]}
-                    </select>
+                    />
                   </label>
-                )}
 
-                <button
-                  type="submit"
-                  style={{
-                    width: '100%',
-                    height: '48px',
-                    borderRadius: '12px',
-                    marginTop: '16px',
-                    background: 'linear-gradient(135deg, #006bbb, #2890c8)',
-                    border: 'none',
-                    color: '#ffffff',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
-                  }}
+                  <label>
+                    Description
+                    <textarea
+                      value={inputEvent.event_description || ""}
+                      onChange={(e) =>
+                        setInputEvent({
+                          ...inputEvent,
+                          event_description: e.target.value
+                        })
+                      }
+                      placeholder="Description"
+                    />
+                  </label>
+
+                  <label>
+                    Type Of Event
+                    <input
+                      type="text"
+                      value={inputEvent.event_type || ""}
+                      onChange={(e) =>
+                        setInputEvent({
+                          ...inputEvent,
+                          event_type: e.target.value
+                        })
+                      }
+                    />
+                  </label>
+
+                  <div className="location-grid">
+                    <div className="location-grid-row">
+                      <label>
+                        Address
+                        <input
+                          type="text"
+                          value={inputEvent.street_address || ""}
+                          onChange={(e) =>
+                            setInputEvent({
+                              ...inputEvent,
+                              street_address: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        City
+                        <input
+                          type="text"
+                          value={inputEvent.city || ""}
+                          onChange={(e) =>
+                            setInputEvent({
+                              ...inputEvent,
+                              city: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="location-grid-row">
+                      <label>
+                        Country
+                        <input
+                          type="text"
+                          value={inputEvent.country || ""}
+                          onChange={(e) =>
+                            setInputEvent({
+                              ...inputEvent,
+                              country: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Postal Code
+                        <input
+                          type="text"
+                          value={inputEvent.postal_code || ""}
+                          onChange={(e) =>
+                            setInputEvent({
+                              ...inputEvent,
+                              postal_code: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="location-grid-row">
+                      <label>
+                        Start
+                        <input
+                          value={
+                            inputEvent.hard_start ? inputEvent.hard_start : ""
+                          }
+                          type="datetime-local"
+                          onChange={(e) => {
+                            let hard_start = e.target.value;
+                            if (hard_start !== "") {
+                              hard_start += ":00";
+                            }
+                            setInputEvent({ ...inputEvent, hard_start });
+                          }}
+                        />
+                      </label>
+                      <label>
+                        End
+                        <input
+                          value={inputEvent.hard_end ? inputEvent.hard_end : ""}
+                          type="datetime-local"
+                          onChange={(e) => {
+                            let hard_end = e.target.value;
+                            if (hard_end !== "") {
+                              hard_end += ":00";
+                            }
+                            setInputEvent({ ...inputEvent, hard_end });
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  {(inputEvent.hard_start || inputEvent.hard_end) && (
+                    <label>
+                      Timezone
+                      <select
+                        value={inputEvent.timezoneIndex}
+                        onChange={(e) =>
+                          setInputEvent({
+                            ...inputEvent,
+                            timezoneIndex: +e.target.value
+                          })
+                        }
+                      >
+                        {[
+                          <option key={-1} value={-1}>
+                            No Timezone Selected
+                          </option>,
+                          ...TIMEZONES.map((tz, index) => (
+                            <option key={index} value={index}>
+                              {tz}
+                            </option>
+                          ))
+                        ]}
+                      </select>
+                    </label>
+                  )}
+
+                  <button
+                    type="submit"
+                    style={{
+                      width: "100%",
+                      height: "48px",
+                      borderRadius: "12px",
+                      marginTop: "16px",
+                      background: "linear-gradient(135deg, #006bbb, #2890c8)",
+                      border: "none",
+                      color: "#ffffff",
+                      fontSize: "1rem",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 4px 12px rgba(0, 107, 187, 0.3)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow =
+                        "0 6px 16px rgba(0, 107, 187, 0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow =
+                        "0 4px 12px rgba(0, 107, 187, 0.3)";
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </form>
+              ) : (
+                <div
+                  className="user-event-form"
+                  style={{ pointerEvents: "none" }}
                 >
-                  Save Changes
-                </button>
-              </form>
-            ) : (
-              <div className="user-event-form" style={{ pointerEvents: 'none' }}>
-                <h2>{eventData.event_name}</h2>
-                {eventData.event_description && (
-                  <p>{eventData.event_description}</p>
-                )}
-                {eventData.event_type && (
-                  <p>
-                    <strong>Type:</strong> {eventData.event_type}
-                  </p>
-                )}
-                {(eventData.street_address ||
-                  eventData.city ||
-                  eventData.country ||
-                  eventData.postal_code) && (
-                  <p>
-                    <strong>Location:</strong> {formatAddress()}
-                  </p>
-                )}
-                {eventData.hard_start && (
-                  <p>
-                    <strong>Start:</strong> {eventData.hard_start}
-                  </p>
-                )}
-                {eventData.hard_end && (
-                  <p>
-                    <strong>End:</strong> {eventData.hard_end}
-                  </p>
-                )}
-                {(eventData.hard_start || eventData.hard_end) &&
-                  eventData.timezone && (
+                  <h2>{eventData.event_name}</h2>
+                  {eventData.event_description && (
+                    <p>{eventData.event_description}</p>
+                  )}
+                  {eventData.event_type && (
                     <p>
-                      <strong>Timezone:</strong> {eventData.timezone}
+                      <strong>Type:</strong> {eventData.event_type}
                     </p>
                   )}
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+                  {(eventData.street_address ||
+                    eventData.city ||
+                    eventData.country ||
+                    eventData.postal_code) && (
+                    <p>
+                      <strong>Location:</strong> {formatAddress()}
+                    </p>
+                  )}
+                  {eventData.hard_start && (
+                    <p>
+                      <strong>Start:</strong> {eventData.hard_start}
+                    </p>
+                  )}
+                  {eventData.hard_end && (
+                    <p>
+                      <strong>End:</strong> {eventData.hard_end}
+                    </p>
+                  )}
+                  {(eventData.hard_start || eventData.hard_end) &&
+                    eventData.timezone && (
+                      <p>
+                        <strong>Timezone:</strong> {eventData.timezone}
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };

@@ -2,7 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
-import { convertToApiFormat, fetchItinerary, getUnassignedEvents } from "../helpers/itinerary";
+import {
+  convertToApiFormat,
+  fetchItinerary,
+  getUnassignedEvents
+} from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
@@ -69,13 +73,23 @@ function ViewItineraryPage() {
     debouncedAutoSave();
   };
 
-  const autoSave = async (updatedDays: DayItinerary[], updatedUnassigned?: Event[]) => {
+  const autoSave = async (
+    updatedDays: DayItinerary[],
+    updatedUnassigned?: Event[]
+  ) => {
     try {
-      const unassignedToUse = updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
+      const unassignedToUse =
+        updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
 
       // Calculate start_date and end_date from the days array
-      const startDate = updatedDays.length > 0 ? updatedDays[0].date : itineraryMetadata.startDate;
-      const endDate = updatedDays.length > 0 ? updatedDays[updatedDays.length - 1].date : itineraryMetadata.endDate;
+      const startDate =
+        updatedDays.length > 0
+          ? updatedDays[0].date
+          : itineraryMetadata.startDate;
+      const endDate =
+        updatedDays.length > 0
+          ? updatedDays[updatedDays.length - 1].date
+          : itineraryMetadata.endDate;
 
       const apiPayload = convertToApiFormat(
         updatedDays,
@@ -131,7 +145,7 @@ function ViewItineraryPage() {
     }
 
     // Check if date already exists
-    if (localDays.some(day => day.date === selectedDate)) {
+    if (localDays.some((day) => day.date === selectedDate)) {
       alert("A day with this date already exists in your itinerary");
       return;
     }
@@ -150,13 +164,13 @@ function ViewItineraryPage() {
         {
           time: "Evening",
           events: []
-        },
+        }
       ]
     };
 
     // Insert the day in chronological order
-    const updatedDays = [...localDays, newDay].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const updatedDays = [...localDays, newDay].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     setLocalDays(updatedDays);
@@ -208,7 +222,10 @@ function ViewItineraryPage() {
   }, [itineraryId, navigate]);
 
   return (
-    <div id="view-itinerary-page" className="view-page view-page--gradient with-sidebar">
+    <div
+      id="view-itinerary-page"
+      className="view-page view-page--gradient with-sidebar"
+    >
       <ViewPageSidebar
         onCreateEvent={() => setCreateModalOpen(true)}
         onSearchEvents={() => setSearchModalOpen(true)}
@@ -233,8 +250,14 @@ function ViewItineraryPage() {
 
       {/* Add Day Modal */}
       {addDayModalOpen && (
-        <div className="user-event-modal-overlay" onClick={() => setAddDayModalOpen(false)}>
-          <div className="user-event-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="user-event-modal-overlay"
+          onClick={() => setAddDayModalOpen(false)}
+        >
+          <div
+            className="user-event-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Add a Day</h2>
               <button
@@ -278,26 +301,28 @@ function ViewItineraryPage() {
               <button
                 type="submit"
                 style={{
-                  width: '100%',
-                  height: '48px',
-                  borderRadius: '12px',
-                  marginTop: '16px',
-                  background: 'linear-gradient(135deg, #006bbb, #2890c8)',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
+                  width: "100%",
+                  height: "48px",
+                  borderRadius: "12px",
+                  marginTop: "16px",
+                  background: "linear-gradient(135deg, #006bbb, #2890c8)",
+                  border: "none",
+                  color: "#ffffff",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 4px 12px rgba(0, 107, 187, 0.3)"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 16px rgba(0, 107, 187, 0.4)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(0, 107, 187, 0.3)";
                 }}
               >
                 Add Day

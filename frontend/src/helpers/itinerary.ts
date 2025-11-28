@@ -118,8 +118,8 @@ export function sanitize(v: string | null): string | null {
 export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
 
 	const date = new Date(timestamp);
@@ -144,8 +144,8 @@ export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 export function getDateFromTimestamp(utcTimestamp: string): string {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
 
 	const date = new Date(timestamp);
@@ -154,7 +154,7 @@ export function getDateFromTimestamp(utcTimestamp: string): string {
 	if (isNaN(date.getTime())) {
 		return "";
 	}
-	return date.toISOString().split('T')[0];
+	return date.toISOString().split("T")[0];
 }
 
 export function canDropEventInTimeBlock(

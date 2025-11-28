@@ -10,7 +10,12 @@ import {
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import { sanitize, canDropEventInTimeBlock, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
+import {
+  sanitize,
+  canDropEventInTimeBlock,
+  getTimeBlockFromTimestamp,
+  getDateFromTimestamp
+} from "../helpers/itinerary";
 
 interface ItineraryProps {
   localDays: DayItinerary[];
@@ -48,8 +53,14 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [isDragging, setIsDragging] = useState(false);
 
   // Use external modal state if provided, otherwise use internal state
-  const createModalOpen = externalCreateModal !== undefined ? externalCreateModal : internalCreateModalOpen;
-  const searchModalOpen = externalSearchModal !== undefined ? externalSearchModal : internalSearchModalOpen;
+  const createModalOpen =
+    externalCreateModal !== undefined
+      ? externalCreateModal
+      : internalCreateModalOpen;
+  const searchModalOpen =
+    externalSearchModal !== undefined
+      ? externalSearchModal
+      : internalSearchModalOpen;
 
   const setCreateModalOpen = (open: boolean) => {
     if (onCreateModalChange) {
@@ -115,7 +126,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
     setIsDragging(false);
   };
 
-  const onDrop = (e: React.DragEvent, targetTimeIndex: number, targetEventId?: number) => {
+  const onDrop = (
+    e: React.DragEvent,
+    targetTimeIndex: number,
+    targetEventId?: number
+  ) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event from bubbling
     onDragEnd(); // Reset dragging state
@@ -170,17 +185,28 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
     //  checks to see if being dropped in a time block, and the event has a hard start
     if (targetTimeIndex >= 0 && draggedEvent.hard_start) {
-		const currentDay = localDays[selectedDayIndex];
-		const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
-		const targetDate = currentDay.date;
+      const currentDay = localDays[selectedDayIndex];
+      const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
+      const targetDate = currentDay.date;
 
-		if (!canDropEventInTimeBlock(draggedEvent, targetTimeBlock, targetDate, targetTimeIndex)) {
-			const requiredTimeBlock = getTimeBlockFromTimestamp(draggedEvent.hard_start);
-			const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
-			alert(`"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`);
-			return;
-		}
-	}
+      if (
+        !canDropEventInTimeBlock(
+          draggedEvent,
+          targetTimeBlock,
+          targetDate,
+          targetTimeIndex
+        )
+      ) {
+        const requiredTimeBlock = getTimeBlockFromTimestamp(
+          draggedEvent.hard_start
+        );
+        const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
+        alert(
+          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`
+        );
+        return;
+      }
+    }
 
     // Handle dropping on specific event (swap positions)
     if (targetEventId !== undefined) {
@@ -192,23 +218,36 @@ const Itinerary: React.FC<ItineraryProps> = ({
         if (targetTimeIndex >= 0) {
           // In a time block
           const targetBlock = currentDay.timeBlocks[targetTimeIndex];
-          const draggedIndex = targetBlock.events.findIndex((e) => e.id === eventId);
-          const targetIndex = targetBlock.events.findIndex((e) => e.id === targetEventId);
+          const draggedIndex = targetBlock.events.findIndex(
+            (e) => e.id === eventId
+          );
+          const targetIndex = targetBlock.events.findIndex(
+            (e) => e.id === targetEventId
+          );
 
           if (draggedIndex !== -1 && targetIndex !== -1) {
             // Swap the events
-            [targetBlock.events[draggedIndex], targetBlock.events[targetIndex]] =
-            [targetBlock.events[targetIndex], targetBlock.events[draggedIndex]];
+            [
+              targetBlock.events[draggedIndex],
+              targetBlock.events[targetIndex]
+            ] = [
+              targetBlock.events[targetIndex],
+              targetBlock.events[draggedIndex]
+            ];
           }
         } else {
           // In unassigned
-          const draggedIndex = unassigned_events.findIndex((e) => e.id === eventId);
-          const targetIndex = unassigned_events.findIndex((e) => e.id === targetEventId);
+          const draggedIndex = unassigned_events.findIndex(
+            (e) => e.id === eventId
+          );
+          const targetIndex = unassigned_events.findIndex(
+            (e) => e.id === targetEventId
+          );
 
           if (draggedIndex !== -1 && targetIndex !== -1) {
             // Swap the events
             [unassigned_events[draggedIndex], unassigned_events[targetIndex]] =
-            [unassigned_events[targetIndex], unassigned_events[draggedIndex]];
+              [unassigned_events[targetIndex], unassigned_events[draggedIndex]];
           }
         }
       } else {
@@ -225,14 +264,18 @@ const Itinerary: React.FC<ItineraryProps> = ({
         // Add at target position
         if (targetTimeIndex >= 0) {
           const targetBlock = currentDay.timeBlocks[targetTimeIndex];
-          const targetIndex = targetBlock.events.findIndex((e) => e.id === targetEventId);
+          const targetIndex = targetBlock.events.findIndex(
+            (e) => e.id === targetEventId
+          );
           if (targetIndex !== -1) {
             targetBlock.events.splice(targetIndex, 0, draggedEvent);
           } else {
             targetBlock.events.push(draggedEvent);
           }
         } else {
-          const targetIndex = unassigned_events.findIndex((e) => e.id === targetEventId);
+          const targetIndex = unassigned_events.findIndex(
+            (e) => e.id === targetEventId
+          );
           if (targetIndex !== -1) {
             unassigned_events.splice(targetIndex, 0, draggedEvent);
           } else {
@@ -301,8 +344,16 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   // Get all events for the current day in chronological order
-  const getAllEventsForDay = (): Array<{ event: Event; timeBlock: string; timeIndex: number }> => {
-    const allEvents: Array<{ event: Event; timeBlock: string; timeIndex: number }> = [];
+  const getAllEventsForDay = (): Array<{
+    event: Event;
+    timeBlock: string;
+    timeIndex: number;
+  }> => {
+    const allEvents: Array<{
+      event: Event;
+      timeBlock: string;
+      timeIndex: number;
+    }> = [];
 
     currentDay.timeBlocks.forEach((block, timeIndex) => {
       block.events.forEach((event) => {
@@ -313,13 +364,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
     // Sort events by hard_start if available, otherwise by time block order
     allEvents.sort((a, b) => {
       if (a.event.hard_start && b.event.hard_start) {
-        return new Date(a.event.hard_start).getTime() - new Date(b.event.hard_start).getTime();
+        return (
+          new Date(a.event.hard_start).getTime() -
+          new Date(b.event.hard_start).getTime()
+        );
       }
       if (a.event.hard_start) return -1;
       if (b.event.hard_start) return 1;
 
       // Fallback to time block order: Morning < Afternoon < Evening
-      const timeOrder: { [key: string]: number } = { Morning: 0, Afternoon: 1, Evening: 2 };
+      const timeOrder: { [key: string]: number } = {
+        Morning: 0,
+        Afternoon: 1,
+        Evening: 2
+      };
       return timeOrder[a.timeBlock] - timeOrder[b.timeBlock];
     });
 
@@ -327,9 +385,21 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   // Group events by time block
-  const getEventsByTimeBlock = (): { [key: string]: Array<{ event: Event; timeBlock: string; timeIndex: number }> } => {
+  const getEventsByTimeBlock = (): {
+    [key: string]: Array<{
+      event: Event;
+      timeBlock: string;
+      timeIndex: number;
+    }>;
+  } => {
     const allEvents = getAllEventsForDay();
-    const grouped: { [key: string]: Array<{ event: Event; timeBlock: string; timeIndex: number }> } = {
+    const grouped: {
+      [key: string]: Array<{
+        event: Event;
+        timeBlock: string;
+        timeIndex: number;
+      }>;
+    } = {
       Morning: [],
       Afternoon: [],
       Evening: []
@@ -493,7 +563,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
     const dayNumber = indexToDelete + 1;
     const dayDate = localDays[indexToDelete].date;
 
-    if (!window.confirm(`Are you sure you want to delete Day ${dayNumber} (${dayDate})? All events from this day will be moved to unassigned events.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete Day ${dayNumber} (${dayDate})? All events from this day will be moved to unassigned events.`
+      )
+    ) {
       return;
     }
 
@@ -524,8 +598,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
         <>
           <div className="scroll-indicator scroll-indicator-top">
             <div className="scroll-indicator-content">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 19V5M12 5L5 12M12 5L19 12"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               <span>Scroll Up</span>
             </div>
@@ -533,8 +619,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
           <div className="scroll-indicator scroll-indicator-bottom">
             <div className="scroll-indicator-content">
               <span>Scroll Down</span>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M12 19L19 12M12 19L5 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 5V19M12 19L19 12M12 19L5 12"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
           </div>
@@ -547,154 +645,184 @@ const Itinerary: React.FC<ItineraryProps> = ({
           <h3>{title || "Itinerary"}</h3>
         </div>
 
-      {/* Unassigned Events */}
-      {editMode && (
-        <div className="unassigned-events" key={`unassigned-${selectedDayIndex}`}>
+        {/* Unassigned Events */}
+        {editMode && (
           <div
-            className={"time-block editable"}
-            onDrop={(e) => onDrop(e, -1)}
-            onDragOver={onDragOver}
+            className="unassigned-events"
+            key={`unassigned-${selectedDayIndex}`}
           >
-            <div className="events-area">
-              {unassignedEvents.length === 0 ? (
-                <p className="workspace-empty-text">No unassigned events</p>
-              ) : (
-                <>
-                  <p className="unassigned-events-label">Unassigned Events</p>
-                  {unassignedEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  variant="workspace"
-                  unassignedEvents={unassignedEvents}
-                  setUnassignedEvents={setUnassignedEvents}
-                  localDays={localDays}
-                  setLocalDays={setLocalDays}
-                  onDaysUpdate={onUpdate}
-                  onUnassignedUpdate={onUnassignedUpdate}
-                  draggable={editMode}
-                  onDragStart={(e) => onDragStart(e, event, -1)}
-                  onDragEnd={onDragEnd}
-                  onDrop={(e, targetEventId) => onDrop(e, -1, targetEventId)}
-                  onDragOver={onDragOver}
-                />
-                ))}
-                </>
-              )}
+            <div
+              className={"time-block editable"}
+              onDrop={(e) => onDrop(e, -1)}
+              onDragOver={onDragOver}
+            >
+              <div className="events-area">
+                {unassignedEvents.length === 0 ? (
+                  <p className="workspace-empty-text">No unassigned events</p>
+                ) : (
+                  <>
+                    <p className="unassigned-events-label">Unassigned Events</p>
+                    {unassignedEvents.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        variant="workspace"
+                        unassignedEvents={unassignedEvents}
+                        setUnassignedEvents={setUnassignedEvents}
+                        localDays={localDays}
+                        setLocalDays={setLocalDays}
+                        onDaysUpdate={onUpdate}
+                        onUnassignedUpdate={onUnassignedUpdate}
+                        draggable={editMode}
+                        onDragStart={(e) => onDragStart(e, event, -1)}
+                        onDragEnd={onDragEnd}
+                        onDrop={(e, targetEventId) =>
+                          onDrop(e, -1, targetEventId)
+                        }
+                        onDragOver={onDragOver}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Timeline Layout */}
-      <div className="timeline-container" key={`timeline-${selectedDayIndex}`}>
-        <div className="timeline-events">
-          {(() => {
-            const grouped = getEventsByTimeBlock();
+        {/* Timeline Layout */}
+        <div
+          className="timeline-container"
+          key={`timeline-${selectedDayIndex}`}
+        >
+          <div className="timeline-events">
+            {(() => {
+              const grouped = getEventsByTimeBlock();
 
-            return ["Morning", "Afternoon", "Evening"].map((timeBlockName) => {
-              const blockEvents = grouped[timeBlockName];
-              const hasEvents = blockEvents.length > 0;
+              return ["Morning", "Afternoon", "Evening"].map(
+                (timeBlockName) => {
+                  const blockEvents = grouped[timeBlockName];
+                  const hasEvents = blockEvents.length > 0;
 
-              // Find the corresponding time block index from currentDay.timeBlocks
-              const timeBlockIndex = currentDay.timeBlocks.findIndex(
-                (block) => block.time === timeBlockName
-              );
+                  // Find the corresponding time block index from currentDay.timeBlocks
+                  const timeBlockIndex = currentDay.timeBlocks.findIndex(
+                    (block) => block.time === timeBlockName
+                  );
 
-              if (!hasEvents) {
-                return (
-                  <div key={timeBlockName} className="time-block-empty-section">
-                    <div className="time-block-header">
-                      <h3 className="time-block-title">{timeBlockName}</h3>
-                      <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
-                    </div>
-                    <div
-                      className={`time-block-glass-container ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
-                      onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
-                      onDragOver={onDragOver}
-                    >
-                      <div className="time-block-empty">
-                        <p>No {timeBlockName.toLowerCase()} events</p>
+                  if (!hasEvents) {
+                    return (
+                      <div
+                        key={timeBlockName}
+                        className="time-block-empty-section"
+                      >
+                        <div className="time-block-header">
+                          <h3 className="time-block-title">{timeBlockName}</h3>
+                          <span className="time-block-range">
+                            {getTimeRange(timeBlockName)}
+                          </span>
+                        </div>
+                        <div
+                          className={`time-block-glass-container ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
+                          onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
+                          onDragOver={onDragOver}
+                        >
+                          <div className="time-block-empty">
+                            <p>No {timeBlockName.toLowerCase()} events</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={timeBlockName} className="time-block-group">
+                      <div className="time-block-header">
+                        <h3 className="time-block-title">{timeBlockName}</h3>
+                        <span className="time-block-range">
+                          {getTimeRange(timeBlockName)}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`time-block-events-wrapper ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
+                        onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
+                        onDragOver={onDragOver}
+                      >
+                        {blockEvents.map((item, blockIndex) => {
+                          const isLastInBlock =
+                            blockIndex === blockEvents.length - 1;
+                          const isRightSide = blockIndex % 2 === 0;
+
+                          return (
+                            <React.Fragment
+                              key={`${item.event.id}-${blockIndex}`}
+                            >
+                              <div
+                                className={`timeline-event-wrapper ${
+                                  isRightSide ? "right-aligned" : "left-aligned"
+                                } ${editMode ? "editable" : ""}`}
+                              >
+                                <EventCard
+                                  time={item.timeBlock}
+                                  event={item.event}
+                                  unassignedEvents={unassignedEvents}
+                                  setUnassignedEvents={setUnassignedEvents}
+                                  localDays={localDays}
+                                  setLocalDays={setLocalDays}
+                                  onDaysUpdate={onUpdate}
+                                  onUnassignedUpdate={onUnassignedUpdate}
+                                  draggable={editMode ?? false}
+                                  onDragStart={(e) =>
+                                    onDragStart(e, item.event, item.timeIndex)
+                                  }
+                                  onDragEnd={onDragEnd}
+                                  onDrop={(e, targetEventId) =>
+                                    onDrop(e, item.timeIndex, targetEventId)
+                                  }
+                                  onDragOver={onDragOver}
+                                  imageOnLeft={isRightSide}
+                                />
+                              </div>
+                              {!isLastInBlock && (
+                                <div
+                                  className={`timeline-arrow ${
+                                    isRightSide
+                                      ? "right-to-left"
+                                      : "left-to-right"
+                                  }`}
+                                >
+                                  <img
+                                    src={
+                                      isRightSide
+                                        ? "/rightarrow.png"
+                                        : "/left-arrow.png"
+                                    }
+                                    alt="timeline arrow"
+                                    className="arrow-image"
+                                  />
+                                </div>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={timeBlockName} className="time-block-group">
-                  <div className="time-block-header">
-                    <h3 className="time-block-title">{timeBlockName}</h3>
-                    <span className="time-block-range">{getTimeRange(timeBlockName)}</span>
-                  </div>
-
-                  <div
-                    className={`time-block-events-wrapper ${timeBlockName.toLowerCase()} ${editMode ? "droppable" : ""}`}
-                    onDrop={(e) => editMode && onDrop(e, timeBlockIndex)}
-                    onDragOver={onDragOver}
-                  >
-                    {blockEvents.map((item, blockIndex) => {
-                      const isLastInBlock = blockIndex === blockEvents.length - 1;
-                      const isRightSide = blockIndex % 2 === 0;
-
-                      return (
-                        <React.Fragment key={`${item.event.id}-${blockIndex}`}>
-                          <div
-                            className={`timeline-event-wrapper ${
-                              isRightSide ? "right-aligned" : "left-aligned"
-                            } ${editMode ? "editable" : ""}`}
-                          >
-                            <EventCard
-                              time={item.timeBlock}
-                              event={item.event}
-                              unassignedEvents={unassignedEvents}
-                              setUnassignedEvents={setUnassignedEvents}
-                              localDays={localDays}
-                              setLocalDays={setLocalDays}
-                              onDaysUpdate={onUpdate}
-                              onUnassignedUpdate={onUnassignedUpdate}
-                              draggable={editMode ?? false}
-                              onDragStart={(e) => onDragStart(e, item.event, item.timeIndex)}
-                              onDragEnd={onDragEnd}
-                              onDrop={(e, targetEventId) => onDrop(e, item.timeIndex, targetEventId)}
-                              onDragOver={onDragOver}
-                              imageOnLeft={isRightSide}
-                            />
-                          </div>
-                          {!isLastInBlock && (
-                            <div
-                              className={`timeline-arrow ${
-                                isRightSide ? "right-to-left" : "left-to-right"
-                              }`}
-                            >
-                              <img
-                                src={isRightSide ? "/rightarrow.png" : "/left-arrow.png"}
-                                alt="timeline arrow"
-                                className="arrow-image"
-                              />
-                            </div>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </div>
-                </div>
+                  );
+                }
               );
-            });
-          })()}
+            })()}
+          </div>
         </div>
-      </div>
 
-      {/* Day Navigation - Bottom */}
-      <div className="day-navigation-bottom">
-        {localDays.map((day, index) => (
-          <div
-            key={day.date.toString()}
-            className={`day-nav-item ${index === selectedDayIndex ? "active" : ""}`}
-            onClick={() => setSelectedDayIndex(index)}
-          >
-            Day {index + 1} ({day.date.toString()})
-            {editMode && localDays.length > 1 && (
+        {/* Day Navigation - Bottom */}
+        <div className="day-navigation-bottom">
+          {localDays.map((day, index) => (
+            <div
+              key={day.date.toString()}
+              className={`day-nav-item ${index === selectedDayIndex ? "active" : ""}`}
+              onClick={() => setSelectedDayIndex(index)}
+            >
+              Day {index + 1} ({day.date.toString()})
+              {editMode && localDays.length > 1 && (
                 <button
                   className="day-delete"
                   onClick={(e) => {
@@ -763,351 +891,126 @@ const Itinerary: React.FC<ItineraryProps> = ({
                   </svg>
                 </button>
               )}
-          </div>
-        ))}
-      </div>
-
-      {createModalOpen && (
-        <div className="user-event-modal-overlay" onClick={closeCreateModal}>
-          <div
-            className="user-event-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h2>Create a custom event</h2>
-              <button
-                className="icon-button"
-                onClick={closeCreateModal}
-                aria-label="Close modal"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
             </div>
+          ))}
+        </div>
 
-            <form
-              id="user-event-form"
-              className="user-event-form"
-              onSubmit={onSaveUserEvent}
+        {createModalOpen && (
+          <div className="user-event-modal-overlay" onClick={closeCreateModal}>
+            <div
+              className="user-event-modal"
+              onClick={(e) => e.stopPropagation()}
             >
-              <label>
-                Name
-                <input
-                  onChange={(e) =>
-                    setUserEventForm({ ...userEventForm, name: e.target.value })
-                  }
-                  required
-                />
-              </label>
-
-              <label>
-                Description
-                <textarea
-                  onChange={(e) =>
-                    setUserEventForm({
-                      ...userEventForm,
-                      description: e.target.value
-                    })
-                  }
-                  rows={4}
-                />
-              </label>
-
-              <label>
-                Type of Event
-                <input
-                  onChange={(e) =>
-                    setUserEventForm({ ...userEventForm, type: e.target.value })
-                  }
-                />
-              </label>
-
-              <div className="location-grid">
-                <div className="location-grid-row">
-                  <label>
-                    <span>Address</span>
-                    <input
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          address: e.target.value
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>City</span>
-                    <input
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          city: e.target.value
-                        })
-                      }
-                    />
-                  </label>
-                </div>
-
-                <div className="location-grid-row">
-                  <label>
-                    <span>Country</span>
-                    <input
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          country: e.target.value
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Postal Code</span>
-                    <input
-                      onChange={(e) =>
-                        setUserEventForm({
-                          ...userEventForm,
-                          postalCode: e.target.value
-                        })
-                      }
-                      type="number"
-                      maxLength={5}
-                    />
-                  </label>
-                </div>
-
-                <div className="location-grid-row">
-                  <label>
-                    <span>Start Time</span>
-                    <input
-                      type="datetime-local"
-                      onChange={(e) => {
-                        let start = e.target.value;
-                        if (start !== "") {
-                          start += ":00";
-                        }
-                        setUserEventForm({ ...userEventForm, start });
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <span>End Time</span>
-                    <input
-                      type="datetime-local"
-                      onChange={(e) => {
-                        let end = e.target.value;
-                        if (end !== "") {
-                          end += ":00";
-                        }
-                        setUserEventForm({ ...userEventForm, end });
-                      }}
-                    />
-                  </label>
-                </div>
+              <div className="modal-header">
+                <h2>Create a custom event</h2>
+                <button
+                  className="icon-button"
+                  onClick={closeCreateModal}
+                  aria-label="Close modal"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
               </div>
 
-              {(userEventForm.start || userEventForm.end) && (
+              <form
+                id="user-event-form"
+                className="user-event-form"
+                onSubmit={onSaveUserEvent}
+              >
                 <label>
-                  <span>Timezone</span>
-                  <select
-                    value={userEventForm.timezoneIndex}
+                  Name
+                  <input
                     onChange={(e) =>
                       setUserEventForm({
                         ...userEventForm,
-                        timezoneIndex: +e.target.value
+                        name: e.target.value
                       })
                     }
-                  >
-                    {[
-                      <option key={-1} value={-1}>
-                        No Timezone Selected
-                      </option>,
-                      ...TIMEZONES.map((tz, index) => (
-                        <option key={index} value={index}>
-                          {tz}
-                        </option>
-                      ))
-                    ]}
-                  </select>
+                    required
+                  />
                 </label>
-              )}
 
-              <button
-                type="submit"
-                style={{
-                  width: '100%',
-                  height: '48px',
-                  borderRadius: '12px',
-                  marginTop: '16px',
-                  background: 'linear-gradient(135deg, #006bbb, #2890c8)',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 12px rgba(0, 107, 187, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 107, 187, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 107, 187, 0.3)';
-                }}
-              >
-                Create Event
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+                <label>
+                  Description
+                  <textarea
+                    onChange={(e) =>
+                      setUserEventForm({
+                        ...userEventForm,
+                        description: e.target.value
+                      })
+                    }
+                    rows={4}
+                  />
+                </label>
 
-      {searchModalOpen && (
-        <div className="user-event-modal-overlay" onClick={closeSearchModal}>
-          <div
-            className="search-event-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="searchContainer">
-              <div className="searchFilters">
-                <div className="modal-header">
-                  <h2>Search for an event</h2>
-                  <div className="event-card-buttons">
-                    <button
-                      className="card-save-button"
-                      // onClick={onSearchSend}
-                      form="search-event-form"
-                      title="Search"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M10 2a8 8 0 1 0 5.293 14.293l4.707 4.707 1.414-1.414-4.707-4.707A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12A6 6 0 0 1 10 4z" />
-                      </svg>
-                    </button>
-                    <button
-                      className="close-button"
-                      onClick={closeSearchModal}
-                      title="Close"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
+                <label>
+                  Type of Event
+                  <input
+                    onChange={(e) =>
+                      setUserEventForm({
+                        ...userEventForm,
+                        type: e.target.value
+                      })
+                    }
+                  />
+                </label>
 
-                <form
-                  id="search-event-form"
-                  className="user-event-form"
-                  onSubmit={onSearchSend}
-                >
-                  <div className="location-grid">
+                <div className="location-grid">
+                  <div className="location-grid-row">
                     <label>
-                      Name
+                      <span>Address</span>
                       <input
                         onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            name: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      Description
-                      <input
-                        onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            description: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      ID
-                      <input
-                        onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            id: e.target.value
-                          })
-                        }
-                        type="number"
-                      />
-                    </label>
-
-                    <label>
-                      Type of Event
-                      <input
-                        onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            type: e.target.value
-                          })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      Address
-                      <input
-                        onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
+                          setUserEventForm({
+                            ...userEventForm,
                             address: e.target.value
                           })
                         }
                       />
                     </label>
-
                     <label>
-                      City
+                      <span>City</span>
                       <input
                         onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
+                          setUserEventForm({
+                            ...userEventForm,
                             city: e.target.value
                           })
                         }
                       />
                     </label>
+                  </div>
 
+                  <div className="location-grid-row">
                     <label>
-                      Country
+                      <span>Country</span>
                       <input
                         onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
+                          setUserEventForm({
+                            ...userEventForm,
                             country: e.target.value
                           })
                         }
                       />
                     </label>
-
                     <label>
-                      Postal Code
+                      <span>Postal Code</span>
                       <input
                         onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
+                          setUserEventForm({
+                            ...userEventForm,
                             postalCode: e.target.value
                           })
                         }
@@ -1115,130 +1018,366 @@ const Itinerary: React.FC<ItineraryProps> = ({
                         maxLength={5}
                       />
                     </label>
-
-                    <label>
-                      Starts Before
-                      <input
-                        onChange={(e) => {
-                          let startsBefore = e.target.value;
-                          if (startsBefore !== "") {
-                            startsBefore += ":00";
-                          }
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            startsBefore
-                          });
-                        }}
-                        type="datetime-local"
-                      />
-                    </label>
-
-                    <label>
-                      Starts After
-                      <input
-                        onChange={(e) => {
-                          let startsAfter = e.target.value;
-                          if (startsAfter !== "") {
-                            startsAfter += ":00";
-                          }
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            startsAfter
-                          });
-                        }}
-                        type="datetime-local"
-                      />
-                    </label>
-
-                    <label>
-                      Ends Before
-                      <input
-                        onChange={(e) => {
-                          let endsBefore = e.target.value;
-                          if (endsBefore !== "") {
-                            endsBefore += ":00";
-                          }
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            endsBefore
-                          });
-                        }}
-                        type="datetime-local"
-                      />
-                    </label>
-
-                    <label>
-                      Ends After
-                      <input
-                        onChange={(e) => {
-                          let endsAfter = e.target.value;
-                          if (endsAfter !== "") {
-                            endsAfter += ":00";
-                          }
-                          setSearchEventForm({ ...searchEventForm, endsAfter });
-                        }}
-                        type="datetime-local"
-                      />
-                    </label>
-
-                    <label>
-                      <span>Timezone</span>
-                      <select
-                        onChange={(e) =>
-                          setSearchEventForm({
-                            ...searchEventForm,
-                            timezoneIndex: +e.target.value
-                          })
-                        }
-                      >
-                        {[
-                          <option key={-1} value={-1}>
-                            No Timezone Selected
-                          </option>,
-                          ...TIMEZONES.map((tz, index) => (
-                            <option key={index} value={index}>
-                              {tz}
-                            </option>
-                          ))
-                        ]}
-                      </select>
-                    </label>
                   </div>
-                </form>
-              </div>
-              {searchResult && (
-                <div className="searchResults">
-                  <h2>{searchResultCaption}</h2>
-                  <div className="resultsGrid">
-                    {searchResult.map((event: Event) => (
-                      <div key={event.id} className="resultCard">
-                        <button
-                          className="card-edit-button"
-                          onClick={() => addEventFromSearch(event)}
-                        >
-                          +
-                        </button>
-                        <h3 className="event-title">{event.event_name}</h3>
-                        {(event.street_address ||
-                          event.city ||
-                          event.country ||
-                          event.postal_code) && (
-                          <p className="event-location">
-                            {formatAddress(event)}
-                          </p>
-                        )}
-                        {event.event_type && (
-                          <p className="event-type">{event.event_type}</p>
-                        )}
-                      </div>
-                    ))}
+
+                  <div className="location-grid-row">
+                    <label>
+                      <span>Start Time</span>
+                      <input
+                        type="datetime-local"
+                        onChange={(e) => {
+                          let start = e.target.value;
+                          if (start !== "") {
+                            start += ":00";
+                          }
+                          setUserEventForm({ ...userEventForm, start });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      <span>End Time</span>
+                      <input
+                        type="datetime-local"
+                        onChange={(e) => {
+                          let end = e.target.value;
+                          if (end !== "") {
+                            end += ":00";
+                          }
+                          setUserEventForm({ ...userEventForm, end });
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
-              )}
+
+                {(userEventForm.start || userEventForm.end) && (
+                  <label>
+                    <span>Timezone</span>
+                    <select
+                      value={userEventForm.timezoneIndex}
+                      onChange={(e) =>
+                        setUserEventForm({
+                          ...userEventForm,
+                          timezoneIndex: +e.target.value
+                        })
+                      }
+                    >
+                      {[
+                        <option key={-1} value={-1}>
+                          No Timezone Selected
+                        </option>,
+                        ...TIMEZONES.map((tz, index) => (
+                          <option key={index} value={index}>
+                            {tz}
+                          </option>
+                        ))
+                      ]}
+                    </select>
+                  </label>
+                )}
+
+                <button
+                  type="submit"
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    borderRadius: "12px",
+                    marginTop: "16px",
+                    background: "linear-gradient(135deg, #006bbb, #2890c8)",
+                    border: "none",
+                    color: "#ffffff",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 4px 12px rgba(0, 107, 187, 0.3)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 6px 16px rgba(0, 107, 187, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 12px rgba(0, 107, 187, 0.3)";
+                  }}
+                >
+                  Create Event
+                </button>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {searchModalOpen && (
+          <div className="user-event-modal-overlay" onClick={closeSearchModal}>
+            <div
+              className="search-event-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="searchContainer">
+                <div className="searchFilters">
+                  <div className="modal-header">
+                    <h2>Search for an event</h2>
+                    <div className="event-card-buttons">
+                      <button
+                        className="card-save-button"
+                        // onClick={onSearchSend}
+                        form="search-event-form"
+                        title="Search"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M10 2a8 8 0 1 0 5.293 14.293l4.707 4.707 1.414-1.414-4.707-4.707A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12A6 6 0 0 1 10 4z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="close-button"
+                        onClick={closeSearchModal}
+                        title="Close"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <form
+                    id="search-event-form"
+                    className="user-event-form"
+                    onSubmit={onSearchSend}
+                  >
+                    <div className="location-grid">
+                      <label>
+                        Name
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              name: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Description
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              description: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        ID
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              id: e.target.value
+                            })
+                          }
+                          type="number"
+                        />
+                      </label>
+
+                      <label>
+                        Type of Event
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              type: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Address
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              address: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        City
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              city: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Country
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              country: e.target.value
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Postal Code
+                        <input
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              postalCode: e.target.value
+                            })
+                          }
+                          type="number"
+                          maxLength={5}
+                        />
+                      </label>
+
+                      <label>
+                        Starts Before
+                        <input
+                          onChange={(e) => {
+                            let startsBefore = e.target.value;
+                            if (startsBefore !== "") {
+                              startsBefore += ":00";
+                            }
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              startsBefore
+                            });
+                          }}
+                          type="datetime-local"
+                        />
+                      </label>
+
+                      <label>
+                        Starts After
+                        <input
+                          onChange={(e) => {
+                            let startsAfter = e.target.value;
+                            if (startsAfter !== "") {
+                              startsAfter += ":00";
+                            }
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              startsAfter
+                            });
+                          }}
+                          type="datetime-local"
+                        />
+                      </label>
+
+                      <label>
+                        Ends Before
+                        <input
+                          onChange={(e) => {
+                            let endsBefore = e.target.value;
+                            if (endsBefore !== "") {
+                              endsBefore += ":00";
+                            }
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              endsBefore
+                            });
+                          }}
+                          type="datetime-local"
+                        />
+                      </label>
+
+                      <label>
+                        Ends After
+                        <input
+                          onChange={(e) => {
+                            let endsAfter = e.target.value;
+                            if (endsAfter !== "") {
+                              endsAfter += ":00";
+                            }
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              endsAfter
+                            });
+                          }}
+                          type="datetime-local"
+                        />
+                      </label>
+
+                      <label>
+                        <span>Timezone</span>
+                        <select
+                          onChange={(e) =>
+                            setSearchEventForm({
+                              ...searchEventForm,
+                              timezoneIndex: +e.target.value
+                            })
+                          }
+                        >
+                          {[
+                            <option key={-1} value={-1}>
+                              No Timezone Selected
+                            </option>,
+                            ...TIMEZONES.map((tz, index) => (
+                              <option key={index} value={index}>
+                                {tz}
+                              </option>
+                            ))
+                          ]}
+                        </select>
+                      </label>
+                    </div>
+                  </form>
+                </div>
+                {searchResult && (
+                  <div className="searchResults">
+                    <h2>{searchResultCaption}</h2>
+                    <div className="resultsGrid">
+                      {searchResult.map((event: Event) => (
+                        <div key={event.id} className="resultCard">
+                          <button
+                            className="card-edit-button"
+                            onClick={() => addEventFromSearch(event)}
+                          >
+                            +
+                          </button>
+                          <h3 className="event-title">{event.event_name}</h3>
+                          {(event.street_address ||
+                            event.city ||
+                            event.country ||
+                            event.postal_code) && (
+                            <p className="event-location">
+                              {formatAddress(event)}
+                            </p>
+                          )}
+                          {event.event_type && (
+                            <p className="event-type">{event.event_type}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
