@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { sanitize, canDropEventInTimeBlock, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
 
 interface ItineraryProps {
-  days?: DayItinerary[];
+  localDays: DayItinerary[];
+  setLocalDays: React.Dispatch<React.SetStateAction<DayItinerary[]>>;
   unassigned?: Event[];
   onUpdate?: (updatedDays: DayItinerary[]) => void;
   onUnassignedUpdate?: (unassignedEvents: Event[]) => void;
@@ -27,7 +28,8 @@ interface ItineraryProps {
 }
 
 const Itinerary: React.FC<ItineraryProps> = ({
-  days,
+  localDays,
+  setLocalDays,
   unassigned,
   onUpdate,
   onUnassignedUpdate,
@@ -40,7 +42,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   onSearchModalChange
 }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [localDays, setLocalDays] = useState<DayItinerary[]>(days || []);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [internalCreateModalOpen, setInternalCreateModalOpen] = useState(false);
   const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
@@ -98,12 +99,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const navigate = useNavigate();
 
-  // Sync local state with props when days change
-  useEffect(() => {
-    if (days) {
-      setLocalDays(days);
-    }
-  }, [days]);
   useEffect(() => {
     setUnassignedEvents(unassigned || []);
   }, [unassigned]);

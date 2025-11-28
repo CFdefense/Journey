@@ -10,12 +10,12 @@ import "../styles/Itinerary.css";
 function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [days, setDays] = useState<DayItinerary[]>([]);
   const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [addDayModalOpen, setAddDayModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
+  const [localDays, setLocalDays] = useState<DayItinerary[]>([]);
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -30,14 +30,14 @@ function ViewItineraryPage() {
   });
 
   // Use refs to track the latest values for autosave
-  const daysRef = useRef(days);
+  const daysRef = useRef(localDays);
   const unassignedEventsRef = useRef(unassignedEvents);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => {
-    daysRef.current = days;
-  }, [days]);
+    daysRef.current = localDays;
+  }, [localDays]);
 
   useEffect(() => {
     unassignedEventsRef.current = unassignedEvents;
@@ -56,7 +56,7 @@ function ViewItineraryPage() {
   };
 
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
-    setDays(updatedDays);
+    setLocalDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
     debouncedAutoSave();
@@ -112,8 +112,8 @@ function ViewItineraryPage() {
   const handleAddDay = () => {
     // Calculate the next day as default
     let defaultDate: string;
-    if (days.length > 0) {
-      const last = new Date(days[days.length - 1].date);
+    if (localDays.length > 0) {
+      const last = new Date(localDays[localDays.length - 1].date);
       last.setDate(last.getDate() + 1);
       defaultDate = last.toISOString().slice(0, 10);
     } else {
@@ -131,22 +131,35 @@ function ViewItineraryPage() {
     }
 
     // Check if date already exists
-    if (days.some(day => day.date === selectedDate)) {
+    if (localDays.some(day => day.date === selectedDate)) {
       alert("A day with this date already exists in your itinerary");
       return;
     }
 
     const newDay: DayItinerary = {
       date: selectedDate,
-      timeBlocks: []
+      timeBlocks: [
+        {
+          time: "Morning",
+          events: []
+        },
+        {
+          time: "Afternoon",
+          events: []
+        },
+        {
+          time: "Evening",
+          events: []
+        },
+      ]
     };
 
     // Insert the day in chronological order
-    const updatedDays = [...days, newDay].sort((a, b) =>
+    const updatedDays = [...localDays, newDay].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    setDays(updatedDays);
+    setLocalDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
     debouncedAutoSave();
@@ -178,7 +191,7 @@ function ViewItineraryPage() {
 
           // Transform and store days
           const data = await fetchItinerary(itineraryId);
-          setDays(data);
+          setLocalDays(data);
 
           // Load unassigned events
           const unassigned = getUnassignedEvents(apiResponse.result);
@@ -204,7 +217,8 @@ function ViewItineraryPage() {
       />
       <div className="view-content with-sidebar">
         <Itinerary
-          days={days}
+          localDays={localDays}
+          setLocalDays={setLocalDays}
           unassigned={unassignedEvents}
           onUpdate={handleItineraryUpdate}
           onUnassignedUpdate={handleUnassignedUpdate}
