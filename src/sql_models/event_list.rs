@@ -37,5 +37,5 @@ pub struct EventListJoinRow {
 	pub timezone: Option<String>,
 	/// Index the event is in within the time block.
 	/// Must be some to guarantee ordering
-	pub block_index: Option<i32>
+	pub block_index: Option<i32>,
 }

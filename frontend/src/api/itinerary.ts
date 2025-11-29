@@ -39,7 +39,10 @@ export async function apiItineraryDetails(
 				credentials: import.meta.env.DEV ? "include" : "same-origin"
 			}
 		);
-		return { result: response.ok ? await response.json() : null, status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };

@@ -18,7 +18,7 @@ use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
 use crate::global::EVENT_SEARCH_RESULT_LEN;
 use crate::http_models::event::{
-	Event, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse
+	Event, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse,
 };
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
@@ -127,7 +127,9 @@ async fn itinerary_events(
 			}
 		}
 		fn sort(a: &Event, b: &Event) -> std::cmp::Ordering {
-			a.block_index.unwrap_or(i32::MAX).cmp(&b.block_index.unwrap_or(i32::MAX))
+			a.block_index
+				.unwrap_or(i32::MAX)
+				.cmp(&b.block_index.unwrap_or(i32::MAX))
 		}
 		morning_events.sort_by(sort);
 		afternoon_events.sort_by(sort);
@@ -145,10 +147,7 @@ async fn itinerary_events(
 }
 
 /// Returns the unassigned events for this itinerary
-async fn unassigned_events(
-	event_ids: &[i32],
-	pool: &PgPool,
-) -> ApiResult<Vec<Event>> {
+async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<Event>> {
 	if event_ids.is_empty() {
 		return Ok(Vec::new());
 	}
@@ -231,9 +230,21 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 			events.extend(day.afternoon_events.iter().map(|event| Some(event.id)));
 			events.extend(day.evening_events.iter().map(|event| Some(event.id)));
 
-			indices.extend(day.morning_events.into_iter().map(|event| event.block_index));
-			indices.extend(day.afternoon_events.into_iter().map(|event| event.block_index));
-			indices.extend(day.evening_events.into_iter().map(|event| event.block_index));
+			indices.extend(
+				day.morning_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
+			indices.extend(
+				day.afternoon_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
+			indices.extend(
+				day.evening_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
 		}
 	}
 

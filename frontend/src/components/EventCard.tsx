@@ -192,7 +192,7 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("TODO: handle error properly - could not update user event");
       return;
     }
-    setEventData({...userEvent, user_created: true} as Event);
+    setEventData({ ...userEvent, user_created: true } as Event);
     event.city = userEvent.city;
     event.country = userEvent.country;
     event.event_description = userEvent.event_description;
@@ -203,7 +203,7 @@ const EventCard: React.FC<EventCardProps> = ({
     event.postal_code = userEvent.postal_code;
     event.street_address = userEvent.street_address;
     event.timezone = userEvent.timezone;
-    (onDaysUpdate!)(localDays);
+    onDaysUpdate!(localDays);
     setIsOpen(false);
   };
 

@@ -64,10 +64,14 @@ function ViewItineraryPage() {
     // Pull events that are in the wrong spot
     for (const day of updatedDays) {
       for (const timeblock of day.timeBlocks) {
-        if (timeblock.events.length === 0) { continue; }
+        if (timeblock.events.length === 0) {
+          continue;
+        }
         for (let i = 0; i < timeblock.events.length; i++) {
           const curr = timeblock.events[i];
-          if (!curr.hard_start) { continue; }
+          if (!curr.hard_start) {
+            continue;
+          }
           if (curr.hard_start.slice(0, 10) !== day.date) {
             timeblock.events.splice(i, 1);
             toReassign.push(curr);
@@ -88,9 +92,15 @@ function ViewItineraryPage() {
           const _6pm = sixPM.getTime();
 
           // I'm too lazy to convert this into a proper conditional
-          if (timeblock.time === "Morning" && time >= _4am && time < _12pm) { continue; }
-          if (timeblock.time === "Afternoon" && time >= _12pm && time < _6pm) { continue; }
-          if (timeblock.time === "Morning" && time >= _6pm && time < _4am) { continue; }
+          if (timeblock.time === "Morning" && time >= _4am && time < _12pm) {
+            continue;
+          }
+          if (timeblock.time === "Afternoon" && time >= _12pm && time < _6pm) {
+            continue;
+          }
+          if (timeblock.time === "Morning" && time >= _6pm && time < _4am) {
+            continue;
+          }
 
           timeblock.events.splice(i, 1);
           toReassign.push(curr);
@@ -102,7 +112,9 @@ function ViewItineraryPage() {
     for (let i = 0; i < toReassign.length; i++) {
       const pulled = toReassign[i];
       for (const day of updatedDays) {
-        if (day.date !== pulled.hard_start!.slice(0, 10)) { continue; }
+        if (day.date !== pulled.hard_start!.slice(0, 10)) {
+          continue;
+        }
         toReassign.splice(i, 1);
         i--;
 
@@ -131,21 +143,24 @@ function ViewItineraryPage() {
     }
     // put non-reassigned in unassigned
     if (toReassign.length > 0) {
-      setUnassignedEvents([...unassignedEvents, ...toReassign])
+      setUnassignedEvents([...unassignedEvents, ...toReassign]);
     }
     // sort events
     for (const day of updatedDays) {
       for (const timeblock of day.timeBlocks) {
-        if (timeblock.events.length === 0) { continue; }
+        if (timeblock.events.length === 0) {
+          continue;
+        }
 
         const sortable = timeblock.events
           .map((ev, index) => ({ ev, index }))
-          .filter(item => item.ev.hard_start !== null);
+          .filter((item) => item.ev.hard_start !== null);
 
         // Sort those by datetime
-        sortable.sort((a, b) =>
-          new Date(a.ev.hard_start!).getTime() -
-          new Date(b.ev.hard_start!).getTime()
+        sortable.sort(
+          (a, b) =>
+            new Date(a.ev.hard_start!).getTime() -
+            new Date(b.ev.hard_start!).getTime()
         );
 
         // Create a result array
