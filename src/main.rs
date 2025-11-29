@@ -8,11 +8,11 @@ mod middleware;
 mod sql_models;
 
 #[cfg(not(tarpaulin_include))]
-mod global;
+mod agent;
 #[cfg(not(tarpaulin_include))]
 mod error;
 #[cfg(not(tarpaulin_include))]
-mod agent;
+mod global;
 #[cfg(not(tarpaulin_include))]
 mod swagger;
 
