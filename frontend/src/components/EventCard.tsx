@@ -192,18 +192,21 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("TODO: handle error properly - could not update user event");
       return;
     }
-    setEventData({ ...userEvent, user_created: true } as Event);
-    event.city = userEvent.city;
-    event.country = userEvent.country;
-    event.event_description = userEvent.event_description;
-    event.event_name = userEvent.event_name;
-    event.event_type = userEvent.event_type;
-    event.hard_end = userEvent.hard_end;
-    event.hard_start = userEvent.hard_start;
-    event.postal_code = userEvent.postal_code;
-    event.street_address = userEvent.street_address;
-    event.timezone = userEvent.timezone;
-    onDaysUpdate!(localDays);
+    const updatedEvent: Event = {
+      ...userEvent,
+      user_created: true,
+      block_index: event.block_index,
+      id: event.id
+    };
+    setEventData(updatedEvent);
+    const updatedDays = localDays.map((day) => ({
+      ...day,
+      timeBlocks: day.timeBlocks.map((block) => ({
+        ...block,
+        events: block.events.map((e) => (e.id === event.id ? updatedEvent : e))
+      }))
+    }));
+    onDaysUpdate(updatedDays);
     setIsOpen(false);
   };
 
