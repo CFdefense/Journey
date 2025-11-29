@@ -35,6 +35,7 @@ export type Event = {
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	block_index: number | null;
 };
 
 export type SavedResponse = {

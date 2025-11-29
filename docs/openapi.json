@@ -1340,6 +1340,14 @@
           "user_created"
         ],
         "properties": {
+          "block_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Must be some to guarantee ordering"
+          },
           "city": {
             "type": [
               "string",

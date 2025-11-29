@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import EventCard from "./EventCard";
 import {
   TIMEZONES,
@@ -19,10 +19,9 @@ import {
 
 interface ItineraryProps {
   localDays: DayItinerary[];
-  setLocalDays: React.Dispatch<React.SetStateAction<DayItinerary[]>>;
-  unassigned?: Event[];
-  onUpdate?: (updatedDays: DayItinerary[]) => void;
-  onUnassignedUpdate?: (unassignedEvents: Event[]) => void;
+  unassigned: Event[];
+  onUpdate: (updatedDays: DayItinerary[]) => void;
+  onUnassignedUpdate: (unassignedEvents: Event[]) => void;
   editMode?: boolean;
   title?: string;
   compact?: boolean;
@@ -34,7 +33,6 @@ interface ItineraryProps {
 
 const Itinerary: React.FC<ItineraryProps> = ({
   localDays,
-  setLocalDays,
   unassigned,
   onUpdate,
   onUnassignedUpdate,
@@ -47,7 +45,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   onSearchModalChange
 }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [internalCreateModalOpen, setInternalCreateModalOpen] = useState(false);
   const [internalSearchModalOpen, setInternalSearchModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -110,10 +107,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setUnassignedEvents(unassigned || []);
-  }, [unassigned]);
-
   const onDragStart = (e: React.DragEvent, event: Event, timeIndex: number) => {
     e.dataTransfer.setData("eventId", event.id.toString());
     e.dataTransfer.setData("eventName", event.event_name);
@@ -140,7 +133,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     const eventDescription = e.dataTransfer.getData("eventDescription");
     const sourceTimeIndexStr = e.dataTransfer.getData("sourceTimeIndex");
 
-    if (!eventIdStr || !eventName) return;
+    if (!eventIdStr || !eventName) { return; }
 
     const eventId = parseInt(eventIdStr);
     const sourceTimeIndex = sourceTimeIndexStr
@@ -148,13 +141,13 @@ const Itinerary: React.FC<ItineraryProps> = ({
       : -1;
 
     // Don't do anything if dropping on itself
-    if (targetEventId && targetEventId === eventId) return;
+    if (targetEventId && targetEventId === eventId) { return; }
 
     // Create a copy of localDays
     const updatedDays = JSON.parse(JSON.stringify(localDays)) as DayItinerary[];
     const currentDay = updatedDays[selectedDayIndex];
     let unassigned_events = JSON.parse(
-      JSON.stringify(unassignedEvents)
+      JSON.stringify(unassigned)
     ) as Event[];
 
     // Find the full event object from the source
@@ -163,7 +156,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         ? localDays[selectedDayIndex].timeBlocks[sourceTimeIndex].events.find(
             (e) => e.id === eventId
           )
-        : unassignedEvents.find((e) => e.id === eventId);
+        : unassigned.find((e) => e.id === eventId);
 
     if (!draggedEvent) {
       // Fallback if we can't find the full event
@@ -179,7 +172,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
         user_created: false,
         hard_start: null,
         hard_end: null,
-        timezone: null
+        timezone: null,
+        block_index: null,
       };
     }
 
@@ -305,47 +299,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
       }
     }
 
-    // Make sure events are in a proper order
-    for (const day of updatedDays) {
-      for (const timeblock of day.timeBlocks) {
-        if (timeblock.events.length === 0) { continue; }
-
-        const sortable = timeblock.events
-          .map((ev, index) => ({ ev, index }))
-          .filter(item => item.ev.hard_start !== null);
-
-        // Sort those by datetime
-        sortable.sort((a, b) =>
-          new Date(a.ev.hard_start!).getTime() -
-          new Date(b.ev.hard_start!).getTime()
-        );
-
-        // Create a result array
-        const result = [...timeblock.events];
-
-        // Place sorted events back into their original non-null slots (in order)
-        let si = 0;
-        for (let i = 0; i < result.length; i++) {
-          if (result[i].hard_start === null) { continue; }
-          result[i] = sortable[si].ev;
-          si++;
-        }
-
-        timeblock.events = result;
-      }
-    }
-
-    // Update local state immediately for UI responsiveness
-    setLocalDays(updatedDays);
-    setUnassignedEvents(unassigned_events);
-
     // Notify parent component of changes
-    if (onUpdate) {
-      onUpdate(updatedDays);
-    }
-    if (onUnassignedUpdate) {
-      onUnassignedUpdate(unassigned_events);
-    }
+    onUpdate(updatedDays);
+    onUnassignedUpdate(unassigned_events);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -471,11 +427,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
     event.user_created = true;
 
     // Create a new array instead of mutating the existing one
-    const updatedUnassigned = [...unassignedEvents, event];
-    setUnassignedEvents(updatedUnassigned);
-    if (onUnassignedUpdate) {
-      onUnassignedUpdate(updatedUnassigned);
-    }
+    const updatedUnassigned = [...unassigned, event];
+    onUnassignedUpdate(updatedUnassigned);
     setCreateModalOpen(false);
   };
 
@@ -516,7 +469,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       return;
     }
     const displayEvents = result.result.events.filter(
-      (e) => !unassignedEvents.some((v) => v.id === e.id)
+      (e) => !unassigned.some((v) => v.id === e.id)
     );
     if (result.result.events.length === 0) {
       setSearchResultCaption("No events found that match your filter");
@@ -558,13 +511,10 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const addEventFromSearch = (event: Event) => {
-    if (!unassignedEvents.some((e) => e.id === event.id)) {
+    if (!unassigned.some((e) => e.id === event.id)) {
       // Create a new array instead of mutating the existing one
-      const updatedUnassigned = [...unassignedEvents, event];
-      setUnassignedEvents(updatedUnassigned);
-      if (onUnassignedUpdate) {
-        onUnassignedUpdate(updatedUnassigned);
-      }
+      const updatedUnassigned = [...unassigned, event];
+      onUnassignedUpdate(updatedUnassigned);
     }
     setSearchResult(searchResult!.filter((e) => e.id !== event.id));
   };
@@ -586,19 +536,12 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
     // Move all events from the deleted day to unassigned
     const updatedUnassigned = [
-      ...unassignedEvents,
+      ...unassigned,
       ...localDays[indexToDelete].timeBlocks.flatMap((b) => b.events)
     ];
 
-    setLocalDays(updatedDays);
-    setUnassignedEvents(updatedUnassigned);
-
-    if (onUpdate) {
-      onUpdate(updatedDays);
-    }
-    if (onUnassignedUpdate) {
-      onUnassignedUpdate(updatedUnassigned);
-    }
+    onUpdate(updatedDays);
+    onUnassignedUpdate(updatedUnassigned);
   };
 
   return (
@@ -667,20 +610,18 @@ const Itinerary: React.FC<ItineraryProps> = ({
               onDragOver={onDragOver}
             >
               <div className="events-area">
-                {unassignedEvents.length === 0 ? (
+                {unassigned.length === 0 ? (
                   <p className="workspace-empty-text">No unassigned events</p>
                 ) : (
                   <>
                     <p className="unassigned-events-label">Unassigned Events</p>
-                    {unassignedEvents.map((event) => (
+                    {unassigned.map((event) => (
                       <EventCard
                         key={event.id}
                         event={event}
                         variant="workspace"
-                        unassignedEvents={unassignedEvents}
-                        setUnassignedEvents={setUnassignedEvents}
+                        unassignedEvents={unassigned}
                         localDays={localDays}
-                        setLocalDays={setLocalDays}
                         onDaysUpdate={onUpdate}
                         onUnassignedUpdate={onUnassignedUpdate}
                         draggable={editMode}
@@ -774,10 +715,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
                                 <EventCard
                                   time={item.timeBlock}
                                   event={item.event}
-                                  unassignedEvents={unassignedEvents}
-                                  setUnassignedEvents={setUnassignedEvents}
+                                  unassignedEvents={unassigned}
                                   localDays={localDays}
-                                  setLocalDays={setLocalDays}
                                   onDaysUpdate={onUpdate}
                                   onUnassignedUpdate={onUnassignedUpdate}
                                   draggable={editMode ?? false}

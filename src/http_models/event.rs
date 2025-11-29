@@ -22,6 +22,8 @@ pub struct Event {
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
 	pub timezone: Option<String>,
+	/// Must be some to guarantee ordering
+	pub block_index: Option<i32>,
 }
 
 impl From<&EventListJoinRow> for Event {
@@ -40,6 +42,7 @@ impl From<&EventListJoinRow> for Event {
 			hard_start: value.hard_start.clone(),
 			hard_end: value.hard_end.clone(),
 			timezone: value.timezone.clone(),
+			block_index: value.block_index,
 		}
 	}
 }

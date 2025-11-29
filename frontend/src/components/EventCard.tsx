@@ -20,13 +20,11 @@ interface EventCardProps {
   variant?: "workspace" | "timeline";
 
   localDays: DayItinerary[];
-  setLocalDays: React.Dispatch<React.SetStateAction<DayItinerary[]>>;
   unassignedEvents: Event[];
-  setUnassignedEvents: React.Dispatch<React.SetStateAction<Event[]>>;
 
   // Callbacks to notify parent of changes
-  onDaysUpdate?: (updatedDays: DayItinerary[]) => void;
-  onUnassignedUpdate?: (updatedUnassigned: Event[]) => void;
+  onDaysUpdate: (updatedDays: DayItinerary[]) => void;
+  onUnassignedUpdate: (updatedUnassigned: Event[]) => void;
 
   // Added handlers for drag logic
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,9 +41,7 @@ const EventCard: React.FC<EventCardProps> = ({
   imageOnLeft = true,
   variant = "timeline",
   localDays,
-  setLocalDays,
   unassignedEvents,
-  setUnassignedEvents,
   onDaysUpdate,
   onUnassignedUpdate,
   onDragStart,
@@ -196,7 +192,7 @@ const EventCard: React.FC<EventCardProps> = ({
       alert("TODO: handle error properly - could not update user event");
       return;
     }
-    setEventData(userEvent as Event);
+    setEventData({...userEvent, user_created: true} as Event);
     event.city = userEvent.city;
     event.country = userEvent.country;
     event.event_description = userEvent.event_description;
@@ -207,6 +203,7 @@ const EventCard: React.FC<EventCardProps> = ({
     event.postal_code = userEvent.postal_code;
     event.street_address = userEvent.street_address;
     event.timezone = userEvent.timezone;
+    (onDaysUpdate!)(localDays);
     setIsOpen(false);
   };
 
@@ -227,7 +224,6 @@ const EventCard: React.FC<EventCardProps> = ({
       return;
     }
     const updatedUnassigned = unassignedEvents.filter((e) => e.id !== event.id);
-    setUnassignedEvents(updatedUnassigned);
     const updatedDays = localDays.map((d) => {
       return {
         ...d,
@@ -236,15 +232,10 @@ const EventCard: React.FC<EventCardProps> = ({
         })
       };
     });
-    setLocalDays(updatedDays);
 
     // Notify parent of changes
-    if (onUnassignedUpdate) {
-      onUnassignedUpdate(updatedUnassigned);
-    }
-    if (onDaysUpdate) {
-      onDaysUpdate(updatedDays);
-    }
+    onUnassignedUpdate(updatedUnassigned);
+    onDaysUpdate(updatedDays);
 
     setIsOpen(false);
   };
@@ -359,10 +350,7 @@ const EventCard: React.FC<EventCardProps> = ({
               const updatedUnassigned = unassignedEvents.filter(
                 (ev) => ev.id !== event.id
               );
-              setUnassignedEvents(updatedUnassigned);
-              if (onUnassignedUpdate) {
-                onUnassignedUpdate(updatedUnassigned);
-              }
+              onUnassignedUpdate(updatedUnassigned);
             }}
             title="Remove from workspace"
           >

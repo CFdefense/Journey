@@ -14,12 +14,12 @@ import "../styles/Itinerary.css";
 function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [addDayModalOpen, setAddDayModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [localDays, setLocalDays] = useState<DayItinerary[]>([]);
+  const [unassignedEvents, setUnassignedEvents] = useState<Event[]>([]);
 
   // Get itinerary ID from navigation state
   const itineraryId = location.state?.itineraryId;
@@ -60,6 +60,113 @@ function ViewItineraryPage() {
   };
 
   const handleItineraryUpdate = (updatedDays: DayItinerary[]) => {
+    const toReassign = [];
+    // Pull events that are in the wrong spot
+    for (const day of updatedDays) {
+      for (const timeblock of day.timeBlocks) {
+        if (timeblock.events.length === 0) { continue; }
+        for (let i = 0; i < timeblock.events.length; i++) {
+          const curr = timeblock.events[i];
+          if (!curr.hard_start) { continue; }
+          if (curr.hard_start.slice(0, 10) !== day.date) {
+            timeblock.events.splice(i, 1);
+            toReassign.push(curr);
+            i--;
+            continue;
+          }
+
+          const time = new Date(curr.hard_start).getTime();
+
+          const fourAM = new Date(curr.hard_start!);
+          const noon = new Date(curr.hard_start!);
+          const sixPM = new Date(curr.hard_start!);
+          fourAM.setHours(4, 0, 0, 0);
+          noon.setHours(12, 0, 0, 0);
+          sixPM.setHours(18, 0, 0, 0);
+          const _4am = fourAM.getTime();
+          const _12pm = noon.getTime();
+          const _6pm = sixPM.getTime();
+
+          // I'm too lazy to convert this into a proper conditional
+          if (timeblock.time === "Morning" && time >= _4am && time < _12pm) { continue; }
+          if (timeblock.time === "Afternoon" && time >= _12pm && time < _6pm) { continue; }
+          if (timeblock.time === "Morning" && time >= _6pm && time < _4am) { continue; }
+
+          timeblock.events.splice(i, 1);
+          toReassign.push(curr);
+          i--;
+        }
+      }
+    }
+    // reinsert pulled events
+    for (let i = 0; i < toReassign.length; i++) {
+      const pulled = toReassign[i];
+      for (const day of updatedDays) {
+        if (day.date !== pulled.hard_start!.slice(0, 10)) { continue; }
+        toReassign.splice(i, 1);
+        i--;
+
+        const time = new Date(pulled.hard_start!).getTime();
+
+        const fourAM = new Date(pulled.hard_start!);
+        const noon = new Date(pulled.hard_start!);
+        const sixPM = new Date(pulled.hard_start!);
+        fourAM.setHours(4, 0, 0, 0);
+        noon.setHours(12, 0, 0, 0);
+        sixPM.setHours(18, 0, 0, 0);
+        const _4am = fourAM.getTime();
+        const _12pm = noon.getTime();
+        const _6pm = sixPM.getTime();
+
+        if (time >= _4am && time < _12pm) {
+          day.timeBlocks[0].events.push(pulled);
+        } else if (time >= _12pm && time < _6pm) {
+          day.timeBlocks[1].events.push(pulled);
+        } else if (time >= _6pm && time < _4am) {
+          day.timeBlocks[2].events.push(pulled);
+        } else {
+          console.error("Unreachable statement");
+        }
+      }
+    }
+    // put non-reassigned in unassigned
+    if (toReassign.length > 0) {
+      setUnassignedEvents([...unassignedEvents, ...toReassign])
+    }
+    // sort events
+    for (const day of updatedDays) {
+      for (const timeblock of day.timeBlocks) {
+        if (timeblock.events.length === 0) { continue; }
+
+        const sortable = timeblock.events
+          .map((ev, index) => ({ ev, index }))
+          .filter(item => item.ev.hard_start !== null);
+
+        // Sort those by datetime
+        sortable.sort((a, b) =>
+          new Date(a.ev.hard_start!).getTime() -
+          new Date(b.ev.hard_start!).getTime()
+        );
+
+        // Create a result array
+        const result = [...timeblock.events];
+
+        // Place sorted events back into their original non-null slots (in order)
+        let si = 0;
+        for (let i = 0; i < result.length; i++) {
+          if (result[i].hard_start === null) {
+            result[i].block_index = i;
+            continue;
+          }
+          result[i] = sortable[si].ev;
+          result[i].block_index = i;
+          si++;
+        }
+
+        timeblock.events = result;
+      }
+    }
+
     setLocalDays(updatedDays);
     // Update ref immediately before debounced save
     daysRef.current = updatedDays;
@@ -235,7 +342,6 @@ function ViewItineraryPage() {
       <div className="view-content with-sidebar">
         <Itinerary
           localDays={localDays}
-          setLocalDays={setLocalDays}
           unassigned={unassignedEvents}
           onUpdate={handleItineraryUpdate}
           onUnassignedUpdate={handleUnassignedUpdate}
