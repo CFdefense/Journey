@@ -22,6 +22,7 @@ import type {
 ///
 /// # Returns
 /// - On success: The `Itinerary` object returned by the backend.
+///   Events will already be sorted in the order they were saved.
 /// - On failure: A null itinerary with a non-200 status code.
 ///
 /// # Exceptions

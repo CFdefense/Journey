@@ -18,7 +18,7 @@ use crate::controllers::AxumRouter;
 use crate::error::{ApiResult, AppError};
 use crate::global::EVENT_SEARCH_RESULT_LEN;
 use crate::http_models::event::{
-	SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse,
+	Event, SearchEventRequest, SearchEventResponse, UserEventRequest, UserEventResponse,
 };
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
@@ -88,7 +88,8 @@ async fn itinerary_events(
 			e.user_created,
 			e.hard_start,
 			e.hard_end,
-			e.timezone
+			e.timezone,
+			el.block_index
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
 		WHERE el.itinerary_id = $1 AND el.event_id IS NOT NULL
@@ -125,6 +126,15 @@ async fn itinerary_events(
 				}
 			}
 		}
+		#[cfg(not(tarpaulin_include))]
+		fn sort(a: &Event, b: &Event) -> std::cmp::Ordering {
+			a.block_index
+				.unwrap_or(i32::MAX)
+				.cmp(&b.block_index.unwrap_or(i32::MAX))
+		}
+		morning_events.sort_by(sort);
+		afternoon_events.sort_by(sort);
+		evening_events.sort_by(sort);
 
 		event_days.push(EventDay {
 			morning_events,
@@ -138,12 +148,7 @@ async fn itinerary_events(
 }
 
 /// Returns the unassigned events for this itinerary
-async fn unassigned_events(
-	event_ids: &[i32],
-	pool: &PgPool,
-) -> ApiResult<Vec<crate::http_models::event::Event>> {
-	use crate::http_models::event::Event;
-
+async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<Event>> {
 	if event_ids.is_empty() {
 		return Ok(Vec::new());
 	}
@@ -163,7 +168,8 @@ async fn unassigned_events(
 			user_created,
 			hard_start,
 			hard_end,
-			timezone
+			timezone,
+			NULL::int AS block_index
 		FROM events
 		WHERE id = ANY($1)
 		"#,
@@ -197,6 +203,7 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 	let mut times = Vec::with_capacity(cap);
 	let mut dates = Vec::with_capacity(cap);
 	let mut events: Vec<Option<i32>> = Vec::with_capacity(cap);
+	let mut indices: Vec<Option<i32>> = Vec::with_capacity(cap);
 
 	for day in itinerary.event_days.into_iter() {
 		let morning_len = day.morning_events.len();
@@ -209,6 +216,7 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 			times.push(TimeOfDay::Morning);
 			dates.push(day.date);
 			events.push(None);
+			indices.push(None);
 		} else {
 			times.extend(std::iter::repeat_n(TimeOfDay::Morning, morning_len));
 			times.extend(std::iter::repeat_n(TimeOfDay::Afternoon, afternoon_len));
@@ -219,22 +227,39 @@ pub async fn insert_event_list(itinerary: Itinerary, pool: &PgPool) -> ApiResult
 				morning_len + afternoon_len + evening_len,
 			));
 
-			events.extend(day.morning_events.into_iter().map(|event| Some(event.id)));
-			events.extend(day.afternoon_events.into_iter().map(|event| Some(event.id)));
-			events.extend(day.evening_events.into_iter().map(|event| Some(event.id)));
+			events.extend(day.morning_events.iter().map(|event| Some(event.id)));
+			events.extend(day.afternoon_events.iter().map(|event| Some(event.id)));
+			events.extend(day.evening_events.iter().map(|event| Some(event.id)));
+
+			indices.extend(
+				day.morning_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
+			indices.extend(
+				day.afternoon_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
+			indices.extend(
+				day.evening_events
+					.into_iter()
+					.map(|event| event.block_index),
+			);
 		}
 	}
 
 	sqlx::query!(
 		r#"
-		INSERT INTO event_list (itinerary_id, event_id, time_of_day, date)
-		SELECT $1, events, times, dates
-		FROM UNNEST($2::int4[], $3::time_of_day[], $4::date[]) as u(events, times, dates);
+		INSERT INTO event_list (itinerary_id, event_id, time_of_day, date, block_index)
+		SELECT $1, events, times, dates, indices
+		FROM UNNEST($2::int4[], $3::time_of_day[], $4::date[], $5::int4[]) as u(events, times, dates, indices);
 		"#,
 		itinerary.id,
 		events.as_slice() as &[Option<i32>],
 		times.as_slice() as &[TimeOfDay],
-		dates.as_slice()
+		dates.as_slice(),
+		indices.as_slice() as &[Option<i32>],
 	)
 	.execute(pool)
 	.await
@@ -924,7 +949,7 @@ pub async fn api_search_event(
 	Json(query): Json<SearchEventRequest>,
 ) -> ApiResult<Json<SearchEventResponse>> {
 	let mut qb =
-		sqlx::QueryBuilder::new("SELECT * FROM events WHERE (user_created=FALSE OR account_id=");
+		sqlx::QueryBuilder::new("SELECT *, NULL::int as block_index FROM events WHERE (user_created=FALSE OR account_id=");
 	qb.push_bind(user.id).push(")");
 	// Dynamically add filters if present
 	if let Some(id) = query.id {
@@ -939,6 +964,9 @@ pub async fn api_search_event(
 	}
 	if let Some(city) = query.city {
 		qb.push(" AND city ILIKE ").push_bind(format!("%{}%", city));
+	}
+	if let Some(country) = query.country {
+		qb.push(" AND country ILIKE ").push_bind(format!("%{}%", country));
 	}
 	if let Some(event_type) = query.event_type {
 		qb.push(" AND event_type ILIKE ")

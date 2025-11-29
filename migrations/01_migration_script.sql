@@ -98,7 +98,8 @@ CREATE TABLE event_list (
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     time_of_day time_of_day NOT NULL,
     -- date of destination's local timezone
-    date DATE NOT NULL
+    date DATE NOT NULL,
+    block_index INTEGER
 );
 
 CREATE TABLE messages (

@@ -805,6 +805,7 @@
   padding: 0;
   pointer-events: none;
   z-index: 1;
+  user-select: none;
 }
 
 .arrow-image {
@@ -814,6 +815,8 @@
   max-height: 300px;
   object-fit: contain;
   opacity: 1;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* On large screens, push cards further toward the edges,
