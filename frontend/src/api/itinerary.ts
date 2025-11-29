@@ -8,8 +8,7 @@ import type {
 	SearchEventResponse,
 	UnsaveRequest,
 	UserEventRequest,
-	UserEventResponse,
-	Event
+	UserEventResponse
 } from "../models/itinerary";
 
 /// Calls itinerary details
@@ -40,17 +39,7 @@ export async function apiItineraryDetails(
 				credentials: import.meta.env.DEV ? "include" : "same-origin"
 			}
 		);
-		if (!response.ok) {
-			return { result: null, status: response.status };
-		}
-		const itinerary: Itinerary = await response.json();
-		const sort = (a: Event, b: Event) => (a.block_index ?? Number.MAX_SAFE_INTEGER) - (b.block_index ?? Number.MAX_SAFE_INTEGER);
-		itinerary.event_days.forEach(day => {
-			day.morning_events.sort(sort);
-			day.afternoon_events.sort(sort);
-			day.evening_events.sort(sort);
-		});
-		return { result: itinerary, status: response.status };
+		return { result: response.ok ? await response.json() : null, status: response.status };
 	} catch (error) {
 		console.error("apiItineraryDetails error:", error);
 		return { result: null, status: -1 };

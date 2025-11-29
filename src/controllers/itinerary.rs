@@ -126,6 +126,12 @@ async fn itinerary_events(
 				}
 			}
 		}
+		fn sort(a: &Event, b: &Event) -> std::cmp::Ordering {
+			a.block_index.unwrap_or(i32::MAX).cmp(&b.block_index.unwrap_or(i32::MAX))
+		}
+		morning_events.sort_by(sort);
+		afternoon_events.sort_by(sort);
+		evening_events.sort_by(sort);
 
 		event_days.push(EventDay {
 			morning_events,
