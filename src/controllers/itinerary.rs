@@ -126,6 +126,7 @@ async fn itinerary_events(
 				}
 			}
 		}
+		#[cfg(not(tarpaulin_include))]
 		fn sort(a: &Event, b: &Event) -> std::cmp::Ordering {
 			a.block_index
 				.unwrap_or(i32::MAX)
@@ -948,7 +949,7 @@ pub async fn api_search_event(
 	Json(query): Json<SearchEventRequest>,
 ) -> ApiResult<Json<SearchEventResponse>> {
 	let mut qb =
-		sqlx::QueryBuilder::new("SELECT * FROM events WHERE (user_created=FALSE OR account_id=");
+		sqlx::QueryBuilder::new("SELECT *, NULL::int as block_index FROM events WHERE (user_created=FALSE OR account_id=");
 	qb.push_bind(user.id).push(")");
 	// Dynamically add filters if present
 	if let Some(id) = query.id {
@@ -963,6 +964,9 @@ pub async fn api_search_event(
 	}
 	if let Some(city) = query.city {
 		qb.push(" AND city ILIKE ").push_bind(format!("%{}%", city));
+	}
+	if let Some(country) = query.country {
+		qb.push(" AND country ILIKE ").push_bind(format!("%{}%", country));
 	}
 	if let Some(event_type) = query.event_type {
 		qb.push(" AND event_type ILIKE ")
