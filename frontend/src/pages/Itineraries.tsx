@@ -6,7 +6,6 @@ import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import "../styles/Account.css";
 import type { EventDay, Itinerary } from "../models/itinerary";
-import userPfp from "../../public/user-pfp-temp.png";
 
 export default function Itineraries() {
   const navigate = useNavigate();
@@ -16,7 +15,7 @@ export default function Itineraries() {
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  const navbarAvatarUrl = userPfp;
+  const navbarAvatarUrl = "/user-pfp-temp.png";
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);

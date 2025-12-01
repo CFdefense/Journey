@@ -6,7 +6,6 @@ import "../styles/Account.css";
 import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
-import userPfp from "../../public/user-pfp-temp.png";
 import { toast } from "../components/Toast";
 
 type BudgetOption =
@@ -65,7 +64,7 @@ export default function Preferences() {
   const [isEditingFood, setIsEditingFood] = useState<boolean>(false);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  const navbarAvatarUrl = userPfp;
+  const navbarAvatarUrl = "/user-pfp-temp.png";
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);

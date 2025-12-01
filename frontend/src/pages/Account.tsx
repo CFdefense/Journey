@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
-import userPfp from "../../public/user-pfp-temp.png";
 import {
   checkIfValidPassword,
   checkIfPasswordsMatch,
@@ -28,7 +27,7 @@ export default function Account() {
   }>({});
 
   // Use same profile picture asset as Navbar for consistency
-  const navbarAvatarUrl = userPfp;
+  const navbarAvatarUrl = "/user-pfp-temp.png";
   const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
@@ -126,14 +125,14 @@ export default function Account() {
       }
 
       toast.success("Profile picture updated successfully!");
-      
+
       // Update the displayed image
       if (updateResult.result?.profile_picture) {
         setProfileImageUrl(updateResult.result.profile_picture);
       } else {
         setProfileImageUrl(base64Image);
       }
-      
+
       setIsUploadingPicture(false);
     };
 
@@ -143,7 +142,7 @@ export default function Account() {
     };
 
     reader.readAsDataURL(file);
-    
+
     // Reset file input so the same file can be selected again
     e.target.value = "";
   };
@@ -267,7 +266,7 @@ export default function Account() {
                 <div className="account-box">
                   <div className="hs-hero-card">
                     <div className="profile-header">
-                      <div 
+                      <div
                         className={`avatar-wrapper ${isUploadingPicture ? "uploading" : ""}`}
                         onClick={() => !isUploadingPicture && fileInputRef.current?.click()}
                       >

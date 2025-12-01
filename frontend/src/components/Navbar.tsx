@@ -2,11 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
-import userPfp from "../../public/user-pfp-temp.png";
 import { apiLogout } from "../api/account";
 import { apiCurrent } from "../api/account";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 import "../styles/Navbar.css";
+
+const userPfp = "/user-pfp-temp.png";
 
 type NavbarProps = {
   page: "login" | "signup" | "index" | "home" | "view";
@@ -23,7 +24,7 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [displayName, setDisplayName] = useState<string>(firstName || "");
-  const [avatarUrl, setAvatarUrl] = useState<string>(profileImageUrl || userPfp); 
+  const [avatarUrl, setAvatarUrl] = useState<string>(profileImageUrl || userPfp);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -91,9 +92,9 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
           >
             {displayName || ""}
           </span>
-          <img 
-            src={avatarUrl} 
-            alt="User profile" 
+          <img
+            src={avatarUrl}
+            alt="User profile"
             className="user-menu-avatar"
             onError={(e) => { e.currentTarget.src = userPfp; }}
           />
@@ -123,7 +124,7 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
       </div>
     );
   };
-  
+
   const renderCTA = () => {
     switch (page) {
       case "login":
