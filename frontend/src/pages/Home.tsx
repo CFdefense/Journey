@@ -46,11 +46,6 @@ export default function Home() {
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
 
-  /// number = there are more messages
-  /// null = there are no more messages
-  /// undefined = we don't yet know if there are more messages
-  const [prevMsgId, setPrevMsgId] = useState<number | null | undefined>(undefined);
-
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
   // Track the initial chat ID to know when it actually changes
@@ -133,7 +128,8 @@ export default function Home() {
       const tempChats = chatsResult.result.chat_sessions.map((chat) => ({
         id: chat.id,
         title: chat.title,
-        messages: [] // message loading handled at fetchMessagesForActiveChat
+        messages: [], // message loading handled at fetchMessagesForActiveChat
+        prev_msg_id: undefined
       }));
 
       let chatSessionId = activeChatId;
@@ -161,7 +157,13 @@ export default function Home() {
         message_id: null
       };
       const messagePageResult = await apiMessages(payload);
-      // TODO: 401 -> navigate to /logout
+      if (messagePageResult.status === 401) {
+        navigate("/logout");
+      }
+      if (messagePageResult.status !== 200 || messagePageResult.result === null) {
+        alert("TODO: handle error - could not fetch messages");
+        return;
+      }
 
       if (
         messagePageResult.result === null ||
@@ -170,23 +172,26 @@ export default function Home() {
         return; // TODO handle and display error
       }
 
-      // use state for prev_message_id so you can fetch the next page when you scroll up
-      if (prevMsgId === undefined) {
-        setPrevMsgId(messagePageResult.result.prev_message_id);
-      }
-
       const messages = messagePageResult.result.message_page;
       setChats(
         tempChats.map((c) =>
           c.id === chatSessionId
-            ? { ...c, messages: [...c.messages, ...messages] }
+            ? {
+              ...c,
+              messages: [...c.messages, ...messages],
+              prev_msg_id: c.prev_msg_id === undefined
+                ? messagePageResult.result!.prev_message_id
+                : c.prev_msg_id
+            }
             : c
         )
       );
 
       // scroll to bottom
-      const chatMsgWindow = document.getElementById("chat-messages")!;
-      chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
+      const chatMsgWindow = document.getElementById("chat-messages");
+      if (chatMsgWindow) {
+        chatMsgWindow.scrollTop = chatMsgWindow.scrollHeight;
+      }
     }
 
     fetchAccount();
@@ -245,7 +250,14 @@ export default function Home() {
     setItineraryStartDate("");
     setItineraryEndDate("");
     setItinerarySidebarVisible(false);
-    setPrevMsgId(undefined);
+    setChats(prevChats =>
+      (prevChats ?? []).map(c => {
+        return {
+          ...c,
+          prev_msg_id: undefined
+        }
+      })
+    );
   }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
@@ -259,7 +271,14 @@ export default function Home() {
     sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
     setActiveChatId(null);
     setItinerarySidebarVisible(false);
-    setPrevMsgId(undefined);
+    setChats(prevChats =>
+      (prevChats ?? []).map(c => {
+        return {
+          ...c,
+          prev_msg_id: undefined
+        }
+      })
+    );
   };
 
   const handleSendMessage = async (txt: string) => {
@@ -289,7 +308,8 @@ export default function Home() {
       const newChat: ChatSession = {
         id: newChatResult.result,
         messages: [],
-        title: "New Chat"
+        title: "New Chat",
+        prev_msg_id: undefined
       };
 
       setChats((prevChats) => [...(prevChats ?? []), newChat]);
@@ -509,8 +529,17 @@ export default function Home() {
             hasActiveChat={activeChatId !== null}
             chat_session_id={activeChatId!}
             set_messages={setMessages}
-            prevMsgId={prevMsgId}
-            setPrevMsgId={setPrevMsgId}
+            prevMsgId={chats?.find(c => c.id === activeChatId)?.prev_msg_id}
+            setPrevMsgId={(id) => {
+              setChats(prevChats =>
+                (prevChats ?? []).map(c => {
+                  return c.id === activeChatId ? {
+                    ...c,
+                    prev_msg_id: id
+                  } : c;
+                })
+              );
+            }}
           />
         </div>
 

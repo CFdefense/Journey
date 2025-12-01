@@ -17,7 +17,7 @@ interface ChatWindowProps {
   chat_session_id: number;
   set_messages: (msgs: Message[], chat_id: number) => void;
   prevMsgId: number | null | undefined;
-  setPrevMsgId: React.Dispatch<React.SetStateAction<number | null | undefined>>;
+  setPrevMsgId: (id: number | null | undefined) => void;
 }
 
 const BASE_TEXT = "What are your ";
@@ -370,7 +370,11 @@ export default function ChatWindow({
   };
 
   const onChatMsgsWheel = async (e: React.WheelEvent) => {
-    if (e.deltaY >= 0 || prevMsgId === null || prevMsgId === undefined) { return; }
+    if (prevMsgId === undefined) {
+      console.error("Unreachable statement");
+      return;
+    }
+    if (e.deltaY >= 0 || prevMsgId === null) { return; }
     const chatMsgWindow = document.getElementById("chat-messages")!;
     if (chatMsgWindow.scrollTop !== 0) { return; }
     const oldScrollHeight = chatMsgWindow.scrollHeight;
@@ -386,7 +390,7 @@ export default function ChatWindow({
       alert("TODO: handle error - failed to load messages");
       return;
     }
-    const res = page_result.result; // BUG: page result is returning too many pages - issue with backend endpoint
+    const res = page_result.result;
     setPrevMsgId(res.prev_message_id);
     if (res.message_page.length === 0) {
       return;
