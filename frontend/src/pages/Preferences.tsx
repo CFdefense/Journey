@@ -455,7 +455,7 @@ export default function Preferences() {
                               value={disabilityInput}
                               onChange={(e) => setDisabilityInput(e.target.value)}
                               onKeyDown={handleDisabilityKeyDown}
-                              placeholder="Type and press Enter to add"
+                              placeholder="Type the accessibility preferences and press enter to add them..."
                               className="tag-input"
                             />
                           </div>
@@ -465,18 +465,23 @@ export default function Preferences() {
                           </div>
                         )}
                       </div>
-                      <div className="field-row__action">
+                       <div className="field-row__action">
                         <button
                           type="button"
                           className="pill-button"
                           onClick={async () => {
                             if (isEditingDisabilities) {
+                              if (disabilityInput.trim()) {
+                                toast.error("Please press Enter to add your entry or clear the input field.");
+                                return;
+                              }
                               await submitPartialUpdate({
                                 disabilities: disabilities.length > 0 ? arrayToString(disabilities) : null
                               });
                             }
                             setIsEditingDisabilities(!isEditingDisabilities);
                           }}
+                          disabled={isEditingDisabilities && disabilityInput.trim() !== ""}
                         >
                           {isEditingDisabilities ? "Done" : "Edit"}
                         </button>
@@ -516,7 +521,7 @@ export default function Preferences() {
                               value={foodInput}
                               onChange={(e) => setFoodInput(e.target.value)}
                               onKeyDown={handleFoodKeyDown}
-                              placeholder="Type and press Enter to add"
+                              placeholder="Type your food preferences and allergies and press enter to add them..."
                               className="tag-input"
                             />
                           </div>
@@ -526,22 +531,27 @@ export default function Preferences() {
                           </div>
                         )}
                       </div>
-                      <div className="field-row__action">
-                        <button
-                          type="button"
-                          className="pill-button"
-                          onClick={async () => {
-                            if (isEditingFood) {
-                              await submitPartialUpdate({
-                                food_allergies: foodPreferences.length > 0 ? arrayToString(foodPreferences) : null
-                              });
-                            }
-                            setIsEditingFood(!isEditingFood);
-                          }}
-                        >
-                          {isEditingFood ? "Done" : "Edit"}
-                        </button>
-                      </div>
+                        <div className="field-row__action">
+                          <button
+                            type="button"
+                            className="pill-button"
+                            onClick={async () => {
+                              if (isEditingFood) {
+                                if (foodInput.trim()) {
+                                  toast.error("Please press Enter to add your entry or clear the input field.");
+                                  return;
+                                }
+                                await submitPartialUpdate({
+                                  food_allergies: foodPreferences.length > 0 ? arrayToString(foodPreferences) : null
+                                });
+                              }
+                              setIsEditingFood(!isEditingFood);
+                            }}
+                            disabled={isEditingFood && foodInput.trim() !== ""}
+                          >
+                            {isEditingFood ? "Done" : "Edit"}
+                          </button>
+                        </div>
                     </div>
                   </div>
                 </div>
