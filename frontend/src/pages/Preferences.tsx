@@ -154,6 +154,15 @@ export default function Preferences() {
       food_allergies: null,
       ...partial
     };
+
+    // send an empty string instead of null so the db updates properly
+    if ('disabilities' in partial) {
+      payload.disabilities = partial.disabilities || "";
+    }
+    if ('food_allergies' in partial) {
+      payload.food_allergies = partial.food_allergies || "";
+    }
+
     try {
       const updateResult = await apiUpdateAccount(payload);
       if (updateResult.status !== 200) {
