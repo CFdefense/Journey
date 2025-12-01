@@ -21,16 +21,9 @@ function enumToString<T extends object>(
   enumType: T,
   enumValue: T[keyof T]
 ): string {
-  // Enums in TypeScript allow lookup by value to get the key string.
-  // We use keyof T to ensure type safety for the lookup.
   const key = Object.keys(enumType).find(
     (k) => enumType[k as keyof T] === enumValue
   );
-
-  // If the key is found, return it. Otherwise, return a safe fallback or throw.
-  // For numeric enums, the key is the string name.
-  // For string enums, the key is the string value, which is what the API expects.
-  // The .toString() call at the end ensures the return type is 'string' for the API.
   return key || (enumValue as any)?.toString() || "";
 }
 
@@ -38,15 +31,11 @@ function stringToEnum<T extends object>(
   enumType: T,
   enumKey: string
 ): T[keyof T] | undefined {
-  // We use `as keyof T` to cast the string key to an enum key for lookup.
-  // This allows us to access the enum's value.
   const enumValue = enumType[enumKey as keyof T];
-
-  // Check if the value is valid (i.e., not undefined)
   if (enumValue !== undefined) {
     return enumValue;
   }
-  return undefined; // Return undefined if the key is not found
+  return undefined;
 }
 
 export default function Preferences() {
@@ -56,8 +45,10 @@ export default function Preferences() {
   const [loaded, setLoaded] = useState<boolean>(false);
   const [budget, setBudget] = useState<BudgetBucket | null>(null);
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(null);
-  const [disabilities, setDisabilities] = useState<string | null>(null);
-  const [foodPreferences, setFoodPreferences] = useState<string | null>(null);
+  const [disabilities, setDisabilities] = useState<string[]>([]);
+  const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
+  const [disabilityInput, setDisabilityInput] = useState<string>("");
+  const [foodInput, setFoodInput] = useState<string>("");
   const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
   const [isEditingRisk, setIsEditingRisk] = useState<boolean>(false);
   const [isEditingDisabilities, setIsEditingDisabilities] =
@@ -94,6 +85,16 @@ export default function Preferences() {
     });
   };
 
+  // Helper functions to convert between string and array
+  const stringToArray = (str: string | null | undefined): string[] => {
+    if (!str || str.trim() === "") return [];
+    return str.split(",").map(item => item.trim()).filter(item => item !== "");
+  };
+
+  const arrayToString = (arr: string[]): string => {
+    return arr.join(", ");
+  };
+
   // Fetch user profile on component mount
   useEffect(() => {
     const fetchProfile = async () => {
@@ -104,8 +105,8 @@ export default function Preferences() {
         setLastName(result.last_name || "");
         setBudget(result.budget_preference as BudgetBucket);
         setRiskTolerance(result.risk_preference as RiskTolerence);
-        setDisabilities(result.disabilities || "");
-        setFoodPreferences(result.food_allergies || "");
+        setDisabilities(stringToArray(result.disabilities));
+        setFoodPreferences(stringToArray(result.food_allergies));
         const maybeTrips = (result as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (result as any).created_at;
@@ -140,8 +141,6 @@ export default function Preferences() {
     fetchProfile();
   }, []);
 
-  // Legacy submit removed in favor of inline updates
-  // Inline update for a single preference field
   const submitPartialUpdate = async (partial: Partial<UpdateRequest>) => {
     const payload: UpdateRequest = {
       email: null,
@@ -168,6 +167,36 @@ export default function Preferences() {
       toast.error("Unable to update preferences. Please try again.");
       return false;
     }
+  };
+
+  // Tag input handlers for disabilities
+  const handleDisabilityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && disabilityInput.trim()) {
+      e.preventDefault();
+      if (!disabilities.includes(disabilityInput.trim())) {
+        setDisabilities([...disabilities, disabilityInput.trim()]);
+      }
+      setDisabilityInput("");
+    }
+  };
+
+  const removeDisability = (indexToRemove: number) => {
+    setDisabilities(disabilities.filter((_, index) => index !== indexToRemove));
+  };
+
+  // Tag input handlers for food preferences
+  const handleFoodKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && foodInput.trim()) {
+      e.preventDefault();
+      if (!foodPreferences.includes(foodInput.trim())) {
+        setFoodPreferences([...foodPreferences, foodInput.trim()]);
+      }
+      setFoodInput("");
+    }
+  };
+
+  const removeFoodPreference = (indexToRemove: number) => {
+    setFoodPreferences(foodPreferences.filter((_, index) => index !== indexToRemove));
   };
 
   return (
@@ -393,15 +422,37 @@ export default function Preferences() {
                           Disabilities/Accessibility Needs
                         </div>
                         {isEditingDisabilities ? (
-                          <textarea
-                            id="disabilities"
-                            value={disabilities ?? ""}
-                            onChange={(e) => setDisabilities(e.target.value)}
-                            placeholder="e.g., Wheelchair user, visual impairment."
-                          />
+                          <div className="tag-input-container">
+                            {disabilities.length > 0 && (
+                              <div className="tags-display">
+                                {disabilities.map((disability, index) => (
+                                  <div key={index} className="tag-chip">
+                                    <span className="tag-text">{disability}</span>
+                                    <button
+                                      type="button"
+                                      className="tag-remove"
+                                      onClick={() => removeDisability(index)}
+                                      aria-label={`Remove ${disability}`}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <input
+                              type="text"
+                              id="disabilities"
+                              value={disabilityInput}
+                              onChange={(e) => setDisabilityInput(e.target.value)}
+                              onKeyDown={handleDisabilityKeyDown}
+                              placeholder="Type and press Enter to add"
+                              className="tag-input"
+                            />
+                          </div>
                         ) : (
                           <div className="field-row__value">
-                            {disabilities || "—"}
+                            {disabilities.length > 0 ? disabilities.join(", ") : "—"}
                           </div>
                         )}
                       </div>
@@ -412,7 +463,7 @@ export default function Preferences() {
                           onClick={async () => {
                             if (isEditingDisabilities) {
                               await submitPartialUpdate({
-                                disabilities: disabilities || null
+                                disabilities: disabilities.length > 0 ? arrayToString(disabilities) : null
                               });
                             }
                             setIsEditingDisabilities(!isEditingDisabilities);
@@ -432,15 +483,37 @@ export default function Preferences() {
                           Food Preferences/Allergies
                         </div>
                         {isEditingFood ? (
-                          <textarea
-                            id="foodPreferences"
-                            value={foodPreferences ?? ""}
-                            onChange={(e) => setFoodPreferences(e.target.value)}
-                            placeholder="e.g., Gluten-free, no shellfish, vegan."
-                          />
+                          <div className="tag-input-container">
+                            {foodPreferences.length > 0 && (
+                              <div className="tags-display">
+                                {foodPreferences.map((food, index) => (
+                                  <div key={index} className="tag-chip">
+                                    <span className="tag-text">{food}</span>
+                                    <button
+                                      type="button"
+                                      className="tag-remove"
+                                      onClick={() => removeFoodPreference(index)}
+                                      aria-label={`Remove ${food}`}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <input
+                              type="text"
+                              id="foodPreferences"
+                              value={foodInput}
+                              onChange={(e) => setFoodInput(e.target.value)}
+                              onKeyDown={handleFoodKeyDown}
+                              placeholder="Type and press Enter to add"
+                              className="tag-input"
+                            />
+                          </div>
                         ) : (
                           <div className="field-row__value">
-                            {foodPreferences || "—"}
+                            {foodPreferences.length > 0 ? foodPreferences.join(", ") : "—"}
                           </div>
                         )}
                       </div>
@@ -451,7 +524,7 @@ export default function Preferences() {
                           onClick={async () => {
                             if (isEditingFood) {
                               await submitPartialUpdate({
-                                food_allergies: foodPreferences || null
+                                food_allergies: foodPreferences.length > 0 ? arrayToString(foodPreferences) : null
                               });
                             }
                             setIsEditingFood(!isEditingFood);
