@@ -234,7 +234,8 @@ async function test_flow() {
 		end_date: "2025-12-31",
 		event_days: [],
 		chat_session_id: null,
-		title: "Test Itinerary"
+		title: "Test Itinerary",
+		unassigned_events: []
 	};
 
 	// Save itinerary
