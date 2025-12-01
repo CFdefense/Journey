@@ -5,6 +5,8 @@ import "../styles/ChatWindow.css";
 import type { Message } from "../models/chat";
 import ChatMessage from "./ChatMessage";
 import aiPic from "../assets/ai-pic.png";
+import { apiMessages } from "../api/home";
+import { useNavigate } from "react-router-dom";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -12,6 +14,10 @@ interface ChatWindowProps {
   onItinerarySelect: (itineraryId: number) => void;
   onEditMessage: (messageId: number, newText: string) => void;
   hasActiveChat?: boolean;
+  chat_session_id: number;
+  set_messages: (msgs: Message[], chat_id: number) => void;
+  prevMsgId: number | null | undefined;
+  setPrevMsgId: React.Dispatch<React.SetStateAction<number | null | undefined>>;
 }
 
 const BASE_TEXT = "What are your ";
@@ -27,13 +33,19 @@ export default function ChatWindow({
   onSend,
   onItinerarySelect,
   onEditMessage,
-  hasActiveChat = false
+  hasActiveChat = false,
+  chat_session_id,
+  set_messages,
+  prevMsgId,
+  setPrevMsgId,
 }: ChatWindowProps) {
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
   const [isExpanding, setIsExpanding] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isSendingEmpty, setIsSendingEmpty] = useState(false);
+  // const [allMsgLoaded, setAllMsgLoaded] = useState(false);
+
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const deleteIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,6 +58,8 @@ export default function ChatWindow({
   const animationStartedRef = useRef<boolean>(false);
   const shouldPreserveAnimationRef = useRef<boolean>(false);
   const initialFadeInDelayRef = useRef<NodeJS.Timeout | null>(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if messages have actually changed
@@ -355,6 +369,38 @@ export default function ChatWindow({
     }
   };
 
+  const onChatMsgsWheel = async (e: React.WheelEvent) => {
+    if (e.deltaY >= 0) { return; }
+    const chatMsgWindow = document.getElementById("chat-messages")!;
+    if (chatMsgWindow.scrollTop !== 0 || prevMsgId === null) { return; }
+    const oldScrollHeight = chatMsgWindow.scrollHeight;
+    const page_result = await apiMessages({
+      chat_session_id,
+      message_id: messages.length > 0
+        ? messages[0].id
+        : null
+    });
+    if (page_result.status === 401) {
+      navigate("/login");
+      return;
+    }
+    if (page_result.result === null || page_result.status !== 200) {
+      alert("TODO: handle error - failed to load messages");
+      return;
+    }
+    const res = page_result.result; // BUG: page result is returning too many pages - issue with backend endpoint
+    setPrevMsgId(res.prev_message_id);
+    if (res.message_page.length === 0) {
+      return;
+    }
+    set_messages([...res.message_page, ...messages], chat_session_id);
+    // use previous scroll position to preserve scroll state
+    requestAnimationFrame(() => {
+      const newScrollHeight = chatMsgWindow.scrollHeight;
+      chatMsgWindow.scrollTop = newScrollHeight - oldScrollHeight;
+    });
+  };
+
   const showEmptyState = !hasActiveChat && messages.length === 0;
   const titleText = displayedText;
 
@@ -412,7 +458,7 @@ export default function ChatWindow({
             </div>
           </div>
 
-          <div className="chat-messages">
+          <div id="chat-messages" className="chat-messages" onWheel={onChatMsgsWheel}>
             {messages.map((msg) => {
               return (
                 <ChatMessage

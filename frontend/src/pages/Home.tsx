@@ -46,6 +46,11 @@ export default function Home() {
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
 
+  /// number = there are more messages
+  /// null = there are no more messages
+  /// undefined = we don't yet know if there are more messages
+  const [prevMsgId, setPrevMsgId] = useState<number | null | undefined>(undefined);
+
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
   // Track the initial chat ID to know when it actually changes
@@ -165,7 +170,10 @@ export default function Home() {
         return; // TODO handle and display error
       }
 
-      // TODO: use state for prev_message_id so you can fetch the next page when you scroll up
+      // use state for prev_message_id so you can fetch the next page when you scroll up
+      if (prevMsgId === undefined) {
+        setPrevMsgId(messagePageResult.result.prev_message_id);
+      }
 
       const messages = messagePageResult.result.message_page;
       setChats(
@@ -175,6 +183,10 @@ export default function Home() {
             : c
         )
       );
+
+      // scroll to bottom
+      const chatMsgWindow = document.getElementById("chat-messages")!;
+      chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
     }
 
     fetchAccount();
@@ -356,6 +368,10 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
+
+    // scroll to bottom
+    const chatMsgWindow = document.getElementById("chat-messages")!;
+    chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
   };
 
   const handleEditMessage = async (messageId: number, newText: string) => {
@@ -416,6 +432,10 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
+
+    // scroll to bottom
+    const chatMsgWindow = document.getElementById("chat-messages")!;
+    chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
   };
 
   const handleDeleteChat = (deletedChatId: number) => {
@@ -446,6 +466,19 @@ export default function Home() {
 
   const activeChat = chats?.find((c) => c.id === activeChatId) ?? null;
 
+  const setMessages = (msgs: Message[], chat_id: number) => {
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) =>
+        c.id === chat_id
+          ? {
+              ...c,
+              messages: msgs
+            }
+          : c
+      )
+    );
+  };
+
   return (
     <div className="home-page">
       <div
@@ -472,6 +505,10 @@ export default function Home() {
             onItinerarySelect={handleItinerarySelect}
             onEditMessage={handleEditMessage}
             hasActiveChat={activeChatId !== null}
+            chat_session_id={activeChatId!}
+            set_messages={setMessages}
+            prevMsgId={prevMsgId}
+            setPrevMsgId={setPrevMsgId}
           />
         </div>
 
