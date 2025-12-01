@@ -191,10 +191,12 @@ export default function Home() {
       );
 
       // scroll to bottom
-      const chatMsgWindow = document.getElementById("chat-messages");
-      if (chatMsgWindow) {
-        chatMsgWindow.scrollTop = chatMsgWindow.scrollHeight;
-      }
+      requestAnimationFrame(() => {
+        const chatMsgWindow = document.getElementById("chat-messages");
+        if (chatMsgWindow) {
+          chatMsgWindow.scrollTop = chatMsgWindow.scrollHeight;
+        }
+      });
     }
 
     fetchAccount();
@@ -395,8 +397,10 @@ export default function Home() {
     }
 
     // scroll to bottom
-    const chatMsgWindow = document.getElementById("chat-messages")!;
-    chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
+    requestAnimationFrame(() => {
+      const chatMsgWindow = document.getElementById("chat-messages")!;
+      chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
+    });
   };
 
   const handleEditMessage = async (messageId: number, newText: string) => {
@@ -459,8 +463,10 @@ export default function Home() {
     }
 
     // scroll to bottom
-    const chatMsgWindow = document.getElementById("chat-messages")!;
-    chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
+    requestAnimationFrame(() => {
+      const chatMsgWindow = document.getElementById("chat-messages")!;
+      chatMsgWindow.scrollTop = chatMsgWindow?.scrollHeight;
+    });
   };
 
   const handleDeleteChat = (deletedChatId: number) => {
