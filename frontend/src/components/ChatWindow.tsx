@@ -37,7 +37,7 @@ export default function ChatWindow({
   chat_session_id,
   set_messages,
   prevMsgId,
-  setPrevMsgId,
+  setPrevMsgId
 }: ChatWindowProps) {
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
@@ -374,9 +374,13 @@ export default function ChatWindow({
       console.error("Unreachable statement");
       return;
     }
-    if (e.deltaY >= 0 || prevMsgId === null) { return; }
+    if (e.deltaY >= 0 || prevMsgId === null) {
+      return;
+    }
     const chatMsgWindow = document.getElementById("chat-messages")!;
-    if (chatMsgWindow.scrollTop !== 0) { return; }
+    if (chatMsgWindow.scrollTop !== 0) {
+      return;
+    }
     const oldScrollHeight = chatMsgWindow.scrollHeight;
     const page_result = await apiMessages({
       chat_session_id,
@@ -460,7 +464,11 @@ export default function ChatWindow({
             </div>
           </div>
 
-          <div id="chat-messages" className="chat-messages" onWheel={onChatMsgsWheel}>
+          <div
+            id="chat-messages"
+            className="chat-messages"
+            onWheel={onChatMsgsWheel}
+          >
             {messages.map((msg) => {
               return (
                 <ChatMessage

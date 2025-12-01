@@ -10,7 +10,12 @@ import {
 import "../styles/Itinerary.css";
 import { apiSearchEvent, apiUserEvent } from "../api/itinerary";
 import { useNavigate } from "react-router-dom";
-import { sanitize, canDropEventInTimeBlock, getTimeBlockFromTimestamp, getDateFromTimestamp } from "../helpers/itinerary";
+import {
+  sanitize,
+  canDropEventInTimeBlock,
+  getTimeBlockFromTimestamp,
+  getDateFromTimestamp
+} from "../helpers/itinerary";
 
 interface ItineraryProps {
   days?: DayItinerary[];
@@ -145,17 +150,28 @@ const Itinerary: React.FC<ItineraryProps> = ({
 
     //  checks to see if being dropped in a time block, and the event has a hard start
     if (targetTimeIndex >= 0 && draggedEvent.hard_start) {
-		const currentDay = localDays[selectedDayIndex];
-		const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
-		const targetDate = currentDay.date;
-		
-		if (!canDropEventInTimeBlock(draggedEvent, targetTimeBlock, targetDate, targetTimeIndex)) {
-			const requiredTimeBlock = getTimeBlockFromTimestamp(draggedEvent.hard_start);
-			const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
-			alert(`"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`);
-			return;
-		}
-	}
+      const currentDay = localDays[selectedDayIndex];
+      const targetTimeBlock = currentDay.timeBlocks[targetTimeIndex].time;
+      const targetDate = currentDay.date;
+
+      if (
+        !canDropEventInTimeBlock(
+          draggedEvent,
+          targetTimeBlock,
+          targetDate,
+          targetTimeIndex
+        )
+      ) {
+        const requiredTimeBlock = getTimeBlockFromTimestamp(
+          draggedEvent.hard_start
+        );
+        const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
+        alert(
+          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`
+        );
+        return;
+      }
+    }
 
     // Add event to target time block if not already there
     if (targetTimeIndex >= 0) {

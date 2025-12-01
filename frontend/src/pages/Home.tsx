@@ -105,10 +105,9 @@ export default function Home() {
           }
           setShowFinishPopup(
             account.budget_preference === null &&
-            account.disabilities === "" &&
-            account.food_allergies === "" &&
-            account.risk_preference === null
-
+              account.disabilities === "" &&
+              account.food_allergies === "" &&
+              account.risk_preference === null
           );
         })
         .catch((err) => {
@@ -160,7 +159,10 @@ export default function Home() {
       if (messagePageResult.status === 401) {
         navigate("/logout");
       }
-      if (messagePageResult.status !== 200 || messagePageResult.result === null) {
+      if (
+        messagePageResult.status !== 200 ||
+        messagePageResult.result === null
+      ) {
         alert("TODO: handle error - could not fetch messages");
         return;
       }
@@ -177,12 +179,13 @@ export default function Home() {
         tempChats.map((c) =>
           c.id === chatSessionId
             ? {
-              ...c,
-              messages: [...c.messages, ...messages],
-              prev_msg_id: c.prev_msg_id === undefined
-                ? messagePageResult.result!.prev_message_id
-                : c.prev_msg_id
-            }
+                ...c,
+                messages: [...c.messages, ...messages],
+                prev_msg_id:
+                  c.prev_msg_id === undefined
+                    ? messagePageResult.result!.prev_message_id
+                    : c.prev_msg_id
+              }
             : c
         )
       );
@@ -250,12 +253,12 @@ export default function Home() {
     setItineraryStartDate("");
     setItineraryEndDate("");
     setItinerarySidebarVisible(false);
-    setChats(prevChats =>
-      (prevChats ?? []).map(c => {
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) => {
         return {
           ...c,
           prev_msg_id: undefined
-        }
+        };
       })
     );
   }, [activeChatId]);
@@ -271,12 +274,12 @@ export default function Home() {
     sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
     setActiveChatId(null);
     setItinerarySidebarVisible(false);
-    setChats(prevChats =>
-      (prevChats ?? []).map(c => {
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) => {
         return {
           ...c,
           prev_msg_id: undefined
-        }
+        };
       })
     );
   };
@@ -529,14 +532,16 @@ export default function Home() {
             hasActiveChat={activeChatId !== null}
             chat_session_id={activeChatId!}
             set_messages={setMessages}
-            prevMsgId={chats?.find(c => c.id === activeChatId)?.prev_msg_id}
+            prevMsgId={chats?.find((c) => c.id === activeChatId)?.prev_msg_id}
             setPrevMsgId={(id) => {
-              setChats(prevChats =>
-                (prevChats ?? []).map(c => {
-                  return c.id === activeChatId ? {
-                    ...c,
-                    prev_msg_id: id
-                  } : c;
+              setChats((prevChats) =>
+                (prevChats ?? []).map((c) => {
+                  return c.id === activeChatId
+                    ? {
+                        ...c,
+                        prev_msg_id: id
+                      }
+                    : c;
                 })
               );
             }}

@@ -112,19 +112,19 @@ export function sanitize(v: string | null): string | null {
 export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Checks if the date is valid instead of using the try catch.
 	if (isNaN(date.getTime())) {
 		return null;
 	}
-	
+
 	const hours = date.getUTCHours();
-	
+
 	if (hours >= 4 && hours < 12) {
 		return "Morning";
 	} else if (hours >= 12 && hours < 18) {
@@ -138,17 +138,17 @@ export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 export function getDateFromTimestamp(utcTimestamp: string): string {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Same date check
 	if (isNaN(date.getTime())) {
 		return "";
 	}
-	return date.toISOString().split('T')[0];
+	return date.toISOString().split("T")[0];
 }
 
 export function canDropEventInTimeBlock(
@@ -183,13 +183,13 @@ export function canDropEventInTimeBlock(
 // Lets you know where the event is allowed to be dropped
 export function getDropErrorMessage(event: Event): string | null {
 	if (!event.hard_start) return null;
-	
+
 	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);
 	const requiredDate = getDateFromTimestamp(event.hard_start);
-	
+
 	if (requiredTimeBlock && requiredDate) {
 		return `"${event.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`;
 	}
-	
+
 	return null;
 }
