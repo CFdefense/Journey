@@ -245,6 +245,7 @@ export default function Home() {
     setItineraryStartDate("");
     setItineraryEndDate("");
     setItinerarySidebarVisible(false);
+    setPrevMsgId(undefined);
   }, [activeChatId]);
 
   const handleItinerarySelect = (itineraryId: number) => {
@@ -258,6 +259,7 @@ export default function Home() {
     sessionStorage.removeItem(ACTIVE_CHAT_SESSION);
     setActiveChatId(null);
     setItinerarySidebarVisible(false);
+    setPrevMsgId(undefined);
   };
 
   const handleSendMessage = async (txt: string) => {

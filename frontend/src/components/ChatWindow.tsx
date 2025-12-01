@@ -370,15 +370,13 @@ export default function ChatWindow({
   };
 
   const onChatMsgsWheel = async (e: React.WheelEvent) => {
-    if (e.deltaY >= 0) { return; }
+    if (e.deltaY >= 0 || prevMsgId === null || prevMsgId === undefined) { return; }
     const chatMsgWindow = document.getElementById("chat-messages")!;
-    if (chatMsgWindow.scrollTop !== 0 || prevMsgId === null) { return; }
+    if (chatMsgWindow.scrollTop !== 0) { return; }
     const oldScrollHeight = chatMsgWindow.scrollHeight;
     const page_result = await apiMessages({
       chat_session_id,
-      message_id: messages.length > 0
-        ? messages[0].id
-        : null
+      message_id: prevMsgId
     });
     if (page_result.status === 401) {
       navigate("/login");
