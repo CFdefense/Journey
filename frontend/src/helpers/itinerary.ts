@@ -68,13 +68,19 @@ export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
 	}));
 }
 
+// Extract unassigned events from the itinerary
+export function getUnassignedEvents(apiItinerary: ApiItinerary): Event[] {
+	return apiItinerary.unassigned_events || [];
+}
+
 export function convertToApiFormat(
 	days: DayItinerary[],
 	itineraryId: number,
 	startDate: string,
 	endDate: string,
 	title: string,
-	chatSessionId: number | null = null
+	chatSessionId: number | null = null,
+	unassignedEvents: Event[] = []
 ): ApiItinerary {
 	return {
 		id: itineraryId,
@@ -82,6 +88,7 @@ export function convertToApiFormat(
 		end_date: endDate,
 		chat_session_id: chatSessionId,
 		title: title,
+		unassigned_events: unassignedEvents,
 		event_days: days.map((day) => {
 			const morningBlock = day.timeBlocks.find(
 				(tb) => tb.time === "Morning"
@@ -96,7 +103,6 @@ export function convertToApiFormat(
 			return {
 				date: day.date,
 				morning_events: morningBlock?.events || [],
-				noon_events: [], // Empty if not used
 				afternoon_events: afternoonBlock?.events || [],
 				evening_events: eveningBlock?.events || []
 			};
@@ -112,19 +118,19 @@ export function sanitize(v: string | null): string | null {
 export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Checks if the date is valid instead of using the try catch.
 	if (isNaN(date.getTime())) {
 		return null;
 	}
-	
+
 	const hours = date.getUTCHours();
-	
+
 	if (hours >= 4 && hours < 12) {
 		return "Morning";
 	} else if (hours >= 12 && hours < 18) {
@@ -138,17 +144,17 @@ export function getTimeBlockFromTimestamp(utcTimestamp: string): string | null {
 export function getDateFromTimestamp(utcTimestamp: string): string {
 	// Ensure the timestamp is treated as UTC by adding 'Z' if not present
 	let timestamp = utcTimestamp;
-	if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
-		timestamp = timestamp + 'Z';
+	if (!timestamp.endsWith("Z") && !timestamp.includes("+")) {
+		timestamp = timestamp + "Z";
 	}
-	
+
 	const date = new Date(timestamp);
-	
+
 	// Same date check
 	if (isNaN(date.getTime())) {
 		return "";
 	}
-	return date.toISOString().split('T')[0];
+	return date.toISOString().split("T")[0];
 }
 
 export function canDropEventInTimeBlock(
@@ -183,13 +189,13 @@ export function canDropEventInTimeBlock(
 // Lets you know where the event is allowed to be dropped
 export function getDropErrorMessage(event: Event): string | null {
 	if (!event.hard_start) return null;
-	
+
 	const requiredTimeBlock = getTimeBlockFromTimestamp(event.hard_start);
 	const requiredDate = getDateFromTimestamp(event.hard_start);
-	
+
 	if (requiredTimeBlock && requiredDate) {
 		return `"${event.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`;
 	}
-	
+
 	return null;
 }

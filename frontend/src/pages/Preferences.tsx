@@ -55,7 +55,9 @@ export default function Preferences() {
 
   const [loaded, setLoaded] = useState<boolean>(false);
   const [budget, setBudget] = useState<BudgetBucket | null>(null);
-  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(null);
+  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(
+    null
+  );
   const [disabilities, setDisabilities] = useState<string | null>(null);
   const [foodPreferences, setFoodPreferences] = useState<string | null>(null);
   const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
@@ -287,7 +289,9 @@ export default function Preferences() {
                         {isEditingBudget ? (
                           <select
                             id="budget"
-                            value={budget ? enumToString(BudgetBucket, budget) : ""}
+                            value={
+                              budget ? enumToString(BudgetBucket, budget) : ""
+                            }
                             onChange={(e) => {
                               const key = e.target.value;
                               if (key === "") {
@@ -340,7 +344,11 @@ export default function Preferences() {
                         {isEditingRisk ? (
                           <select
                             id="riskTolerance"
-                            value={riskTolerance ? enumToString(RiskTolerence, riskTolerance) : ""}
+                            value={
+                              riskTolerance
+                                ? enumToString(RiskTolerence, riskTolerance)
+                                : ""
+                            }
                             onChange={(e) => {
                               const key = e.target.value;
                               if (key === "") {
@@ -362,7 +370,9 @@ export default function Preferences() {
                           </select>
                         ) : (
                           <div className="field-row__value">
-                            {riskTolerance ? enumToString(RiskTolerence, riskTolerance) : "—"}
+                            {riskTolerance
+                              ? enumToString(RiskTolerence, riskTolerance)
+                              : "—"}
                           </div>
                         )}
                       </div>

@@ -22,6 +22,7 @@ import type {
 ///
 /// # Returns
 /// - On success: The `Itinerary` object returned by the backend.
+///   Events will already be sorted in the order they were saved.
 /// - On failure: A null itinerary with a non-200 status code.
 ///
 /// # Exceptions
@@ -77,6 +78,10 @@ export async function apiSaveItineraryChanges(
 			credentials: import.meta.env.DEV ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
+
+		if (!response.ok) {
+			return { result: null, status: response.status };
+		}
 
 		return { result: await response.json(), status: response.status };
 	} catch (error) {

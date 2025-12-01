@@ -36,7 +36,7 @@ export default function Home() {
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
-  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [itinerarySidebarVisible, setItinerarySidebarVisible] = useState(false);
   const [itineraryData, setItineraryData] = useState<DayItinerary[] | null>(
     null
@@ -105,10 +105,9 @@ export default function Home() {
           }
           setShowFinishPopup(
             account.budget_preference === null &&
-            account.disabilities === "" &&
-            account.food_allergies === "" &&
-            account.risk_preference === null
-
+              account.disabilities === "" &&
+              account.food_allergies === "" &&
+              account.risk_preference === null
           );
         })
         .catch((err) => {

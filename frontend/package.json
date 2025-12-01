@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css}\" \"tests/**/*.{ts,js}\"",
+    "chkfmt": "prettier -c \"src/**/*.{ts,tsx,js,jsx,json,css}\" \"tests/**/*.{ts,js}\"",
     "test": "node ./tests/genTestApi.js && vitest run",
     "codecov": "node ./tests/genTestApi.js && vitest run --coverage"
   },
