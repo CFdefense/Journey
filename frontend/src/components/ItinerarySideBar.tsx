@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import "../styles/ItinerarySideBar.css";
-import Itinerary from "./Itinerary";
+import CompactItineraryView from "./CompactItineraryView";
 import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import { convertToApiFormat } from "../helpers/itinerary";
@@ -120,34 +120,32 @@ export default function ItinerarySideBar({
         </div>
 
         <div className="itinerary-content">
-          <Itinerary
+          <CompactItineraryView
             key={
               itineraryData
                 ? JSON.stringify(itineraryData[0]?.date)
                 : "no-itinerary"
             }
             days={itineraryData ?? undefined}
-            compact={true}
             title={itineraryTitle}
-            editMode={false}
           />
+        </div>
 
-          <div className="itinerary-actions">
-            <button
-              className="edit-itinerary-btn"
-              onClick={handleViewItinerary}
-              disabled={selectedItineraryId === null}
-            >
-              Edit
-            </button>
-            <button
-              className="save-itinerary-btn"
-              onClick={() => setShowSaveModal(true)}
-              disabled={selectedItineraryId === null}
-            >
-              Save
-            </button>
-          </div>
+        <div className="itinerary-actions">
+          <button
+            className="edit-itinerary-btn"
+            onClick={handleViewItinerary}
+            disabled={selectedItineraryId === null}
+          >
+            Edit
+          </button>
+          <button
+            className="save-itinerary-btn"
+            onClick={() => setShowSaveModal(true)}
+            disabled={selectedItineraryId === null}
+          >
+            Save
+          </button>
         </div>
       </div>
 

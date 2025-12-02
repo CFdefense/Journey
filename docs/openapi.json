@@ -1340,6 +1340,14 @@
           "user_created"
         ],
         "properties": {
+          "block_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Must be some to guarantee ordering"
+          },
           "city": {
             "type": [
               "string",
@@ -1457,7 +1465,8 @@
           "start_date",
           "end_date",
           "event_days",
-          "title"
+          "title",
+          "unassigned_events"
         ],
         "properties": {
           "chat_session_id": {
@@ -1493,6 +1502,13 @@
           "title": {
             "type": "string",
             "description": "Title of itinerary, defaults to include location and date range"
+          },
+          "unassigned_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "description": "Events that are not assigned to any specific time slot"
           }
         }
       },

@@ -958,6 +958,7 @@ async fn test_save_itineraries(
 		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
 		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
 		event_days: vec![],
+		unassigned_events: vec![],
 		chat_session_id: None,
 		title: String::from("Updated Title"),
 	});
@@ -973,6 +974,7 @@ async fn test_save_itineraries(
 		start_date: NaiveDate::parse_from_str("2026-01-01", "%Y-%m-%d").unwrap(),
 		end_date: NaiveDate::parse_from_str("2026-12-31", "%Y-%m-%d").unwrap(),
 		event_days: vec![],
+		unassigned_events: vec![],
 		chat_session_id: None,
 		title: String::from("2nd Updated Title"),
 	});
@@ -1827,6 +1829,7 @@ async fn test_unsave_itinerary_success(
 		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
 		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
 		event_days: vec![],
+		unassigned_events: vec![],
 		chat_session_id: None,
 		title: String::from("Test Itinerary to Unsave"),
 	});
@@ -1915,6 +1918,7 @@ async fn test_unsave_already_unsaved_itinerary(
 		start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
 		end_date: NaiveDate::parse_from_str("2025-12-31", "%Y-%m-%d").unwrap(),
 		event_days: vec![],
+		unassigned_events: vec![],
 		chat_session_id: None,
 		title: String::from("Test Itinerary"),
 	});

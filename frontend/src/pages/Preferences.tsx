@@ -325,7 +325,9 @@ export default function Preferences() {
                         {isEditingBudget ? (
                           <select
                             id="budget"
-                            value={budget ? enumToString(BudgetBucket, budget) : ""}
+                            value={
+                              budget ? enumToString(BudgetBucket, budget) : ""
+                            }
                             onChange={(e) => {
                               const key = e.target.value;
                               if (key === "") {
@@ -378,7 +380,11 @@ export default function Preferences() {
                         {isEditingRisk ? (
                           <select
                             id="riskTolerance"
-                            value={riskTolerance ? enumToString(RiskTolerence, riskTolerance) : ""}
+                            value={
+                              riskTolerance
+                                ? enumToString(RiskTolerence, riskTolerance)
+                                : ""
+                            }
                             onChange={(e) => {
                               const key = e.target.value;
                               if (key === "") {
@@ -400,7 +406,9 @@ export default function Preferences() {
                           </select>
                         ) : (
                           <div className="field-row__value">
-                            {riskTolerance ? enumToString(RiskTolerence, riskTolerance) : "—"}
+                            {riskTolerance
+                              ? enumToString(RiskTolerence, riskTolerance)
+                              : "—"}
                           </div>
                         )}
                       </div>

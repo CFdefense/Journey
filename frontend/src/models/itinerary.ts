@@ -9,6 +9,8 @@ export type Itinerary = {
 	event_days: EventDay[];
 	chat_session_id: number | null;
 	title: string;
+	/// Events not assigned to any specific time slot
+	unassigned_events: Event[];
 };
 
 export type EventDay = {
@@ -33,6 +35,7 @@ export type Event = {
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	block_index: number | null;
 };
 
 export type SavedResponse = {
