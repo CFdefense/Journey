@@ -25,7 +25,6 @@ import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import { toast } from "../components/Toast";
 
-
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
 export default function Home() {
@@ -88,13 +87,13 @@ export default function Home() {
     }
   }, [location.state, initialStateProcessed, navigate, location.pathname]);
 
-// Fetch account only once on mount
+  // Fetch account only once on mount
   useEffect(() => {
     // Check if account has already been fetched
     if (accountFetchedRef.current) {
       return;
     }
-    
+
     accountFetchedRef.current = true;
 
     async function fetchAccount() {
@@ -531,7 +530,6 @@ export default function Home() {
       <div
         className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
       >
-
         <PrevChatSideBar
           chats={chats}
           activeChatId={activeChatId}

@@ -991,7 +991,7 @@
   color: #ffffff;
   box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
   position: relative;
-  top: -10px; 
+  top: -10px;
 }
 
 .btn-danger:hover:not(:disabled) {
