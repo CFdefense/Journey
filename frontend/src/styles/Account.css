@@ -913,7 +913,7 @@
   background: rgba(220, 53, 69, 0.1);
 }
 
-/* Modal Overlay */
+/* Delete Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -959,10 +959,10 @@
   align-items: center;
 }
 
+/* Base button styling */
 .modal-actions button {
-  flex: 1;
-  max-width: 160px;
-  padding: 0;
+  min-width: 120px;
+  padding: 14px 28px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
@@ -970,12 +970,12 @@
   transition: all 0.2s;
   border: none;
   height: 48px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
 }
 
+/* Cancel button */
 .btn-secondary {
   background: #eef1f4;
   color: #0b1220;
@@ -985,44 +985,29 @@
   background: #e4e8ec;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #006bbb 0%, #30a0e0 100%);
+/* DELETE button (RED) */
+.btn-danger {
+  background: linear-gradient(135deg, #d32f2f 0%, #ff6659 100%);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 107, 187, 0.2);
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+  position: relative;
+  top: -10px; 
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #005a9e 0%, #2890c8 100%);
-  box-shadow: 0 4px 8px rgba(0, 107, 187, 0.3);
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b71c1c 0%, #ff5447 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
 }
 
-.btn-primary:active:not(:disabled) {
+.btn-danger:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 107, 187, 0.2);
+  box-shadow: 0 1px 2px rgba(211, 47, 47, 0.25);
 }
 
-.btn-primary:disabled,
+/* Disabled state for both buttons */
+.btn-danger:disabled,
 .btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.modal-actions .btn-danger {
-  background: #dc3545;
-  color: #ffffff;
-}
-
-.modal-actions .btn-danger:hover:not(:disabled) {
-  background: #c82333;
-  transform: translateY(-1px);
-}
-
-.modal-actions .btn-danger:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.modal-actions .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1038,7 +1023,6 @@
 
   .modal-actions button {
     width: 100%;
-    max-width: none;
   }
 }
 
