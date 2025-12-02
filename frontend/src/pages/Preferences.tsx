@@ -44,7 +44,9 @@ export default function Preferences() {
 
   const [loaded, setLoaded] = useState<boolean>(false);
   const [budget, setBudget] = useState<BudgetBucket | null>(null);
-  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(null);
+  const [riskTolerance, setRiskTolerance] = useState<RiskTolerence | null>(
+    null
+  );
   const [disabilities, setDisabilities] = useState<string[]>([]);
   const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
   const [disabilityInput, setDisabilityInput] = useState<string>("");
@@ -88,7 +90,10 @@ export default function Preferences() {
   // Helper functions to convert between string and array
   const stringToArray = (str: string | null | undefined): string[] => {
     if (!str || str.trim() === "") return [];
-    return str.split(",").map(item => item.trim()).filter(item => item !== "");
+    return str
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item !== "");
   };
 
   const arrayToString = (arr: string[]): string => {
@@ -156,10 +161,10 @@ export default function Preferences() {
     };
 
     // send an empty string instead of null so the db updates properly
-    if ('disabilities' in partial) {
+    if ("disabilities" in partial) {
       payload.disabilities = partial.disabilities || "";
     }
-    if ('food_allergies' in partial) {
+    if ("food_allergies" in partial) {
       payload.food_allergies = partial.food_allergies || "";
     }
 
@@ -179,7 +184,9 @@ export default function Preferences() {
   };
 
   // Tag input handlers for disabilities
-  const handleDisabilityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleDisabilityKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Enter" && disabilityInput.trim()) {
       e.preventDefault();
       if (!disabilities.includes(disabilityInput.trim())) {
@@ -205,7 +212,9 @@ export default function Preferences() {
   };
 
   const removeFoodPreference = (indexToRemove: number) => {
-    setFoodPreferences(foodPreferences.filter((_, index) => index !== indexToRemove));
+    setFoodPreferences(
+      foodPreferences.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   return (
@@ -444,7 +453,9 @@ export default function Preferences() {
                               <div className="tags-display">
                                 {disabilities.map((disability, index) => (
                                   <div key={index} className="tag-chip">
-                                    <span className="tag-text">{disability}</span>
+                                    <span className="tag-text">
+                                      {disability}
+                                    </span>
                                     <button
                                       type="button"
                                       className="tag-remove"
@@ -461,7 +472,9 @@ export default function Preferences() {
                               type="text"
                               id="disabilities"
                               value={disabilityInput}
-                              onChange={(e) => setDisabilityInput(e.target.value)}
+                              onChange={(e) =>
+                                setDisabilityInput(e.target.value)
+                              }
                               onKeyDown={handleDisabilityKeyDown}
                               placeholder="Type the accessibility preferences and press enter to add them..."
                               className="tag-input"
@@ -469,27 +482,37 @@ export default function Preferences() {
                           </div>
                         ) : (
                           <div className="field-row__value">
-                            {disabilities.length > 0 ? disabilities.join(", ") : "—"}
+                            {disabilities.length > 0
+                              ? disabilities.join(", ")
+                              : "—"}
                           </div>
                         )}
                       </div>
-                       <div className="field-row__action">
+                      <div className="field-row__action">
                         <button
                           type="button"
                           className="pill-button"
                           onClick={async () => {
                             if (isEditingDisabilities) {
                               if (disabilityInput.trim()) {
-                                toast.error("Please press Enter to add your entry or clear the input field.");
+                                toast.error(
+                                  "Please press Enter to add your entry or clear the input field."
+                                );
                                 return;
                               }
                               await submitPartialUpdate({
-                                disabilities: disabilities.length > 0 ? arrayToString(disabilities) : null
+                                disabilities:
+                                  disabilities.length > 0
+                                    ? arrayToString(disabilities)
+                                    : null
                               });
                             }
                             setIsEditingDisabilities(!isEditingDisabilities);
                           }}
-                          disabled={isEditingDisabilities && disabilityInput.trim() !== ""}
+                          disabled={
+                            isEditingDisabilities &&
+                            disabilityInput.trim() !== ""
+                          }
                         >
                           {isEditingDisabilities ? "Done" : "Edit"}
                         </button>
@@ -514,7 +537,9 @@ export default function Preferences() {
                                     <button
                                       type="button"
                                       className="tag-remove"
-                                      onClick={() => removeFoodPreference(index)}
+                                      onClick={() =>
+                                        removeFoodPreference(index)
+                                      }
                                       aria-label={`Remove ${food}`}
                                     >
                                       ×
@@ -535,31 +560,38 @@ export default function Preferences() {
                           </div>
                         ) : (
                           <div className="field-row__value">
-                            {foodPreferences.length > 0 ? foodPreferences.join(", ") : "—"}
+                            {foodPreferences.length > 0
+                              ? foodPreferences.join(", ")
+                              : "—"}
                           </div>
                         )}
                       </div>
-                        <div className="field-row__action">
-                          <button
-                            type="button"
-                            className="pill-button"
-                            onClick={async () => {
-                              if (isEditingFood) {
-                                if (foodInput.trim()) {
-                                  toast.error("Please press Enter to add your entry or clear the input field.");
-                                  return;
-                                }
-                                await submitPartialUpdate({
-                                  food_allergies: foodPreferences.length > 0 ? arrayToString(foodPreferences) : null
-                                });
+                      <div className="field-row__action">
+                        <button
+                          type="button"
+                          className="pill-button"
+                          onClick={async () => {
+                            if (isEditingFood) {
+                              if (foodInput.trim()) {
+                                toast.error(
+                                  "Please press Enter to add your entry or clear the input field."
+                                );
+                                return;
                               }
-                              setIsEditingFood(!isEditingFood);
-                            }}
-                            disabled={isEditingFood && foodInput.trim() !== ""}
-                          >
-                            {isEditingFood ? "Done" : "Edit"}
-                          </button>
-                        </div>
+                              await submitPartialUpdate({
+                                food_allergies:
+                                  foodPreferences.length > 0
+                                    ? arrayToString(foodPreferences)
+                                    : null
+                              });
+                            }
+                            setIsEditingFood(!isEditingFood);
+                          }}
+                          disabled={isEditingFood && foodInput.trim() !== ""}
+                        >
+                          {isEditingFood ? "Done" : "Edit"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
