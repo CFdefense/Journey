@@ -120,12 +120,13 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1rem;
+  padding: 1rem 1rem 0 1rem;
   display: flex;
   flex-direction: column;
   /* default hidden; will fade in after width animation completes */
   opacity: 0;
   transition: opacity 220ms ease 0ms;
+  min-height: 0;
 }
 
 /* Hide scrollbar for itinerary content */
@@ -165,17 +166,27 @@
   transition-delay: 480ms;
 }
 
-/* slight stagger for second block (e.g., actions) */
-.itinerary-sidebar.open .itinerary-content > :nth-child(2) {
-  transition-delay: 520ms;
-}
-
 /* Action buttons container at the bottom of itinerary sidebar */
 .itinerary-actions {
-  margin-top: auto;
   display: flex;
   gap: 0.75rem;
-  padding-top: 1rem;
+  padding: 1rem;
+  flex-shrink: 0;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  opacity: 0;
+  transition: opacity 220ms ease 0ms;
+}
+
+.itinerary-sidebar.open .itinerary-actions {
+  opacity: 1;
+  transition: opacity 220ms ease 450ms;
+}
+
+.itinerary-sidebar.closed .itinerary-actions {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Base button styles */

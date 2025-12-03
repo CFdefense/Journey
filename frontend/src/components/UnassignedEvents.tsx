@@ -24,12 +24,12 @@ const UnassignedEvents: React.FC<UnassignedEventsProps> = ({
             draggable
             onDragStart={(e) => onDragStart(e, event)}
             localDays={[]}
-            setLocalDays={function (): void {
-              throw new Error("Function not implemented.");
-            }}
             unassignedEvents={[]}
-            setUnassignedEvents={function (): void {
-              throw new Error("Function not implemented.");
+            onDaysUpdate={() => {
+              console.error("Unimplemented function");
+            }}
+            onUnassignedUpdate={() => {
+              console.error("Unimplemented function");
             }}
           />
         ))}

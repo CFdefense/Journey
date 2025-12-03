@@ -50,8 +50,7 @@
   background: #ffffff;
   z-index: 1;
   margin-bottom: 16px;
-  padding-left: 8px;
-  padding-right: 8px;
+  padding: 16px 8px 0 8px;
 }
 
 .sidebar.open .sidebar-actions {

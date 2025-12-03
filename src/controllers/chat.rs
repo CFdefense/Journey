@@ -145,6 +145,7 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -161,6 +162,7 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -177,6 +179,7 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -196,6 +199,7 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -212,6 +216,7 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -228,12 +233,14 @@ async fn send_message_to_llm(
 					hard_start: None,
 					hard_end: None,
 					timezone: None,
+					block_index: None,
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},
 		],
 		chat_session_id: None,
 		title: String::from("World Tour 11/5-15 2025"),
+		unassigned_events: vec![],
 	};
 
 	// Insert generated itinerary into db

@@ -16,4 +16,6 @@ pub struct ItineraryRow {
 	pub chat_session_id: Option<i32>,
 	/// Title of itinerary, defaults to include location and date range
 	pub title: String,
+	/// Array of event IDs that are unassigned to any specific time slot
+	pub unassigned_event_ids: Option<Vec<i32>>,
 }
