@@ -756,9 +756,7 @@ async fn test_update_endpoint_returns_account(
 		risk_preference: Some(RiskTolerence::Adventurer),
 		food_allergies: Some(String::from("Peanuts, shellfish")),
 		disabilities: Some(String::from("Wheelchair accessible")),
-		profile_picture: Some(String::from(
-			"base64-txt",
-		)),
+		profile_picture: Some(String::from("base64-txt")),
 	});
 	_ = controllers::account::api_update(pool, user, json)
 		.await
