@@ -86,17 +86,21 @@ CREATE TABLE itineraries (
     end_date DATE NOT NULL,
     chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL,
     saved BOOLEAN NOT NULL,
-    title VARCHAR(255) NOT NULL
+    title VARCHAR(255) NOT NULL,
+    -- Array of event IDs that are unassigned to any specific time slot
+    unassigned_event_ids INTEGER[] NOT NULL DEFAULT ARRAY[]::INTEGER[]
 );
 
 -- Event list table
 CREATE TABLE event_list (
     id SERIAL PRIMARY KEY,
     itinerary_id INTEGER NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
-    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    -- event_id can be NULL for placeholder entries that preserve empty days
+    event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     time_of_day time_of_day NOT NULL,
     -- date of destination's local timezone
-    date DATE NOT NULL
+    date DATE NOT NULL,
+    block_index INTEGER
 );
 
 CREATE TABLE messages (
@@ -134,7 +138,7 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful str
 (5, '2 Citizens Bank Way', 19148, 'Philadelphia', 'USA', 'Sports', 'A Phillies baseball game is a must-do for locals and visitors alike.', 'Phillies Baseball Game', FALSE, NULL, '2025-11-05 13:00', '2025-11-05 16:00'),
 (6, '5250 S Park Dr', 60615, 'Chicago', 'USA', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', FALSE, NULL, NULL, NULL),
 (7, '1 Rue de la Seine', 00000, 'Paris', 'France', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
-(8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-06 08:00', NULL);
+(8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-05 08:00', NULL);
 
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(

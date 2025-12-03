@@ -2,8 +2,6 @@
 
 mod controllers;
 mod db;
-mod error;
-mod global;
 mod http_models;
 mod log;
 mod middleware;
@@ -11,6 +9,10 @@ mod sql_models;
 
 #[cfg(not(tarpaulin_include))]
 mod agent;
+#[cfg(not(tarpaulin_include))]
+mod error;
+#[cfg(not(tarpaulin_include))]
+mod global;
 #[cfg(not(tarpaulin_include))]
 mod swagger;
 

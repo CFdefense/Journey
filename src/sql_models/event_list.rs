@@ -35,4 +35,7 @@ pub struct EventListJoinRow {
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
 	pub timezone: Option<String>,
+	/// Index the event is in within the time block.
+	/// Must be some to guarantee ordering
+	pub block_index: Option<i32>,
 }

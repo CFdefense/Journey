@@ -30,6 +30,8 @@ pub struct Itinerary {
 	pub chat_session_id: Option<i32>,
 	/// Title of itinerary, defaults to include location and date range
 	pub title: String,
+	/// Events that are not assigned to any specific time slot
+	pub unassigned_events: Vec<Event>,
 }
 
 /// A single day of events in an itinerary
