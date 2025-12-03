@@ -107,12 +107,12 @@ export default function Home() {
           }
           setFirstName(account.first_name || "");
           setProfileImageUrl(account.profile_picture || "");
-          
+
           setShowFinishPopup(
             account.budget_preference === null &&
-            account.disabilities === "" &&
-            account.food_allergies === "" &&
-            account.risk_preference === null
+              account.disabilities === "" &&
+              account.food_allergies === "" &&
+              account.risk_preference === null
           );
         })
         .catch((err) => {
@@ -531,7 +531,7 @@ export default function Home() {
           onDeleteChat={handleDeleteChat}
           onRenameChat={handleRenameChat}
           sidebarVisible={sidebarVisible}
-          firstName={firstName}              
+          firstName={firstName}
           profileImageUrl={profileImageUrl}
         />
 

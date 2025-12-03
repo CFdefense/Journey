@@ -39,7 +39,7 @@
   transition: opacity 150ms ease;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ffffff;  /* Add this line */
+  border: 2px solid #ffffff; /* Add this line */
 }
 
 .user-menu-button.pending .user-menu-avatar {

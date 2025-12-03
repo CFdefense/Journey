@@ -383,7 +383,9 @@ export default function PrevChatSideBar({
             src={profileImageUrl || userPfp}
             alt={firstName ? `${firstName}'s profile` : "User profile"}
             className="sidebar-profile-pic"
-            onError={(e) => { e.currentTarget.src = userPfp; }}
+            onError={(e) => {
+              e.currentTarget.src = userPfp;
+            }}
           />
         </Link>
         <button

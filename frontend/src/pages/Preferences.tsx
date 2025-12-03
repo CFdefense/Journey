@@ -220,7 +220,11 @@ export default function Preferences() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
+      <Navbar
+        page="view"
+        firstName={firstName}
+        profileImageUrl={profileImageUrl}
+      />
 
       <div className="auth-content">
         <div className="account-wrapper">

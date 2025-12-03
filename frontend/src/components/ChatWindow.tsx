@@ -454,7 +454,11 @@ export default function ChatWindow({
         <>
           {/* Header Section */}
           <div className="chat-header">
-            <img src="/ai-pic.png" alt="AI Assistant" className="chat-header-image" />
+            <img
+              src="/ai-pic.png"
+              alt="AI Assistant"
+              className="chat-header-image"
+            />
             <div className="chat-header-text">
               <div className="chat-header-title">Travel Assistant</div>
               <div className="chat-header-subtitle">

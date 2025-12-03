@@ -12,10 +12,14 @@ const userPfp = "/user-pfp-temp.png";
 type NavbarProps = {
   page: "login" | "signup" | "index" | "home" | "view";
   firstName?: string;
-  profileImageUrl?: string;  // Add this
+  profileImageUrl?: string; // Add this
 };
 
-export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps) {
+export default function Navbar({
+  page,
+  firstName,
+  profileImageUrl
+}: NavbarProps) {
   const location = useLocation();
   const isAccountRoute = location.pathname.startsWith("/account");
   const { authorized, setAuthorized } = useContext<GlobalState>(
@@ -24,7 +28,9 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [displayName, setDisplayName] = useState<string>(firstName || "");
-  const [avatarUrl, setAvatarUrl] = useState<string>(profileImageUrl || userPfp);
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    profileImageUrl || userPfp
+  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -96,7 +102,9 @@ export default function Navbar({ page, firstName, profileImageUrl }: NavbarProps
             src={avatarUrl}
             alt="User profile"
             className="user-menu-avatar"
-            onError={(e) => { e.currentTarget.src = userPfp; }}
+            onError={(e) => {
+              e.currentTarget.src = userPfp;
+            }}
           />
         </button>
         <div

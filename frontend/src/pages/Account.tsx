@@ -28,7 +28,8 @@ export default function Account() {
 
   // Use same profile picture asset as Navbar for consistency
   const navbarAvatarUrl = "/user-pfp-temp.png";
-  const [profileImageUrl, setProfileImageUrl] = useState<string>(navbarAvatarUrl);
+  const [profileImageUrl, setProfileImageUrl] =
+    useState<string>(navbarAvatarUrl);
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
   const [isEditingLast, setIsEditingLast] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -82,7 +83,9 @@ export default function Account() {
   }, []);
 
   // Handle profile picture file selection
-  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -147,8 +150,8 @@ export default function Account() {
     e.target.value = "";
   };
 
-    // Core submit/update logic used by form submit and inline "Done" buttons
-    const submitUpdate = async () => {
+  // Core submit/update logic used by form submit and inline "Done" buttons
+  const submitUpdate = async () => {
     setPasswordErrors({});
 
     // Validate name fields
@@ -255,7 +258,11 @@ export default function Account() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
+      <Navbar
+        page="view"
+        firstName={firstName}
+        profileImageUrl={profileImageUrl}
+      />
 
       <div className="auth-content">
         {loaded && (
@@ -268,7 +275,9 @@ export default function Account() {
                     <div className="profile-header">
                       <div
                         className={`avatar-wrapper ${isUploadingPicture ? "uploading" : ""}`}
-                        onClick={() => !isUploadingPicture && fileInputRef.current?.click()}
+                        onClick={() =>
+                          !isUploadingPicture && fileInputRef.current?.click()
+                        }
                       >
                         <img
                           src={profileImageUrl}
@@ -302,7 +311,7 @@ export default function Account() {
                           type="file"
                           accept="image/*"
                           onChange={handleProfilePictureChange}
-                          style={{ display: 'none' }}
+                          style={{ display: "none" }}
                         />
                       </div>
                       <div className="profile-meta">

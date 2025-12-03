@@ -135,7 +135,11 @@ export default function Itineraries() {
 
   return (
     <div className="auth-page auth-page--account">
-      <Navbar page="view" firstName={firstName} profileImageUrl={profileImageUrl} />
+      <Navbar
+        page="view"
+        firstName={firstName}
+        profileImageUrl={profileImageUrl}
+      />
       <div className="auth-content">
         <div className="account-wrapper">
           <aside className="sidebar">
