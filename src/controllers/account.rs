@@ -434,7 +434,7 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
 				"disabilities": "knee replacement",
-				"profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images"
+				"profile_picture": "base64-txt"
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -543,7 +543,7 @@ pub async fn api_current(
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
 				"disabilities": "knee replacement",
-				"profile_picture": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.66elZ0rdKa61JlWQw8G7XgHaGf%3Fcb%3Ducfimg2%26pid%3DApi%26ucfimg%3D1&f=1&ipt=d425f3d34a5b7695ab1539723024234ec3938fe4ace5f975132c5bcc9585b7d1&ipo=images"
+				"profile_picture": "base64-txt"
 			})
 		),
 		(status=400, description="Bad Request"),
