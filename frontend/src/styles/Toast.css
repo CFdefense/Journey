@@ -217,3 +217,25 @@
     transform: translateX(100%);
   }
 }
+
+/* Persistent Account Warning (Yellow) */
+.toast--account-warning .toast-content {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 221, 87, 0.22) 0%,
+    rgba(255, 196, 0, 0.18) 100%
+  );
+  border-color: rgba(255, 196, 0, 0.38);
+  color: #8a6d00;
+  cursor: pointer; /* clicking navigates to /account */
+}
+
+/* Icon color */
+.toast--account-warning .toast-icon {
+  color: #d4a017;
+}
+
+/* Close button inherits color */
+.toast--account-warning .toast-close {
+  color: #8a6d00;
+}
