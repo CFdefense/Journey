@@ -1,4 +1,4 @@
 pub mod constraint;
-pub mod optimize;
+pub mod optimizer;
 pub mod orchestrator;
 pub mod research;
