@@ -6,33 +6,32 @@ import type {
 } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
 
-//function that calls api on given itinerary Id, returns the time block used by itinerary component
+import { toast } from "../components/Toast";
+
+// Function that calls api on given itinerary Id, returns the time block used by itinerary component
 export async function fetchItinerary(
 	itineraryID: number
 ): Promise<DayItinerary[]> {
-	try {
-		const apiResponse = await apiItineraryDetails(itineraryID);
+	const apiResponse = await apiItineraryDetails(itineraryID);
 
-		if (!apiResponse.result) {
-			throw new Error(
-				`Invalid itinerary result (status ${apiResponse.status})`
-			);
-		}
-
-		return populateItinerary(apiResponse.result);
-	} catch (err) {
-		console.log("Error", err);
-		return [
-			{
-				date: "",
-				timeBlocks: [
-					{ time: "Morning", events: [] },
-					{ time: "Afternoon", events: [] },
-					{ time: "Evening", events: [] }
-				]
-			}
-		];
+	// Handle 401, redirect to login
+	if (apiResponse.status === 401) {
+		toast.error("Unauthorized user, please log in.")
+		return [];
 	}
+
+	// Other status'
+	if (apiResponse.status === 404) {
+		toast.error("Itinerary not found.");
+		return [];
+	}
+
+	if (!apiResponse.result || apiResponse.status !== 200) {
+		toast.error("Unable to load itinerary. Please try again.");
+		return [];
+	}
+
+	return populateItinerary(apiResponse.result);
 }
 
 export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {

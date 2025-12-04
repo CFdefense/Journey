@@ -10,6 +10,7 @@ import {
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
+import { toast } from "../components/Toast";
 
 function ViewItineraryPage() {
   const location = useLocation();
@@ -311,9 +312,24 @@ function ViewItineraryPage() {
     }
 
     async function load() {
-      try {
         // Fetch the full API response to get metadata
         const apiResponse = await apiItineraryDetails(itineraryId);
+
+        if (apiResponse.status === 401) {
+          toast.error("Unauthorized user, please log in.")
+          navigate("/login");
+          return;
+        }
+        
+        if (apiResponse.status === 404) {
+          toast.error("Itinerary not found.");
+          return;
+        }
+        
+        if (!apiResponse.result || apiResponse.status !== 200) {
+          toast.error("Unable to load itinerary. Please try again.");
+          return;
+        }
 
         if (apiResponse.result) {
           // Store metadata
@@ -333,11 +349,8 @@ function ViewItineraryPage() {
           const unassigned = getUnassignedEvents(apiResponse.result);
           setUnassignedEvents(unassigned);
         }
-      } catch (error) {
-        console.error("Failed to load itinerary:", error);
         alert("Failed to load itinerary. Redirecting to home.");
         navigate("/");
-      }
     }
 
     load();
