@@ -21,6 +21,7 @@ use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde_json::json;
 use serial_test::serial;
 use sqlx::{PgPool, migrate};
+use std::sync::Arc;
 use std::{
 	fs,
 	io::Write,
@@ -28,6 +29,7 @@ use std::{
 	time::{Duration, SystemTime},
 };
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 use tower_cookies::{
 	Cookie, CookieManagerLayer, Key,
 	cookie::{CookieJar, SameSite, time},
@@ -1002,12 +1004,29 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.unwrap();
 
 	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
+	// Create the research, constraint, and optimize agents
+	let research_agent = Arc::new(Mutex::new(
+		agent::configs::research::create_research_agent().unwrap(),
+	));
+	let constraint_agent = Arc::new(Mutex::new(
+		agent::configs::constraint::create_constraint_agent().unwrap(),
+	));
+	let optimize_agent = Arc::new(Mutex::new(
+		agent::configs::optimize::create_optimize_agent().unwrap(),
+	));
+
+	// Create the orchestrator agent with references to the research, constraint, and optimize agents
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
-			tokio::task::spawn_blocking(|| {
-				agent::config::create_agent().unwrap_or_else(|e| {
+			tokio::task::spawn_blocking(move || {
+				agent::configs::orchestrator::create_orchestrator_agent(
+					research_agent.clone(),
+					constraint_agent.clone(),
+					optimize_agent.clone(),
+				)
+				.unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
 						e
@@ -1020,7 +1039,8 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.expect("Agent creation task panicked")
 	} else {
 		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::config::create_dummy_agent().expect("Dummy agent creation failed")
+		agent::configs::orchestrator::create_dummy_orchestrator_agent()
+			.expect("Dummy agent creation failed")
 	};
 
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
@@ -1398,12 +1418,28 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
+	let research_agent = Arc::new(Mutex::new(
+		agent::configs::research::create_research_agent().unwrap(),
+	));
+	let constraint_agent = Arc::new(Mutex::new(
+		agent::configs::constraint::create_constraint_agent().unwrap(),
+	));
+	let optimize_agent = Arc::new(Mutex::new(
+		agent::configs::optimize::create_optimize_agent().unwrap(),
+	));
+
+	// Create the orchestrator agent with references to the research, constraint, and optimize agents
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
-			tokio::task::spawn_blocking(|| {
-				agent::config::create_agent().unwrap_or_else(|e| {
+			tokio::task::spawn_blocking(move || {
+				agent::configs::orchestrator::create_orchestrator_agent(
+					research_agent.clone(),
+					constraint_agent.clone(),
+					optimize_agent.clone(),
+				)
+				.unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
 						e
@@ -1416,7 +1452,8 @@ async fn test_endpoints() {
 		.expect("Agent creation task panicked")
 	} else {
 		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::config::create_dummy_agent().expect("Dummy agent creation failed")
+		agent::configs::orchestrator::create_dummy_orchestrator_agent()
+			.expect("Dummy agent creation failed")
 	};
 
 	let account_routes = controllers::account::account_routes();
