@@ -1012,7 +1012,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		agent::configs::constraint::create_constraint_agent().unwrap(),
 	));
 	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimize::create_optimize_agent().unwrap(),
+		agent::configs::optimizer::create_optimize_agent().unwrap(),
 	));
 
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
@@ -1425,7 +1425,7 @@ async fn test_endpoints() {
 		agent::configs::constraint::create_constraint_agent().unwrap(),
 	));
 	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimize::create_optimize_agent().unwrap(),
+		agent::configs::optimizer::create_optimize_agent().unwrap(),
 	));
 
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
