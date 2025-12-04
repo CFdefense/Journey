@@ -19,6 +19,9 @@ mod swagger;
 #[cfg(test)]
 mod tests;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 use crate::controllers::AxumRouter;
 use crate::global::*;
 use axum::{Extension, routing::get_service};
@@ -54,7 +57,24 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 	// Note: Agent will only be used if DEPLOY_LLM=1 (checked at runtime in chat controller)
 	// If DEPLOY_LLM != "1", agent creation may fail if API key is missing, but that's OK
 	// since the agent won't be used. We attempt creation anyway as OpenAI may allow it.
-	let agent = match agent::config::create_agent() {
+
+	// Create the research, constraint, and optimize agents
+	let research_agent = Arc::new(Mutex::new(
+		agent::configs::research::create_research_agent().unwrap(),
+	));
+	let constraint_agent = Arc::new(Mutex::new(
+		agent::configs::constraint::create_constraint_agent().unwrap(),
+	));
+	let optimize_agent = Arc::new(Mutex::new(
+		agent::configs::optimize::create_optimize_agent().unwrap(),
+	));
+
+	// Create the orchestrator agent with references to the research, constraint, and optimize agents
+	let agent = match agent::configs::orchestrator::create_orchestrator_agent(
+		research_agent.clone(),
+		constraint_agent.clone(),
+		optimize_agent.clone(),
+	) {
 		Ok(agent) => agent,
 		Err(e) => {
 			if env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
