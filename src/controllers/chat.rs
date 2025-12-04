@@ -9,7 +9,7 @@ use std::env;
 use utoipa::OpenApi;
 
 use crate::{
-	agent::config::AgentType,
+	agent::configs::orchestrator::AgentType,
 	controllers::{AxumRouter, itinerary::insert_event_list},
 	error::{ApiResult, AppError},
 	global::MESSAGE_PAGE_LEN,

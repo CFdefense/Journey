@@ -1,3 +1,2 @@
-pub mod config;
-pub mod external;
+pub mod configs;
 pub mod tools;
