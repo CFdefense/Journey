@@ -22,9 +22,9 @@ use crate::http_models::event::{
 };
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
-use crate::sql_models::{TimeOfDay, Period};
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryRow;
+use crate::sql_models::{Period, TimeOfDay};
 use crate::swagger::SecurityAddon;
 
 #[derive(OpenApi)]
