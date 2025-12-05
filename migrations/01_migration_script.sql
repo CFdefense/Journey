@@ -181,6 +181,16 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful str
 (7, '1 Rue de la Seine', 00000, 'Paris', 'France', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
 (8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-05 08:00', NULL);
 
+UPDATE events
+SET 
+    photo_name = 'places/ChIJWTGPjmaAhYARxz6l1hOj92w/photos/AWn5SU5Er9gWi5jilVeHqFVvSEXMwCeX-mlXTiRpSoacmgGi6eJk021kXT7TSPe1PbFEj8Oe-5JYpMk5jc2e6A1zHf76i45Mg2JcTqhmihTAWyW4b2vixtaHLq7GCuxQicTvwvM65I1qTt9sAEiMW2k1jPvHiU5qL7R8BN2Ltqfo_I0zTcUrJyup6Pdsd0FLpDAm7ia5B-qaaw80x6guoa0r7uoiFGkyJeB3zqXIDKsP5q25HgPb6HMIVtiTM7Gf0WEU6hnhpg9Admq3h-WARF0hTmQQqCg_J9C-dRrzuu279uwDaw',
+    photo_width = 3850,
+    photo_height = 2991,
+    photo_author = 'Ferry Building',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/116985961358506551836',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a/ACg8ocKXdGznTApl3bUhp8fBHvPlpZCrTK_fq8h1PliUWm9Q7aJDBg=s100-p-k-no-mo'
+WHERE id = 1;
+
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
     pg_get_serial_sequence('events', 'id'),
