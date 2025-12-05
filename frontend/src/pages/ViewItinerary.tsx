@@ -226,8 +226,13 @@ function ViewItineraryPage() {
 
       const apiResponse = await apiSaveItineraryChanges(apiPayload);
       
+      if (apiResponse.status == 401) {
+        toast.error("Unauthorized to edit this itinerary. Please log in.");
+        navigate("/login");
+      }
+
       if(!apiResponse.result || apiResponse.status !== 200) {
-        toast.error("Failed to save itinerary. Please try again.")
+        toast.error("Failed to save itinerary. Please try again.");
       }
 
   };
@@ -317,13 +322,13 @@ function ViewItineraryPage() {
         const apiResponse = await apiItineraryDetails(itineraryId);
 
         if (apiResponse.status === 401) {
-          toast.error("Unauthorized user, please log in.")
+          toast.error("Unauthorized user, please log in.");
           navigate("/login");
           return;
         }
         
         if (apiResponse.status === 404) {
-          toast.error("Itinerary not found.");
+          toast.error("Itinerary not found. Please try again.");
           return;
         }
         

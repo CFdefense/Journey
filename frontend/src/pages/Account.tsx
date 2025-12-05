@@ -52,15 +52,21 @@ export default function Account() {
   useEffect(() => {
     async function fetchProfile() {
       const currentResult = await apiCurrent();
-      // TODO 401 -> navigate to /login
+    
+      if (currentResult.status == 401) {
+        toast.error("You are not logged in. Please log in and try again.")
+        navigate("/login")
+        return;
+      }
+
+      if (currentResult.status == 404) {
+        toast.error("Account not found. Please try again.")
+        return;
+      }
 
       const account = currentResult.result;
       if (account === null || currentResult.status !== 200) {
-        console.error(
-          "API call to /api/account/current failed with status: ",
-          currentResult.status
-        );
-        toast.error("Failed to load account details. Please log in again.");
+        toast.error("Failed to load account details. Please try again.");
         return;
       }
 
@@ -142,14 +148,14 @@ export default function Account() {
       disabilities: null
     };
 
-    try {
       const updateResult = await apiUpdateAccount(payload);
 
-      if (updateResult.status !== 200) {
-        console.error(
-          "API call to /api/account/update failed with status: ",
-          updateResult.status
-        );
+      if (updateResult.status == 401) {
+        toast.error("Unauthorized user, please log in again.");
+        navigate("/login");
+      }
+
+      if (!updateResult || updateResult.status !== 200) {
 
         // Handle password-related errors (400 Bad Request)
         if (updateResult.status === 400 && isChangingPassword) {
@@ -178,10 +184,9 @@ export default function Account() {
       setNewPassword("");
       setConfirmPassword("");
       setPasswordErrors({});
-    } catch (err) {
-      console.error(err);
+
       toast.error("Unable to update account. Please try again.");
-    }
+
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
