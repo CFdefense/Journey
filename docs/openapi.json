@@ -38,6 +38,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "Last",
+                  "profile_picture": "base64-txt",
                   "risk_preference": "Adventurer"
                 }
               }
@@ -238,6 +239,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "last",
+                  "profile_picture": "base64-txt",
                   "risk_preference": "Adventurer"
                 }
               }

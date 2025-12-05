@@ -1105,147 +1105,145 @@
     width: 100%;
   }
 
-
-@media (max-width: 1100px) {
-  .auth-page--account {
-    background:
-      radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
-      linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
+  @media (max-width: 1100px) {
+    .auth-page--account {
+      background:
+        radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+        linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
+    }
   }
-}
-.avatar-wrapper {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  padding: 0;
-  background: transparent;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.avatar-wrapper:hover {
-  transform: scale(1.02);
-}
-
-.avatar-wrapper.uploading {
-  cursor: wait;
-}
-
-.avatar {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 3px solid #ffffff;
-  background: #f7f7f7;
-  transition: opacity 0.2s ease;
-}
-
-/* Overlay that appears on hover */
-.avatar-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.avatar-wrapper:hover .avatar-overlay {
-  opacity: 1;
-}
-
-.avatar-wrapper.uploading .avatar-overlay {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.7);
-}
-
-.avatar-edit-icon {
-  font-size: 32px;
-  color: #ffffff;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-/* Upload spinner */
-.upload-spinner {
-  font-size: 32px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+  .avatar-wrapper {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    padding: 0;
+    background: transparent;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+    cursor: pointer;
+    transition: transform 0.2s ease;
   }
-  to {
-    transform: rotate(360deg);
+
+  .avatar-wrapper:hover {
+    transform: scale(1.02);
   }
-}
-.tag-input-container {
-  width: 100%;
-}
 
-.tags-display {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 6px;
-  min-height: 40px;
-}
+  .avatar-wrapper.uploading {
+    cursor: wait;
+  }
 
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: white;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 14px;
-}
+  .avatar {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    background: #f7f7f7;
+    transition: opacity 0.2s ease;
+  }
 
-.tag-text {
-  color: #333;
-}
+  /* Overlay that appears on hover */
+  .avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    overflow: hidden;
+  }
 
-.tag-remove {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .avatar-wrapper:hover .avatar-overlay {
+    opacity: 1;
+  }
 
-.tag-remove:hover {
-  color: #d32f2f;
-}
+  .avatar-wrapper.uploading .avatar-overlay {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.7);
+  }
 
-.tag-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-}
+  .avatar-edit-icon {
+    font-size: 32px;
+    color: #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
 
+  /* Upload spinner */
+  .upload-spinner {
+    font-size: 32px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .tag-input-container {
+    width: 100%;
+  }
+
+  .tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    min-height: 40px;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .tag-text {
+    color: #333;
+  }
+
+  .tag-remove {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tag-remove:hover {
+    color: #d32f2f;
+  }
+
+  .tag-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
 }
