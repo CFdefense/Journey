@@ -31,6 +31,8 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const [chats, setChats] = useState<ChatSession[] | null>(null);
+  const [firstName, setFirstName] = useState<string>("");
+  const [profileImageUrl, setProfileImageUrl] = useState<string>("");
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
@@ -108,6 +110,9 @@ export default function Home() {
             navigate("/login");
             return;
           }
+          setFirstName(account.first_name || "");
+          setProfileImageUrl(account.profile_picture || "");
+
           // Determine if popup/toast should show
           const shouldShow =
             account.budget_preference === null &&
@@ -539,6 +544,8 @@ export default function Home() {
           onDeleteChat={handleDeleteChat}
           onRenameChat={handleRenameChat}
           sidebarVisible={sidebarVisible}
+          firstName={firstName}
+          profileImageUrl={profileImageUrl}
         />
 
         <div className="chat-window-wrapper">
