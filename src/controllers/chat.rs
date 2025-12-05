@@ -141,11 +141,7 @@ async fn send_message_to_llm(
 						"A beautiful stroll along a river in this cute small town.",
 					)),
 					event_name: String::from("Family Walking Path"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				afternoon_events: vec![Event {
 					id: 3,
@@ -158,11 +154,7 @@ async fn send_message_to_llm(
 						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
 					)),
 					event_name: String::from("Museum of Modern Art- MoMA"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				evening_events: vec![Event {
 					id: 4,
@@ -175,11 +167,7 @@ async fn send_message_to_llm(
 						"Music center which hosts local and national bands.",
 					)),
 					event_name: String::from("Jazz night at Broad Street"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			},
@@ -195,11 +183,7 @@ async fn send_message_to_llm(
 						"A Phillies baseball game is a must-do for locals and visitors alike.",
 					)),
 					event_name: String::from("Phillies Baseball Game"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				afternoon_events: vec![Event {
 					id: 7,
@@ -212,11 +196,7 @@ async fn send_message_to_llm(
 						"Explore the beautiful landmark of Paris.",
 					)),
 					event_name: String::from("Eiffel Tower"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				evening_events: vec![Event {
 					id: 8,
@@ -229,11 +209,7 @@ async fn send_message_to_llm(
 						"Wander the halls of the world famous art museum.",
 					)),
 					event_name: String::from("le Louvre"),
-					user_created: false,
-					hard_start: None,
-					hard_end: None,
-					timezone: None,
-					block_index: None,
+					..Default::default()
 				}],
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},

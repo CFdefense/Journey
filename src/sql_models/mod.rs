@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use utoipa::ToSchema;
@@ -41,4 +42,19 @@ pub enum TimeOfDay {
 	Morning,
 	Afternoon,
 	Evening,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, ToSchema)]
+#[sqlx(type_name = "event_period")]
+pub struct Period {
+	open_date: Option<NaiveDate>,
+	open_truncated: Option<bool>,
+	open_day: i32,
+	open_hour: i32,
+	open_minute: i32,
+	close_date: Option<NaiveDate>,
+	close_truncated: Option<bool>,
+	close_day: Option<i32>,
+	close_hour: Option<i32>,
+	close_minute: Option<i32>,
 }

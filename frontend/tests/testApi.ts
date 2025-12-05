@@ -138,6 +138,7 @@ export async function apiValidate(): Promise<ApiResult<void>> {
 export async function apiUpdateAccount(
 	payload: UpdateRequest
 ): Promise<ApiResult<CurrentResponse>> {
+	console.log(payload);
 	try {
 		const response = await customFetch(`${API_BASE_URL}/api/account/update`, {
 			method: "POST",
