@@ -960,10 +960,10 @@
   align-items: center;
 }
 
+/* Base button styling */
 .modal-actions button {
-  flex: 1;
-  max-width: 160px;
-  padding: 0;
+  min-width: 120px;
+  padding: 14px 28px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
@@ -971,10 +971,9 @@
   transition: all 0.2s;
   border: none;
   height: 48px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
 }
 
 .modal-btn {
@@ -1004,6 +1003,7 @@
 .modal-btn--primary:hover {
   background: #1a1a1a;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
 }
 
 .modal-btn:active {
@@ -1090,6 +1090,8 @@
     padding: 1.75rem;
   }
 
+
+@media (max-width: 768px) {
   .modal-content {
     padding: 24px;
   }
@@ -1100,7 +1102,6 @@
 
   .modal-actions button {
     width: 100%;
-    max-width: none;
   }
 }
 

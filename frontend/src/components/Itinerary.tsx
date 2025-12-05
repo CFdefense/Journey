@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import EventCard from "./EventCard";
 import {
+  EVENT_DEFAULT,
   TIMEZONES,
   type DayItinerary,
   type Event,
@@ -163,6 +164,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     if (!draggedEvent) {
       // Fallback if we can't find the full event
       draggedEvent = {
+        ...EVENT_DEFAULT,
         id: eventId,
         event_name: eventName,
         event_description: eventDescription,
@@ -170,12 +172,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         postal_code: 0,
         city: "",
         country: "",
-        event_type: "",
-        user_created: false,
-        hard_start: null,
-        hard_end: null,
-        timezone: null,
-        block_index: null
+        event_type: ""
       };
     }
 

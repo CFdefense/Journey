@@ -5,7 +5,6 @@ import ChatWindow from "../components/ChatWindow";
 import PrevChatSideBar from "../components/PrevChatSideBar";
 import ItinerarySideBar from "../components/ItinerarySideBar";
 import "../styles/Home.css";
-import { FinishAccountPopup } from "../components/FinishAccountPopup";
 import {
   apiChats,
   apiMessages,
@@ -24,6 +23,7 @@ import { apiCurrent } from "../api/account";
 import { fetchItinerary, convertToApiFormat } from "../helpers/itinerary";
 import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
+import { toast } from "../components/Toast";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
@@ -34,7 +34,6 @@ export default function Home() {
   const [firstName, setFirstName] = useState<string>("");
   const [profileImageUrl, setProfileImageUrl] = useState<string>("");
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
-  const [showFinishPopup, setShowFinishPopup] = useState(false);
   const [selectedItineraryId, setSelectedItineraryId] = useState<number | null>(
     null
   );
@@ -47,6 +46,7 @@ export default function Home() {
   const [itineraryStartDate, setItineraryStartDate] = useState<string>("");
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
+  const accountFetchedRef = useRef(false);
 
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
@@ -89,11 +89,16 @@ export default function Home() {
     }
   }, [location.state, initialStateProcessed, navigate, location.pathname]);
 
+  // Fetch account only once on mount
   useEffect(() => {
+    // Check if account has already been fetched
+    if (accountFetchedRef.current) {
+      return;
+    }
+
+    accountFetchedRef.current = true;
+
     async function fetchAccount() {
-      if (showFinishPopup) {
-        return;
-      }
       apiCurrent()
         .then((currentResult) => {
           const account = currentResult.result;
@@ -108,12 +113,18 @@ export default function Home() {
           setFirstName(account.first_name || "");
           setProfileImageUrl(account.profile_picture || "");
 
-          setShowFinishPopup(
+          // Determine if popup/toast should show
+          const shouldShow =
             account.budget_preference === null &&
-              account.disabilities === "" &&
-              account.food_allergies === "" &&
-              account.risk_preference === null
-          );
+            account.disabilities === "" &&
+            account.food_allergies === "" &&
+            account.risk_preference === null;
+
+          // Only show the toast when the account is incomplete
+          if (shouldShow) {
+            console.log("ran");
+            toast.accountWarning("Finish setting up your account", "/account");
+          }
         })
         .catch((err) => {
           console.error("Failed to fetch account:", err);
@@ -121,6 +132,11 @@ export default function Home() {
         });
     }
 
+    fetchAccount();
+  }, [navigate]);
+
+  // Fetch chats when activeChatId changes
+  useEffect(() => {
     async function fetchChats() {
       // get all chat session ids
       const chatsResult = await apiChats();
@@ -204,9 +220,8 @@ export default function Home() {
       });
     }
 
-    fetchAccount();
     fetchChats();
-  }, [showFinishPopup, activeChatId, setActiveChatId]);
+  }, [activeChatId, setActiveChatId, navigate]);
 
   // Fetch itinerary data when selectedItineraryId changes
   useEffect(() => {
@@ -520,8 +535,6 @@ export default function Home() {
       <div
         className={`home-layout ${sidebarVisible ? "with-sidebar" : "no-sidebar"}`}
       >
-        {showFinishPopup && <FinishAccountPopup />}
-
         <PrevChatSideBar
           chats={chats}
           activeChatId={activeChatId}
