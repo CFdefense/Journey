@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import EventCard from "./EventCard";
 import {
-    EVENT_DEFAULT,
+  EVENT_DEFAULT,
   TIMEZONES,
   type DayItinerary,
   type Event,
@@ -172,7 +172,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         postal_code: 0,
         city: "",
         country: "",
-        event_type: "",
+        event_type: ""
       };
     }
 

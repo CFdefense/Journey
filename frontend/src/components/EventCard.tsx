@@ -198,7 +198,7 @@ const EventCard: React.FC<EventCardProps> = ({
       ...userEvent,
       user_created: true,
       block_index: event.block_index,
-      id: event.id,
+      id: event.id
     };
     setEventData(updatedEvent);
     const updatedDays = localDays.map((day) => ({
