@@ -22,7 +22,7 @@ use crate::http_models::event::{
 };
 use crate::http_models::itinerary::*;
 use crate::middleware::{AuthUser, middleware_auth};
-use crate::sql_models::TimeOfDay;
+use crate::sql_models::{TimeOfDay, Period};
 use crate::sql_models::event_list::EventListJoinRow;
 use crate::sql_models::itinerary::ItineraryRow;
 use crate::swagger::SecurityAddon;
@@ -82,6 +82,7 @@ async fn itinerary_events(
 			e.postal_code,
 			e.city,
 			e.country,
+			e.coords,
 			e.event_type,
 			e.event_description,
 			e.event_name,
@@ -89,6 +90,29 @@ async fn itinerary_events(
 			e.hard_start,
 			e.hard_end,
 			e.timezone,
+			e.place_id,
+			e.wheelchair_accessible_parking,
+			e.wheelchair_accessible_entrance,
+			e.wheelchair_accessible_restroom,
+			e.wheelchair_accessible_seating,
+			e.serves_vegetarian_food,
+			e.price_level,
+			e.utc_offset_minutes,
+			e.website_uri,
+			e.types,
+			e.photo_name,
+			e.photo_width,
+			e.photo_height,
+			e.photo_author,
+			e.photo_author_uri,
+			e.photo_author_photo_uri,
+			e.weekday_descriptions,
+			e.secondary_hours_type,
+			e.next_open_time,
+			e.next_close_time,
+			e.open_now,
+			e.periods as "periods: Vec<Period>",
+			e.special_days,
 			el.block_index
 		FROM event_list el
 		JOIN events e ON e.id = el.event_id
@@ -162,6 +186,7 @@ async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<Ev
 			postal_code,
 			city,
 			country,
+			coords,
 			event_type,
 			event_description,
 			event_name,
@@ -169,6 +194,29 @@ async fn unassigned_events(event_ids: &[i32], pool: &PgPool) -> ApiResult<Vec<Ev
 			hard_start,
 			hard_end,
 			timezone,
+			place_id,
+			wheelchair_accessible_parking,
+			wheelchair_accessible_entrance,
+			wheelchair_accessible_restroom,
+			wheelchair_accessible_seating,
+			serves_vegetarian_food,
+			price_level,
+			utc_offset_minutes,
+			website_uri,
+			types,
+			photo_name,
+			photo_width,
+			photo_height,
+			photo_author,
+			photo_author_uri,
+			photo_author_photo_uri,
+			weekday_descriptions,
+			secondary_hours_type,
+			next_open_time,
+			next_close_time,
+			open_now,
+			periods as "periods: Vec<Period>",
+			special_days,
 			NULL::int AS block_index
 		FROM events
 		WHERE id = ANY($1)

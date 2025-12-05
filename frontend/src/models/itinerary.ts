@@ -23,19 +23,103 @@ export type EventDay = {
 
 export type Event = {
 	id: number;
+	event_name: string;
+	event_description: string | null;
 	street_address: string | null;
-	postal_code: number | null;
 	city: string | null;
 	country: string | null;
+	postal_code: number | null;
+	coords: string | null;
 	event_type: string | null;
-	event_description: string | null;
-	event_name: string;
 	user_created: boolean;
 	hard_start: string | null;
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	place_id: string | null;
+	wheelchair_accessible_parking: boolean | null;
+	wheelchair_accessible_entrance: boolean | null;
+	wheelchair_accessible_restroom: boolean | null;
+	wheelchair_accessible_seating: boolean | null;
+	serves_vegetarian_food: boolean | null;
+	price_level: number | null;
+	utc_offset_minutes: number | null;
+	website_uri: string | null;
+	types: string | null;
+	photo_name: string | null;
+	photo_width: number | null;
+	photo_height: number | null;
+	photo_author: string | null;
+	photo_author_uri: string | null;
+	photo_author_photo_uri: string | null;
+	weekday_descriptions: string | null;
+	secondary_hours_type: number | null;
+	next_open_time: string | null;
+	next_close_time: string | null;
+	open_now: boolean | null;
+	periods: Period[];
+	special_days: string[];
 	block_index: number | null;
+};
+
+/// If you use this as a spread initializer, it must come before all other fields to not overwrite them.
+/// Example:
+/// let some_event: Event = {
+///   ...EVENT_DEFAULT,
+///   id: 12,
+///   event_name: "some event name",
+/// };
+export const EVENT_DEFAULT: Event = {
+	id: 0,
+	event_name: "",
+	event_description: null,
+	street_address: null,
+	city: null,
+	country: null,
+	postal_code: null,
+	coords: null,
+	event_type: null,
+	user_created: false,
+	hard_start: null,
+	hard_end: null,
+	timezone: null,
+	place_id: null,
+	wheelchair_accessible_parking: null,
+	wheelchair_accessible_entrance: null,
+	wheelchair_accessible_restroom: null,
+	wheelchair_accessible_seating: null,
+	serves_vegetarian_food: null,
+	price_level: null,
+	utc_offset_minutes: null,
+	website_uri: null,
+	types: null,
+	photo_name: null,
+	photo_width: null,
+	photo_height: null,
+	photo_author: null,
+	photo_author_uri: null,
+	photo_author_photo_uri: null,
+	weekday_descriptions: null,
+	secondary_hours_type: null,
+	next_open_time: null,
+	next_close_time: null,
+	open_now: null,
+	periods: [],
+	special_days: [],
+	block_index: null
+};
+
+export type Period = {
+	open_date: string | null;
+	open_truncated: boolean | null;
+	open_day: number;
+	open_hour: number;
+	open_minute: number;
+	close_date: string | null;
+	close_truncated: boolean | null;
+	close_day: number | null;
+	close_hour: number | null;
+	close_minute: number | null;
 };
 
 export type SavedResponse = {

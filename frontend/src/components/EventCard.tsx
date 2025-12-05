@@ -8,7 +8,8 @@ import {
   type Event,
   type UserEventRequest,
   type DayItinerary,
-  TIMEZONES
+  TIMEZONES,
+  EVENT_DEFAULT
 } from "../models/itinerary";
 
 interface EventCardProps {
@@ -193,10 +194,11 @@ const EventCard: React.FC<EventCardProps> = ({
       return;
     }
     const updatedEvent: Event = {
+      ...EVENT_DEFAULT, // user events don't use google maps stuff so we can use
       ...userEvent,
       user_created: true,
       block_index: event.block_index,
-      id: event.id
+      id: event.id,
     };
     setEventData(updatedEvent);
     const updatedDays = localDays.map((day) => ({

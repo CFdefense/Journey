@@ -1337,7 +1337,9 @@
         "required": [
           "id",
           "event_name",
-          "user_created"
+          "user_created",
+          "periods",
+          "special_days"
         ],
         "properties": {
           "block_index": {
@@ -1349,6 +1351,12 @@
             "description": "Must be some to guarantee ordering"
           },
           "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coords": {
             "type": [
               "string",
               "null"
@@ -1394,12 +1402,109 @@
             "format": "int32",
             "description": "Primary key"
           },
+          "next_close_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "next_open_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "open_now": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Period"
+            }
+          },
+          "photo_author": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_author_photo_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_author_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "photo_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "place_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "postal_code": {
             "type": [
               "integer",
               "null"
             ],
             "format": "int32"
+          },
+          "price_level": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "secondary_hours_type": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "serves_vegetarian_food": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "special_days": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
           },
           "street_address": {
             "type": [
@@ -1414,8 +1519,57 @@
             ],
             "description": "Timezone of hard start and hard end"
           },
+          "types": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "user_created": {
             "type": "boolean"
+          },
+          "utc_offset_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "website_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "weekday_descriptions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wheelchair_accessible_entrance": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "wheelchair_accessible_parking": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "wheelchair_accessible_restroom": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "wheelchair_accessible_seating": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         }
       },
@@ -1625,6 +1779,75 @@
             "type": "integer",
             "format": "int32",
             "description": "this chat session is guaranteed to not have any messages in it"
+          }
+        }
+      },
+      "Period": {
+        "type": "object",
+        "required": [
+          "open_day",
+          "open_hour",
+          "open_minute"
+        ],
+        "properties": {
+          "close_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "close_day": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "close_hour": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "close_minute": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "close_truncated": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "open_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "open_day": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open_hour": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open_minute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open_truncated": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         }
       },
