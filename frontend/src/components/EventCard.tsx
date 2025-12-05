@@ -35,7 +35,11 @@ interface EventCardProps {
   onDragOver?: (e: React.DragEvent) => void;
 }
 
-const getGooglePhotoUrl = (photoName: string, maxWidth: number = 400, maxHeight: number = 400): string => {
+const getGooglePhotoUrl = (
+  photoName: string,
+  maxWidth: number = 400,
+  maxHeight: number = 400
+): string => {
   const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_TEST_API_KEY;
   return `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=${maxHeight}&maxWidthPx=${maxWidth}&key=${API_KEY}`;
 };
@@ -308,11 +312,11 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
         </button>
 
-         <div className="event-image-container">
+        <div className="event-image-container">
           <div className="event-image-placeholder">
             {eventData.photo_name && !imageError ? (
               <>
-                <img 
+                <img
                   src={getGooglePhotoUrl(eventData.photo_name)}
                   alt={eventData.event_name}
                   className="event-image"
