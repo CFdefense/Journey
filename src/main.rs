@@ -66,7 +66,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		agent::configs::constraint::create_constraint_agent().unwrap(),
 	));
 	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimize::create_optimize_agent().unwrap(),
+		agent::configs::optimizer::create_optimize_agent().unwrap(),
 	));
 
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents

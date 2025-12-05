@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS messages CASCADE;
 DROP TYPE IF EXISTS risk_tolerence CASCADE;
 DROP TYPE IF EXISTS budget_bucket CASCADE;
 DROP TYPE IF EXISTS time_of_day CASCADE;
+DROP TYPE IF EXISTS event_period CASCADE;
 
 CREATE EXTENSION IF NOT EXISTS vector; -- Use PGVECTOR (kept for future use)
 
@@ -36,6 +37,19 @@ CREATE TYPE time_of_day AS ENUM (
     'Evening'
 );
 
+CREATE TYPE event_period AS (
+	open_date DATE,
+	open_truncated BOOLEAN,
+	open_day INTEGER,
+	open_hour INTEGER,
+	open_minute INTEGER,
+	close_date DATE,
+	close_truncated BOOLEAN,
+	close_day INTEGER,
+	close_hour INTEGER,
+	close_minute INTEGER
+);
+
 -- Accounts table
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
@@ -52,20 +66,48 @@ CREATE TABLE accounts (
 -- Events table
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
+    --places.displayName
+    event_name VARCHAR(255) NOT NULL,
+    --places.editorialSummary
+    event_description TEXT,
     street_address VARCHAR(255),
-    postal_code INTEGER,
     city VARCHAR(255),
     country VARCHAR(255),
+    postal_code INTEGER,
+    coords VARCHAR(255),
+    --places.primaryType
     event_type VARCHAR(255),
-    event_description TEXT,
-    event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     --Timestamp of event location
     hard_start TIMESTAMP WITHOUT TIME ZONE,
     --Timestamp of event location
     hard_end TIMESTAMP WITHOUT TIME ZONE,
-    timezone VARCHAR(255)
+    timezone VARCHAR(255),
+    --remaining places fields
+    place_id VARCHAR(255),
+    wheelchair_accessible_parking BOOLEAN,
+    wheelchair_accessible_entrance BOOLEAN,
+    wheelchair_accessible_restroom BOOLEAN,
+    wheelchair_accessible_seating BOOLEAN,
+    serves_vegetarian_food BOOLEAN,
+    price_level INTEGER,
+    utc_offset_minutes INTEGER,
+    website_uri VARCHAR(255),
+    types VARCHAR(255),
+    photo_name TEXT,
+    photo_width INTEGER,
+    photo_height INTEGER,
+    photo_author VARCHAR(255),
+    photo_author_uri VARCHAR(255),
+    photo_author_photo_uri VARCHAR(255),
+    weekday_descriptions TEXT,
+    secondary_hours_type INTEGER,
+    next_open_time TIMESTAMP WITHOUT TIME ZONE,
+    next_close_time TIMESTAMP WITHOUT TIME ZONE,
+    open_now BOOLEAN,
+    periods event_period[] NOT NULL DEFAULT ARRAY[]::event_period[],
+    special_days DATE[] NOT NULL DEFAULT ARRAY[]::DATE[]
 );
 
 CREATE TABLE chat_sessions (
