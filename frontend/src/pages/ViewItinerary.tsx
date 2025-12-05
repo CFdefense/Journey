@@ -321,13 +321,13 @@ function ViewItineraryPage() {
         // Fetch the full API response to get metadata
         const apiResponse = await apiItineraryDetails(itineraryId);
 
-        if (apiResponse.status === 401) {
+        if (apiResponse.status == 401) {
           toast.error("Unauthorized user, please log in.");
           navigate("/login");
           return;
         }
         
-        if (apiResponse.status === 404) {
+        if (apiResponse.status == 404) {
           toast.error("Itinerary not found. Please try again.");
           return;
         }
@@ -355,8 +355,6 @@ function ViewItineraryPage() {
           const unassigned = getUnassignedEvents(apiResponse.result);
           setUnassignedEvents(unassigned);
         }
-        alert("Failed to load itinerary. Redirecting to home.");
-        navigate("/");
     }
 
     load();

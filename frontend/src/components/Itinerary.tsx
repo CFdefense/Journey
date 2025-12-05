@@ -195,8 +195,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
           draggedEvent.hard_start
         );
         const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
-        alert(
-          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`
+        toast.error(
+          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`, 5000
         );
         return;
       }
@@ -429,7 +429,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       setSearchResult([]);
       return;
     }
-    
+
     const displayEvents = result.result.events.filter(
       (e) => !unassigned.some((v) => v.id === e.id)
     );
