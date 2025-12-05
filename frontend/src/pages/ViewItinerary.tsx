@@ -11,12 +11,6 @@ import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
 
-
-const getGooglePhotoUrl = (photoName: string, maxWidth: number = 400, maxHeight: number = 400): string => {
-  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_TEST_API_KEY; // Adjust this to match your env variable name
-  return `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=${maxHeight}&maxWidthPx=${maxWidth}&key=${API_KEY}`;
-};
-
 function ViewItineraryPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -351,10 +345,6 @@ function ViewItineraryPage() {
     load();
   }, [itineraryId, navigate]);
 
-    const testEvent = localDays
-    .flatMap(day => day.timeBlocks.flatMap(tb => tb.events))
-    .find(event => event.photo_name);
-
   return (
     <div
       id="view-itinerary-page"
@@ -366,50 +356,6 @@ function ViewItineraryPage() {
         onAddDay={handleAddDay}
         onEditWithAI={handleEditWithAI}
       />
-
-     {/* TEST PHOTO DISPLAY */}
-      {testEvent?.photo_name && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 1000,
-          background: 'white',
-          padding: '10px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-        }}>
-          <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
-            Test Photo: {testEvent.event_name}
-          </p>
-          <img 
-            src={getGooglePhotoUrl(testEvent.photo_name, 300, 200)}
-            alt={testEvent.event_name}
-            style={{ 
-              maxWidth: '300px',
-              height: 'auto',
-              borderRadius: '4px'
-            }}
-            onError={(e) => {
-              console.error('Failed to load photo:', testEvent.photo_name);
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-          {testEvent.photo_author && (
-            <p style={{ 
-              margin: '5px 0 0 0', 
-              fontSize: '12px',
-              color: '#666'
-            }}>
-              Photo by: {testEvent.photo_author_uri ? (
-                <a href={testEvent.photo_author_uri} target="_blank" rel="noopener noreferrer">
-                  {testEvent.photo_author}
-                </a>
-              ) : testEvent.photo_author}
-            </p>
-          )}
-        </div>
-      )}
 
       <div className="view-content with-sidebar">
         <Itinerary
