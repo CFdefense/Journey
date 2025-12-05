@@ -308,15 +308,29 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
         </button>
 
-        <div className="event-image-container">
+         <div className="event-image-container">
           <div className="event-image-placeholder">
             {eventData.photo_name && !imageError ? (
-              <img 
-                src={getGooglePhotoUrl(eventData.photo_name)}
-                alt={eventData.event_name}
-                className="event-image"
-                onError={() => setImageError(true)}
-              />
+              <>
+                <img 
+                  src={getGooglePhotoUrl(eventData.photo_name)}
+                  alt={eventData.event_name}
+                  className="event-image"
+                  onError={() => setImageError(true)}
+                />
+                {eventData.photo_author && (
+                  <a
+                    href={eventData.photo_author_uri || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="photo-attribution"
+                    title={`Photo by ${eventData.photo_author}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📷
+                  </a>
+                )}
+              </>
             ) : (
               <svg
                 width="100%"

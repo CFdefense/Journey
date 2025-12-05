@@ -191,6 +191,16 @@ SET
     photo_author_photo_uri = 'https://lh3.googleusercontent.com/a/ACg8ocKXdGznTApl3bUhp8fBHvPlpZCrTK_fq8h1PliUWm9Q7aJDBg=s100-p-k-no-mo'
 WHERE id = 1;
 
+UPDATE events
+SET 
+    photo_name = 'places/ChIJ1dIqa2OAhYAREimtEtfBLyc/photos/AWn5SU64-FqzTMnkxlg9F-trzmWqkl2f0y_bCRBqLjkP8qLzGD8JTaThyGhmIzilkbOptFyHfbKj11kyTbga2m9scTSyhPBYd6TvsoDUoL6UTzXn5pKpUcbist3SB1ccAE5H7Wt-d_C2ycfmqAgHudsYBNOJLMtVV5Ij559zA4KoA_hOuDoNBaNI9pKwRharo8uKaAKDwDDefIpQki7VLigFZ7R0dvzhIl57MIdLoRgEoCQvELCv9KjE-9cORp7X1qsKG37QbudAJzgmmN8xwlf9XpCc57YTOABuM8dtS4WmNYOXEEyoKpNZptwOBh6RkiKhOY7Uhu8gwBXuVv9PLAHr6aa3ZOFhnaPCewvAdwfA0yd3insxeH12f80VdQyJ5nx9umKNVZHlEG-d7Tek5cc3k3UDIgdc2gbirc80wXn_AUyMkHDU',
+    photo_width = 3024,
+    photo_height = 4032,
+    photo_author = 'Barry Yen',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/102121354402180572298',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a-/ALV-UjUoOkFbUTTB1UQ96TqA-K8eeYRUXWzmR4APPQ4DMBPzzj8dPygh=s100-p-k-no-mo'
+WHERE id = 4;
+
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
     pg_get_serial_sequence('events', 'id'),
