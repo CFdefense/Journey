@@ -4,8 +4,8 @@ import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
 import {
   convertToApiFormat,
-  fetchItinerary,
-  getUnassignedEvents
+  getUnassignedEvents,
+  populateItinerary
 } from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
@@ -196,11 +196,11 @@ function ViewItineraryPage() {
     debouncedAutoSave();
   };
 
-  const autoSave = async (
+   const autoSave = async (
     updatedDays: DayItinerary[],
     updatedUnassigned?: Event[]
   ) => {
-    try {
+
       const unassignedToUse =
         updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
 
@@ -224,11 +224,12 @@ function ViewItineraryPage() {
         unassignedToUse
       );
 
-      await apiSaveItineraryChanges(apiPayload);
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-      // Silent fail - don't interrupt user with alerts
-    }
+      const apiResponse = await apiSaveItineraryChanges(apiPayload);
+      
+      if(!apiResponse.result || apiResponse.status !== 200) {
+        toast.error("Failed to save itinerary. Please try again.")
+      }
+
   };
 
   const handleEditWithAI = () => {
@@ -342,7 +343,7 @@ function ViewItineraryPage() {
           });
 
           // Transform and store days
-          const data = await fetchItinerary(itineraryId);
+          const data = populateItinerary(apiResponse.result);
           setLocalDays(data);
 
           // Load unassigned events
