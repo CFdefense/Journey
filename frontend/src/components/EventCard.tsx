@@ -11,6 +11,7 @@ import {
   TIMEZONES,
   EVENT_DEFAULT
 } from "../models/itinerary";
+import { toast } from "./Toast";
 
 interface EventCardProps {
   draggable: boolean;
@@ -186,13 +187,23 @@ const EventCard: React.FC<EventCardProps> = ({
           : TIMEZONES[inputEvent.timezoneIndex]
     };
     const result = await apiUserEvent(userEvent);
+
     if (result.status === 401) {
+      toast.error("Unauthorized user. Please log in.");
       navigate("/login");
       return;
-    } else if (result.result === null || result.status !== 200) {
-      alert("TODO: handle error properly - could not update user event");
+    } 
+
+    if (result.status == 404) {
+      toast.error("User event not found, please try again.");
       return;
     }
+
+    if (!result.result || result.status !== 200) {
+      toast.error("Could not update user event, please try again.");
+      return;
+    }
+
     const updatedEvent: Event = {
       ...EVENT_DEFAULT, // user events don't use google maps stuff so we can use
       ...userEvent,
@@ -223,11 +234,22 @@ const EventCard: React.FC<EventCardProps> = ({
 
     const result = await apiDeleteUserEvent(event.id);
     if (result.status === 401) {
+      toast.error("Unauthorized user, please log in.");
       navigate("/login");
-    } else if (result.status !== 200) {
-      alert("TODO: handle error properly - could not delete user event");
+    } 
+
+    if (result.status == 404) {
+      toast.error("User event not found or does not belong to this user.");
       return;
     }
+
+    if (!result.result || result.status !== 200) {
+      toast.error("Could not delete user event, please try again.");
+      return;
+    }
+
+    toast.success("User event deleted.");
+    
     const updatedUnassigned = unassignedEvents.filter((e) => e.id !== event.id);
     const updatedDays = localDays.map((d) => {
       return {
