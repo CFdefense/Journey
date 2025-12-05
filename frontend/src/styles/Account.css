@@ -960,7 +960,7 @@
   align-items: center;
 }
 
-/* Base button styling */
+/* Base button styling for modal actions */
 .modal-actions button {
   min-width: 120px;
   padding: 14px 28px;
@@ -976,59 +976,61 @@
   justify-content: center;
 }
 
-.modal-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.modal-btn--secondary {
+/* Secondary button (Cancel) */
+.btn-secondary {
   background: #eef1f4;
   color: #0b1220;
 }
 
-.modal-btn--secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #e4e8ec;
 }
 
-.modal-btn--primary {
+/* Primary button */
+.btn-primary {
   background: #0b1220;
   color: #ffffff;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.modal-btn--primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: #1a1a1a;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
 }
 
-.modal-btn:active {
-  transform: translateY(0);
-}
-
-.modal-btn:disabled,
-.modal-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Itinerary Delete Modal Specific Styles */
-.modal-actions .btn-danger {
+/* Danger button (Delete) */
+.btn-danger {
   background: #dc3545;
   color: #ffffff;
+  margin-top: -1px;
 }
 
-.modal-actions .btn-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled) {
   background: #c82333;
   transform: translateY(-1px);
 }
 
-.modal-actions .btn-danger:active:not(:disabled) {
+.btn-danger:active:not(:disabled) {
   transform: translateY(0);
+}
+
+/* Disabled state for all buttons */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Mobile Responsive */
@@ -1090,8 +1092,6 @@
     padding: 1.75rem;
   }
 
-
-@media (max-width: 768px) {
   .modal-content {
     padding: 24px;
   }
@@ -1100,10 +1100,11 @@
     flex-direction: column-reverse;
   }
 
-  .modal-actions button {
+  .modal-actions button,
+  .btn-primary {
     width: 100%;
   }
-}
+
 
 @media (max-width: 1100px) {
   .auth-page--account {
@@ -1245,4 +1246,6 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
+}
+
 }
