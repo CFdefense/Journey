@@ -1,7 +1,7 @@
 /*
  * src/agent/configs/orchestrator.rs
  *
- * File for Orchestrator Agent Configuration (Updated with shared LLM)
+ * File for Orchestrator Agent Configuration
  */
 
 use std::sync::Arc;
