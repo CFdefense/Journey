@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import EventCard from "./EventCard";
 import {
+  EVENT_DEFAULT,
   TIMEZONES,
   type DayItinerary,
   type Event,
@@ -16,6 +17,7 @@ import {
   getTimeBlockFromTimestamp,
   getDateFromTimestamp
 } from "../helpers/itinerary";
+import { toast } from "./Toast";
 
 interface ItineraryProps {
   localDays: DayItinerary[];
@@ -163,6 +165,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     if (!draggedEvent) {
       // Fallback if we can't find the full event
       draggedEvent = {
+        ...EVENT_DEFAULT,
         id: eventId,
         event_name: eventName,
         event_description: eventDescription,
@@ -170,12 +173,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         postal_code: 0,
         city: "",
         country: "",
-        event_type: "",
-        user_created: false,
-        hard_start: null,
-        hard_end: null,
-        timezone: null,
-        block_index: null
+        event_type: ""
       };
     }
 
@@ -197,8 +195,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
           draggedEvent.hard_start
         );
         const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
-        alert(
-          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`
+        toast.error(
+          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`,
+          5000
         );
         return;
       }
@@ -355,10 +354,18 @@ const Itinerary: React.FC<ItineraryProps> = ({
     };
     const result = await apiUserEvent(userEvent);
     if (result.status === 401) {
+      toast.error("Unauthorized user, please log in.");
       navigate("/login");
       return;
-    } else if (result.result === null || result.status !== 200) {
-      alert("TODO: handle error properly - could not create user event");
+    }
+
+    if (result.status == 404) {
+      toast.error("User-event not found for this user.");
+      return;
+    }
+
+    if (result.result === null || result.status !== 200) {
+      toast.error("Failed to update user event, please try again.");
       return;
     }
     setUserEventForm({
@@ -373,9 +380,27 @@ const Itinerary: React.FC<ItineraryProps> = ({
       end: "",
       timezoneIndex: -1
     });
-    const event = userEvent as Event;
-    event.id = result.result.id;
-    event.user_created = true;
+    const event: Event = {
+      ...EVENT_DEFAULT, // This initializes all the nullable fields
+      id: result.result.id,
+      event_name: sanitize(userEventForm.name)!,
+      event_description: sanitize(userEventForm.description),
+      event_type: sanitize(userEventForm.type),
+      street_address: sanitize(userEventForm.address),
+      city: sanitize(userEventForm.city),
+      country: sanitize(userEventForm.country),
+      postal_code:
+        userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
+          ? parseInt(userEventForm.postalCode)
+          : null,
+      hard_start: sanitize(userEventForm.start),
+      hard_end: sanitize(userEventForm.end),
+      timezone:
+        userEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[userEventForm.timezoneIndex],
+      user_created: true
+    };
 
     // Create a new array instead of mutating the existing one
     const updatedUnassigned = [...unassigned, event];
@@ -412,13 +437,18 @@ const Itinerary: React.FC<ItineraryProps> = ({
     };
     const result = await apiSearchEvent(searchEvent);
     if (result.status === 401) {
+      toast.error("Unauthorized user, please log in.");
       navigate("/login");
       return;
-    } else if (result.result === null || result.status !== 200) {
+    }
+
+    if (result.result === null || result.status !== 200) {
+      toast.error("Failed to find event, please try again.");
       setSearchResultCaption("Error Searching Events");
       setSearchResult([]);
       return;
     }
+
     const displayEvents = result.result.events.filter(
       (e) => !unassigned.some((v) => v.id === e.id)
     );
