@@ -315,6 +315,8 @@ function ViewItineraryPage() {
         // Fetch the full API response to get metadata
         const apiResponse = await apiItineraryDetails(itineraryId);
 
+        console.log(apiResponse);
+
         if (apiResponse.result) {
           // Store metadata
           setItineraryMetadata({
@@ -354,6 +356,7 @@ function ViewItineraryPage() {
         onAddDay={handleAddDay}
         onEditWithAI={handleEditWithAI}
       />
+
       <div className="view-content with-sidebar">
         <Itinerary
           localDays={localDays}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../styles/ViewPageSidebar.css";
-import userPfp from "../assets/user-pfp-temp.png";
+import userPfp from "/user-pfp-temp.png";
 
 interface ViewPageSidebarProps {
   onCreateEvent: () => void;
