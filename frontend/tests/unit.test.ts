@@ -135,13 +135,39 @@ describe("Itinerary Helper Tests", () => {
 							user_created: false,
 							hard_start: null,
 							hard_end: null,
-							timezone: null
+							timezone: null,
+							coords: null,
+							place_id: null,
+							wheelchair_accessible_parking: null,
+							wheelchair_accessible_entrance: null,
+							wheelchair_accessible_restroom: null,
+							wheelchair_accessible_seating: null,
+							serves_vegetarian_food: null,
+							price_level: null,
+							utc_offset_minutes: null,
+							website_uri: null,
+							types: null,
+							photo_name: null,
+							photo_width: null,
+							photo_height: null,
+							photo_author: null,
+							photo_author_uri: null,
+							photo_author_photo_uri: null,
+							weekday_descriptions: null,
+							secondary_hours_type: null,
+							next_open_time: null,
+							next_close_time: null,
+							open_now: null,
+							periods: [],
+							special_days: [],
+							block_index: null
 						}
 					],
 					afternoon_events: [],
 					evening_events: []
 				}
-			]
+			],
+			unassigned_events: []
 		};
 
 		const result = populateItinerary(apiItinerary);
@@ -157,7 +183,8 @@ describe("Itinerary Helper Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		};
 
 		const result = populateItinerary(apiItinerary);
@@ -184,7 +211,32 @@ describe("Itinerary Helper Tests", () => {
 								user_created: false,
 								hard_start: null,
 								hard_end: null,
-								timezone: null
+								timezone: null,
+								coords: null,
+								place_id: null,
+								wheelchair_accessible_parking: null,
+								wheelchair_accessible_entrance: null,
+								wheelchair_accessible_restroom: null,
+								wheelchair_accessible_seating: null,
+								serves_vegetarian_food: null,
+								price_level: null,
+								utc_offset_minutes: null,
+								website_uri: null,
+								types: null,
+								photo_name: null,
+								photo_width: null,
+								photo_height: null,
+								photo_author: null,
+								photo_author_uri: null,
+								photo_author_photo_uri: null,
+								weekday_descriptions: null,
+								secondary_hours_type: null,
+								next_open_time: null,
+								next_close_time: null,
+								open_now: null,
+								periods: [],
+								special_days: [],
+								block_index: null
 							}
 						]
 					},
@@ -241,7 +293,8 @@ describe("Itinerary Helper Tests", () => {
 						afternoon_events: [],
 						evening_events: []
 					}
-				]
+				],
+				unassigned_events: []
 			}
 		};
 
@@ -350,7 +403,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: null,
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -374,7 +452,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: "2025-01-01T08:00:00Z",
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(
@@ -395,7 +498,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: "2025-01-01T08:00:00Z",
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -416,7 +544,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: "2025-01-01T08:00:00Z",
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(
@@ -437,7 +590,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: "2025-01-01T08:00:00Z",
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-02", 0)).toBe(
@@ -458,7 +636,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: "2025-01-01T19:00:00Z",
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		const message = getDropErrorMessage(event);
@@ -480,7 +683,32 @@ describe("Itinerary Helper Tests", () => {
 			user_created: false,
 			hard_start: null,
 			hard_end: null,
-			timezone: null
+			timezone: null,
+			coords: null,
+			place_id: null,
+			wheelchair_accessible_parking: null,
+			wheelchair_accessible_entrance: null,
+			wheelchair_accessible_restroom: null,
+			wheelchair_accessible_seating: null,
+			serves_vegetarian_food: null,
+			price_level: null,
+			utc_offset_minutes: null,
+			website_uri: null,
+			types: null,
+			photo_name: null,
+			photo_width: null,
+			photo_height: null,
+			photo_author: null,
+			photo_author_uri: null,
+			photo_author_photo_uri: null,
+			weekday_descriptions: null,
+			secondary_hours_type: null,
+			next_open_time: null,
+			next_close_time: null,
+			open_now: null,
+			periods: [],
+			special_days: [],
+			block_index: null
 		};
 
 		expect(getDropErrorMessage(event)).toBe(null);
@@ -532,7 +760,8 @@ describe("testApi Unit Tests", () => {
 		end_date: "2025-01-01",
 		chat_session_id: null,
 		title: "Test Trip",
-		event_days: []
+		event_days: [],
+		unassigned_events: []
 	};
 
 	const mockSaveResponse: SaveResponse = {
@@ -902,7 +1131,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result).toEqual({ result: mockSaveResponse, status: 200 });
 	});
@@ -919,7 +1149,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result.status).toBe(400);
 	});
@@ -932,7 +1163,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result).toEqual({ result: null, status: -1 });
 	});
