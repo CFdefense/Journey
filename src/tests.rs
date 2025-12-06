@@ -1008,32 +1008,13 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	// Clone the pool
 	let pool = pool.0.clone();
 
-	// Create the orchestrator agent with references to the research, constraint, and optimize agents
-	let pool_clone_for_agent = pool.clone();
-	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
-		// Real agent - requires valid OPENAI_API_KEY
-		tokio::time::timeout(
-			Duration::from_secs(5),
-			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(pool_clone_for_agent).unwrap_or_else(|e| {
-					panic!(
-						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
-						e
-					);
-				})
-			}),
-		)
-		.await
-		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-		.expect("Agent creation task panicked")
-	} else {
-		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::configs::orchestrator::create_dummy_orchestrator_agent()
-			.expect("Dummy agent creation failed")
-	};
+	// Always use dummy agent for tests
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+	.expect("Dummy agent creation failed");
 
+	// Wrap in Extension and Arc<Mutex> as usual
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
-	
+
 	let pool_ext = Extension(pool.clone());
 
 	// create new chat
@@ -1043,7 +1024,6 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		id: parts[1].parse().unwrap(),
 	});
 	let first_chat_session_id = controllers::chat::api_new_chat(user, pool_ext)
-
 		.await
 		.unwrap()
 		.chat_session_id;
@@ -1236,9 +1216,13 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	//delete chat session
-	controllers::chat::api_delete_chat(user, Extension(pool.clone()), axum::extract::Path(chat_session_id))
-		.await
-		.unwrap();
+	controllers::chat::api_delete_chat(
+		user,
+		Extension(pool.clone()),
+		axum::extract::Path(chat_session_id),
+	)
+	.await
+	.unwrap();
 	let json = Json(MessagePageRequest {
 		chat_session_id: chat_session.id,
 		message_id: None,
@@ -1409,29 +1393,12 @@ async fn test_endpoints() {
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
 
-	// Create the orchestrator agent with references to the research, constraint, and optimize agents
-	let pool_clone_for_agent = pool.clone();
-	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
-		// Real agent - requires valid OPENAI_API_KEY
-		tokio::time::timeout(
-			Duration::from_secs(5),
-			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(pool_clone_for_agent).unwrap_or_else(|e| {
-					panic!(
-						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
-						e
-					);
-				})
-			}),
-		)
-		.await
-		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-		.expect("Agent creation task panicked")
-	} else {
-		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::configs::orchestrator::create_dummy_orchestrator_agent()
-			.expect("Dummy agent creation failed")
-	};
+	// Always use dummy agent for tests
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+	.expect("Dummy agent creation failed");
+
+	// Wrap in Extension and Arc<Mutex> as usual
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
 
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();

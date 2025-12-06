@@ -9,7 +9,7 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIModel},
 	memory::SimpleMemory,
 };
 
@@ -19,6 +19,42 @@ use crate::agent::configs::constraint::create_constraint_agent;
 use crate::agent::configs::optimizer::create_optimize_agent;
 use crate::agent::configs::research::create_research_agent;
 use crate::agent::tools::orchestrator::{ORCHESTRATOR_SYSTEM_PROMPT, get_orchestrator_tools};
+use async_trait::async_trait;
+use langchain_rust::language_models::llm::LLM;
+use langchain_rust::language_models::GenerateResult;
+use langchain_rust::schemas::{Message, StreamData};
+use langchain_rust::language_models::LLMError;
+use futures::stream::{self, Stream};
+use std::pin::Pin;
+use serde_json::Value;
+
+/// Mock LLM implementation for testing that returns dummy responses
+/// without making actual API calls
+#[derive(Clone)]
+pub struct MockLLM;
+
+#[async_trait]
+impl LLM for MockLLM {
+    async fn generate(&self, _messages: &[Message]) -> Result<GenerateResult, LLMError> {
+        Ok(GenerateResult {
+            generation: "This is a mock response for testing.".to_string(),
+            tokens: None,
+        })
+    }
+
+    async fn stream(
+        &self,
+        _messages: &[Message],
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, LLMError>> + Send>>, LLMError> {
+        let response = StreamData::new(
+            Value::String("This is a mock response for testing.".to_string()),
+            None,
+            "This is a mock response for testing.",
+        );
+        let stream = stream::once(async move { Ok(response) });
+        Ok(Box::pin(stream))
+    }
+}
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -27,7 +63,9 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_orchestrator_agent(pool: PgPool) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_orchestrator_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -36,8 +74,6 @@ pub fn create_orchestrator_agent(pool: PgPool) -> Result<AgentExecutor<Conversat
 
 	// Create memory for conversation history
 	let memory = SimpleMemory::new();
-
-
 
 	// Create research agent
 	let research_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
@@ -56,7 +92,7 @@ pub fn create_orchestrator_agent(pool: PgPool) -> Result<AgentExecutor<Conversat
 
 	// Get orchestrator tools
 	let tools = get_orchestrator_tools(
-		llm.clone(),
+		Arc::new(llm.clone()),
 		research_agent,
 		constraint_agent,
 		optimize_agent,
@@ -79,63 +115,46 @@ pub fn create_orchestrator_agent(pool: PgPool) -> Result<AgentExecutor<Conversat
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
 pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	// Set a dummy API key temporarily so agent creation doesn't fail
-	let original_key = std::env::var("OPENAI_API_KEY").ok();
+    // Use MockLLM for testing to avoid API key requirements
+    let llm = MockLLM;
 
-	unsafe {
-		std::env::set_var("OPENAI_API_KEY", "sk-dummy-key-for-testing-only");
-	}
+    // Create memory
+    let memory = SimpleMemory::new();
 
-	// Create a shared LLM instance
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+    // Dummy sub-agents
+    let dummy_agent = Arc::new(tokio::sync::Mutex::new(create_dummy_sub_agent()?));
+    let research_agent = Arc::clone(&dummy_agent);
+    let constraint_agent = Arc::clone(&dummy_agent);
+    let optimize_agent = Arc::clone(&dummy_agent);
 
-	// Create memory
-	let memory = SimpleMemory::new();
+    let llm_arc = Arc::new(llm.clone());
+    let tools = get_orchestrator_tools(
+        llm_arc,
+        Arc::new(tokio::sync::Mutex::new(research_agent)),
+        Arc::new(tokio::sync::Mutex::new(constraint_agent)),
+        Arc::new(tokio::sync::Mutex::new(optimize_agent)),
+    );
 
-	// For testing, create dummy sub-agents (they won't be invoked)
-	let dummy_agent = Arc::new(tokio::sync::Mutex::new(create_dummy_sub_agent()?));
-	let research_agent = Arc::clone(&dummy_agent);
-	let constraint_agent = Arc::clone(&dummy_agent);
-	let optimize_agent = Arc::clone(&dummy_agent);
+    let agent = ConversationalAgentBuilder::new()
+        .prefix(ORCHESTRATOR_SYSTEM_PROMPT.to_string())
+        .tools(&tools)
+        .options(ChainCallOptions::new().with_max_tokens(2000))
+        .build(llm)
+        .unwrap();
 
-	// Get tools with shared LLM
-	let tools = get_orchestrator_tools(
-		llm.clone(),
-		Arc::new(tokio::sync::Mutex::new(research_agent)),
-		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
-		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
-	);
-
-	// Create agent with system prompt and tools
-	let agent = ConversationalAgentBuilder::new()
-		.prefix(ORCHESTRATOR_SYSTEM_PROMPT.to_string())
-		.tools(&tools)
-		.options(ChainCallOptions::new().with_max_tokens(2000))
-		.build(llm)
-		.unwrap();
-
-	// Restore original key if it existed
-	unsafe {
-		if let Some(key) = original_key {
-			std::env::set_var("OPENAI_API_KEY", key);
-		} else {
-			std::env::remove_var("OPENAI_API_KEY");
-		}
-	}
-
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+    Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }
 
 #[cfg(test)]
 fn create_dummy_sub_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	let memory = SimpleMemory::new();
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+    let memory = SimpleMemory::new();
+    let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
-	let agent = ConversationalAgentBuilder::new()
-		.prefix("Dummy sub-agent".to_string())
-		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
-		.unwrap();
+    let agent = ConversationalAgentBuilder::new()
+        .prefix("Dummy sub-agent".to_string())
+        .options(ChainCallOptions::new().with_max_tokens(1000))
+        .build(llm)
+        .unwrap();
 
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+    Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }

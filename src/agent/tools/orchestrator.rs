@@ -21,13 +21,13 @@ use tokio::sync::Mutex;
 /// Returns a UserIntent object.
 #[derive(Clone)]
 pub struct ParseUserIntentTool {
-	llm: OpenAI<OpenAIConfig>,
+	llm: Arc<dyn LLM + Send + Sync>,
 }
 
 impl ParseUserIntentTool {
-	pub fn new(llm: OpenAI<OpenAIConfig>) -> Self {
+	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
 		Self {
-			llm: OpenAI::default().with_model(OpenAIModel::Gpt4oMini),
+			llm: Arc::new(llm),
 		}
 	}
 }
@@ -354,13 +354,13 @@ impl Tool for RouteTaskTool {
 /// Returns a TravelPlan object.
 #[derive(Clone)]
 pub struct MergePartialResultsTool {
-	llm: OpenAI<OpenAIConfig>,
+	llm: Arc<dyn LLM + Send + Sync>,
 }
 
 impl MergePartialResultsTool {
-	pub fn new(llm: OpenAI<OpenAIConfig>) -> Self {
+	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
 		Self {
-			llm: OpenAI::default().with_model(OpenAIModel::Gpt4oMini),
+			llm: Arc::new(llm),
 		}
 	}
 }
@@ -450,13 +450,13 @@ impl Tool for MergePartialResultsTool {
 /// Returns a string containing the clarification question.
 #[derive(Clone)]
 pub struct AskForClarificationTool {
-	llm: OpenAI<OpenAIConfig>,
+	llm: Arc<dyn LLM + Send + Sync>,
 }
 
 impl AskForClarificationTool {
-	pub fn new(llm: OpenAI<OpenAIConfig>) -> Self {
+	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
 		Self {
-			llm: OpenAI::default().with_model(OpenAIModel::Gpt4oMini),
+			llm: Arc::new(llm),
 		}
 	}
 }
@@ -577,13 +577,13 @@ impl Tool for UpdateContextTool {
 /// Gets all the orchestrator tools.
 /// Returns a vector of Arc<dyn Tool> objects.
 pub fn get_orchestrator_tools(
-	llm: OpenAI<OpenAIConfig>,
+	llm: Arc<dyn LLM + Send + Sync>,
 	research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	constraint_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 ) -> Vec<Arc<dyn Tool>> {
 	vec![
-		Arc::new(ParseUserIntentTool::new(llm.clone())),
+		Arc::new(ParseUserIntentTool { llm: Arc::clone(&llm) }),
 		Arc::new(RetrieveChatContextTool::new()),
 		Arc::new(RetrieveUserProfileTool::new()),
 		Arc::new(RouteTaskTool::new(
@@ -591,8 +591,8 @@ pub fn get_orchestrator_tools(
 			constraint_agent,
 			optimize_agent,
 		)),
-		Arc::new(MergePartialResultsTool::new(llm.clone())),
-		Arc::new(AskForClarificationTool::new(llm.clone())),
+		Arc::new(MergePartialResultsTool { llm: Arc::clone(&llm) }),
+		Arc::new(AskForClarificationTool { llm: Arc::clone(&llm) }),
 		Arc::new(UpdateContextTool::new()),
 	]
 }
