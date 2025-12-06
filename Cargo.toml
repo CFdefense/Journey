@@ -34,6 +34,7 @@ google_maps = { version = "3.9.1", default-features = false, features = [
 	"reqwest-http2",
 	"reqwest-brotli"
 ] }
+num-traits = "0.2.19"
 
 [dev-dependencies]
 sqlx-cli = "0.8"

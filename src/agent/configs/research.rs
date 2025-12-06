@@ -104,7 +104,7 @@ pub fn create_research_agent() -> Result<AgentExecutor<ConversationalAgent>, Age
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[Arc::new(GeocodeTool), Arc::new(QueryDbEventsTool), Arc::new(NearbySearchTool)])
+		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -138,7 +138,7 @@ pub fn create_dummy_research_agent() -> Result<AgentExecutor<ConversationalAgent
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[Arc::new(GeocodeTool), Arc::new(QueryDbEventsTool), Arc::new(NearbySearchTool)])
+		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();

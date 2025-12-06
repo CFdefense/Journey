@@ -8,11 +8,13 @@
  */
 
 use async_trait::async_trait;
+use google_maps::places_new::{Circle, Field, FieldMask, LatLng, LocationRestriction, PlaceType};
 use langchain_rust::tools::Tool;
+use serde::{Deserialize, Serialize, de::IntoDeserializer};
 use serde_json::{Value, json};
 use std::error::Error;
 
-use crate::global::GOOGLE_MAPS_API_KEY;
+use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
 
 /// This tool takes an address and converts it into coordinates using Google Maps Geocoding API.
 #[derive(Clone)]
@@ -51,19 +53,27 @@ impl Tool for GeocodeTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let location = input["location"].as_str().ok_or("Location should be a string")?;
-		dotenvy::dotenv().map_err(|_|"Failed to load environment variables")?;
-		let gm_api_key = std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_|"GOOGLE_MAPS_API_KEY is not set")?;
+		let location = input["location"]
+			.as_str()
+			.ok_or("Location should be a string")?;
+		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
+		let gm_api_key = std::env::var(GOOGLE_MAPS_API_KEY)
+			.map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
 
 		// use google maps api to get the address from the provided location and use geocoding to get its coordinates
-		let gm_client = google_maps::Client::try_new(gm_api_key).map_err(|_|"Failed to create client for Google Maps API")?;
+		let gm_client = google_maps::Client::try_new(gm_api_key)
+			.map_err(|_| "Failed to create client for Google Maps API")?;
 		let geocode_res = gm_client
 			.geocoding()
 			.with_address(location)
 			.execute()
 			.await?;
 		if let Some(err) = geocode_res.error_message {
-			return Err(format!("Geocoding failed with status {} - {err}", geocode_res.status).into());
+			return Err(format!(
+				"Geocoding failed with status {} - {err}",
+				geocode_res.status
+			)
+			.into());
 		}
 		if !matches!(geocode_res.status, google_maps::geocoding::Status::Ok) {
 			return Err(format!("Geocoding failed with status {}", geocode_res.status).into());
@@ -75,7 +85,8 @@ impl Tool for GeocodeTool {
 		Ok(json!({
 			"lat": geocode_res.results[0].geometry.location.lat,
 			"lng": geocode_res.results[0].geometry.location.lng
-		}).to_string())
+		})
+		.to_string())
 	}
 }
 
@@ -129,18 +140,116 @@ impl Tool for NearbySearchTool {
 		json!({
 			"type": "object",
 			"properties": {
-				"name": {
-					"type": "string",
-					"description": "The name of the person to greet"
+				"lat": {
+					"type": "number",
+					"description": "The lattitude of the target location."
+				},
+				"lng": {
+					"type": "number",
+					"description": "The longitude of the target location."
+				},
+				"includedTypes": {
+					"type": "array",
+					"description": "An array of places types to include."
+				},
+				"excludedTypes": {
+					"type": "array",
+					"description": "An array of places types to exclude."
 				}
 			},
-			"required": ["name"]
+			"required": ["lat", "lng"]
 		})
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let name = input["name"].as_str().ok_or("Name should be a string")?;
+		let lat = input["lat"]
+			.as_f64()
+			.ok_or("lat should be a 64-bit floating point number")?;
+		let lng = input["lng"]
+			.as_f64()
+			.ok_or("lng should be a 64-bit floating point number")?;
 
-		Ok(format!("Hello, {}! Welcome to our AI assistant.", name))
+		const INCLUDE_TYPES_ERR: &str = "includedTypes should be an array of strings";
+		const EXCLUDE_TYPES_ERR: &str = "excludedTypes should be an array of strings";
+		let included_types = if !input["includedTypes"].is_null() {
+			input["includedTypes"]
+				.as_array()
+				.ok_or(INCLUDE_TYPES_ERR)?
+				.iter()
+				.map(|v| v.as_str().ok_or(INCLUDE_TYPES_ERR))
+				.collect::<Result<_,_>>()
+				.map_err(|_|INCLUDE_TYPES_ERR)?
+		} else {
+			Vec::new()
+		};
+		let excluded_types = if !input["excludedTypes"].is_null() {
+			input["excludedTypes"]
+				.as_array()
+				.ok_or(EXCLUDE_TYPES_ERR)?
+				.iter()
+				.map(|v| v.as_str().ok_or(EXCLUDE_TYPES_ERR))
+				.collect::<Result<_,_>>()
+				.map_err(|_|EXCLUDE_TYPES_ERR)?
+		} else {
+			Vec::new()
+		};
+
+		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
+		let gm_api_key = std::env::var(GOOGLE_MAPS_API_KEY)
+				.map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
+
+		// use google maps api to get nearby places
+		let gm_client = google_maps::Client::try_new(gm_api_key)
+			.map_err(|_| "Failed to create client for Google Maps API")?;
+
+		let search_res = gm_client.nearby_search((lat, lng, 50_000.))?
+			.field_mask(FieldMask::Specific(vec![
+				Field::PlacesAccessibilityOptions,
+				Field::PlacesAdrFormatAddress,
+				Field::PlacesDisplayName,
+				Field::PlacesId,
+				Field::PlacesPhotos,
+				Field::PlacesUtcOffsetMinutes,
+				Field::PlacesPriceLevel,
+				Field::PlacesRegularOpeningHours,
+				Field::PlacesWebsiteUri,
+				Field::PlacesServesVegetarianFood,
+				Field::PlacesTypes,
+				Field::PlacesPrimaryType,
+				Field::PlacesEditorialSummary,
+			]))
+			// pray to our lord and savior Terry Davis that this works
+			.included_types(
+				included_types
+					.iter()
+					.map(|t| PlaceType::deserialize(t.into_deserializer())
+						.map_err(|_: serde::de::value::Error|"Could not deserialize place type within includedTypes array")
+					)
+					.collect::<Result<Vec<_>,_>>()?
+			)
+			.excluded_types(
+				excluded_types
+					.iter()
+					.map(|t| PlaceType::deserialize(t.into_deserializer())
+						.map_err(|_: serde::de::value::Error|"Could not deserialize place type within excludedTypes array")
+					)
+					.collect::<Result<Vec<_>,_>>()?
+			)
+			.execute()
+			.await?;
+
+		if let Some(err) = search_res.error() {
+			return Err(format!("Nearby Search failed - {err}").into());
+		}
+		let places = search_res.places();
+		if places.is_empty() {
+			return Err(format!("Nearby Search returned an empty array of places").into());
+		}
+
+		let events: Vec<Event> = places
+			.into_iter()
+			.map(|p| Event::from(p))
+			.collect();
+		Ok(json!(events).to_string())
 	}
 }
