@@ -72,7 +72,7 @@ pub fn create_orchestrator_agent(
 	// Create a shared LLM instance for the orchestrator and its tools
 	// Use MockLLM if DEPLOY_LLM != "1", otherwise use OpenAI
 	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
-	
+
 	let llm_for_subagents = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 	let llm_for_tools: Arc<dyn LLM + Send + Sync> = if use_mock {
 		Arc::new(MockLLM)
