@@ -4,12 +4,13 @@ import Itinerary from "../components/Itinerary";
 import ViewPageSidebar from "../components/ViewPageSidebar";
 import {
   convertToApiFormat,
-  fetchItinerary,
-  getUnassignedEvents
+  getUnassignedEvents,
+  populateItinerary
 } from "../helpers/itinerary";
 import type { DayItinerary, Event } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import "../styles/Itinerary.css";
+import { toast } from "../components/Toast";
 
 function ViewItineraryPage() {
   const location = useLocation();
@@ -199,34 +200,38 @@ function ViewItineraryPage() {
     updatedDays: DayItinerary[],
     updatedUnassigned?: Event[]
   ) => {
-    try {
-      const unassignedToUse =
-        updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
+    const unassignedToUse =
+      updatedUnassigned !== undefined ? updatedUnassigned : unassignedEvents;
 
-      // Calculate start_date and end_date from the days array
-      const startDate =
-        updatedDays.length > 0
-          ? updatedDays[0].date
-          : itineraryMetadata.startDate;
-      const endDate =
-        updatedDays.length > 0
-          ? updatedDays[updatedDays.length - 1].date
-          : itineraryMetadata.endDate;
+    // Calculate start_date and end_date from the days array
+    const startDate =
+      updatedDays.length > 0
+        ? updatedDays[0].date
+        : itineraryMetadata.startDate;
+    const endDate =
+      updatedDays.length > 0
+        ? updatedDays[updatedDays.length - 1].date
+        : itineraryMetadata.endDate;
 
-      const apiPayload = convertToApiFormat(
-        updatedDays,
-        itineraryMetadata.id,
-        startDate,
-        endDate,
-        itineraryMetadata.title,
-        itineraryMetadata.chatSessionId,
-        unassignedToUse
-      );
+    const apiPayload = convertToApiFormat(
+      updatedDays,
+      itineraryMetadata.id,
+      startDate,
+      endDate,
+      itineraryMetadata.title,
+      itineraryMetadata.chatSessionId,
+      unassignedToUse
+    );
 
-      await apiSaveItineraryChanges(apiPayload);
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-      // Silent fail - don't interrupt user with alerts
+    const apiResponse = await apiSaveItineraryChanges(apiPayload);
+
+    if (apiResponse.status == 401) {
+      toast.error("Unauthorized to edit this itinerary. Please log in.");
+      navigate("/login");
+    }
+
+    if (!apiResponse.result || apiResponse.status !== 200) {
+      toast.error("Failed to save itinerary. Please try again.");
     }
   };
 
@@ -311,33 +316,41 @@ function ViewItineraryPage() {
     }
 
     async function load() {
-      try {
-        // Fetch the full API response to get metadata
-        const apiResponse = await apiItineraryDetails(itineraryId);
+      // Fetch the full API response to get metadata
+      const apiResponse = await apiItineraryDetails(itineraryId);
 
-        if (apiResponse.result) {
-          // Store metadata
-          setItineraryMetadata({
-            id: apiResponse.result.id,
-            startDate: apiResponse.result.start_date,
-            endDate: apiResponse.result.end_date,
-            title: apiResponse.result.title,
-            chatSessionId: apiResponse.result.chat_session_id
-          });
-
-          // Transform and store days
-          const data = await fetchItinerary(itineraryId);
-          setLocalDays(data);
-
-          // Load unassigned events
-          const unassigned = getUnassignedEvents(apiResponse.result);
-          setUnassignedEvents(unassigned);
-        }
-      } catch (error) {
-        console.error("Failed to load itinerary:", error);
-        alert("Failed to load itinerary. Redirecting to home.");
-        navigate("/");
+      if (apiResponse.status == 401) {
+        toast.error("Unauthorized user, please log in.");
+        navigate("/login");
+        return;
       }
+
+      if (apiResponse.status == 404) {
+        toast.error("Itinerary not found. Please try again.");
+        navigate("/home");
+        return;
+      }
+
+      if (!apiResponse.result || apiResponse.status !== 200) {
+        toast.error("Unable to load itinerary. Please try again.");
+        return;
+      }
+      // Store metadata
+      setItineraryMetadata({
+        id: apiResponse.result.id,
+        startDate: apiResponse.result.start_date,
+        endDate: apiResponse.result.end_date,
+        title: apiResponse.result.title,
+        chatSessionId: apiResponse.result.chat_session_id
+      });
+
+      // Transform and store days
+      const data = populateItinerary(apiResponse.result);
+      setLocalDays(data);
+
+      // Load unassigned events
+      const unassigned = getUnassignedEvents(apiResponse.result);
+      setUnassignedEvents(unassigned);
     }
 
     load();
@@ -354,6 +367,7 @@ function ViewItineraryPage() {
         onAddDay={handleAddDay}
         onEditWithAI={handleEditWithAI}
       />
+
       <div className="view-content with-sidebar">
         <Itinerary
           localDays={localDays}

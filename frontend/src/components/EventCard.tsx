@@ -8,8 +8,10 @@ import {
   type Event,
   type UserEventRequest,
   type DayItinerary,
-  TIMEZONES
+  TIMEZONES,
+  EVENT_DEFAULT
 } from "../models/itinerary";
+import { toast } from "./Toast";
 
 interface EventCardProps {
   draggable: boolean;
@@ -34,6 +36,15 @@ interface EventCardProps {
   onDragOver?: (e: React.DragEvent) => void;
 }
 
+const getGooglePhotoUrl = (
+  photoName: string,
+  maxWidth: number = 400,
+  maxHeight: number = 400
+): string => {
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_TEST_API_KEY;
+  return `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=${maxHeight}&maxWidthPx=${maxWidth}&key=${API_KEY}`;
+};
+
 const EventCard: React.FC<EventCardProps> = ({
   time,
   event,
@@ -52,6 +63,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState(event);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [inputEvent, setInputEvent] = useState({
     ...JSON.parse(JSON.stringify(event)),
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
@@ -185,14 +197,25 @@ const EventCard: React.FC<EventCardProps> = ({
           : TIMEZONES[inputEvent.timezoneIndex]
     };
     const result = await apiUserEvent(userEvent);
+
     if (result.status === 401) {
+      toast.error("Unauthorized user. Please log in.");
       navigate("/login");
       return;
-    } else if (result.result === null || result.status !== 200) {
-      alert("TODO: handle error properly - could not update user event");
+    }
+
+    if (result.status == 404) {
+      toast.error("User event not found, please try again.");
       return;
     }
+
+    if (!result.result || result.status !== 200) {
+      toast.error("Could not update user event, please try again.");
+      return;
+    }
+
     const updatedEvent: Event = {
+      ...EVENT_DEFAULT, // user events don't use google maps stuff so we can use
       ...userEvent,
       user_created: true,
       block_index: event.block_index,
@@ -221,11 +244,22 @@ const EventCard: React.FC<EventCardProps> = ({
 
     const result = await apiDeleteUserEvent(event.id);
     if (result.status === 401) {
+      toast.error("Unauthorized user, please log in.");
       navigate("/login");
-    } else if (result.status !== 200) {
-      alert("TODO: handle error properly - could not delete user event");
+    }
+
+    if (result.status == 404) {
+      toast.error("User event not found or does not belong to this user.");
       return;
     }
+
+    if (!result.result || result.status !== 200) {
+      toast.error("Could not delete user event, please try again.");
+      return;
+    }
+
+    toast.success("User event deleted.");
+
     const updatedUnassigned = unassignedEvents.filter((e) => e.id !== event.id);
     const updatedDays = localDays.map((d) => {
       return {
@@ -302,20 +336,43 @@ const EventCard: React.FC<EventCardProps> = ({
 
         <div className="event-image-container">
           <div className="event-image-placeholder">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 200 200"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="200" height="200" fill="#f0f0f0" />
-              <path
-                d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
-                fill="#d0d0d0"
-              />
-              <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
-            </svg>
+            {eventData.photo_name && !imageError ? (
+              <>
+                <img
+                  src={getGooglePhotoUrl(eventData.photo_name)}
+                  alt={eventData.event_name}
+                  className="event-image"
+                  onError={() => setImageError(true)}
+                />
+                {eventData.photo_author && (
+                  <a
+                    href={eventData.photo_author_uri || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="photo-attribution"
+                    title={`Photo by ${eventData.photo_author}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📷
+                  </a>
+                )}
+              </>
+            ) : (
+              <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 200 200"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="200" height="200" fill="#f0f0f0" />
+                <path
+                  d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
+                  fill="#d0d0d0"
+                />
+                <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
+              </svg>
+            )}
           </div>
         </div>
         <div className="event-content">

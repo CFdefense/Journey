@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS messages CASCADE;
 DROP TYPE IF EXISTS risk_tolerence CASCADE;
 DROP TYPE IF EXISTS budget_bucket CASCADE;
 DROP TYPE IF EXISTS time_of_day CASCADE;
+DROP TYPE IF EXISTS event_period CASCADE;
 
 CREATE EXTENSION IF NOT EXISTS vector; -- Use PGVECTOR (kept for future use)
 
@@ -36,6 +37,19 @@ CREATE TYPE time_of_day AS ENUM (
     'Evening'
 );
 
+CREATE TYPE event_period AS (
+	open_date DATE,
+	open_truncated BOOLEAN,
+	open_day INTEGER,
+	open_hour INTEGER,
+	open_minute INTEGER,
+	close_date DATE,
+	close_truncated BOOLEAN,
+	close_day INTEGER,
+	close_hour INTEGER,
+	close_minute INTEGER
+);
+
 -- Accounts table
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
@@ -46,26 +60,55 @@ CREATE TABLE accounts (
     budget_preference budget_bucket,
     risk_preference risk_tolerence,
     food_allergies TEXT NOT NULL DEFAULT '',
-    disabilities TEXT NOT NULL DEFAULT ''
+    disabilities TEXT NOT NULL DEFAULT '',
+    profile_picture TEXT
 );
 
 -- Events table
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
+    --places.displayName
+    event_name VARCHAR(255) NOT NULL,
+    --places.editorialSummary
+    event_description TEXT,
     street_address VARCHAR(255),
-    postal_code INTEGER,
     city VARCHAR(255),
     country VARCHAR(255),
+    postal_code INTEGER,
+    coords VARCHAR(255),
+    --places.primaryType
     event_type VARCHAR(255),
-    event_description TEXT,
-    event_name VARCHAR(255) NOT NULL,
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     --Timestamp of event location
     hard_start TIMESTAMP WITHOUT TIME ZONE,
     --Timestamp of event location
     hard_end TIMESTAMP WITHOUT TIME ZONE,
-    timezone VARCHAR(255)
+    timezone VARCHAR(255),
+    --remaining places fields
+    place_id VARCHAR(255),
+    wheelchair_accessible_parking BOOLEAN,
+    wheelchair_accessible_entrance BOOLEAN,
+    wheelchair_accessible_restroom BOOLEAN,
+    wheelchair_accessible_seating BOOLEAN,
+    serves_vegetarian_food BOOLEAN,
+    price_level INTEGER,
+    utc_offset_minutes INTEGER,
+    website_uri VARCHAR(255),
+    types VARCHAR(255),
+    photo_name TEXT,
+    photo_width INTEGER,
+    photo_height INTEGER,
+    photo_author VARCHAR(255),
+    photo_author_uri VARCHAR(255),
+    photo_author_photo_uri VARCHAR(255),
+    weekday_descriptions TEXT,
+    secondary_hours_type INTEGER,
+    next_open_time TIMESTAMP WITHOUT TIME ZONE,
+    next_close_time TIMESTAMP WITHOUT TIME ZONE,
+    open_now BOOLEAN,
+    periods event_period[] NOT NULL DEFAULT ARRAY[]::event_period[],
+    special_days DATE[] NOT NULL DEFAULT ARRAY[]::DATE[]
 );
 
 CREATE TABLE chat_sessions (
@@ -138,6 +181,26 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful str
 (6, '5250 S Park Dr', 60615, 'Chicago', 'USA', 'Festival', 'Annual music festival with the biggest names in pop and indie scenes.', 'LollaPalooza', FALSE, NULL, NULL, NULL),
 (7, '1 Rue de la Seine', 00000, 'Paris', 'France', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
 (8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-05 08:00', NULL);
+
+UPDATE events
+SET 
+    photo_name = 'places/ChIJWTGPjmaAhYARxz6l1hOj92w/photos/AWn5SU5Er9gWi5jilVeHqFVvSEXMwCeX-mlXTiRpSoacmgGi6eJk021kXT7TSPe1PbFEj8Oe-5JYpMk5jc2e6A1zHf76i45Mg2JcTqhmihTAWyW4b2vixtaHLq7GCuxQicTvwvM65I1qTt9sAEiMW2k1jPvHiU5qL7R8BN2Ltqfo_I0zTcUrJyup6Pdsd0FLpDAm7ia5B-qaaw80x6guoa0r7uoiFGkyJeB3zqXIDKsP5q25HgPb6HMIVtiTM7Gf0WEU6hnhpg9Admq3h-WARF0hTmQQqCg_J9C-dRrzuu279uwDaw',
+    photo_width = 3850,
+    photo_height = 2991,
+    photo_author = 'Ferry Building',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/116985961358506551836',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a/ACg8ocKXdGznTApl3bUhp8fBHvPlpZCrTK_fq8h1PliUWm9Q7aJDBg=s100-p-k-no-mo'
+WHERE id = 1;
+
+UPDATE events
+SET 
+    photo_name = 'places/ChIJ1dIqa2OAhYAREimtEtfBLyc/photos/AWn5SU64-FqzTMnkxlg9F-trzmWqkl2f0y_bCRBqLjkP8qLzGD8JTaThyGhmIzilkbOptFyHfbKj11kyTbga2m9scTSyhPBYd6TvsoDUoL6UTzXn5pKpUcbist3SB1ccAE5H7Wt-d_C2ycfmqAgHudsYBNOJLMtVV5Ij559zA4KoA_hOuDoNBaNI9pKwRharo8uKaAKDwDDefIpQki7VLigFZ7R0dvzhIl57MIdLoRgEoCQvELCv9KjE-9cORp7X1qsKG37QbudAJzgmmN8xwlf9XpCc57YTOABuM8dtS4WmNYOXEEyoKpNZptwOBh6RkiKhOY7Uhu8gwBXuVv9PLAHr6aa3ZOFhnaPCewvAdwfA0yd3insxeH12f80VdQyJ5nx9umKNVZHlEG-d7Tek5cc3k3UDIgdc2gbirc80wXn_AUyMkHDU',
+    photo_width = 3024,
+    photo_height = 4032,
+    photo_author = 'Barry Yen',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/102121354402180572298',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a-/ALV-UjUoOkFbUTTB1UQ96TqA-K8eeYRUXWzmR4APPQ4DMBPzzj8dPygh=s100-p-k-no-mo'
+WHERE id = 4;
 
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
