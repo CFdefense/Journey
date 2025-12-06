@@ -24,7 +24,7 @@ use tokio::sync::Mutex;
 
 use crate::controllers::AxumRouter;
 use crate::global::*;
-use crate::http_models::event::{REGEX_COUNTRY, REGEX_LOCALITY, REGEX_POST_CODE, REGEX_REGION, REGEX_ST_ADDR};
+use crate::http_models::event::{REGEX_COUNTRY, REGEX_LOCALITY, REGEX_POST_CODE, REGEX_ST_ADDR};
 use axum::{Extension, routing::get_service};
 use http::{Method, header::HeaderValue};
 use std::env;
@@ -55,11 +55,10 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 	let pool = db::create_pool().await;
 
 	// compile regexes ahead of time
-	std::cell::LazyCell::force(&REGEX_ST_ADDR);
-	std::cell::LazyCell::force(&REGEX_LOCALITY);
-	std::cell::LazyCell::force(&REGEX_REGION);
-	std::cell::LazyCell::force(&REGEX_POST_CODE);
-	std::cell::LazyCell::force(&REGEX_COUNTRY);
+	once_cell::sync::Lazy::force(&REGEX_ST_ADDR);
+	once_cell::sync::Lazy::force(&REGEX_LOCALITY);
+	once_cell::sync::Lazy::force(&REGEX_POST_CODE);
+	once_cell::sync::Lazy::force(&REGEX_COUNTRY);
 
 	// Initialize the AI agent
 	// Note: Agent will only be used if DEPLOY_LLM=1 (checked at runtime in chat controller)

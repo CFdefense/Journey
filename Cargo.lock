@@ -18,6 +18,7 @@ dependencies = [
  "httpc-test",
  "langchain-rust",
  "num-traits",
+ "once_cell",
  "pgvector",
  "regex",
  "reqwest 0.12.24",

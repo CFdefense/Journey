@@ -1,5 +1,4 @@
-use std::cell::LazyCell;
-
+use once_cell::sync::Lazy;
 use chrono::{NaiveDate, NaiveDateTime};
 use google_maps::places_new::Place;
 use num_traits::ToPrimitive;
@@ -102,13 +101,13 @@ impl From<&EventListJoinRow> for Event {
 	}
 }
 
-pub const REGEX_ST_ADDR: LazyCell<Regex> = LazyCell::new(||
+pub static REGEX_ST_ADDR: Lazy<Regex> = Lazy::new(||
 	Regex::new(r#"<span\s+class="street-address"\s*>([^<]*)</span>"#).unwrap());
-pub const REGEX_LOCALITY: LazyCell<Regex> = LazyCell::new(||
+pub static REGEX_LOCALITY: Lazy<Regex> = Lazy::new(||
 	Regex::new(r#"<span\s+class="locality"\s*>([^<]*)</span>"#).unwrap());
-pub const REGEX_COUNTRY: LazyCell<Regex> = LazyCell::new(||
+pub static REGEX_COUNTRY: Lazy<Regex> = Lazy::new(||
 	Regex::new(r#"<span\s+class="country-name"\s*>([^<]*)</span>"#).unwrap());
-pub const REGEX_POST_CODE: LazyCell<Regex> = LazyCell::new(||
+pub static REGEX_POST_CODE: Lazy<Regex> = Lazy::new(||
 	Regex::new(r#"<span\s+class="postal-code"\s*>([^<]*)</span>"#).unwrap());
 
 impl From<&Place> for Event {

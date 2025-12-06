@@ -107,20 +107,21 @@ impl Tool for QueryDbEventsTool {
 			"properties": {
 				"location": {
 					"type": "string",
-					"description": "A location in the world; ideally a city name or postal code, but could be anything that indicates a place like a street address."
+					"description": "A location in the world from the user's prompt; ideally a city name or postal code, but could be anything that indicates a place like a street address or country."
 				},
-				"name": {
-					"type": "string",
-					"description": "The name of the person to greet"
+				"keywords": {
+					"type": "array",
+					"description": "An array of keywords from the user's prompt that can be used to search for relevant events."
 				}
 			},
-			"required": ["name"]
+			"required": ["location"]
 		})
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let name = input["name"].as_str().ok_or("Name should be a string")?;
+		// TODO create filters and query the db for possibly relevant events
 
+		let name = input["name"].as_str().ok_or("Name should be a string")?;
 		Ok(format!("Hello, {}! Welcome to our AI assistant.", name))
 	}
 }
