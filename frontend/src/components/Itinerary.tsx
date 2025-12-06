@@ -380,9 +380,27 @@ const Itinerary: React.FC<ItineraryProps> = ({
       end: "",
       timezoneIndex: -1
     });
-    const event = userEvent as Event;
-    event.id = result.result.id;
-    event.user_created = true;
+    const event: Event = {
+      ...EVENT_DEFAULT, // This initializes all the nullable fields
+      id: result.result.id,
+      event_name: sanitize(userEventForm.name)!,
+      event_description: sanitize(userEventForm.description),
+      event_type: sanitize(userEventForm.type),
+      street_address: sanitize(userEventForm.address),
+      city: sanitize(userEventForm.city),
+      country: sanitize(userEventForm.country),
+      postal_code:
+        userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
+          ? parseInt(userEventForm.postalCode)
+          : null,
+      hard_start: sanitize(userEventForm.start),
+      hard_end: sanitize(userEventForm.end),
+      timezone:
+        userEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[userEventForm.timezoneIndex],
+      user_created: true
+    };
 
     // Create a new array instead of mutating the existing one
     const updatedUnassigned = [...unassigned, event];

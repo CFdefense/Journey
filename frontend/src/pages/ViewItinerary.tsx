@@ -317,7 +317,7 @@ function ViewItineraryPage() {
 
     async function load() {
       // Fetch the full API response to get metadata
-      const apiResponse = await apiItineraryDetails(10);
+      const apiResponse = await apiItineraryDetails(itineraryId);
 
       if (apiResponse.status == 401) {
         toast.error("Unauthorized user, please log in.");
