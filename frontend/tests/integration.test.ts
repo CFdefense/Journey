@@ -67,8 +67,7 @@ async function test_flow() {
 			budget_preference: null,
 			risk_preference: null,
 			food_allergies: "",
-			disabilities: "",
-			profile_picture: ""
+			disabilities: ""
 		},
 		status: 200
 	});

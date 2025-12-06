@@ -1,9 +1,10 @@
 import { apiUpdateAccount, apiCurrent } from "../api/account";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { UpdateRequest } from "../models/account";
 import Navbar from "../components/Navbar";
 import "../styles/Account.css";
+import userPfp from "../assets/user-pfp-temp.png";
 import {
   checkIfValidPassword,
   checkIfPasswordsMatch,
@@ -27,7 +28,7 @@ export default function Account() {
   }>({});
 
   // Use same profile picture asset as Navbar for consistency
-  const navbarAvatarUrl = "/user-pfp-temp.png";
+  const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [isEditingFirst, setIsEditingFirst] = useState<boolean>(false);
@@ -36,8 +37,6 @@ export default function Account() {
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [isUploadingPicture, setIsUploadingPicture] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatDate = (dateInput: string | number | Date): string => {
     const date = new Date(dateInput);
@@ -68,7 +67,6 @@ export default function Account() {
       setEmail(account.email || "");
       setFirstName(account.first_name || "");
       setLastName(account.last_name || "");
-      setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
       // Optional stats from backend; otherwise, provide demo values
       const maybeTrips = (account as any).trips_planned;
       setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
@@ -210,45 +208,49 @@ export default function Account() {
       budget_preference: null,
       risk_preference: null,
       food_allergies: null,
-      disabilities: null,
-      profile_picture: null // Profile picture handled separately now
+      disabilities: null
     };
 
-    const updateResult = await apiUpdateAccount(payload);
+    try {
+      const updateResult = await apiUpdateAccount(payload);
 
-    if (updateResult.status !== 200) {
-      console.error(
-        "API call to /api/account/update failed with status: ",
-        updateResult.status
+      if (updateResult.status !== 200) {
+        console.error(
+          "API call to /api/account/update failed with status: ",
+          updateResult.status
+        );
+
+        // Handle password-related errors (400 Bad Request)
+        if (updateResult.status === 400 && isChangingPassword) {
+          toast.error("Current password is incorrect. Please try again.");
+          setPasswordErrors({ current: "Current password is incorrect." });
+        } else {
+          toast.error("Update failed. Please try again.");
+        }
+        return;
+      }
+
+      toast.success(
+        isChangingPassword
+          ? "Password updated successfully!"
+          : "Account updated successfully!"
       );
 
-      // Handle password-related errors (400 Bad Request)
-      if (updateResult.status === 400 && isChangingPassword) {
-        toast.error("Current password is incorrect. Please try again.");
-        setPasswordErrors({ current: "Current password is incorrect." });
-      } else {
-        toast.error("Update failed. Please try again.");
+      // Update UI with any returned account info
+      if (updateResult.result) {
+        setFirstName(updateResult.result.first_name || trimmedFirst);
+        setLastName(updateResult.result.last_name || trimmedLast);
       }
-      return;
+
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors({});
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to update account. Please try again.");
     }
-
-    toast.success(
-      isChangingPassword
-        ? "Password updated successfully!"
-        : "Account updated successfully!"
-    );
-
-    // Update UI with any returned account info
-    if (updateResult.result) {
-      setFirstName(updateResult.result.first_name || trimmedFirst);
-      setLastName(updateResult.result.last_name || trimmedLast);
-    }
-
-    // Clear password fields
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordErrors({});
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -258,11 +260,7 @@ export default function Account() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar
-        page="view"
-        firstName={firstName}
-        profileImageUrl={profileImageUrl}
-      />
+      <Navbar page="view" />
 
       <div className="auth-content">
         {loaded && (
@@ -273,45 +271,12 @@ export default function Account() {
                 <div className="account-box">
                   <div className="hs-hero-card">
                     <div className="profile-header">
-                      <div
-                        className={`avatar-wrapper ${isUploadingPicture ? "uploading" : ""}`}
-                        onClick={() =>
-                          !isUploadingPicture && fileInputRef.current?.click()
-                        }
-                      >
+                      <div className="avatar-wrapper">
                         <img
                           src={profileImageUrl}
                           alt={`${firstName || "User"} ${lastName || ""}`.trim()}
                           className="avatar"
                           onError={() => setProfileImageUrl(navbarAvatarUrl)}
-                        />
-                        <div className="avatar-overlay">
-                          {isUploadingPicture ? (
-                            <div className="upload-spinner"></div>
-                          ) : (
-                            <span className="avatar-edit-icon">
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="20"
-                                height="20"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleProfilePictureChange}
-                          style={{ display: "none" }}
                         />
                       </div>
                       <div className="profile-meta">
@@ -515,7 +480,6 @@ export default function Account() {
             </main>
           </div>
         )}
-
         {/* Bottom tab bar */}
         <footer className="account-bottom-bar">
           <div className="account-bottom-inner">

@@ -620,7 +620,6 @@
   object-fit: cover;
   display: block;
   flex-shrink: 0;
-  border: 2px solid #ffffff;
 }
 
 .sidebar-logout-btn {

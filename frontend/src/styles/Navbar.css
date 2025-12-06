@@ -37,9 +37,6 @@
   border-radius: 50%;
   display: block;
   transition: opacity 150ms ease;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ffffff; /* Add this line */
 }
 
 .user-menu-button.pending .user-menu-avatar {
