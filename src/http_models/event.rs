@@ -102,47 +102,29 @@ impl From<&EventListJoinRow> for Event {
 	}
 }
 
-#[derive(Debug)]
-struct ParsedAddress {
-    street_address: Option<String>,
-    city: Option<String>,
-    state: Option<String>,
-    postal_code: Option<String>,
-    country: Option<String>,
-}
-
 pub const REGEX_ST_ADDR: LazyCell<Regex> = LazyCell::new(||
 	Regex::new(r#"<span\s+class="street-address"\s*>([^<]*)</span>"#).unwrap());
 pub const REGEX_LOCALITY: LazyCell<Regex> = LazyCell::new(||
 	Regex::new(r#"<span\s+class="locality"\s*>([^<]*)</span>"#).unwrap());
-pub const REGEX_REGION: LazyCell<Regex> = LazyCell::new(||
-	Regex::new(r#"<span\s+class="region"\s*>([^<]*)</span>"#).unwrap());
-pub const REGEX_POST_CODE: LazyCell<Regex> = LazyCell::new(||
-	Regex::new(r#"<span\s+class="postal-code"\s*>([^<]*)</span>"#).unwrap());
 pub const REGEX_COUNTRY: LazyCell<Regex> = LazyCell::new(||
 	Regex::new(r#"<span\s+class="country-name"\s*>([^<]*)</span>"#).unwrap());
-
-#[inline(always)]
-fn parse_address(input: &str) -> ParsedAddress {
-	#[inline]
-    fn extract(input: &str, re: &Regex) -> Option<String> {
-        re.captures(input)
-            .and_then(|caps| caps.get(1))
-            .map(|m| m.as_str().to_string())
-    }
-
-    ParsedAddress {
-        street_address: extract(input, &REGEX_ST_ADDR),
-        city: extract(input, &REGEX_LOCALITY),
-        state: extract(input, &REGEX_REGION),
-        postal_code: extract(input, &REGEX_POST_CODE),
-        country: extract(input, &REGEX_COUNTRY),
-    }
-}
+pub const REGEX_POST_CODE: LazyCell<Regex> = LazyCell::new(||
+	Regex::new(r#"<span\s+class="postal-code"\s*>([^<]*)</span>"#).unwrap());
 
 impl From<&Place> for Event {
 	fn from(value: &Place) -> Self {
-		let location = parse_address(value.adr_format_address.as_ref().unwrap_or(&String::new()).as_str());
+		#[inline]
+		fn extract(input: &str, re: &Regex) -> Option<String> {
+			re.captures(input)
+				.and_then(|caps| caps.get(1))
+				.map(|m| m.as_str().to_string())
+		}
+		let empty = String::new();
+		let input = value.adr_format_address.as_ref().unwrap_or(&empty).as_str();
+		let street_address = extract(input, &REGEX_ST_ADDR);
+        let city = extract(input, &REGEX_LOCALITY);
+        let country = extract(input, &REGEX_COUNTRY);
+        let postal_code = extract(input, &REGEX_POST_CODE).map(|p| p.parse().ok()).unwrap_or(None);
 		Self {
 			id: -1,
 			event_name: value
@@ -154,10 +136,10 @@ impl From<&Place> for Event {
 				.editorial_summary
 				.as_ref()
 				.map(|n| n.to_string()),
-			street_address: location.street_address,
-			city: location.city,
-			country: location.country,
-			postal_code: location.postal_code.map(|p| p.parse().ok()).unwrap_or(None),
+			street_address,
+			city,
+			country,
+			postal_code,
 			lat: value
 				.location
 				.map(|l| l.latitude.to_f64())

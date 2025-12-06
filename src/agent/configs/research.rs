@@ -36,27 +36,19 @@ and using the Google Maps Nearby Search API to gather POI data.
 
 1. **Setup Queries**
    - Get the coordinates of the user's target location using geocoding
-   - Use the location and keywords to create search filters for querying the database
-   - Use the provided information to construct a request (or requests) for Google Maps Nearby Search
+   - Select types from the provided place type table to include or exclude specific place types that users may or may not want to visit
 
-2. **Query the Database**
-   - Search events in the database for each filter
-   - Collect event data from database searches
-   - Avoid duplicate or irrelevant events
+2. **Nearby Search**
+   - Use coordinates and an optional include and/or exclude list of place types
+   - Fetch events via Google Maps Nearby Search API and collect events into an array
 
-3. **Nearby Search**
-   - Prepare coordinates, field mask, type include/exclude list
-   -
-   -
-
-4. **Update Database**
-   -
-   -
-   -
+3. **Update Database**
+   - Insert new events into the database
+   - Update existing events with new data if the database is outdated
 
 ## Output Requirements
 
-Your final output must be a **complete structured itinerary** formatted for database storage, including:
+Your final output must be an **array of events** formatted with all necessary fields, including:
 - Day-by-day breakdown with dates
 - Time-blocked activities (start time, end time, duration)
 - POI details for each activity (name, location, category, cost estimate)
@@ -64,15 +56,6 @@ Your final output must be a **complete structured itinerary** formatted for data
 - Meal and rest breaks with suggestions
 - Total daily costs and time commitments
 - Energy level indicators for each day
-
-## Optimization Priorities (in order)
-
-1. **Safety & Accessibility**: Never recommend POIs that conflict with user disabilities or severe allergies
-2. **Budget Compliance**: Stay within user's specified budget constraints
-3. **Feasibility**: Ensure realistic timing with adequate travel and break time
-4. **Enjoyment**: Maximize alignment with user interests and preferences
-5. **Efficiency**: Minimize unnecessary travel and backtracking
-6. **Balance**: Maintain sustainable energy levels throughout the trip
 
 ## Important Considerations
 
@@ -138,7 +121,7 @@ pub fn create_dummy_research_agent() -> Result<AgentExecutor<ConversationalAgent
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
+		// .tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
