@@ -9,52 +9,39 @@ import { apiItineraryDetails } from "../api/itinerary";
 import { toast } from "../components/Toast";
 
 // Function that calls api on given itinerary Id, returns the time block used by itinerary component
+const EMPTY_ITINERARY: DayItinerary[] = [
+	{
+		date: "",
+		timeBlocks: [
+			{ time: "Morning", events: [] },
+			{ time: "Noon", events: [] },
+			{ time: "Afternoon", events: [] },
+			{ time: "Evening", events: [] }
+		]
+	}
+];
+
 export async function fetchItinerary(
 	itineraryID: number
 ): Promise<DayItinerary[]> {
-	try {
-		const apiResponse = await apiItineraryDetails(itineraryID);
+	const apiResponse = await apiItineraryDetails(itineraryID);
 
-		// 401 Unauthorized
-		if (apiResponse.status === 401) {
-			toast.error("Unauthorized user, please log in.");
-			return [];
-		}
-
-		// 404 Not Found
-		if (apiResponse.status === 404) {
-			toast.error("Itinerary not found.");
-			return [];
-		}
-
-		// TEST REQUIREMENT:
-		// If result is null, return a blank day instead of []
-		if (!apiResponse.result) {
-			return [
-				{
-					date: "",
-					timeBlocks: [
-						{ time: "Morning", events: [] },
-						{ time: "Noon", events: [] },
-						{ time: "Afternoon", events: [] },
-						{ time: "Evening", events: [] }
-					]
-				}
-			];
-		}
-
-		// Successful load
-		if (apiResponse.status === 200) {
-			return populateItinerary(apiResponse.result);
-		}
-
-		// Any other status
-		toast.error("Unable to load itinerary. Please try again.");
-		return [];
-	} catch (err) {
-		// TEST REQUIREMENT: return [] instead of throwing
-		return [];
+	if (apiResponse.status === 401) {
+		toast.error("Unauthorized user, please log in.");
+		return EMPTY_ITINERARY;
 	}
+
+	if (apiResponse.status === 404) {
+		toast.error("Itinerary not found.");
+		return EMPTY_ITINERARY;
+	}
+
+	if (!apiResponse.result || apiResponse.status !== 200) {
+		toast.error("Unable to load itinerary. Please try again.");
+		return EMPTY_ITINERARY;
+	}
+
+	return populateItinerary(apiResponse.result);
 }
 
 export function populateItinerary(apiItinerary: ApiItinerary): DayItinerary[] {
