@@ -122,7 +122,9 @@ export default function Account() {
           "API call to /api/account/update failed with status: ",
           updateResult.status
         );
-        toast.error("Failed to update profile picture. Image may be too large.");
+        toast.error(
+          "Failed to update profile picture. Image may be too large."
+        );
         setIsUploadingPicture(false);
         return;
       }
