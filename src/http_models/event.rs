@@ -6,7 +6,7 @@ use utoipa::{ToResponse, ToSchema};
 use crate::sql_models::{Period, event_list::EventListJoinRow};
 
 /// A single event without context from an itinerary
-#[derive(Debug, Serialize, Deserialize, FromRow, ToSchema, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema, Default)]
 pub struct Event {
 	/// Primary key
 	pub id: i32,

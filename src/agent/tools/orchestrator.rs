@@ -4,7 +4,9 @@
  * Orchestrator Agent Tools Implementation - LLM-based extraction
  */
 
+use crate::agent::models::context::{ContextData, ToolExecution};
 use crate::agent::models::user::UserIntent;
+use crate::http_models::event::Event;
 use async_trait::async_trait;
 use langchain_rust::chain::Chain;
 use langchain_rust::language_models::llm::LLM;
@@ -187,7 +189,7 @@ impl Tool for RetrieveChatContextTool {
 			})
 			.collect();
 
-		// Retrieve tool execution history from database
+		// Retrieve context from database (includes pipeline state and events)
 		let context_row = sqlx::query!(
 			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
 			chat_id
@@ -196,22 +198,70 @@ impl Tool for RetrieveChatContextTool {
 		.await
 		.map_err(|e| format!("Database error: {}", e))?;
 
-		let tool_history: Vec<crate::agent::models::context::ToolExecution> = context_row
-			.and_then(|row| row.context)
-			.and_then(|ctx| {
-				ctx.get("tool_history")
-					.cloned()
-					.and_then(|th| serde_json::from_value::<Vec<crate::agent::models::context::ToolExecution>>(th).ok())
-			})
-			.unwrap_or_default();
+		let mut context_data = if let Some(row) = context_row {
+			if let Some(ctx) = row.context {
+				// Try to parse as ContextData, fallback to building from parts
+				serde_json::from_value::<ContextData>(ctx.clone())
+					.unwrap_or_else(|_| {
+						// Build ContextData from existing context structure
+						ContextData {
+							user_profile: ctx.get("user_profile").cloned(),
+							chat_history: vec![],
+							active_itinerary: ctx.get("active_itinerary").cloned(),
+							events: ctx.get("events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							tool_history: ctx.get("tool_history")
+								.and_then(|th| serde_json::from_value::<Vec<ToolExecution>>(th.clone()).ok())
+								.unwrap_or_default(),
+							pipeline_stage: ctx.get("pipeline_stage").and_then(|s| s.as_str()).map(|s| s.to_string()),
+							researched_events: ctx.get("researched_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							constrained_events: ctx.get("constrained_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							optimized_events: ctx.get("optimized_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+						}
+					})
+			} else {
+				ContextData {
+					user_profile: None,
+					chat_history: vec![],
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+				}
+			}
+		} else {
+			ContextData {
+				user_profile: None,
+				chat_history: vec![],
+				active_itinerary: None,
+				events: vec![],
+				tool_history: vec![],
+				pipeline_stage: None,
+				researched_events: vec![],
+				constrained_events: vec![],
+				optimized_events: vec![],
+			}
+		};
 
-		// Return chat history and tool history
-		let result = json!({
-			"chat_history": chat_history,
-			"tool_history": tool_history
-		});
+		// Update chat_history with the messages we just retrieved
+		context_data.chat_history = chat_history;
 
-		Ok(serde_json::to_string(&result)?)
+		// Return full context including pipeline state
+		Ok(serde_json::to_string(&context_data)?)
 	}
 }
 
@@ -449,115 +499,7 @@ impl Tool for RouteTaskTool {
 	}
 }
 
-/// Tool 5: Merge Partial Results
-/// Merges results from multiple sub-agents into a coherent final output using an LLM.
-/// Returns a TravelPlan object.
-#[derive(Clone)]
-pub struct MergePartialResultsTool {
-	llm: Arc<dyn LLM + Send + Sync>,
-}
-
-impl MergePartialResultsTool {
-	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self { llm: Arc::new(llm) }
-	}
-}
-
-#[async_trait]
-impl Tool for MergePartialResultsTool {
-	fn name(&self) -> String {
-		"merge_partial_results".to_string()
-	}
-
-	fn description(&self) -> String {
-		"Merges results from multiple sub-agents into a coherent final output using an LLM."
-			.to_string()
-	}
-
-	fn parameters(&self) -> Value {
-		// Parameters match array of PartialResult model structure
-		json!({
-			"type": "object",
-			"properties": {
-				"results": {
-					"type": "array",
-					"description": "Array of PartialResult objects from sub-agents",
-					"items": {
-						"type": "object",
-						"properties": {
-							"agent": {
-								"type": "string",
-								"description": "Name of the agent that produced this result"
-							},
-							"data": {
-								"type": "object",
-								"description": "The result data from the agent (any JSON object)"
-							},
-							"success": {
-								"type": "boolean",
-								"description": "Whether the agent execution was successful"
-							},
-							"error": {
-								"type": ["string", "null"],
-								"description": "Error message if success is false"
-							}
-						},
-						"required": ["agent", "data", "success"]
-					}
-				}
-			},
-			"required": ["results"]
-		})
-	}
-
-	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let results = input["results"]
-			.as_array()
-			.ok_or("results must be an array")?;
-
-		let prompt = format!(
-			r#"You are merging results from multiple travel planning agents.
- 
- Agent Results:
- {}
- 
- Create a cohesive travel plan that combines all the information. Return ONLY a JSON object with:
- {{
-   "status": "success" or "partial_success" or "failed",
-   "summary": "A natural language summary of the complete plan",
-   "itinerary": {{
-     "destination": string,
-     "attractions": [array of places],
-     "accommodation": [array of hotels],
-     "daily_plan": [array of day objects with activities],
-     "budget_breakdown": object with costs
-   }},
-   "constraints_validated": boolean,
-   "warnings": [array of any issues or warnings],
-   "next_steps": [array of actions user should take]
- }}
- 
- Return ONLY the JSON object."#,
-			serde_json::to_string_pretty(&results)?
-		);
-
-		let response = self.llm.invoke(&prompt).await?;
-
-		let cleaned = response
-			.trim()
-			.trim_start_matches("```json")
-			.trim_start_matches("```")
-			.trim_end_matches("```")
-			.trim();
-
-		// Validate it's proper JSON
-		let _validated: Value = serde_json::from_str(cleaned)?;
-
-		Ok(cleaned.to_string())
-	}
-}
-
-/// Tool 6: Ask for Clarification
+/// Tool 5: Ask for Clarification
 /// Generates a natural clarification question using an LLM when user input is ambiguous.
 /// Returns a string containing the clarification question.
 #[derive(Clone)]
@@ -688,46 +630,132 @@ impl Tool for UpdateContextTool {
 			.map_err(|e| format!("Database error: {}", e))?;
 		}
 
+		// Get existing context
+		let context_row = sqlx::query!(
+			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+			chat_id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		let mut context_data = if let Some(row) = context_row {
+			if let Some(ctx) = row.context {
+				serde_json::from_value::<ContextData>(ctx.clone())
+					.unwrap_or_else(|_| {
+						// Build from existing structure
+						ContextData {
+							user_profile: ctx.get("user_profile").cloned(),
+							chat_history: vec![],
+							active_itinerary: ctx.get("active_itinerary").cloned(),
+							events: ctx.get("events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							tool_history: ctx.get("tool_history")
+								.and_then(|th| serde_json::from_value::<Vec<ToolExecution>>(th.clone()).ok())
+								.unwrap_or_default(),
+							pipeline_stage: ctx.get("pipeline_stage").and_then(|s| s.as_str()).map(|s| s.to_string()),
+							researched_events: ctx.get("researched_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							constrained_events: ctx.get("constrained_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+							optimized_events: ctx.get("optimized_events")
+								.and_then(|e| e.as_array())
+								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
+								.unwrap_or_default(),
+						}
+					})
+			} else {
+				ContextData {
+					user_profile: None,
+					chat_history: vec![],
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+				}
+			}
+		} else {
+			ContextData {
+				user_profile: None,
+				chat_history: vec![],
+				active_itinerary: None,
+				events: vec![],
+				tool_history: vec![],
+				pipeline_stage: None,
+				researched_events: vec![],
+				constrained_events: vec![],
+				optimized_events: vec![],
+			}
+		};
+
+		// Update pipeline stage if provided
+		if let Some(stage) = updates.get("pipeline_stage").and_then(|s| s.as_str()) {
+			context_data.pipeline_stage = Some(stage.to_string());
+		}
+
+		// Update events list if provided (current running list)
+		if let Some(events) = updates.get("events").and_then(|e| e.as_array()) {
+			context_data.events = events.iter()
+				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
+				.collect();
+		}
+
+		// Update researched_events if provided
+		if let Some(researched) = updates.get("researched_events").and_then(|e| e.as_array()) {
+			context_data.researched_events = researched.iter()
+				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
+				.collect();
+		}
+
+		// Update constrained_events if provided
+		if let Some(constrained) = updates.get("constrained_events").and_then(|e| e.as_array()) {
+			context_data.constrained_events = constrained.iter()
+				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
+				.collect();
+		}
+
+		// Update optimized_events if provided
+		if let Some(optimized) = updates.get("optimized_events").and_then(|e| e.as_array()) {
+			context_data.optimized_events = optimized.iter()
+				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
+				.collect();
+		}
+
+		// Update active_itinerary if provided
+		if let Some(itinerary) = updates.get("active_itinerary") {
+			context_data.active_itinerary = Some(itinerary.clone());
+		}
+
 		// Store tool execution history if provided
 		if let Some(tool_exec) = updates.get("tool_execution") {
-			// Get existing context
-			let context_row = sqlx::query!(
-				r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
-				chat_id
-			)
-			.fetch_optional(&self.pool)
-			.await
-			.map_err(|e| format!("Database error: {}", e))?;
-
-			let mut existing_context: Value = context_row
-				.and_then(|row| row.context)
-				.unwrap_or_else(|| json!({ "tool_history": [] }));
-
-			// Parse tool execution and add to history
-			if let Ok(tool_exec_obj) = serde_json::from_value::<crate::agent::models::context::ToolExecution>(tool_exec.clone()) {
-				// Get or create tool_history array
-				if !existing_context.get("tool_history").is_some() {
-					existing_context["tool_history"] = json!([]);
+			if let Ok(tool_exec_obj) = serde_json::from_value::<ToolExecution>(tool_exec.clone()) {
+				context_data.tool_history.push(tool_exec_obj);
+				// Keep last 100 entries
+				if context_data.tool_history.len() > 100 {
+					context_data.tool_history.remove(0);
 				}
-
-				// Add new tool execution (keep last 100 entries)
-				if let Some(tool_history_array) = existing_context.get_mut("tool_history").and_then(|th| th.as_array_mut()) {
-					tool_history_array.push(json!(tool_exec_obj));
-					if tool_history_array.len() > 100 {
-						tool_history_array.remove(0);
-					}
-				}
-
-				sqlx::query!(
-					r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
-					existing_context as serde_json::Value,
-					chat_id
-				)
-				.execute(&self.pool)
-				.await
-				.map_err(|e| format!("Database error: {}", e))?;
 			}
 		}
+
+		// Save updated context to database
+		let context_json = serde_json::to_value(&context_data)?;
+		sqlx::query!(
+			r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
+			context_json as serde_json::Value,
+			chat_id
+		)
+		.execute(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
 
 		Ok(json!({
 			"status": "updated",
@@ -758,9 +786,6 @@ pub fn get_orchestrator_tools(
 			constraint_agent,
 			optimize_agent,
 		)),
-		Arc::new(MergePartialResultsTool {
-			llm: Arc::clone(&llm),
-		}),
 		Arc::new(AskForClarificationTool {
 			llm: Arc::clone(&llm),
 		}),
@@ -770,28 +795,72 @@ pub fn get_orchestrator_tools(
 
 /// The system prompt for the Orchestrator Agent.
 pub const ORCHESTRATOR_SYSTEM_PROMPT: &str = r#"
- You are the Orchestrator Agent, the central brain of a multi-agent travel planning system.
- 
- Your responsibilities:
- 1. Parse user input to understand their travel intent, destination, dates, budget, and constraints
- 2. Retrieve relevant context (user profile, chat history, active itineraries)
- 3. Route tasks to specialized sub-agents:
-    - Research Agent: For gathering destination information, attractions, and recommendations
-    - Constraint Agent: For validating dietary restrictions, accessibility needs, and budget
-    - Optimize Agent: For creating optimal itineraries and routes
- 4. Validate and merge results from sub-agents
- 5. Ask for clarification when information is missing or ambiguous
- 6. Update conversation context as needed
- 
- Workflow:
- 1. Use parse_user_intent to understand what the user wants
- 2. Check if critical information is missing - if so, use ask_for_clarification
- 3. Use retrieve_user_profile and retrieve_chat_context to get relevant background
- 4. Use route_task to delegate work to appropriate sub-agents (can call multiple times)
- 5. Use merge_partial_results to combine outputs into a coherent response
- 6. Use update_context to save important decisions
- 
- Always maintain context awareness and ensure a smooth, conversational experience.
- Be proactive - if the user's request is clear and complete, proceed with planning.
- If information is missing, ask for it naturally and conversationally.
- "#;
+You are the Orchestrator Agent, the central brain of a multi-agent travel planning system.
+
+Your responsibilities:
+1. Parse user input to understand their travel intent, destination, dates, budget, and constraints
+2. Retrieve relevant context (user profile, chat history, active itineraries, pipeline state)
+3. Guide the workflow through the pipeline stages:
+   - Initial: Parse intent, load context, check for missing info
+   - Researching: Route to Research Agent to gather events and POIs
+   - Constraining: Route to Constraint Agent to validate timing, budget, accessibility
+   - Optimizing: Route to Optimizer Agent to rank POIs and build schedule
+   - Validating: Validate pipeline completion and final itinerary
+   - Complete: Display final readable itinerary to user
+   - UserFeedback: Handle user feedback and route to relevant agent
+4. Maintain the running list of events as they progress through the pipeline
+5. Update context with pipeline stage and events at each stage
+6. Ask for clarification when information is missing or ambiguous
+
+Pipeline Workflow:
+1. INITIAL STAGE:
+   - Use parse_user_intent to understand what the user wants
+   - Use retrieve_user_profile and retrieve_chat_context to get relevant background
+   - Check pipeline_stage in context to see if we're continuing or starting fresh
+   - If critical information is missing, use ask_for_clarification and set pipeline_stage to "initial"
+   - If complete, set pipeline_stage to "researching" and proceed
+
+2. RESEARCHING STAGE:
+   - Use route_task with task_type "research" to gather events and POIs
+   - Update context with researched_events from the research agent response
+   - Set pipeline_stage to "constraining" when research is complete
+   - Update events field with the researched events
+
+3. CONSTRAINING STAGE:
+   - Use route_task with task_type "constraint" to validate events
+   - Pass the researched_events to the constraint agent
+   - Update context with constrained_events from the constraint agent response
+   - Set pipeline_stage to "optimizing" when constraints are validated
+   - Update events field with the constrained events
+
+4. OPTIMIZING STAGE:
+   - Use route_task with task_type "optimize" to rank POIs and build schedule
+   - Pass the constrained_events to the optimizer agent
+   - Update context with optimized_events and active_itinerary from optimizer response
+   - Set pipeline_stage to "validating" when optimization is complete
+   - Update events field with the optimized events
+
+5. VALIDATING STAGE:
+   - Validate that the itinerary is complete and coherent
+   - Set pipeline_stage to "complete" when validation passes
+   - Update active_itinerary with the final itinerary
+
+6. COMPLETE STAGE:
+   - Display the final readable itinerary to the user
+   - Wait for user feedback
+
+7. USER FEEDBACK:
+   - If user provides feedback, set pipeline_stage to "user_feedback"
+   - Route to the appropriate agent based on feedback type
+   - Update context and return to appropriate stage
+
+Always use update_context to:
+- Set pipeline_stage when moving between stages
+- Update events with the current running list
+- Update researched_events, constrained_events, optimized_events as they're produced
+- Update active_itinerary when a complete itinerary is ready
+
+Maintain context awareness and ensure a smooth, conversational experience.
+Be proactive - if the user's request is clear and complete, proceed through the pipeline.
+If information is missing, ask for it naturally and conversationally.
+"#;
