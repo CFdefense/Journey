@@ -61,6 +61,7 @@ async fn send_message_to_llm(
 	pool: &PgPool,
 	agent: &AgentType,
 	chat_session_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
+	user_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
@@ -115,9 +116,10 @@ async fn send_message_to_llm(
 		"Orchestrator agent input"
 	);
 	
-	// Set chat_session_id in the shared atomic before invoking agent
+	// Set chat_session_id and user_id in the shared atomics before invoking agent
 	use std::sync::atomic::Ordering;
 	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
+	user_id_atomic.store(account_id, Ordering::Relaxed);
 	
 	// Log context state BEFORE agent invocation
 	let context_before = sqlx::query!(
@@ -817,6 +819,7 @@ pub async fn api_update_message(
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
 	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(user_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
 	Json(UpdateMessageRequest {
 		message_id,
 		new_text,
@@ -885,6 +888,7 @@ pub async fn api_update_message(
 		&pool,
 		&agent,
 		&chat_session_id_atomic,
+		&user_id_atomic,
 	)
 	.await?;
 
@@ -963,6 +967,7 @@ pub async fn api_send_message(
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
 	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(user_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
 	Json(SendMessageRequest {
 		chat_session_id,
 		text,
@@ -1011,6 +1016,7 @@ pub async fn api_send_message(
 		&pool,
 		&agent,
 		&chat_session_id_atomic,
+		&user_id_atomic,
 	)
 	.await?;
 

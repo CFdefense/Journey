@@ -51,9 +51,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		// Initialize the database pool connection
 		let pool = db::create_pool().await;
 
-		// Initialize the AI agent
+		// Initialize the Orchestrator Agent (top-level coordinator)
 		// The agent will use MockLLM when DEPLOY_LLM != "1", so creation should always succeed
-		let (agent, chat_session_id) = agent::configs::orchestrator::create_orchestrator_agent(pool.clone())
+		let (agent, chat_session_id, user_id) = agent::configs::orchestrator::create_orchestrator_agent(pool.clone())
 			.expect("Failed to create orchestrator agent");
 
 		/*
@@ -109,6 +109,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 				agent,
 			))))
 			.layer(Extension(chat_session_id))
+			.layer(Extension(user_id))
 			.layer(CookieManagerLayer::new())
 			.layer(cors);
 

@@ -20,6 +20,7 @@ use crate::agent::configs::constraint::create_constraint_agent;
 use crate::agent::configs::mock::MockLLM;
 use crate::agent::configs::optimizer::create_optimize_agent;
 use crate::agent::configs::research::create_research_agent;
+use crate::agent::configs::task::create_task_agent;
 use crate::agent::tools::orchestrator::get_orchestrator_tools;
 use langchain_rust::language_models::llm::LLM;
 
@@ -32,7 +33,7 @@ pub type AgentType = Arc<
 
 pub fn create_orchestrator_agent(
 	pool: PgPool,
-) -> Result<(AgentExecutor<ConversationalAgent>, Arc<AtomicI32>), AgentError> {
+) -> Result<(AgentExecutor<ConversationalAgent>, Arc<AtomicI32>, Arc<AtomicI32>), AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -50,6 +51,10 @@ pub fn create_orchestrator_agent(
 	// Create memory for conversation history
 	let memory = SimpleMemory::new();
 
+	// Create shared atomics for chat_session_id and user_id (will be set per request)
+	let chat_session_id = Arc::new(AtomicI32::new(0));
+	let user_id = Arc::new(AtomicI32::new(0));
+
 	// Create research agent
 	let research_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
 		create_research_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
@@ -65,17 +70,23 @@ pub fn create_orchestrator_agent(
 		create_optimize_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
 	))));
 
-	// Create shared chat_session_id for tools (will be set per request)
-	let chat_session_id = Arc::new(AtomicI32::new(0));
+	// Create Task Agent (sub-agent used to build context and user profile)
+	let task_agent_executor =
+		create_task_agent(pool.clone(), Arc::clone(&chat_session_id), Arc::clone(&user_id))?;
+	let task_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(task_agent_executor));
+	let task_agent =
+		Arc::new(tokio::sync::Mutex::new(task_agent_inner));
 	
 	// Get orchestrator tools
 	let tools = get_orchestrator_tools(
 		llm_for_tools,
 		pool.clone(),
+		task_agent,
 		research_agent,
 		constraint_agent,
 		optimize_agent,
 		chat_session_id.clone(),
+		user_id.clone(),
 	);
 
 	// Create agent with system prompt and tools
@@ -103,6 +114,7 @@ pub fn create_orchestrator_agent(
 			.with_memory(memory.into())
 			.with_max_iterations(30),
 		chat_session_id,
+		user_id,
 	))
 }
 
@@ -113,28 +125,32 @@ pub fn create_orchestrator_agent(
 #[cfg(test)]
 pub fn create_dummy_orchestrator_agent(
 	pool: PgPool,
-) -> Result<(AgentExecutor<ConversationalAgent>, Arc<AtomicI32>), AgentError> {
+) -> Result<(AgentExecutor<ConversationalAgent>, Arc<AtomicI32>, Arc<AtomicI32>), AgentError> {
 	// Use MockLLM for testing to avoid API key requirements
 	let llm = MockLLM;
 
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Dummy sub-agents
+	let llm_arc = Arc::new(llm.clone());
+	let chat_session_id = Arc::new(AtomicI32::new(0));
+	let user_id = Arc::new(AtomicI32::new(0));
+
+	// Dummy sub-agents (including a dummy Task Agent) share the same simple implementation
 	let dummy_agent = Arc::new(tokio::sync::Mutex::new(create_dummy_sub_agent()?));
+	let task_agent = Arc::clone(&dummy_agent);
 	let research_agent = Arc::clone(&dummy_agent);
 	let constraint_agent = Arc::clone(&dummy_agent);
 	let optimize_agent = Arc::clone(&dummy_agent);
-
-	let llm_arc = Arc::new(llm.clone());
-	let chat_session_id = Arc::new(AtomicI32::new(0));
 	let tools = get_orchestrator_tools(
 		llm_arc,
 		pool,
+		Arc::new(tokio::sync::Mutex::new(task_agent)),
 		Arc::new(tokio::sync::Mutex::new(research_agent)),
 		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
 		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
 		chat_session_id.clone(),
+		user_id.clone(),
 	);
 
 	let agent = ConversationalAgentBuilder::new()
@@ -147,6 +163,7 @@ pub fn create_dummy_orchestrator_agent(
 	Ok((
 		AgentExecutor::from_agent(agent).with_memory(memory.into()),
 		chat_session_id,
+		user_id,
 	))
 }
 
