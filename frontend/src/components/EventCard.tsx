@@ -68,6 +68,11 @@ const EventCard: React.FC<EventCardProps> = ({
     ...JSON.parse(JSON.stringify(event)),
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
   });
+  const [customImagePreview, setCustomImagePreview] = useState<string | null>(
+    inputEvent.photo_name && inputEvent.photo_name.startsWith("data:")
+      ? inputEvent.photo_name
+      : null
+  );
 
   const navigate = useNavigate();
 
@@ -108,7 +113,16 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const closeModal = () => {
     setInputEvent(eventData);
+    setCustomImagePreview(
+      eventData.photo_name && eventData.photo_name.startsWith("data:")
+        ? eventData.photo_name
+        : null
+    );
     setIsOpen(false);
+  };
+
+  const isBase64Image = (photoName: string | null): boolean => {
+    return photoName !== null && photoName.startsWith("data:image");
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -178,8 +192,85 @@ const EventCard: React.FC<EventCardProps> = ({
     return addr;
   };
 
+  const handleCustomImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setCustomImagePreview(base64String);
+        setInputEvent({
+          ...inputEvent,
+          photo_name: base64String // CHANGE from custom_image
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCustomImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setCustomImagePreview(base64String);
+        setInputEvent({
+          ...inputEvent,
+          photo_name: base64String
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast.error("Please drop an image file");
+    }
+  };
+
+  const handleCustomImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const removeCustomImage = () => {
+    setCustomImagePreview(null);
+    setInputEvent({
+      ...inputEvent,
+      photo_name: null
+    });
+  };
+
   const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Validate image size before proceeding
+    if (inputEvent.photo_name && inputEvent.photo_name.startsWith("data:")) {
+      const base64Length =
+        inputEvent.photo_name.length - (inputEvent.photo_name.indexOf(",") + 1);
+      const sizeInBytes = (base64Length * 3) / 4;
+      if (sizeInBytes > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+    }
+
     const userEvent: UserEventRequest = {
       id: eventData.id,
       event_name: sanitize(inputEvent.event_name)!,
@@ -194,7 +285,8 @@ const EventCard: React.FC<EventCardProps> = ({
       timezone:
         inputEvent.timezoneIndex === -1
           ? null
-          : TIMEZONES[inputEvent.timezoneIndex]
+          : TIMEZONES[inputEvent.timezoneIndex],
+      photo_name: inputEvent.photo_name || null
     };
     const result = await apiUserEvent(userEvent);
 
@@ -215,12 +307,14 @@ const EventCard: React.FC<EventCardProps> = ({
     }
 
     const updatedEvent: Event = {
-      ...EVENT_DEFAULT, // user events don't use google maps stuff so we can use
+      ...EVENT_DEFAULT,
       ...userEvent,
       user_created: true,
       block_index: event.block_index,
-      id: event.id
+      id: event.id,
+      photo_name: inputEvent.photo_name
     };
+
     setEventData(updatedEvent);
     const updatedDays = localDays.map((day) => ({
       ...day,
@@ -253,7 +347,8 @@ const EventCard: React.FC<EventCardProps> = ({
       return;
     }
 
-    if (!result.result || result.status !== 200) {
+    if (result.status !== 200) {
+      console.log(result.status);
       toast.error("Could not delete user event, please try again.");
       return;
     }
@@ -336,7 +431,15 @@ const EventCard: React.FC<EventCardProps> = ({
 
         <div className="event-image-container">
           <div className="event-image-placeholder">
-            {eventData.photo_name && !imageError ? (
+            {eventData.photo_name && isBase64Image(eventData.photo_name) ? (
+              // Custom base64 image
+              <img
+                src={eventData.photo_name}
+                alt={eventData.event_name}
+                className="event-image"
+              />
+            ) : eventData.photo_name && !imageError ? (
+              // Google Maps photo
               <>
                 <img
                   src={getGooglePhotoUrl(eventData.photo_name)}
@@ -358,6 +461,7 @@ const EventCard: React.FC<EventCardProps> = ({
                 )}
               </>
             ) : (
+              // Placeholder
               <svg
                 width="100%"
                 height="100%"
@@ -712,6 +816,117 @@ const EventCard: React.FC<EventCardProps> = ({
                       </select>
                     </label>
                   )}
+
+                  <div style={{ marginTop: "16px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: "500"
+                      }}
+                    >
+                      Custom Image (Optional)
+                    </label>
+
+                    {!customImagePreview ? (
+                      <div
+                        onDrop={handleCustomImageDrop}
+                        onDragOver={handleCustomImageDragOver}
+                        style={{
+                          border: "2px dashed #ccc",
+                          borderRadius: "8px",
+                          padding: "32px",
+                          textAlign: "center",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          backgroundColor: "#f9fafb"
+                        }}
+                        onClick={() =>
+                          document
+                            .getElementById("edit-image-upload-input")
+                            ?.click()
+                        }
+                      >
+                        <svg
+                          width="48"
+                          height="48"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#9ca3af"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ margin: "0 auto 12px" }}
+                        >
+                          <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        <p style={{ color: "#6b7280", marginBottom: "8px" }}>
+                          Drop an image here or click to select
+                        </p>
+                        <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                        <input
+                          id="edit-image-upload-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCustomImageChange}
+                          style={{ display: "none" }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          position: "relative",
+                          borderRadius: "8px",
+                          overflow: "hidden"
+                        }}
+                      >
+                        <img
+                          src={customImagePreview}
+                          alt="Preview"
+                          style={{
+                            width: "100%",
+                            maxHeight: "300px",
+                            objectFit: "cover",
+                            borderRadius: "8px"
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={removeCustomImage}
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "32px",
+                            height: "32px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "18px",
+                            fontWeight: "bold"
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     type="submit"

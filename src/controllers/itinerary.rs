@@ -803,8 +803,9 @@ pub async fn api_user_event(
 				event_name        = $7,
 				hard_start        = $8,
 				hard_end          = $9,
-				timezone          = $10
-			WHERE id=$11 AND user_created=TRUE AND account_id=$12
+				timezone          = $10,
+				photo_name        = $11
+			WHERE id=$12 AND user_created=TRUE AND account_id=$13
 			RETURNING id
 			"#,
 			event.street_address,
@@ -817,6 +818,7 @@ pub async fn api_user_event(
 			event.hard_start,
 			event.hard_end,
 			event.timezone,
+			event.photo_name,
 			id,
 			user.id,
 		)
@@ -832,9 +834,9 @@ pub async fn api_user_event(
 				street_address, postal_code, city, country,
 				event_type, event_description, event_name,
 				user_created, account_id, hard_start, hard_end,
-				timezone
+				timezone, photo_name
 			)
-			VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10, $11)
+			VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10, $11, $12)
 			RETURNING id
 			"#,
 			event.street_address,
@@ -848,6 +850,7 @@ pub async fn api_user_event(
 			event.hard_start,
 			event.hard_end,
 			event.timezone,
+			event.photo_name,
 		)
 		.fetch_one(&pool)
 		.await

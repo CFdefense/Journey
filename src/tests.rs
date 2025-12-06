@@ -1279,6 +1279,7 @@ async fn test_user_event_flow(
 			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
 		timezone: Some(String::from("UTC")),
+		photo_name: None,
 	});
 	let Json(UserEventResponse { id }) =
 		controllers::itinerary::api_user_event(user, pool.clone(), json)
@@ -1303,6 +1304,7 @@ async fn test_user_event_flow(
 			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
 		timezone: Some(String::from("UTC")),
+		photo_name: None,
 	});
 	let Json(res) = controllers::itinerary::api_user_event(user, pool.clone(), json)
 		.await

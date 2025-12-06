@@ -111,6 +111,7 @@ pub struct UserEventRequest {
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
 	pub timezone: Option<String>,
+	pub photo_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]
