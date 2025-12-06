@@ -14,9 +14,10 @@ import {
 	canDropEventInTimeBlock,
 	getDropErrorMessage
 } from "../src/helpers/itinerary";
-import type {
-	Itinerary as ApiItinerary,
-	DayItinerary
+import {
+	type Itinerary as ApiItinerary,
+	type DayItinerary,
+	EVENT_DEFAULT
 } from "../src/models/itinerary";
 import * as itineraryApi from "../src/api/itinerary";
 import {
@@ -124,6 +125,7 @@ describe("Itinerary Helper Tests", () => {
 					date: "2025-01-01",
 					morning_events: [
 						{
+							...EVENT_DEFAULT,
 							id: 1,
 							event_name: "Breakfast",
 							event_description: "Morning meal",
@@ -131,17 +133,14 @@ describe("Itinerary Helper Tests", () => {
 							postal_code: 12345,
 							city: "TestCity",
 							country: "TestCountry",
-							event_type: "food",
-							user_created: false,
-							hard_start: null,
-							hard_end: null,
-							timezone: null
+							event_type: "food"
 						}
 					],
 					afternoon_events: [],
 					evening_events: []
 				}
-			]
+			],
+			unassigned_events: []
 		};
 
 		const result = populateItinerary(apiItinerary);
@@ -157,7 +156,8 @@ describe("Itinerary Helper Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		};
 
 		const result = populateItinerary(apiItinerary);
@@ -173,6 +173,7 @@ describe("Itinerary Helper Tests", () => {
 						time: "Morning",
 						events: [
 							{
+								...EVENT_DEFAULT,
 								id: 1,
 								event_name: "Breakfast",
 								event_description: "Morning meal",
@@ -180,11 +181,7 @@ describe("Itinerary Helper Tests", () => {
 								postal_code: 12345,
 								city: "New York",
 								country: "USA",
-								event_type: "dining",
-								user_created: false,
-								hard_start: null,
-								hard_end: null,
-								timezone: null
+								event_type: "dining"
 							}
 						]
 					},
@@ -241,7 +238,8 @@ describe("Itinerary Helper Tests", () => {
 						afternoon_events: [],
 						evening_events: []
 					}
-				]
+				],
+				unassigned_events: []
 			}
 		};
 
@@ -268,18 +266,20 @@ describe("Itinerary Helper Tests", () => {
 	});
 
 	test("Test fetchItinerary with error", async () => {
-		vi.mocked(itineraryApi.apiItineraryDetails).mockRejectedValue(
-			new Error("Network error")
-		);
+		vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
+			status: -1,
+			result: null
+		});
 
 		const result = await fetchItinerary(1);
 		expect(result[0].date).toBe("");
 	});
 
 	test("Test fetchItinerary with error", async () => {
-		vi.mocked(itineraryApi.apiItineraryDetails).mockRejectedValue(
-			new Error("Network error")
-		);
+		vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
+			status: -1,
+			result: null
+		});
 
 		const result = await fetchItinerary(1);
 		expect(result[0].date).toBe("");
@@ -339,6 +339,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - No hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Flexible Event",
 			event_description: "Can move anywhere",
@@ -346,11 +347,7 @@ describe("Itinerary Helper Tests", () => {
 			postal_code: 12345,
 			city: "TestCity",
 			country: "TestCountry",
-			event_type: "food",
-			user_created: false,
-			hard_start: null,
-			hard_end: null,
-			timezone: null
+			event_type: "food"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -363,6 +360,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Unassigned events (targetTimeIndex -1)", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Any Event",
 			event_description: "Test",
@@ -372,9 +370,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(
@@ -384,6 +380,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Matching time block and date", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be at specific time",
@@ -393,9 +390,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -405,6 +400,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Wrong time block", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be in morning",
@@ -414,9 +410,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(
@@ -426,6 +420,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Wrong date", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be on specific date",
@@ -435,9 +430,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-02", 0)).toBe(
@@ -447,6 +440,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test getDropErrorMessage - Event with hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Concert",
 			event_description: "Must attend at specific time",
@@ -456,9 +450,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "entertainment",
 			user_created: false,
-			hard_start: "2025-01-01T19:00:00Z",
-			hard_end: null,
-			timezone: null
+			hard_start: "2025-01-01T19:00:00Z"
 		};
 
 		const message = getDropErrorMessage(event);
@@ -469,6 +461,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test getDropErrorMessage - Event without hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Flexible Event",
 			event_description: "Can be anywhere",
@@ -476,11 +469,7 @@ describe("Itinerary Helper Tests", () => {
 			postal_code: 12345,
 			city: "TestCity",
 			country: "TestCountry",
-			event_type: "food",
-			user_created: false,
-			hard_start: null,
-			hard_end: null,
-			timezone: null
+			event_type: "food"
 		};
 
 		expect(getDropErrorMessage(event)).toBe(null);
@@ -495,7 +484,8 @@ describe("testApi Unit Tests", () => {
 		budget_preference: null,
 		risk_preference: null,
 		food_allergies: "",
-		disabilities: ""
+		disabilities: "",
+		profile_picture: null
 	};
 
 	const mockChatsResponse: ChatsResponse = {
@@ -532,7 +522,8 @@ describe("testApi Unit Tests", () => {
 		end_date: "2025-01-01",
 		chat_session_id: null,
 		title: "Test Trip",
-		event_days: []
+		event_days: [],
+		unassigned_events: []
 	};
 
 	const mockSaveResponse: SaveResponse = {
@@ -639,7 +630,8 @@ describe("testApi Unit Tests", () => {
 			budget_preference: null,
 			risk_preference: null,
 			food_allergies: null,
-			disabilities: null
+			disabilities: null,
+			profile_picture: null
 		});
 		expect(result.status).toBe(200);
 		expect(result.result).toEqual(mockCurrentResponse);
@@ -656,7 +648,8 @@ describe("testApi Unit Tests", () => {
 			budget_preference: null,
 			risk_preference: null,
 			food_allergies: null,
-			disabilities: null
+			disabilities: null,
+			profile_picture: null
 		});
 		expect(result.status).toBe(-1);
 	});
@@ -902,7 +895,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result).toEqual({ result: mockSaveResponse, status: 200 });
 	});
@@ -919,7 +913,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result.status).toBe(400);
 	});
@@ -932,7 +927,8 @@ describe("testApi Unit Tests", () => {
 			end_date: "2025-01-01",
 			chat_session_id: null,
 			title: "Test Trip",
-			event_days: []
+			event_days: [],
+			unassigned_events: []
 		});
 		expect(result).toEqual({ result: null, status: -1 });
 	});
