@@ -27,6 +27,7 @@ use crate::{
 	swagger::SecurityAddon,
 };
 use langchain_rust::{chain::Chain, prompt_args};
+use tracing::{debug, info};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -102,13 +103,47 @@ async fn send_message_to_llm(
 	};
 
 	// Always invoke the agent (it will use MockLLM when DEPLOY_LLM != "1")
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		account_id = account_id,
+		"Invoking orchestrator agent"
+	);
+	debug!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		user_input = text,
+		"Orchestrator agent input"
+	);
+	
 	let agent_guard = agent.lock().await;
 	let ai_text = agent_guard
 		.invoke(prompt_args! {
 			"input" => text,
 		})
 		.await
-		.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?;
+		.map_err(|e| {
+			info!(
+				target: "orchestrator_pipeline",
+				chat_session_id = chat_session_id,
+				error = %e,
+				"Orchestrator agent error"
+			);
+			AppError::Internal(format!("AI agent error: {}", e))
+		})?;
+	
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		response_length = ai_text.len(),
+		"Orchestrator agent completed"
+	);
+	debug!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		response = ai_text,
+		"Orchestrator agent output"
+	);
 
 	// Create dummy itinerary (used when MockLLM is active)
 	let mut ai_itinerary = Itinerary {

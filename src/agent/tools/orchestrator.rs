@@ -16,6 +16,7 @@ use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::{debug, info};
 
 /// Tool 1: Parse User Intent
 /// Parses user input to extract intent, destination, dates, budget, and constraints.
@@ -106,6 +107,21 @@ impl Tool for ParseUserIntentTool {
 			)
 		})?;
 
+		info!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			action = %intent.action,
+			destination = ?intent.destination,
+			constraints_count = intent.constraints.len(),
+			"Parsed user intent successfully"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			intent = %serde_json::to_string(&intent)?,
+			"Full parsed intent"
+		);
+
 		// Return serialized UserIntent
 		Ok(serde_json::to_string(&intent)?)
 	}
@@ -155,6 +171,9 @@ impl Tool for RetrieveChatContextTool {
 		let chat_id: i32 = chat_id_str
 			.parse()
 			.map_err(|_| "chat_id must be a valid integer")?;
+
+		info!(target: "orchestrator_tool", tool = "retrieve_chat_context", chat_id = chat_id, "Retrieving chat context");
+		debug!(target: "orchestrator_tool", tool = "retrieve_chat_context", input = %serde_json::to_string(&input)?, "Tool input");
 
 		// Query database for chat history
 		let messages = sqlx::query!(
@@ -266,6 +285,23 @@ impl Tool for RetrieveChatContextTool {
 		// Update chat_history with the messages we just retrieved
 		context_data.chat_history = chat_history;
 
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_chat_context",
+			chat_id = chat_id,
+			chat_history_count = context_data.chat_history.len(),
+			pipeline_stage = ?context_data.pipeline_stage,
+			events_count = context_data.events.len(),
+			constraints_count = context_data.constraints.len(),
+			"Retrieved chat context"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "retrieve_chat_context",
+			context = %serde_json::to_string(&context_data)?,
+			"Full context data"
+		);
+
 		// Return full context including pipeline state
 		Ok(serde_json::to_string(&context_data)?)
 	}
@@ -315,6 +351,9 @@ impl Tool for RetrieveUserProfileTool {
 		let user_id: i32 = user_id_str
 			.parse()
 			.map_err(|_| "user_id must be a valid integer")?;
+
+		info!(target: "orchestrator_tool", tool = "retrieve_user_profile", user_id = user_id, "Retrieving user profile");
+		debug!(target: "orchestrator_tool", tool = "retrieve_user_profile", input = %serde_json::to_string(&input)?, "Tool input");
 
 		// Query database for user profile
 		use crate::sql_models::{BudgetBucket, RiskTolerence};
@@ -419,8 +458,24 @@ impl Tool for RouteTaskTool {
 		let payload = input["payload"].clone();
 		let payload_str = serde_json::to_string(&payload)?;
 
+		info!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			task_type = task_type,
+			"Routing task to sub-agent"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			input = %serde_json::to_string(&input)?,
+			"Tool input"
+		);
+
 		let result = match task_type {
 			"research" => {
+				info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
+				debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
+				
 				let agent_outer = self.research_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -433,20 +488,30 @@ impl Tool for RouteTaskTool {
 						// Parse response as JSON Value if possible
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
+						
+						info!(target: "orchestrator_pipeline", agent = "research", status = "completed", "Research agent completed");
+						debug!(target: "orchestrator_pipeline", agent = "research", response = %serde_json::to_string(&data)?, "Agent output");
+						
 						json!({
 							"agent": "research",
 							"status": "completed",
 							"data": data
 						})
 					}
-					Err(e) => json!({
-						"agent": "research",
-						"status": "error",
-						"error": format!("{}", e)
-					}),
+					Err(e) => {
+						info!(target: "orchestrator_pipeline", agent = "research", status = "error", error = %e, "Research agent error");
+						json!({
+							"agent": "research",
+							"status": "error",
+							"error": format!("{}", e)
+						})
+					},
 				}
 			}
 			"constraint" => {
+				info!(target: "orchestrator_pipeline", agent = "constraint", "Invoking constraint agent");
+				debug!(target: "orchestrator_pipeline", agent = "constraint", payload = %payload_str, "Agent input");
+				
 				let agent_outer = self.constraint_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -458,20 +523,30 @@ impl Tool for RouteTaskTool {
 					Ok(response) => {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
+						
+						info!(target: "orchestrator_pipeline", agent = "constraint", status = "completed", "Constraint agent completed");
+						debug!(target: "orchestrator_pipeline", agent = "constraint", response = %serde_json::to_string(&data)?, "Agent output");
+						
 						json!({
 							"agent": "constraint",
 							"status": "completed",
 							"data": data
 						})
 					}
-					Err(e) => json!({
-						"agent": "constraint",
-						"status": "error",
-						"error": format!("{}", e)
-					}),
+					Err(e) => {
+						info!(target: "orchestrator_pipeline", agent = "constraint", status = "error", error = %e, "Constraint agent error");
+						json!({
+							"agent": "constraint",
+							"status": "error",
+							"error": format!("{}", e)
+						})
+					},
 				}
 			}
 			"optimize" => {
+				info!(target: "orchestrator_pipeline", agent = "optimize", "Invoking optimize agent");
+				debug!(target: "orchestrator_pipeline", agent = "optimize", payload = %payload_str, "Agent input");
+				
 				let agent_outer = self.optimize_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -483,17 +558,24 @@ impl Tool for RouteTaskTool {
 					Ok(response) => {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
+						
+						info!(target: "orchestrator_pipeline", agent = "optimize", status = "completed", "Optimize agent completed");
+						debug!(target: "orchestrator_pipeline", agent = "optimize", response = %serde_json::to_string(&data)?, "Agent output");
+						
 						json!({
 							"agent": "optimize",
 							"status": "completed",
 							"data": data
 						})
 					}
-					Err(e) => json!({
-						"agent": "optimize",
-						"status": "error",
-						"error": format!("{}", e)
-					}),
+					Err(e) => {
+						info!(target: "orchestrator_pipeline", agent = "optimize", status = "error", error = %e, "Optimize agent error");
+						json!({
+							"agent": "optimize",
+							"status": "error",
+							"error": format!("{}", e)
+						})
+					},
 				}
 			}
 			_ => {
@@ -501,7 +583,23 @@ impl Tool for RouteTaskTool {
 			}
 		};
 
-		Ok(serde_json::to_string(&result)?)
+		let result_str = serde_json::to_string(&result)?;
+		
+		info!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			task_type = task_type,
+			status = result.get("status").and_then(|s| s.as_str()).unwrap_or("unknown"),
+			"Task routing completed"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			result = %result_str,
+			"Tool output"
+		);
+		
+		Ok(result_str)
 	}
 }
 
@@ -554,6 +652,9 @@ impl Tool for AskForClarificationTool {
 			.ok_or("missing_info must be an array")?;
 		let context = input.get("context").unwrap_or(&Value::Null);
 
+		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
+		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&input)?, "Tool input");
+
 		let prompt = format!(
 			r#"Generate a friendly, natural clarification question for a travel planning conversation.
  
@@ -569,8 +670,12 @@ impl Tool for AskForClarificationTool {
 		);
 
 		let response = self.llm.invoke(&prompt).await?;
+		let clarification = response.trim().to_string();
 
-		Ok(response.trim().to_string())
+		info!(target: "orchestrator_tool", tool = "ask_for_clarification", "Clarification question generated");
+		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", clarification = %clarification, "Tool output");
+
+		Ok(clarification)
 	}
 }
 
@@ -709,49 +814,118 @@ impl Tool for UpdateContextTool {
 			}
 		};
 
+		info!(target: "orchestrator_tool", tool = "update_context", chat_id = chat_id, "Updating context");
+		debug!(target: "orchestrator_tool", tool = "update_context", input = %serde_json::to_string(&input)?, "Tool input");
+
 		// Update pipeline stage if provided
 		if let Some(stage) = updates.get("pipeline_stage").and_then(|s| s.as_str()) {
+			let old_stage = context_data.pipeline_stage.clone();
 			context_data.pipeline_stage = Some(stage.to_string());
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_stage = ?old_stage,
+				new_stage = stage,
+				"Pipeline stage transition"
+			);
 		}
 
 		// Update events list if provided (current running list)
 		if let Some(events) = updates.get("events").and_then(|e| e.as_array()) {
+			let old_count = context_data.events.len();
 			context_data.events = events.iter()
 				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
 				.collect();
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_events_count = old_count,
+				new_events_count = context_data.events.len(),
+				"Updated events list"
+			);
+			debug!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				events = %serde_json::to_string(&context_data.events)?,
+				"Full events list"
+			);
 		}
 
 		// Update researched_events if provided
 		if let Some(researched) = updates.get("researched_events").and_then(|e| e.as_array()) {
+			let old_count = context_data.researched_events.len();
 			context_data.researched_events = researched.iter()
 				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
 				.collect();
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_count = old_count,
+				new_count = context_data.researched_events.len(),
+				"Updated researched_events"
+			);
 		}
 
 		// Update constrained_events if provided
 		if let Some(constrained) = updates.get("constrained_events").and_then(|e| e.as_array()) {
+			let old_count = context_data.constrained_events.len();
 			context_data.constrained_events = constrained.iter()
 				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
 				.collect();
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_count = old_count,
+				new_count = context_data.constrained_events.len(),
+				"Updated constrained_events"
+			);
 		}
 
 		// Update optimized_events if provided
 		if let Some(optimized) = updates.get("optimized_events").and_then(|e| e.as_array()) {
+			let old_count = context_data.optimized_events.len();
 			context_data.optimized_events = optimized.iter()
 				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
 				.collect();
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_count = old_count,
+				new_count = context_data.optimized_events.len(),
+				"Updated optimized_events"
+			);
 		}
 
 		// Update active_itinerary if provided
 		if let Some(itinerary) = updates.get("active_itinerary") {
 			context_data.active_itinerary = Some(itinerary.clone());
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				"Updated active_itinerary"
+			);
+			debug!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				itinerary = %serde_json::to_string(itinerary)?,
+				"Full itinerary"
+			);
 		}
 
 		// Update constraints if provided (from parsed user intent)
 		if let Some(constraints) = updates.get("constraints").and_then(|c| c.as_array()) {
+			let old_count = context_data.constraints.len();
 			context_data.constraints = constraints.iter()
 				.filter_map(|v| v.as_str().map(|s| s.to_string()))
 				.collect();
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_id,
+				old_count = old_count,
+				new_count = context_data.constraints.len(),
+				constraints = ?context_data.constraints,
+				"Updated constraints"
+			);
 		}
 
 		// Store tool execution history if provided
@@ -775,6 +949,23 @@ impl Tool for UpdateContextTool {
 		.execute(&self.pool)
 		.await
 		.map_err(|e| format!("Database error: {}", e))?;
+
+		info!(
+			target: "orchestrator_tool",
+			tool = "update_context",
+			chat_id = chat_id,
+			pipeline_stage = ?context_data.pipeline_stage,
+			events_count = context_data.events.len(),
+			constraints_count = context_data.constraints.len(),
+			"Context updated successfully"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "update_context",
+			chat_id = chat_id,
+			context = %serde_json::to_string(&context_data)?,
+			"Full context state"
+		);
 
 		Ok(json!({
 			"status": "updated",
