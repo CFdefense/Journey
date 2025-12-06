@@ -52,7 +52,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-
   // Use external modal state if provided, otherwise use internal state
   const createModalOpen =
     externalCreateModal !== undefined
@@ -334,99 +333,104 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const closeCreateModal = () => setCreateModalOpen(false);
-  
-  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
 
-  // Validate image size before proceeding
-  if (userEventForm.photoName && userEventForm.photoName.startsWith('data:')) {
-    const base64Length = userEventForm.photoName.length - (userEventForm.photoName.indexOf(',') + 1);
-    const sizeInBytes = (base64Length * 3) / 4;
-    if (sizeInBytes > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+  const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Validate image size before proceeding
+    if (
+      userEventForm.photoName &&
+      userEventForm.photoName.startsWith("data:")
+    ) {
+      const base64Length =
+        userEventForm.photoName.length -
+        (userEventForm.photoName.indexOf(",") + 1);
+      const sizeInBytes = (base64Length * 3) / 4;
+      if (sizeInBytes > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+    }
+
+    const userEvent: UserEventRequest = {
+      id: null,
+      event_name: sanitize(userEventForm.name)!,
+      event_description: sanitize(userEventForm.description),
+      event_type: sanitize(userEventForm.type),
+      street_address: sanitize(userEventForm.address),
+      city: sanitize(userEventForm.city),
+      country: sanitize(userEventForm.country),
+      postal_code:
+        userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
+          ? parseInt(userEventForm.postalCode)
+          : null,
+      hard_start: sanitize(userEventForm.start),
+      hard_end: sanitize(userEventForm.end),
+      timezone:
+        userEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[userEventForm.timezoneIndex],
+      photo_name: userEventForm.photoName || null
+    };
+    const result = await apiUserEvent(userEvent);
+    if (result.status === 401) {
+      toast.error("Unauthorized user, please log in.");
+      navigate("/login");
       return;
     }
-  }
 
-  const userEvent: UserEventRequest = {
-    id: null,
-    event_name: sanitize(userEventForm.name)!,
-    event_description: sanitize(userEventForm.description),
-    event_type: sanitize(userEventForm.type),
-    street_address: sanitize(userEventForm.address),
-    city: sanitize(userEventForm.city),
-    country: sanitize(userEventForm.country),
-    postal_code:
-      userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
-        ? parseInt(userEventForm.postalCode)
-        : null,
-    hard_start: sanitize(userEventForm.start),
-    hard_end: sanitize(userEventForm.end),
-    timezone:
-      userEventForm.timezoneIndex === -1
-        ? null
-        : TIMEZONES[userEventForm.timezoneIndex],
-    photo_name: userEventForm.photoName || null,
+    if (result.status == 404) {
+      toast.error("User-event not found for this user.");
+      return;
+    }
+
+    if (result.result === null || result.status !== 200) {
+      toast.error("Failed to update user event, please try again.");
+      return;
+    }
+
+    setUserEventForm({
+      name: "",
+      description: "",
+      type: "",
+      address: "",
+      city: "",
+      country: "",
+      postalCode: "",
+      start: "",
+      end: "",
+      timezoneIndex: -1,
+      photoName: ""
+    });
+    setImagePreview(null);
+
+    const event: Event = {
+      ...EVENT_DEFAULT,
+      id: result.result.id,
+      event_name: sanitize(userEventForm.name)!,
+      event_description: sanitize(userEventForm.description),
+      event_type: sanitize(userEventForm.type),
+      street_address: sanitize(userEventForm.address),
+      city: sanitize(userEventForm.city),
+      country: sanitize(userEventForm.country),
+      postal_code:
+        userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
+          ? parseInt(userEventForm.postalCode)
+          : null,
+      hard_start: sanitize(userEventForm.start),
+      hard_end: sanitize(userEventForm.end),
+      timezone:
+        userEventForm.timezoneIndex === -1
+          ? null
+          : TIMEZONES[userEventForm.timezoneIndex],
+      user_created: true,
+      photo_name: userEventForm.photoName || null // Add this line
+    };
+
+    const updatedUnassigned = [...unassigned, event];
+    onUnassignedUpdate(updatedUnassigned);
+    setCreateModalOpen(false);
   };
-  const result = await apiUserEvent(userEvent);
-  if (result.status === 401) {
-    toast.error("Unauthorized user, please log in.");
-    navigate("/login");
-    return;
-  }
-
-  if (result.status == 404) {
-    toast.error("User-event not found for this user.");
-    return;
-  }
-
-  if (result.result === null || result.status !== 200) {
-    toast.error("Failed to update user event, please try again.");
-    return;
-  }
-  
-  setUserEventForm({
-    name: "",
-    description: "",
-    type: "",
-    address: "",
-    city: "",
-    country: "",
-    postalCode: "",
-    start: "",
-    end: "",
-    timezoneIndex: -1,
-    photoName: ""
-  });
-  setImagePreview(null); 
-  
-  const event: Event = {
-    ...EVENT_DEFAULT,
-    id: result.result.id,
-    event_name: sanitize(userEventForm.name)!,
-    event_description: sanitize(userEventForm.description),
-    event_type: sanitize(userEventForm.type),
-    street_address: sanitize(userEventForm.address),
-    city: sanitize(userEventForm.city),
-    country: sanitize(userEventForm.country),
-    postal_code:
-      userEventForm.postalCode && userEventForm.postalCode.trim() !== ""
-        ? parseInt(userEventForm.postalCode)
-        : null,
-    hard_start: sanitize(userEventForm.start),
-    hard_end: sanitize(userEventForm.end),
-    timezone:
-      userEventForm.timezoneIndex === -1
-        ? null
-        : TIMEZONES[userEventForm.timezoneIndex],
-    user_created: true,
-    photo_name: userEventForm.photoName || null, // Add this line
-  };
-
-  const updatedUnassigned = [...unassigned, event];
-  onUnassignedUpdate(updatedUnassigned);
-  setCreateModalOpen(false);
-};
 
   const closeSearchModal = () => setSearchModalOpen(false);
   const onSearchSend = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -545,72 +549,71 @@ const Itinerary: React.FC<ItineraryProps> = ({
     onUnassignedUpdate(updatedUnassigned);
   };
 
-
   // Add these helper functions for image handling
-const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setUserEventForm({
+          ...userEventForm,
+          photoName: base64String
+        });
+      };
+      reader.readAsDataURL(file);
     }
-    
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
-      return;
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setUserEventForm({
+          ...userEventForm,
+          photoName: base64String
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast.error("Please drop an image file");
     }
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setImagePreview(base64String);
-      setUserEventForm({
-        ...userEventForm,
-        photoName: base64String  
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-};
+  const handleImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
-const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
-  e.preventDefault();
-  e.stopPropagation();
-  
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setImagePreview(base64String);
-      setUserEventForm({
-        ...userEventForm,
-        photoName: base64String 
-      });
-    };
-    reader.readAsDataURL(file);
-  } else {
-    toast.error('Please drop an image file');
-  }
-};
-
-const handleImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-  e.preventDefault();
-  e.stopPropagation();
-};
-
-const removeImage = () => {
-  setImagePreview(null);
-  setUserEventForm({
-    ...userEventForm,
-    photoName: ""  
-  });
-};
+  const removeImage = () => {
+    setImagePreview(null);
+    setUserEventForm({
+      ...userEventForm,
+      photoName: ""
+    });
+  };
 
   return (
     <>
@@ -1050,93 +1053,114 @@ const removeImage = () => {
                   </div>
                 </div>
 
-                <div style={{ marginTop: '16px' }}>
-  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-    Custom Image (Optional)
-  </label>
-  
-  {!imagePreview ? (
-    <div
-      onDrop={handleImageDrop}
-      onDragOver={handleImageDragOver}
-      style={{
-        border: '2px dashed #ccc',
-        borderRadius: '8px',
-        padding: '32px',
-        textAlign: 'center',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        backgroundColor: '#f9fafb'
-      }}
-      onClick={() => document.getElementById('image-upload-input')?.click()}
-    >
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#9ca3af"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ margin: '0 auto 12px' }}
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <polyline points="21 15 16 10 5 21" />
-      </svg>
-      <p style={{ color: '#6b7280', marginBottom: '8px' }}>
-        Drop an image here or click to select
-      </p>
-      <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-        PNG, JPG, GIF up to 5MB
-      </p>
-      <input
-        id="image-upload-input"
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        style={{ display: 'none' }}
-      />
-    </div>
-  ) : (
-    <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
-      <img
-        src={imagePreview}
-        alt="Preview"
-        style={{
-          width: '100%',
-          maxHeight: '300px',
-          objectFit: 'cover',
-          borderRadius: '8px'
-        }}
-      />
-      <button
-        type="button"
-        onClick={removeImage}
-        style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '50%',
-          width: '32px',
-          height: '32px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '18px',
-          fontWeight: 'bold'
-        }}
-      >
-        ×
-      </button>
-    </div>
-  )}
-</div>
+                <div style={{ marginTop: "16px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontWeight: "500"
+                    }}
+                  >
+                    Custom Image (Optional)
+                  </label>
+
+                  {!imagePreview ? (
+                    <div
+                      onDrop={handleImageDrop}
+                      onDragOver={handleImageDragOver}
+                      style={{
+                        border: "2px dashed #ccc",
+                        borderRadius: "8px",
+                        padding: "32px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        backgroundColor: "#f9fafb"
+                      }}
+                      onClick={() =>
+                        document.getElementById("image-upload-input")?.click()
+                      }
+                    >
+                      <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#9ca3af"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ margin: "0 auto 12px" }}
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <p style={{ color: "#6b7280", marginBottom: "8px" }}>
+                        Drop an image here or click to select
+                      </p>
+                      <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                      <input
+                        id="image-upload-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        style={{ display: "none" }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: "8px",
+                        overflow: "hidden"
+                      }}
+                    >
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        style={{
+                          width: "100%",
+                          maxHeight: "300px",
+                          objectFit: "cover",
+                          borderRadius: "8px"
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        style={{
+                          position: "absolute",
+                          top: "8px",
+                          right: "8px",
+                          backgroundColor: "rgba(0, 0, 0, 0.6)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "32px",
+                          height: "32px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "18px",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {(userEventForm.start || userEventForm.end) && (
                   <label>
