@@ -1112,6 +1112,8 @@
         linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
     }
   }
+}
+
   .avatar-wrapper {
     position: relative;
     width: 140px;
@@ -1246,4 +1248,4 @@
     border-radius: 4px;
     font-size: 14px;
   }
-}
+
