@@ -14,12 +14,11 @@ use langchain_rust::{
 	chain::options::ChainCallOptions,
 	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
-	tools::Tool,
 };
 
 use sqlx::PgPool;
 
-use crate::agent::tools::research::*;
+use crate::agent::tools::research::research_tools;
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -43,18 +42,12 @@ pub fn create_research_agent(
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Init tools
-	let tools: [Arc<dyn Tool>; _] = [
-		Arc::new(GeocodeTool),
-		Arc::new(NearbySearchTool { db: pool.clone() }),
-	];
-
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&tools)
+		.tools(&research_tools(pool))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -67,7 +60,9 @@ pub fn create_research_agent(
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_research_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_research_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
@@ -80,18 +75,12 @@ pub fn create_dummy_research_agent() -> Result<AgentExecutor<ConversationalAgent
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Init tools
-	let tools: [Arc<dyn Tool>; _] = [
-		// Arc::new(GeocodeTool),
-		// Arc::new(NearbySearchTool {db: pool.clone()}),
-	];
-
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&tools)
+		.tools(&research_tools(pool))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();

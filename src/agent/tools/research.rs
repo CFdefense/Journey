@@ -13,24 +13,32 @@ use langchain_rust::tools::Tool;
 use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
 use sqlx::PgPool;
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
 
+pub fn research_tools(db: PgPool) -> [Arc<dyn Tool>; 2] {
+	[
+		Arc::new(GeocodeTool),
+		// Arc::new(QueryDbEventsTool { db: db.clone() }),
+		Arc::new(NearbySearchTool { db }),
+	]
+}
+
 /// This tool takes an address and converts it into coordinates using Google Maps Geocoding API.
 #[derive(Clone)]
-pub struct GeocodeTool;
+struct GeocodeTool;
 
 /// This tool queries the DB for events that may be relevant to the itinerary being generated.
 #[derive(Clone)]
-pub struct QueryDbEventsTool {
+struct QueryDbEventsTool {
 	pub db: PgPool,
 }
 
 /// This tool uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria.
 /// The resulting events are inserted or updated in the database.
 #[derive(Clone)]
-pub struct NearbySearchTool {
+struct NearbySearchTool {
 	pub db: PgPool,
 }
 
