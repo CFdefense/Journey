@@ -1005,13 +1005,17 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 
 	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
 
+	// Clone the pool
+	let pool = pool.0.clone();
+
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
+	let pool_clone_for_agent = pool.clone();
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent().unwrap_or_else(|e| {
+				agent::configs::orchestrator::create_orchestrator_agent(pool_clone_for_agent).unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
 						e
@@ -1029,6 +1033,8 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	};
 
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+	
+	let pool_ext = Extension(pool.clone());
 
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
@@ -1036,14 +1042,15 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	let user = Extension(AuthUser {
 		id: parts[1].parse().unwrap(),
 	});
-	let first_chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+	let first_chat_session_id = controllers::chat::api_new_chat(user, pool_ext)
+
 		.await
 		.unwrap()
 		.chat_session_id;
 	assert_ne!(first_chat_session_id, 0);
 
 	// create chat session - reusing first one because it's empty
-	let chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+	let chat_session_id = controllers::chat::api_new_chat(user, Extension(pool.clone()))
 		.await
 		.unwrap()
 		.chat_session_id;
@@ -1058,7 +1065,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			itinerary_id: None,
 		});
 		message_ids[i] =
-			controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 				.await
 				.unwrap()
 				.user_message_id;
@@ -1072,7 +1079,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1087,7 +1094,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1096,7 +1103,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	// get latest messages and make sure messages are in chronological order
-	let chat_session = controllers::chat::api_chats(user, pool.clone())
+	let chat_session = controllers::chat::api_chats(user, Extension(pool.clone()))
 		.await
 		.unwrap();
 	let chat_session = chat_session.0.chat_sessions.first().unwrap();
@@ -1104,7 +1111,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert!(
@@ -1119,7 +1126,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: Some(latest_page.message_page[0].id),
 	});
-	let next_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let next_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert!(
@@ -1138,7 +1145,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: Some(0),
 	});
-	let empty_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let empty_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(empty_page.message_page.len(), 0);
@@ -1153,7 +1160,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1168,7 +1175,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1182,14 +1189,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
@@ -1201,7 +1208,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		id: chat_session.id,
 	});
 	assert_eq!(
-		controllers::chat::api_rename(user, pool.clone(), json)
+		controllers::chat::api_rename(user, Extension(pool.clone()), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1215,10 +1222,10 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_title: new_title.clone(),
 		id: chat_session.id,
 	});
-	controllers::chat::api_rename(user, pool.clone(), json)
+	controllers::chat::api_rename(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
-	let Json(chats) = controllers::chat::api_chats(user, pool.clone())
+	let Json(chats) = controllers::chat::api_chats(user, Extension(pool.clone()))
 		.await
 		.unwrap();
 	assert!(
@@ -1229,14 +1236,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	//delete chat session
-	controllers::chat::api_delete_chat(user, pool.clone(), axum::extract::Path(chat_session_id))
+	controllers::chat::api_delete_chat(user, Extension(pool.clone()), axum::extract::Path(chat_session_id))
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool, json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
@@ -1403,12 +1410,13 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
+	let pool_clone_for_agent = pool.clone();
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent().unwrap_or_else(|e| {
+				agent::configs::orchestrator::create_orchestrator_agent(pool_clone_for_agent).unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
 						e

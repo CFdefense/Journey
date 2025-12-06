@@ -57,7 +57,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 		// since the agent won't be used. We attempt creation anyway as OpenAI may allow it.
 
 		// Create the orchestrator agent with references to the research, constraint, and optimize agents
-		let agent = match agent::configs::orchestrator::create_orchestrator_agent() {
+		let agent = match agent::configs::orchestrator::create_orchestrator_agent(pool.clone()) {
 			Ok(agent) => agent,
 			Err(e) => {
 				if env::var("DEPLOY_LLM").unwrap_or_default() == "1" {

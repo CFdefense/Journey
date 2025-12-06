@@ -13,6 +13,8 @@ use langchain_rust::{
 	memory::SimpleMemory,
 };
 
+use sqlx::PgPool;
+
 use crate::agent::configs::constraint::create_constraint_agent;
 use crate::agent::configs::optimizer::create_optimize_agent;
 use crate::agent::configs::research::create_research_agent;
@@ -25,7 +27,7 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_orchestrator_agent(pool: PgPool) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -35,19 +37,21 @@ pub fn create_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>,
 	// Create memory for conversation history
 	let memory = SimpleMemory::new();
 
+
+
 	// Create research agent
 	let research_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_research_agent(llm.clone()).unwrap(),
+		create_research_agent(llm.clone(), pool.clone()).unwrap(),
 	))));
 
 	// Create constraint agent
 	let constraint_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_constraint_agent(llm.clone()).unwrap(),
+		create_constraint_agent(llm.clone(), pool.clone()).unwrap(),
 	))));
 
 	// Create optimize agent
 	let optimize_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_optimize_agent(llm.clone()).unwrap(),
+		create_optimize_agent(llm.clone(), pool.clone()).unwrap(),
 	))));
 
 	// Get orchestrator tools

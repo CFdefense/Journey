@@ -22,6 +22,8 @@ use crate::agent::tools::optimizer::{
 	SequenceDayTool,
 };
 
+use sqlx::PgPool;
+
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
 	tokio::sync::Mutex<
@@ -31,6 +33,7 @@ pub type AgentType = Arc<
 
 pub fn create_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
+	pool: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
