@@ -46,7 +46,8 @@ pub fn create_constraint_agent(
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
 	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
+	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
+	let system_prompt = SYSTEM_PROMPT.to_string();
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
@@ -83,7 +84,8 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
 	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
+	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
+	let system_prompt = SYSTEM_PROMPT.to_string();
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)

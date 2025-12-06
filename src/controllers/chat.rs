@@ -5,9 +5,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use std::env;
 use utoipa::OpenApi;
-
 use crate::{
 	agent::configs::orchestrator::AgentType,
 	controllers::{AxumRouter, itinerary::insert_event_list},
@@ -27,7 +25,7 @@ use crate::{
 	swagger::SecurityAddon,
 };
 use langchain_rust::{chain::Chain, prompt_args};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -62,6 +60,7 @@ async fn send_message_to_llm(
 	itinerary_id: Option<i32>,
 	pool: &PgPool,
 	agent: &AgentType,
+	chat_session_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
@@ -116,6 +115,10 @@ async fn send_message_to_llm(
 		"Orchestrator agent input"
 	);
 	
+	// Set chat_session_id in the shared atomic before invoking agent
+	use std::sync::atomic::Ordering;
+	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
+	
 	let agent_guard = agent.lock().await;
 	
 	debug!(
@@ -124,6 +127,7 @@ async fn send_message_to_llm(
 		input_text = text,
 		"Invoking orchestrator agent"
 	);
+	
 	
 	let ai_text = agent_guard
 		.invoke(prompt_args! {
@@ -159,6 +163,7 @@ async fn send_message_to_llm(
 		response = ai_text,
 		"Orchestrator agent output"
 	);
+
 
 	// Check if RespondToUserTool already inserted the message
 	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
@@ -197,12 +202,45 @@ async fn send_message_to_llm(
 				}
 			}
 		}
-		// If parsing failed, fall through to default behavior
-		warn!(
-			target: "orchestrator_pipeline",
-			chat_session_id = chat_session_id,
-			"Failed to parse MESSAGE_INSERTED marker, falling back to default behavior"
-		);
+	}
+	
+	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED), 
+	// it's likely from ask_for_clarification tool which already inserted it
+	// Fetch the most recent non-user message for this chat session
+	if !ai_text.trim().starts_with('{') && !ai_text.trim().starts_with('[') && !ai_text.starts_with("MESSAGE_INSERTED:") {
+		// This looks like plain readable text - tool already inserted it, so fetch it
+		let record = sqlx::query!(
+			r#"
+			SELECT id, timestamp, text, itinerary_id
+			FROM messages
+			WHERE chat_session_id = $1 AND is_user = FALSE
+			ORDER BY timestamp DESC
+			LIMIT 1
+			"#,
+			chat_session_id
+		)
+		.fetch_optional(pool)
+		.await
+		.map_err(AppError::from)?;
+		
+		if let Some(msg) = record {
+			// Verify the text matches (tool just inserted it)
+			if msg.text.trim() == ai_text.trim() {
+				info!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					message_id = msg.id,
+					"Found matching message inserted by tool, returning it"
+				);
+				return Ok(Message {
+					id: msg.id,
+					is_user: false,
+					timestamp: msg.timestamp,
+					text: msg.text,
+					itinerary_id: msg.itinerary_id,
+				});
+			}
+		}
 	}
 
 	// Default behavior: Create itinerary based on whether MockLLM is used
@@ -674,6 +712,7 @@ pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
+	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
 	Json(UpdateMessageRequest {
 		message_id,
 		new_text,
@@ -741,6 +780,7 @@ pub async fn api_update_message(
 		itinerary_id,
 		&pool,
 		&agent,
+		&chat_session_id_atomic,
 	)
 	.await?;
 
@@ -818,6 +858,7 @@ pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
+	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
 	Json(SendMessageRequest {
 		chat_session_id,
 		text,
@@ -865,6 +906,7 @@ pub async fn api_send_message(
 		itinerary_id,
 		&pool,
 		&agent,
+		&chat_session_id_atomic,
 	)
 	.await?;
 

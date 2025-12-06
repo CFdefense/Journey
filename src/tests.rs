@@ -1012,11 +1012,12 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	let pool = pool.0.clone();
 
 	// Always use dummy agent for tests
-	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
+	let (agent_executor, chat_session_id_atomic) = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
 		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
-	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent_executor)));
+	let chat_session_id_atomic = Extension(chat_session_id_atomic);
 
 	let pool_ext = Extension(pool.clone());
 
@@ -1048,7 +1049,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			itinerary_id: None,
 		});
 		message_ids[i] =
-			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
+			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 				.await
 				.unwrap()
 				.user_message_id;
@@ -1062,7 +1063,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1077,7 +1078,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1143,7 +1144,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1158,7 +1159,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1172,7 +1173,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
+	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
@@ -1397,11 +1398,11 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Always use dummy agent for tests
-	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
+	let (agent_executor, chat_session_id_atomic) = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
 		.expect("Dummy agent creation failed");
 
-	// Wrap in Extension and Arc<Mutex> as usual
-	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+	// Wrap in Extension and Arc<Mutex> for router layers
+	let agent_arc = std::sync::Arc::new(tokio::sync::Mutex::new(agent_executor));
 
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();
@@ -1414,9 +1415,8 @@ async fn test_endpoints() {
 		.nest("/api", api_routes)
 		.layer(Extension(pool.clone()))
 		.layer(Extension(cookie_key.clone()))
-		.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
-			agent,
-		))))
+		.layer(Extension(agent_arc.clone()))
+		.layer(Extension(chat_session_id_atomic))
 		.layer(CookieManagerLayer::new());
 
 	// Bind to ephemeral port and spawn server

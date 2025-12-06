@@ -35,6 +35,7 @@ use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI32, Ordering};
 use tokio::sync::Mutex;
 use tracing::{debug, info};
 
@@ -172,11 +173,12 @@ impl Tool for ParseUserIntentTool {
 #[derive(Clone)]
 pub struct RetrieveChatContextTool {
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl RetrieveChatContextTool {
-	pub fn new(pool: PgPool) -> Self {
-		Self { pool }
+	pub fn new(pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
+		Self { pool, chat_session_id }
 	}
 }
 
@@ -193,55 +195,25 @@ impl Tool for RetrieveChatContextTool {
 	fn parameters(&self) -> Value {
 		json!({
 			"type": "object",
-			"properties": {
-				"chat_id": {
-					"type": "string",
-					"description": "The ID of the chat/conversation to retrieve as a string"
-				}
-			},
-			"required": ["chat_id"]
+			"properties": {},
+			"required": []
 		})
 	}
 
-	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+	async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+		// Get chat_session_id from shared atomic (set by controller before agent invocation)
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "retrieve_chat_context",
-			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
-			"Received input in retrieve_chat_context"
+			chat_id = chat_id,
+			"Retrieving chat context"
 		);
-		
-		// Handle chat_id as string, number, or object (extract string value)
-		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
-			s.to_string()
-		} else if let Some(n) = input["chat_id"].as_i64() {
-			n.to_string()
-		} else if input["chat_id"].is_object() {
-			// Try to extract "id" field from object, or convert whole object to string
-			if let Some(id_val) = input["chat_id"].get("id") {
-				if let Some(n) = id_val.as_i64() {
-					n.to_string()
-				} else if let Some(s) = id_val.as_str() {
-					if let Ok(n) = s.parse::<i64>() {
-						n.to_string()
-					} else {
-						input["chat_id"].to_string()
-					}
-				} else {
-					input["chat_id"].to_string()
-				}
-			} else {
-				input["chat_id"].to_string()
-			}
-		} else {
-			input["chat_id"].to_string()
-		};
-		let chat_id: i32 = chat_id_str
-			.parse()
-			.map_err(|_| "chat_id must be a valid integer")?;
 
-		info!(target: "orchestrator_tool", tool = "retrieve_chat_context", chat_id = chat_id, "Retrieving chat context");
-		debug!(target: "orchestrator_tool", tool = "retrieve_chat_context", input = %serde_json::to_string(&input)?, "Tool input");
 
 		// Query database for chat history
 		let messages = sqlx::query!(
@@ -760,13 +732,15 @@ impl Tool for RouteTaskTool {
 pub struct AskForClarificationTool {
 	llm: Arc<dyn LLM + Send + Sync>,
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl AskForClarificationTool {
-	pub fn new(llm: Arc<dyn LLM + Send + Sync>, pool: PgPool) -> Self {
+	pub fn new(llm: Arc<dyn LLM + Send + Sync>, pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
 		Self { 
 			llm,
 			pool,
+			chat_session_id,
 		}
 	}
 }
@@ -778,7 +752,7 @@ impl Tool for AskForClarificationTool {
 	}
 
 	fn description(&self) -> String {
-		"STOPS THE PIPELINE by generating a natural clarification question and sending it to the user. This tool inserts a message into the chat and returns success. Use this when critical information is missing. After calling this tool, STOP - do not call any other tools. Always provide the missing_info parameter as a JSON string array (e.g., '[\"destination\", \"dates\", \"budget\"]'). If missing_info is not provided, the tool will use default common missing information."
+		"STOPS THE PIPELINE by generating a natural, human-readable clarification question and sending it to the user. This tool inserts a message into the chat and returns the readable question text. Use this when critical information is missing. CRITICAL: After calling this tool, you MUST immediately return 'Final Answer' with the tool's response text. DO NOT call this tool again. DO NOT call any other tools. The tool returns ONLY the readable question text - use that text as your Final Answer. Always provide the missing_info parameter as a JSON string array (e.g., '[\"destination\", \"dates\", \"budget\"]'). If missing_info is not provided, the tool will use default common missing information."
 			.to_string()
 	}
 
@@ -786,10 +760,6 @@ impl Tool for AskForClarificationTool {
 		let params = json!({
 			"type": "object",
 			"properties": {
-				"chat_id": {
-					"type": "string",
-					"description": "The ID of the chat session as a string"
-				},
 				"missing_info": {
 					"type": "string",
 					"description": "Array of strings describing what information is missing, as a JSON string. Example: '[\"destination\", \"dates\", \"budget\"]'. If you have an array, serialize it to JSON first."
@@ -799,7 +769,7 @@ impl Tool for AskForClarificationTool {
 					"description": "Additional context about the conversation as a JSON string. Optional."
 				}
 			},
-			"required": ["chat_id"]
+			"required": []
 		});
 		debug!(
 			target: "orchestrator_tool",
@@ -818,22 +788,32 @@ impl Tool for AskForClarificationTool {
 			"Received input in ask_for_clarification"
 		);
 		
+		// langchain_rust passes action_input as a STRING, so we need to parse it first
+		let parsed_input: Value = if input.is_string() {
+			// If input is a string (JSON string from action_input), parse it
+			serde_json::from_str(input.as_str().unwrap_or("{}"))
+				.unwrap_or_else(|_| json!({}))
+		} else {
+			// If it's already a Value object, use it directly
+			input
+		};
+		
 		// Handle missing_info - can be array, string, object, or missing
 		debug!(
 			target: "orchestrator_tool",
 			tool = "ask_for_clarification",
-			missing_info_type = ?input.get("missing_info").map(|v| {
+			missing_info_type = ?parsed_input.get("missing_info").map(|v| {
 				if v.is_array() { "array" }
 				else if v.is_string() { "string" }
 				else if v.is_object() { "object" }
 				else { "other" }
 			}),
-			missing_info_value = ?input.get("missing_info"),
+			missing_info_value = ?parsed_input.get("missing_info"),
 			"Processing missing_info"
 		);
 		
 		// missing_info should be a JSON string, but handle all cases for robustness
-		let missing_info: Vec<String> = if let Some(s) = input["missing_info"].as_str() {
+		let missing_info: Vec<String> = if let Some(s) = parsed_input["missing_info"].as_str() {
 			// Try to parse as JSON array first
 			if let Ok(parsed) = serde_json::from_str::<Vec<String>>(s) {
 				parsed
@@ -841,24 +821,24 @@ impl Tool for AskForClarificationTool {
 				// If not valid JSON, treat as single string
 				vec![s.to_string()]
 			}
-		} else if let Some(arr) = input["missing_info"].as_array() {
+		} else if let Some(arr) = parsed_input["missing_info"].as_array() {
 			// Fallback: if somehow we get an array directly
 			arr.iter()
 				.filter_map(|v| v.as_str().map(|s| s.to_string()))
 				.collect()
-		} else if input["missing_info"].is_object() {
+		} else if parsed_input["missing_info"].is_object() {
 			// If it's an object, try to find an array field in it
-			input["missing_info"].get("missing_info")
+			parsed_input["missing_info"].get("missing_info")
 				.and_then(|v| v.as_array())
 				.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
 				.or_else(|| {
 					// Try other common field names
-					input["missing_info"].get("items")
+					parsed_input["missing_info"].get("items")
 						.and_then(|v| v.as_array())
 						.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
 				})
 				.unwrap_or_else(|| vec!["destination".to_string(), "dates".to_string(), "budget".to_string()])
-		} else if input.get("missing_info").is_some() {
+		} else if parsed_input.get("missing_info").is_some() {
 			// Some other type - use defaults
 			vec!["destination".to_string(), "dates".to_string(), "budget".to_string()]
 		} else {
@@ -869,7 +849,7 @@ impl Tool for AskForClarificationTool {
 		};
 		
 		// Handle context - can be string (JSON), object, or missing
-		let context = input.get("context").unwrap_or(&Value::Null);
+		let context = parsed_input.get("context").unwrap_or(&Value::Null);
 		let context_str = if let Some(s) = context.as_str() {
 			// If it's a string, check if it's JSON, otherwise use as-is
 			if serde_json::from_str::<Value>(s).is_ok() {
@@ -884,7 +864,7 @@ impl Tool for AskForClarificationTool {
 		};
 
 		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
-		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&input)?, "Tool input");
+		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
 		let missing_info_str = missing_info.join(", ");
 		
@@ -905,34 +885,11 @@ impl Tool for AskForClarificationTool {
 		let response = self.llm.invoke(&prompt).await?;
 		let clarification = response.trim().to_string();
 
-		// Handle chat_id - required to insert message and stop pipeline
-		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
-			s.to_string()
-		} else if let Some(n) = input["chat_id"].as_i64() {
-			n.to_string()
-		} else if input["chat_id"].is_object() {
-			// Try to extract "id" field from object
-			if let Some(id_val) = input["chat_id"].get("id") {
-				if let Some(n) = id_val.as_i64() {
-					n.to_string()
-				} else if let Some(s) = id_val.as_str() {
-					if let Ok(n) = s.parse::<i64>() {
-						n.to_string()
-					} else {
-						return Err("chat_id must be a valid integer".into());
-					}
-				} else {
-					return Err("chat_id must be a valid integer".into());
-				}
-			} else {
-				return Err("chat_id must be provided".into());
-			}
-		} else {
-			return Err("chat_id must be provided".into());
-		};
-		let chat_id: i32 = chat_id_str
-			.parse()
-			.map_err(|_| "chat_id must be a valid integer")?;
+		// Get chat_session_id from shared atomic (set by controller before agent invocation)
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
 
 		// Insert the clarification message into the database to stop the pipeline
 		let record = sqlx::query!(
@@ -962,15 +919,10 @@ impl Tool for AskForClarificationTool {
 			"Tool output"
 		);
 
-		// Return success message - this signals the pipeline is stopped
-		Ok(json!({
-			"status": "clarification_sent",
-			"chat_id": chat_id,
-			"message_id": record.id,
-			"message": clarification,
-			"timestamp": chrono::Utc::now().to_rfc3339()
-		})
-		.to_string())
+		// Return just the readable message text - no parsing needed by controller
+		// The message is already inserted in the database with the ID in record.id
+		// Controller will use this text directly
+		Ok(clarification)
 	}
 }
 
@@ -980,11 +932,12 @@ impl Tool for AskForClarificationTool {
 #[derive(Clone)]
 pub struct RespondToUserTool {
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl RespondToUserTool {
-	pub fn new(pool: PgPool) -> Self {
-		Self { pool }
+	pub fn new(pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
+		Self { pool, chat_session_id }
 	}
 }
 
@@ -995,7 +948,7 @@ impl Tool for RespondToUserTool {
 	}
 
 	fn description(&self) -> String {
-		"STOPS THE PIPELINE and sends a response to the user. If active_itinerary exists in context, creates/updates the itinerary in the database and sends it to the user. If active_itinerary is empty or missing, sends a message asking for more information. This tool inserts a message into the chat and returns a success message. Use this as your final action when ready to respond to the user."
+		"STOPS THE PIPELINE and sends a response to the user. If active_itinerary exists in context, creates/updates the itinerary in the database and sends it to the user. If active_itinerary is empty or missing, sends a message asking for more information. This tool inserts a message into the chat and returns a success message. CRITICAL: After calling this tool, you MUST immediately return 'Final Answer' with a confirmation. DO NOT call any other tools. Use this as your final action when ready to respond to the user."
 			.to_string()
 	}
 
@@ -1003,16 +956,12 @@ impl Tool for RespondToUserTool {
 		json!({
 			"type": "object",
 			"properties": {
-				"chat_id": {
-					"type": "string",
-					"description": "The ID of the chat session as a string"
-				},
 				"message": {
 					"type": "string",
 					"description": "Optional message to send to the user as a string. If not provided, will generate based on itinerary status."
 				}
 			},
-			"required": ["chat_id"]
+			"required": []
 		})
 	}
 
@@ -1024,36 +973,24 @@ impl Tool for RespondToUserTool {
 			"Received input in respond_to_user"
 		);
 		
-		// Handle chat_id as string, number, or object (extract string value)
-		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
-			s.to_string()
-		} else if let Some(n) = input["chat_id"].as_i64() {
-			n.to_string()
-		} else if input["chat_id"].is_object() {
-			// Try to extract "id" field from object, or convert whole object to string
-			if let Some(id_val) = input["chat_id"].get("id") {
-				if let Some(n) = id_val.as_i64() {
-					n.to_string()
-				} else if let Some(s) = id_val.as_str() {
-					if let Ok(n) = s.parse::<i64>() {
-						n.to_string()
-					} else {
-						input["chat_id"].to_string()
-					}
-				} else {
-					input["chat_id"].to_string()
-				}
-			} else {
-				input["chat_id"].to_string()
-			}
+		// Get chat_session_id from shared atomic (set by controller before agent invocation)
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+		
+		// langchain_rust passes action_input as a STRING, so we need to parse it first
+		let parsed_input: Value = if input.is_string() {
+			// If input is a string (JSON string from action_input), parse it
+			serde_json::from_str(input.as_str().unwrap_or("{}"))
+				.unwrap_or_else(|_| json!({}))
 		} else {
-			input["chat_id"].to_string()
+			// If it's already a Value object, use it directly
+			input
 		};
-		let chat_id: i32 = chat_id_str
-			.parse()
-			.map_err(|_| "chat_id must be a valid integer")?;
+		
 		// Handle message as either string or object (convert object to string)
-		let optional_message = input.get("message").map(|m| {
+		let optional_message = parsed_input.get("message").map(|m| {
 			if m.is_string() {
 				m.as_str().unwrap_or("").to_string()
 			} else if m.is_object() {
@@ -1064,7 +1001,7 @@ impl Tool for RespondToUserTool {
 		});
 
 		info!(target: "orchestrator_tool", tool = "respond_to_user", chat_id = chat_id, "Responding to user - pipeline stopped");
-		debug!(target: "orchestrator_tool", tool = "respond_to_user", input = %serde_json::to_string(&input)?, "Tool input");
+		debug!(target: "orchestrator_tool", tool = "respond_to_user", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
 		// Get context to check for active_itinerary
 		let context_row = sqlx::query!(
@@ -1203,11 +1140,12 @@ impl Tool for RespondToUserTool {
 #[derive(Clone)]
 pub struct UpdateContextTool {
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl UpdateContextTool {
-	pub fn new(pool: PgPool) -> Self {
-		Self { pool }
+	pub fn new(pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
+		Self { pool, chat_session_id }
 	}
 }
 
@@ -1225,16 +1163,12 @@ impl Tool for UpdateContextTool {
 		json!({
 			"type": "object",
 			"properties": {
-				"chat_id": {
-					"type": "string",
-					"description": "The chat/conversation ID as a string"
-				},
 				"updates": {
 					"type": "string",
 					"description": "The context updates to persist as a JSON string. If you have an object, serialize it to JSON first."
 				}
 			},
-			"required": ["chat_id", "updates"]
+			"required": ["updates"]
 		})
 	}
 
@@ -1246,50 +1180,37 @@ impl Tool for UpdateContextTool {
 			"Received input in update_context"
 		);
 		
-		// Handle chat_id as string, number, or object (extract string value)
-		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
-			s.to_string()
-		} else if let Some(n) = input["chat_id"].as_i64() {
-			n.to_string()
-		} else if input["chat_id"].is_object() {
-			// Try to extract "id" field from object, or convert whole object to string
-			if let Some(id_val) = input["chat_id"].get("id") {
-				if let Some(n) = id_val.as_i64() {
-					n.to_string()
-				} else if let Some(s) = id_val.as_str() {
-					if let Ok(n) = s.parse::<i64>() {
-						n.to_string()
-					} else {
-						input["chat_id"].to_string()
-					}
-				} else {
-					input["chat_id"].to_string()
-				}
-			} else {
-				input["chat_id"].to_string()
-			}
+		// Get chat_session_id from shared atomic (set by controller before agent invocation)
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+		
+		// langchain_rust passes action_input as a STRING, so we need to parse it first
+		let parsed_input: Value = if input.is_string() {
+			// If input is a string (JSON string from action_input), parse it
+			serde_json::from_str(input.as_str().unwrap_or("{}"))
+				.unwrap_or_else(|_| json!({}))
 		} else {
-			input["chat_id"].to_string()
+			// If it's already a Value object, use it directly
+			input
 		};
-		let chat_id: i32 = chat_id_str
-			.parse()
-			.map_err(|_| "chat_id must be a valid integer")?;
 		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "update_context",
 			chat_id = chat_id,
-			updates_type = ?input["updates"].as_object().map(|_| "object").or_else(|| input["updates"].as_str().map(|_| "string")),
+			updates_type = ?parsed_input["updates"].as_object().map(|_| "object").or_else(|| parsed_input["updates"].as_str().map(|_| "string")),
 			"Processing updates"
 		);
 		
 		// Handle updates - can be string (JSON), object, or already parsed
-		let updates: Value = if let Some(s) = input["updates"].as_str() {
+		let updates: Value = if let Some(s) = parsed_input["updates"].as_str() {
 			// If it's a string, try to parse it as JSON
 			serde_json::from_str(s).unwrap_or_else(|_| json!({}))
-		} else if input["updates"].is_object() {
+		} else if parsed_input["updates"].is_object() {
 			// If it's already an object, use it directly
-			input["updates"].clone()
+			parsed_input["updates"].clone()
 		} else {
 			// Fallback to empty object
 			json!({})
@@ -1381,7 +1302,7 @@ impl Tool for UpdateContextTool {
 		};
 
 		info!(target: "orchestrator_tool", tool = "update_context", chat_id = chat_id, "Updating context");
-		debug!(target: "orchestrator_tool", tool = "update_context", input = %serde_json::to_string(&input)?, "Tool input");
+		debug!(target: "orchestrator_tool", tool = "update_context", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
 		// Update pipeline stage if provided
 		if let Some(stage) = updates.get("pipeline_stage").and_then(|s| s.as_str()) {
@@ -1544,18 +1465,20 @@ impl Tool for UpdateContextTool {
 
 /// Gets all the orchestrator tools.
 /// Returns a vector of Arc<dyn Tool> objects.
+/// chat_session_id is shared across tools that need it and can be updated per request.
 pub fn get_orchestrator_tools(
 	llm: Arc<dyn LLM + Send + Sync>,
 	pool: PgPool,
 	research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	constraint_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
+	chat_session_id: Arc<AtomicI32>,
 ) -> Vec<Arc<dyn Tool>> {
 	vec![
 		Arc::new(ParseUserIntentTool {
 			llm: Arc::clone(&llm),
 		}),
-		Arc::new(RetrieveChatContextTool::new(pool.clone())),
+		Arc::new(RetrieveChatContextTool::new(pool.clone(), Arc::clone(&chat_session_id))),
 		Arc::new(RetrieveUserProfileTool::new(pool.clone())),
 		Arc::new(RouteTaskTool::new(
 			research_agent,
@@ -1565,8 +1488,9 @@ pub fn get_orchestrator_tools(
 		Arc::new(AskForClarificationTool::new(
 			Arc::clone(&llm),
 			pool.clone(),
+			Arc::clone(&chat_session_id),
 		)),
-		Arc::new(RespondToUserTool::new(pool.clone())),
-		Arc::new(UpdateContextTool::new(pool)),
+		Arc::new(RespondToUserTool::new(pool.clone(), Arc::clone(&chat_session_id))),
+		Arc::new(UpdateContextTool::new(pool, chat_session_id)),
 	]
 }

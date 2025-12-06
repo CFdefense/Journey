@@ -21,7 +21,18 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
     );
   }
 
-  const currentDay = days[selectedDayIndex];
+  // Ensure selectedDayIndex is valid
+  const validDayIndex = Math.min(selectedDayIndex, days.length - 1);
+  const currentDay = days[validDayIndex];
+  
+  // Safety check: if currentDay doesn't exist or has invalid date, return empty state
+  if (!currentDay || !currentDay.date) {
+    return (
+      <div className="compact-itinerary-empty">
+        <p>No itinerary to display</p>
+      </div>
+    );
+  }
 
   const getTimeRange = (timeLabel: string): string => {
     switch (timeLabel) {
@@ -95,12 +106,16 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
 
   // Format date for calendar display
   const formatDayOfWeek = (dateString: string): string => {
+    if (!dateString) return "";
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
     return date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
   };
 
   const formatDayOfMonth = (dateString: string): string => {
+    if (!dateString) return "";
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
     const day = date.getDate();
     return `${day}`;
   };
