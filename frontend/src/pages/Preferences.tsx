@@ -6,7 +6,6 @@ import "../styles/Account.css";
 import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import { BudgetBucket, RiskTolerence } from "../models/account";
-import userPfp from "../assets/user-pfp-temp.png";
 import { toast } from "../components/Toast";
 
 type BudgetOption =
@@ -58,7 +57,7 @@ export default function Preferences() {
   const [isEditingFood, setIsEditingFood] = useState<boolean>(false);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  const navbarAvatarUrl = userPfp;
+  const navbarAvatarUrl = "/user-pfp-temp.png";
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
@@ -132,6 +131,7 @@ export default function Preferences() {
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
         setLastName(account.last_name || "");
+        setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
         const maybeTrips = (account as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (account as any).created_at;
@@ -157,6 +157,7 @@ export default function Preferences() {
       risk_preference: null,
       disabilities: null,
       food_allergies: null,
+      profile_picture: null,
       ...partial
     };
 
@@ -219,7 +220,11 @@ export default function Preferences() {
 
   return (
     <div className="auth-page auth-page--account auth-page--no-scroll">
-      <Navbar page="view" />
+      <Navbar
+        page="view"
+        firstName={firstName}
+        profileImageUrl={profileImageUrl}
+      />
 
       <div className="auth-content">
         <div className="account-wrapper">

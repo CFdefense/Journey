@@ -725,7 +725,8 @@ describe("testApi Unit Tests", () => {
 		budget_preference: null,
 		risk_preference: null,
 		food_allergies: "",
-		disabilities: ""
+		disabilities: "",
+		profile_picture: null
 	};
 
 	const mockChatsResponse: ChatsResponse = {
@@ -870,7 +871,8 @@ describe("testApi Unit Tests", () => {
 			budget_preference: null,
 			risk_preference: null,
 			food_allergies: null,
-			disabilities: null
+			disabilities: null,
+			profile_picture: null
 		});
 		expect(result.status).toBe(200);
 		expect(result.result).toEqual(mockCurrentResponse);
@@ -887,7 +889,8 @@ describe("testApi Unit Tests", () => {
 			budget_preference: null,
 			risk_preference: null,
 			food_allergies: null,
-			disabilities: null
+			disabilities: null,
+			profile_picture: null
 		});
 		expect(result.status).toBe(-1);
 	});

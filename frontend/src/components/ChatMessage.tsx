@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import type { Message } from "../models/chat";
 import type { Itinerary } from "../models/itinerary";
 import { apiItineraryDetails } from "../api/itinerary";
-import aiPic from "../assets/ai-pic.png";
 import UserMessageActions from "./UserMessageActions";
 import "../styles/ChatMessage.css";
 
@@ -109,7 +108,7 @@ export default function ChatMessage({
   return (
     <div className={`chat-message-wrapper ${message.is_user ? "user" : "bot"}`}>
       {!message.is_user && (
-        <img src={aiPic} alt="AI Assistant" className="message-avatar" />
+        <img src="/ai-pic.png" alt="AI Assistant" className="message-avatar" />
       )}
 
       <div className={`chat-message-content ${isEditing ? "editing" : ""}`}>
