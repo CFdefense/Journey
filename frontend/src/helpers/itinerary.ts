@@ -16,7 +16,7 @@ export async function fetchItinerary(
 
 	// Handle 401, redirect to login
 	if (apiResponse.status === 401) {
-		toast.error("Unauthorized user, please log in.")
+		toast.error("Unauthorized user, please log in.");
 		return [];
 	}
 

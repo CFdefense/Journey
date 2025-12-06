@@ -196,7 +196,8 @@ const Itinerary: React.FC<ItineraryProps> = ({
         );
         const requiredDate = getDateFromTimestamp(draggedEvent.hard_start);
         toast.error(
-          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`, 5000
+          `"${draggedEvent.event_name}" has a fixed start time and must be placed in the ${requiredTimeBlock} block on ${requiredDate}.`,
+          5000
         );
         return;
       }
@@ -356,7 +357,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       toast.error("Unauthorized user, please log in.");
       navigate("/login");
       return;
-    } 
+    }
 
     if (result.status == 404) {
       toast.error("User-event not found for this user.");
@@ -418,13 +419,13 @@ const Itinerary: React.FC<ItineraryProps> = ({
     };
     const result = await apiSearchEvent(searchEvent);
     if (result.status === 401) {
-      toast.error("Unauthorized user, please log in.")
+      toast.error("Unauthorized user, please log in.");
       navigate("/login");
       return;
     }
 
     if (result.result === null || result.status !== 200) {
-      toast.error("Failed to find event, please try again.")
+      toast.error("Failed to find event, please try again.");
       setSearchResultCaption("Error Searching Events");
       setSearchResult([]);
       return;

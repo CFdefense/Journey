@@ -52,15 +52,15 @@ export default function Account() {
   useEffect(() => {
     async function fetchProfile() {
       const currentResult = await apiCurrent();
-    
+
       if (currentResult.status == 401) {
-        toast.error("You are not logged in. Please log in and try again.")
-        navigate("/login")
+        toast.error("You are not logged in. Please log in and try again.");
+        navigate("/login");
         return;
       }
 
       if (currentResult.status == 404) {
-        toast.error("Account not found. Please try again.")
+        toast.error("Account not found. Please try again.");
         return;
       }
 
@@ -148,45 +148,43 @@ export default function Account() {
       disabilities: null
     };
 
-      const updateResult = await apiUpdateAccount(payload);
+    const updateResult = await apiUpdateAccount(payload);
 
-      if (updateResult.status == 401) {
-        toast.error("Unauthorized user, please log in again.");
-        navigate("/login");
+    if (updateResult.status == 401) {
+      toast.error("Unauthorized user, please log in again.");
+      navigate("/login");
+    }
+
+    if (!updateResult || updateResult.status !== 200) {
+      // Handle password-related errors (400 Bad Request)
+      if (updateResult.status === 400 && isChangingPassword) {
+        toast.error("Current password is incorrect. Please try again.");
+        setPasswordErrors({ current: "Current password is incorrect." });
+      } else {
+        toast.error("Update failed. Please try again.");
       }
+      return;
+    }
 
-      if (!updateResult || updateResult.status !== 200) {
+    toast.success(
+      isChangingPassword
+        ? "Password updated successfully!"
+        : "Account updated successfully!"
+    );
 
-        // Handle password-related errors (400 Bad Request)
-        if (updateResult.status === 400 && isChangingPassword) {
-          toast.error("Current password is incorrect. Please try again.");
-          setPasswordErrors({ current: "Current password is incorrect." });
-        } else {
-          toast.error("Update failed. Please try again.");
-        }
-        return;
-      }
+    // Update UI with any returned account info
+    if (updateResult.result) {
+      setFirstName(updateResult.result.first_name || trimmedFirst);
+      setLastName(updateResult.result.last_name || trimmedLast);
+    }
 
-      toast.success(
-        isChangingPassword
-          ? "Password updated successfully!"
-          : "Account updated successfully!"
-      );
+    // Clear password fields
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordErrors({});
 
-      // Update UI with any returned account info
-      if (updateResult.result) {
-        setFirstName(updateResult.result.first_name || trimmedFirst);
-        setLastName(updateResult.result.last_name || trimmedLast);
-      }
-
-      // Clear password fields
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordErrors({});
-
-      toast.error("Unable to update account. Please try again.");
-
+    toast.error("Unable to update account. Please try again.");
   };
 
   const handleUpdate = async (e: React.FormEvent) => {

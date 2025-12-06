@@ -202,7 +202,7 @@ const EventCard: React.FC<EventCardProps> = ({
       toast.error("Unauthorized user. Please log in.");
       navigate("/login");
       return;
-    } 
+    }
 
     if (result.status == 404) {
       toast.error("User event not found, please try again.");
@@ -246,7 +246,7 @@ const EventCard: React.FC<EventCardProps> = ({
     if (result.status === 401) {
       toast.error("Unauthorized user, please log in.");
       navigate("/login");
-    } 
+    }
 
     if (result.status == 404) {
       toast.error("User event not found or does not belong to this user.");
@@ -259,7 +259,7 @@ const EventCard: React.FC<EventCardProps> = ({
     }
 
     toast.success("User event deleted.");
-    
+
     const updatedUnassigned = unassignedEvents.filter((e) => e.id !== event.id);
     const updatedDays = localDays.map((d) => {
       return {
