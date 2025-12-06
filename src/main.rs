@@ -21,6 +21,7 @@ mod tests;
 
 use crate::controllers::AxumRouter;
 use crate::global::*;
+use crate::http_models::event::{REGEX_COUNTRY, REGEX_LOCALITY, REGEX_POST_CODE, REGEX_ST_ADDR};
 use axum::{Extension, routing::get_service};
 use http::{Method, header::HeaderValue};
 use std::env;
@@ -50,6 +51,12 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
 		// Initialize the database pool connection
 		let pool = db::create_pool().await;
+
+		// compile regexes ahead of time
+		once_cell::sync::Lazy::force(&REGEX_ST_ADDR);
+		once_cell::sync::Lazy::force(&REGEX_LOCALITY);
+		once_cell::sync::Lazy::force(&REGEX_POST_CODE);
+		once_cell::sync::Lazy::force(&REGEX_COUNTRY);
 
 		// Initialize the AI agent
 		// The agent will use MockLLM when DEPLOY_LLM != "1", so creation should always succeed

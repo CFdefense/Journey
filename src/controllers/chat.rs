@@ -5,7 +5,6 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use std::env;
 use utoipa::OpenApi;
 
 use crate::{
