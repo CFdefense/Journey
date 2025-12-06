@@ -13,7 +13,8 @@ use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
 	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
-	memory::SimpleMemory, tools::Tool,
+	memory::SimpleMemory,
+	tools::Tool,
 };
 
 use sqlx::PgPool;
@@ -45,7 +46,7 @@ pub fn create_research_agent(
 	// Init tools
 	let tools: [Arc<dyn Tool>; _] = [
 		Arc::new(GeocodeTool),
-		Arc::new(NearbySearchTool {db: pool.clone()}),
+		Arc::new(NearbySearchTool { db: pool.clone() }),
 	];
 
 	// Select model (will read key from environment variable)

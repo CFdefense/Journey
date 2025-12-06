@@ -24,14 +24,14 @@ pub struct GeocodeTool;
 /// This tool queries the DB for events that may be relevant to the itinerary being generated.
 #[derive(Clone)]
 pub struct QueryDbEventsTool {
-	pub db: PgPool
+	pub db: PgPool,
 }
 
 /// This tool uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria.
 /// The resulting events are inserted or updated in the database.
 #[derive(Clone)]
 pub struct NearbySearchTool {
-	pub db: PgPool
+	pub db: PgPool,
 }
 
 #[async_trait]
@@ -378,7 +378,7 @@ impl<'db> Tool for NearbySearchTool {
 				.bind(ev.hard_start)
 				.bind(ev.hard_end)
 				.bind(&ev.timezone)
-				.bind(&ev.place_id)   // conflict target
+				.bind(&ev.place_id) // conflict target
 				.bind(ev.wheelchair_accessible_parking)
 				.bind(ev.wheelchair_accessible_entrance)
 				.bind(ev.wheelchair_accessible_restroom)
