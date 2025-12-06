@@ -321,23 +321,23 @@ describe("Itinerary Helper Tests", () => {
 	});
 
 	test("Test fetchItinerary with error", async () => {
-    vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
-        status: -1,
-        result: null
-    });
+		vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
+			status: -1,
+			result: null
+		});
 
-    const result = await fetchItinerary(1);
-    expect(result[0].date).toBe("");
+		const result = await fetchItinerary(1);
+		expect(result[0].date).toBe("");
 	});
 
 	test("Test fetchItinerary with error", async () => {
-    vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
-        status: -1,
-        result: null
-    });
+		vi.mocked(itineraryApi.apiItineraryDetails).mockResolvedValue({
+			status: -1,
+			result: null
+		});
 
-    const result = await fetchItinerary(1);
-    expect(result[0].date).toBe("");
+		const result = await fetchItinerary(1);
+		expect(result[0].date).toBe("");
 	});
 
 	test("Test getTimeBlockFromTimestamp - Morning", () => {
