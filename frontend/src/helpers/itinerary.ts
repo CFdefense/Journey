@@ -29,16 +29,16 @@ export async function fetchItinerary(
 	if (!apiResponse.result || apiResponse.status !== 200) {
 		toast.error("Unable to load itinerary. Please try again.");
 		return [
-				{
-					date: "",
-					timeBlocks: [
-						{ time: "Morning", events: [] },
-						{ time: "Noon", events: [] },
-						{ time: "Afternoon", events: [] },
-						{ time: "Evening", events: [] }
-					]
-				}
-			];
+			{
+				date: "",
+				timeBlocks: [
+					{ time: "Morning", events: [] },
+					{ time: "Noon", events: [] },
+					{ time: "Afternoon", events: [] },
+					{ time: "Evening", events: [] }
+				]
+			}
+		];
 	}
 	return populateItinerary(apiResponse.result);
 }
