@@ -35,6 +35,15 @@ interface EventCardProps {
   onDragOver?: (e: React.DragEvent) => void;
 }
 
+const getGooglePhotoUrl = (
+  photoName: string,
+  maxWidth: number = 400,
+  maxHeight: number = 400
+): string => {
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_TEST_API_KEY;
+  return `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=${maxHeight}&maxWidthPx=${maxWidth}&key=${API_KEY}`;
+};
+
 const EventCard: React.FC<EventCardProps> = ({
   time,
   event,
@@ -53,6 +62,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState(event);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [inputEvent, setInputEvent] = useState({
     ...JSON.parse(JSON.stringify(event)),
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
@@ -304,20 +314,43 @@ const EventCard: React.FC<EventCardProps> = ({
 
         <div className="event-image-container">
           <div className="event-image-placeholder">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 200 200"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="200" height="200" fill="#f0f0f0" />
-              <path
-                d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
-                fill="#d0d0d0"
-              />
-              <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
-            </svg>
+            {eventData.photo_name && !imageError ? (
+              <>
+                <img
+                  src={getGooglePhotoUrl(eventData.photo_name)}
+                  alt={eventData.event_name}
+                  className="event-image"
+                  onError={() => setImageError(true)}
+                />
+                {eventData.photo_author && (
+                  <a
+                    href={eventData.photo_author_uri || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="photo-attribution"
+                    title={`Photo by ${eventData.photo_author}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📷
+                  </a>
+                )}
+              </>
+            ) : (
+              <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 200 200"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="200" height="200" fill="#f0f0f0" />
+                <path
+                  d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
+                  fill="#d0d0d0"
+                />
+                <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
+              </svg>
+            )}
           </div>
         </div>
         <div className="event-content">
