@@ -1004,16 +1004,6 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.unwrap();
 
 	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
-	// Create the research, constraint, and optimize agents
-	let research_agent = Arc::new(Mutex::new(
-		agent::configs::research::create_research_agent().unwrap(),
-	));
-	let constraint_agent = Arc::new(Mutex::new(
-		agent::configs::constraint::create_constraint_agent().unwrap(),
-	));
-	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimizer::create_optimize_agent().unwrap(),
-	));
 
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
@@ -1021,12 +1011,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		tokio::time::timeout(
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(
-					research_agent.clone(),
-					constraint_agent.clone(),
-					optimize_agent.clone(),
-				)
-				.unwrap_or_else(|e| {
+				agent::configs::orchestrator::create_orchestrator_agent().unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
 						e
@@ -1417,29 +1402,13 @@ async fn test_endpoints() {
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
 
-	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
-	let research_agent = Arc::new(Mutex::new(
-		agent::configs::research::create_research_agent().unwrap(),
-	));
-	let constraint_agent = Arc::new(Mutex::new(
-		agent::configs::constraint::create_constraint_agent().unwrap(),
-	));
-	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimizer::create_optimize_agent().unwrap(),
-	));
-
 	// Create the orchestrator agent with references to the research, constraint, and optimize agents
 	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
 		// Real agent - requires valid OPENAI_API_KEY
 		tokio::time::timeout(
 			Duration::from_secs(5),
 			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(
-					research_agent.clone(),
-					constraint_agent.clone(),
-					optimize_agent.clone(),
-				)
-				.unwrap_or_else(|e| {
+				agent::configs::orchestrator::create_orchestrator_agent().unwrap_or_else(|e| {
 					panic!(
 						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
 						e

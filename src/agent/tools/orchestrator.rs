@@ -4,17 +4,17 @@
  * Orchestrator Agent Tools Implementation - LLM-based extraction
  */
 
+use crate::agent::models::user::UserIntent;
 use async_trait::async_trait;
 use langchain_rust::language_models::llm::LLM;
-use langchain_rust::llm::openai::{OpenAI, OpenAIModel, OpenAIConfig};
+use langchain_rust::llm::openai::{OpenAI, OpenAIConfig, OpenAIModel};
+use langchain_rust::schemas::Message;
 use langchain_rust::tools::Tool;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use langchain_rust::schemas::{Message};
-use crate::agent::models::user::UserIntent;
 
 /// Tool 1: Parse User Intent
 /// Parses user input to extract intent, destination, dates, budget, and constraints.
@@ -230,7 +230,6 @@ impl Tool for RetrieveUserProfileTool {
 	}
 }
 
-
 #[derive(Clone)]
 pub struct RouteTaskTool {
 	pub research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
@@ -349,7 +348,6 @@ impl Tool for RouteTaskTool {
 		Ok(serde_json::to_string(&result)?)
 	}
 }
-
 
 /// Tool 5: Merge Partial Results
 /// Merges results from multiple sub-agents into a coherent final output using an LLM.

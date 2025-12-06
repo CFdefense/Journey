@@ -9,10 +9,13 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
 };
 
+use crate::agent::configs::constraint::create_constraint_agent;
+use crate::agent::configs::optimizer::create_optimize_agent;
+use crate::agent::configs::research::create_research_agent;
 use crate::agent::tools::orchestrator::{ORCHESTRATOR_SYSTEM_PROMPT, get_orchestrator_tools};
 
 // Use a type alias for the agent type to make it easier to use
@@ -22,11 +25,7 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_orchestrator_agent(
-	research_agent: AgentType,
-	constraint_agent: AgentType,
-	optimize_agent: AgentType,
-) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -36,12 +35,27 @@ pub fn create_orchestrator_agent(
 	// Create memory for conversation history
 	let memory = SimpleMemory::new();
 
-	// Get orchestrator tools with shared LLM
+	// Create research agent
+	let research_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
+		create_research_agent(llm.clone()).unwrap(),
+	))));
+
+	// Create constraint agent
+	let constraint_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
+		create_constraint_agent(llm.clone()).unwrap(),
+	))));
+
+	// Create optimize agent
+	let optimize_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
+		create_optimize_agent(llm.clone()).unwrap(),
+	))));
+
+	// Get orchestrator tools
 	let tools = get_orchestrator_tools(
 		llm.clone(),
-		Arc::new(tokio::sync::Mutex::new(research_agent)),
-		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
-		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
+		research_agent,
+		constraint_agent,
+		optimize_agent,
 	);
 
 	// Create agent with system prompt and tools
@@ -79,7 +93,7 @@ pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalA
 	let research_agent = Arc::clone(&dummy_agent);
 	let constraint_agent = Arc::clone(&dummy_agent);
 	let optimize_agent = Arc::clone(&dummy_agent);
-	
+
 	// Get tools with shared LLM
 	let tools = get_orchestrator_tools(
 		llm.clone(),
