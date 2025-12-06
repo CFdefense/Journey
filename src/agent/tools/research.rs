@@ -125,7 +125,8 @@ impl Tool for QueryDbEventsTool {
 				},
 				"keywords": {
 					"type": "array",
-					"description": "An array of keywords from the user's prompt that can be used to search for relevant events."
+					"description": "An array of keywords from the user's prompt that can be used to search for relevant events.",
+					"items": {"type": "string"}
 				}
 			},
 			"required": ["location"]
@@ -165,11 +166,13 @@ impl<'db> Tool for NearbySearchTool {
 				},
 				"includedTypes": {
 					"type": "array",
-					"description": "An array of places types to include."
+					"description": "An array of places types to include.",
+					"items": {"type": "string"}
 				},
 				"excludedTypes": {
 					"type": "array",
-					"description": "An array of places types to exclude."
+					"description": "An array of places types to exclude.",
+					"items": {"type": "string"}
 				}
 			},
 			"required": ["lat", "lng"]
