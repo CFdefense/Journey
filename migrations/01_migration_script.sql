@@ -74,7 +74,8 @@ CREATE TABLE events (
     city VARCHAR(255),
     country VARCHAR(255),
     postal_code INTEGER,
-    coords VARCHAR(255),
+    lat REAL,
+    lng REAL,
     --places.primaryType
     event_type VARCHAR(255),
     user_created BOOLEAN NOT NULL DEFAULT FALSE,

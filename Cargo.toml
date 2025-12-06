@@ -27,7 +27,8 @@ langchain-rust = "4.6.0"
 async-trait = "0.1"
 google_maps = { version = "3.9.1", default-features = false, features = [
 	"decimal-serde",
-	"places-new",
+	"geocoding",
+	"places-new-nearby-search",
 	"reqwest",
 	"reqwest-default-tls",
 	"reqwest-http2",

@@ -22,7 +22,8 @@ pub struct EventListJoinRow {
 	/// Event post code
 	pub postal_code: Option<i32>,
 	/// Location coordinates
-	pub coords: Option<String>,
+	pub lat: Option<f32>,
+	pub lng: Option<f32>,
 	/// Event type
 	pub event_type: Option<String>,
 	/// User-Created
