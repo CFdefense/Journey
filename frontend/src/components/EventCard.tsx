@@ -285,6 +285,7 @@ const removeCustomImage = () => {
       inputEvent.timezoneIndex === -1
         ? null
         : TIMEZONES[inputEvent.timezoneIndex],
+    photo_name: inputEvent.photo_name || null,
   };
   const result = await apiUserEvent(userEvent);
 

@@ -347,7 +347,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       return;
     }
   }
-  
+
   const userEvent: UserEventRequest = {
     id: null,
     event_name: sanitize(userEventForm.name)!,
@@ -366,6 +366,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
       userEventForm.timezoneIndex === -1
         ? null
         : TIMEZONES[userEventForm.timezoneIndex],
+    photo_name: userEventForm.photoName || null,
   };
   const result = await apiUserEvent(userEvent);
   if (result.status === 401) {

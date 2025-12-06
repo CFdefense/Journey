@@ -148,6 +148,7 @@ export type UserEventRequest = {
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	photo_name: string | null;
 };
 
 export type UserEventResponse = {
