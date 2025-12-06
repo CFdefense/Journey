@@ -12,9 +12,11 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
 };
+
+use sqlx::PgPool;
 
 use crate::agent::tools::research::*;
 
@@ -27,7 +29,10 @@ pub type AgentType = Arc<
 
 const SYSTEM_PROMPT: &str = include_str!("../prompts/research.md");
 
-pub fn create_research_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_research_agent(
+	llm: OpenAI<OpenAIConfig>,
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -45,7 +50,7 @@ pub fn create_research_agent() -> Result<AgentExecutor<ConversationalAgent>, Age
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
+		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool {db: pool.clone()})])
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();

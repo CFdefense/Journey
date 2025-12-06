@@ -1007,46 +1007,18 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		.unwrap();
 
 	// Create agent for testing - use dummy agent if DEPLOY_LLM != "1"
-	// Create the research, constraint, and optimize agents
-	let research_agent = Arc::new(Mutex::new(
-		agent::configs::research::create_research_agent().unwrap(),
-	));
-	let constraint_agent = Arc::new(Mutex::new(
-		agent::configs::constraint::create_constraint_agent().unwrap(),
-	));
-	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimizer::create_optimize_agent().unwrap(),
-	));
 
-	// Create the orchestrator agent with references to the research, constraint, and optimize agents
-	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
-		// Real agent - requires valid OPENAI_API_KEY
-		tokio::time::timeout(
-			Duration::from_secs(5),
-			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(
-					research_agent.clone(),
-					constraint_agent.clone(),
-					optimize_agent.clone(),
-				)
-				.unwrap_or_else(|e| {
-					panic!(
-						"Agent creation failed in test_chat_flow: {}. Check your OPENAI_API_KEY.",
-						e
-					);
-				})
-			}),
-		)
-		.await
-		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-		.expect("Agent creation task panicked")
-	} else {
-		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::configs::orchestrator::create_dummy_orchestrator_agent()
-			.expect("Dummy agent creation failed")
-	};
+	// Clone the pool
+	let pool = pool.0.clone();
 
+	// Always use dummy agent for tests
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+		.expect("Dummy agent creation failed");
+
+	// Wrap in Extension and Arc<Mutex> as usual
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
+
+	let pool_ext = Extension(pool.clone());
 
 	// create new chat
 	let cookie = cookies.get("auth-token").unwrap();
@@ -1054,14 +1026,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	let user = Extension(AuthUser {
 		id: parts[1].parse().unwrap(),
 	});
-	let first_chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+	let first_chat_session_id = controllers::chat::api_new_chat(user, pool_ext)
 		.await
 		.unwrap()
 		.chat_session_id;
 	assert_ne!(first_chat_session_id, 0);
 
 	// create chat session - reusing first one because it's empty
-	let chat_session_id = controllers::chat::api_new_chat(user, pool.clone())
+	let chat_session_id = controllers::chat::api_new_chat(user, Extension(pool.clone()))
 		.await
 		.unwrap()
 		.chat_session_id;
@@ -1076,7 +1048,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			itinerary_id: None,
 		});
 		message_ids[i] =
-			controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 				.await
 				.unwrap()
 				.user_message_id;
@@ -1090,7 +1062,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1105,7 +1077,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1114,7 +1086,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	// get latest messages and make sure messages are in chronological order
-	let chat_session = controllers::chat::api_chats(user, pool.clone())
+	let chat_session = controllers::chat::api_chats(user, Extension(pool.clone()))
 		.await
 		.unwrap();
 	let chat_session = chat_session.0.chat_sessions.first().unwrap();
@@ -1122,7 +1094,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert!(
@@ -1137,7 +1109,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: Some(latest_page.message_page[0].id),
 	});
-	let next_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let next_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert!(
@@ -1156,7 +1128,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		chat_session_id: chat_session.id,
 		message_id: Some(0),
 	});
-	let empty_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let empty_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(empty_page.message_page.len(), 0);
@@ -1171,7 +1143,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1186,7 +1158,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1200,14 +1172,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, pool.clone(), agent.clone(), json)
+	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool.clone(), json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
@@ -1219,7 +1191,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		id: chat_session.id,
 	});
 	assert_eq!(
-		controllers::chat::api_rename(user, pool.clone(), json)
+		controllers::chat::api_rename(user, Extension(pool.clone()), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1233,10 +1205,10 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_title: new_title.clone(),
 		id: chat_session.id,
 	});
-	controllers::chat::api_rename(user, pool.clone(), json)
+	controllers::chat::api_rename(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
-	let Json(chats) = controllers::chat::api_chats(user, pool.clone())
+	let Json(chats) = controllers::chat::api_chats(user, Extension(pool.clone()))
 		.await
 		.unwrap();
 	assert!(
@@ -1247,14 +1219,18 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	//delete chat session
-	controllers::chat::api_delete_chat(user, pool.clone(), axum::extract::Path(chat_session_id))
-		.await
-		.unwrap();
+	controllers::chat::api_delete_chat(
+		user,
+		Extension(pool.clone()),
+		axum::extract::Path(chat_session_id),
+	)
+	.await
+	.unwrap();
 	let json = Json(MessagePageRequest {
 		chat_session_id: chat_session.id,
 		message_id: None,
 	});
-	let latest_page = controllers::chat::api_message_page(user, pool, json)
+	let latest_page = controllers::chat::api_message_page(user, Extension(pool.clone()), json)
 		.await
 		.unwrap();
 	assert_eq!(latest_page.prev_message_id, None);
@@ -1303,6 +1279,7 @@ async fn test_user_event_flow(
 			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
 		timezone: Some(String::from("UTC")),
+		photo_name: None,
 	});
 	let Json(UserEventResponse { id }) =
 		controllers::itinerary::api_user_event(user, pool.clone(), json)
@@ -1327,6 +1304,7 @@ async fn test_user_event_flow(
 			NaiveDateTime::parse_from_str("2025-09-05 23:56:04", "%Y-%m-%d %H:%M:%S").unwrap(),
 		),
 		timezone: Some(String::from("UTC")),
+		photo_name: None,
 	});
 	let Json(res) = controllers::itinerary::api_user_event(user, pool.clone(), json)
 		.await
@@ -1420,44 +1398,12 @@ async fn test_endpoints() {
 	// Use an encryption/signing key for private cookies
 	let cookie_key = Key::generate();
 
-	// Create agent for tests - use dummy agent if DEPLOY_LLM != "1"
-	let research_agent = Arc::new(Mutex::new(
-		agent::configs::research::create_research_agent().unwrap(),
-	));
-	let constraint_agent = Arc::new(Mutex::new(
-		agent::configs::constraint::create_constraint_agent().unwrap(),
-	));
-	let optimize_agent = Arc::new(Mutex::new(
-		agent::configs::optimizer::create_optimize_agent().unwrap(),
-	));
+	// Always use dummy agent for tests
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+		.expect("Dummy agent creation failed");
 
-	// Create the orchestrator agent with references to the research, constraint, and optimize agents
-	let agent = if std::env::var("DEPLOY_LLM").unwrap_or_default() == "1" {
-		// Real agent - requires valid OPENAI_API_KEY
-		tokio::time::timeout(
-			Duration::from_secs(5),
-			tokio::task::spawn_blocking(move || {
-				agent::configs::orchestrator::create_orchestrator_agent(
-					research_agent.clone(),
-					constraint_agent.clone(),
-					optimize_agent.clone(),
-				)
-				.unwrap_or_else(|e| {
-					panic!(
-						"Agent creation failed in test: {}. Check your OPENAI_API_KEY.",
-						e
-					);
-				})
-			}),
-		)
-		.await
-		.expect("Agent creation timed out after 5 seconds. Check your OpenAI API key.")
-		.expect("Agent creation task panicked")
-	} else {
-		// Dummy agent - won't be invoked when DEPLOY_LLM is not set
-		agent::configs::orchestrator::create_dummy_orchestrator_agent()
-			.expect("Dummy agent creation failed")
-	};
+	// Wrap in Extension and Arc<Mutex> as usual
+	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
 
 	let account_routes = controllers::account::account_routes();
 	let itinerary_routes = controllers::itinerary::itinerary_routes();

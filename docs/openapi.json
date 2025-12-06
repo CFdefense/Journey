@@ -2349,6 +2349,12 @@
             "format": "int32",
             "description": "If id is provided, it updates the user-event with that id. Otherwise it creates the event."
           },
+          "photo_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "postal_code": {
             "type": [
               "integer",

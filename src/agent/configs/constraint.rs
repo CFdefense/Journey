@@ -12,11 +12,12 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
 };
 
 use crate::agent::tools::constraint::*;
+use sqlx::PgPool;
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -25,7 +26,10 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_constraint_agent(
+	llm: OpenAI<OpenAIConfig>,
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 

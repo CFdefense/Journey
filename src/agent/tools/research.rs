@@ -12,6 +12,7 @@ use google_maps::places_new::{Circle, Field, FieldMask, LatLng, LocationRestrict
 use langchain_rust::tools::Tool;
 use serde::{Deserialize, Serialize, de::IntoDeserializer};
 use serde_json::{Value, json};
+use sqlx::PgPool;
 use std::error::Error;
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
@@ -26,7 +27,9 @@ pub struct QueryDbEventsTool;
 
 /// This tool uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria.
 #[derive(Clone)]
-pub struct NearbySearchTool;
+pub struct NearbySearchTool {
+	pub db: PgPool
+}
 
 #[async_trait]
 impl Tool for GeocodeTool {
@@ -57,8 +60,8 @@ impl Tool for GeocodeTool {
 			.as_str()
 			.ok_or("Location should be a string")?;
 		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
-		let gm_api_key = std::env::var(GOOGLE_MAPS_API_KEY)
-			.map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
+		let gm_api_key =
+			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
 
 		// use google maps api to get the address from the provided location and use geocoding to get its coordinates
 		let gm_client = google_maps::Client::try_new(gm_api_key)
@@ -127,7 +130,7 @@ impl Tool for QueryDbEventsTool {
 }
 
 #[async_trait]
-impl Tool for NearbySearchTool {
+impl<'db> Tool for NearbySearchTool {
 	fn name(&self) -> String {
 		"nearby_search_tool".to_string()
 	}
@@ -178,8 +181,8 @@ impl Tool for NearbySearchTool {
 				.ok_or(INCLUDE_TYPES_ERR)?
 				.iter()
 				.map(|v| v.as_str().ok_or(INCLUDE_TYPES_ERR))
-				.collect::<Result<_,_>>()
-				.map_err(|_|INCLUDE_TYPES_ERR)?
+				.collect::<Result<_, _>>()
+				.map_err(|_| INCLUDE_TYPES_ERR)?
 		} else {
 			Vec::new()
 		};
@@ -189,21 +192,22 @@ impl Tool for NearbySearchTool {
 				.ok_or(EXCLUDE_TYPES_ERR)?
 				.iter()
 				.map(|v| v.as_str().ok_or(EXCLUDE_TYPES_ERR))
-				.collect::<Result<_,_>>()
-				.map_err(|_|EXCLUDE_TYPES_ERR)?
+				.collect::<Result<_, _>>()
+				.map_err(|_| EXCLUDE_TYPES_ERR)?
 		} else {
 			Vec::new()
 		};
 
 		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
-		let gm_api_key = std::env::var(GOOGLE_MAPS_API_KEY)
-				.map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
+		let gm_api_key =
+			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
 
 		// use google maps api to get nearby places
 		let gm_client = google_maps::Client::try_new(gm_api_key)
 			.map_err(|_| "Failed to create client for Google Maps API")?;
 
-		let search_res = gm_client.nearby_search((lat, lng, 50_000.))?
+		let search_res = gm_client
+			.nearby_search((lat, lng, 50_000.))?
 			.field_mask(FieldMask::Specific(vec![
 				Field::PlacesAccessibilityOptions,
 				Field::PlacesAdrFormatAddress,
@@ -223,18 +227,22 @@ impl Tool for NearbySearchTool {
 			.included_types(
 				included_types
 					.iter()
-					.map(|t| PlaceType::deserialize(t.into_deserializer())
-						.map_err(|_: serde::de::value::Error|"Could not deserialize place type within includedTypes array")
-					)
-					.collect::<Result<Vec<_>,_>>()?
+					.map(|t| {
+						PlaceType::deserialize(t.into_deserializer()).map_err(
+							|_: serde::de::value::Error| "Could not deserialize place type within includedTypes array",
+						)
+					})
+					.collect::<Result<Vec<_>, _>>()?,
 			)
 			.excluded_types(
 				excluded_types
 					.iter()
-					.map(|t| PlaceType::deserialize(t.into_deserializer())
-						.map_err(|_: serde::de::value::Error|"Could not deserialize place type within excludedTypes array")
-					)
-					.collect::<Result<Vec<_>,_>>()?
+					.map(|t| {
+						PlaceType::deserialize(t.into_deserializer()).map_err(
+							|_: serde::de::value::Error| "Could not deserialize place type within excludedTypes array",
+						)
+					})
+					.collect::<Result<Vec<_>, _>>()?,
 			)
 			.execute()
 			.await?;
@@ -247,10 +255,7 @@ impl Tool for NearbySearchTool {
 			return Err(format!("Nearby Search returned an empty array of places").into());
 		}
 
-		let events: Vec<Event> = places
-			.into_iter()
-			.map(|p| Event::from(p))
-			.collect();
+		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 		Ok(json!(events).to_string())
 	}
 }

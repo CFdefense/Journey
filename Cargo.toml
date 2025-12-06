@@ -25,6 +25,7 @@ utoipa-swagger-ui = { version = "9.0.2", features = ["axum", "cache"] }
 utoipa-axum = "0.2.0"
 langchain-rust = "4.6.0"
 async-trait = "0.1"
+futures = "0.3.31"
 google_maps = { version = "3.9.1", default-features = false, features = [
 	"decimal-serde",
 	"geocoding",
