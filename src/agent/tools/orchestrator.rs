@@ -6,12 +6,11 @@
 
 use crate::agent::models::user::UserIntent;
 use async_trait::async_trait;
+use langchain_rust::chain::Chain;
 use langchain_rust::language_models::llm::LLM;
-use langchain_rust::llm::openai::{OpenAI, OpenAIConfig, OpenAIModel};
-use langchain_rust::schemas::Message;
 use langchain_rust::tools::Tool;
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -97,7 +96,7 @@ impl Tool for ParseUserIntentTool {
 			.trim_end_matches("```")
 			.trim();
 
-		// Validate it's proper JSON
+		// Validate it's proper JSON and return as UserIntent
 		let intent: UserIntent = serde_json::from_str(cleaned).map_err(|e| {
 			format!(
 				"Failed to parse LLM response as JSON: {}. Response was: {}",
@@ -105,6 +104,7 @@ impl Tool for ParseUserIntentTool {
 			)
 		})?;
 
+		// Return serialized UserIntent
 		Ok(serde_json::to_string(&intent)?)
 	}
 }
@@ -114,13 +114,12 @@ impl Tool for ParseUserIntentTool {
 /// Returns a vector of Message objects.
 #[derive(Clone)]
 pub struct RetrieveChatContextTool {
-	// TODO: Add database connection
-	// db: Arc<Mutex<DbConnection>>,
+	pool: PgPool,
 }
 
 impl RetrieveChatContextTool {
-	pub fn new() -> Self {
-		Self {}
+	pub fn new(pool: PgPool) -> Self {
+		Self { pool }
 	}
 }
 
@@ -148,27 +147,71 @@ impl Tool for RetrieveChatContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let chat_id = input["chat_id"]
+		let chat_id_str = input["chat_id"]
 			.as_str()
 			.ok_or("chat_id must be a string")?;
+		let chat_id: i32 = chat_id_str
+			.parse()
+			.map_err(|_| "chat_id must be a valid integer")?;
 
-		// TODO: Query database for chat history
+		// Query database for chat history
+		let messages = sqlx::query!(
+			r#"
+			SELECT
+				m.id,
+				m.is_user,
+				m.timestamp,
+				m.text,
+				m.itinerary_id
+			FROM messages m
+			WHERE m.chat_session_id = $1
+			ORDER BY m.timestamp ASC
+			LIMIT 50
+			"#,
+			chat_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
 
-		// Mock implementation
-		let context = vec![
-			json!({
-				"role": "user",
-				"content": "I want to visit Paris",
-				"timestamp": "2024-01-01T10:00:00Z"
-			}),
-			json!({
-				"role": "assistant",
-				"content": "I can help you plan a trip to Paris!",
-				"timestamp": "2024-01-01T10:00:05Z"
-			}),
-		];
+		let chat_history: Vec<Value> = messages
+			.into_iter()
+			.map(|msg| {
+				json!({
+					"id": msg.id,
+					"role": if msg.is_user { "user" } else { "assistant" },
+					"content": msg.text,
+					"timestamp": msg.timestamp.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+					"itinerary_id": msg.itinerary_id
+				})
+			})
+			.collect();
 
-		Ok(serde_json::to_string(&context)?)
+		// Retrieve tool execution history from database
+		let context_row = sqlx::query!(
+			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+			chat_id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		let tool_history: Vec<crate::agent::models::context::ToolExecution> = context_row
+			.and_then(|row| row.context)
+			.and_then(|ctx| {
+				ctx.get("tool_history")
+					.cloned()
+					.and_then(|th| serde_json::from_value::<Vec<crate::agent::models::context::ToolExecution>>(th).ok())
+			})
+			.unwrap_or_default();
+
+		// Return chat history and tool history
+		let result = json!({
+			"chat_history": chat_history,
+			"tool_history": tool_history
+		});
+
+		Ok(serde_json::to_string(&result)?)
 	}
 }
 
@@ -177,12 +220,12 @@ impl Tool for RetrieveChatContextTool {
 /// Returns a UserProfile object.
 #[derive(Clone)]
 pub struct RetrieveUserProfileTool {
-	// db: Arc<Mutex<DbConnection>>,
+	pool: PgPool,
 }
 
 impl RetrieveUserProfileTool {
-	pub fn new() -> Self {
-		Self {}
+	pub fn new(pool: PgPool) -> Self {
+		Self { pool }
 	}
 }
 
@@ -210,19 +253,50 @@ impl Tool for RetrieveUserProfileTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let user_id = input["user_id"]
+		let user_id_str = input["user_id"]
 			.as_str()
 			.ok_or("user_id must be a string")?;
+		let user_id: i32 = user_id_str
+			.parse()
+			.map_err(|_| "user_id must be a valid integer")?;
 
-		// TODO: Query database for user profile
+		// Query database for user profile
+		use crate::sql_models::{BudgetBucket, RiskTolerence};
+		let account = sqlx::query_as!(
+			crate::http_models::account::CurrentResponse,
+			r#"
+			SELECT
+				email,
+				first_name,
+				last_name,
+				budget_preference as "budget_preference: BudgetBucket",
+				risk_preference as "risk_preference: RiskTolerence",
+				COALESCE(food_allergies, '') as "food_allergies!: String",
+				COALESCE(disabilities, '') as "disabilities!: String",
+				COALESCE(profile_picture, '') as "profile_picture!: String"
+			FROM accounts
+			WHERE id = $1
+			"#,
+			user_id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
 
-		let profile = json!({
-			"user_id": user_id,
-			"preferences": ["museums", "local_food", "walking_tours"],
-			"dietary_restrictions": ["vegetarian"],
-			"past_destinations": ["Rome", "Barcelona"],
-			"budget_preference": "moderate"
-		});
+		let profile = if let Some(acc) = account {
+			json!({
+				"user_id": user_id,
+				"email": acc.email,
+				"first_name": acc.first_name,
+				"last_name": acc.last_name,
+				"budget_preference": acc.budget_preference,
+				"risk_preference": acc.risk_preference,
+				"food_allergies": acc.food_allergies,
+				"disabilities": acc.disabilities
+			})
+		} else {
+			return Err(format!("User with id {} not found", user_id).into());
+		};
 
 		Ok(serde_json::to_string(&profile)?)
 	}
@@ -264,17 +338,18 @@ impl Tool for RouteTaskTool {
 	}
 
 	fn parameters(&self) -> Value {
+		// Parameters match TaskRoute model structure
 		json!({
 			"type": "object",
 			"properties": {
 				"task_type": {
 					"type": "string",
-					"description": "The type of task to route",
+					"description": "The type of task to route: 'research', 'constraint', or 'optimize'",
 					"enum": ["research", "constraint", "optimize"]
 				},
 				"payload": {
 					"type": "object",
-					"description": "The data to send to the sub-agent"
+					"description": "The data to send to the sub-agent (any JSON object)"
 				}
 			},
 			"required": ["task_type", "payload"]
@@ -286,57 +361,84 @@ impl Tool for RouteTaskTool {
 			.as_str()
 			.ok_or("task_type must be a string")?;
 		let payload = input["payload"].clone();
+		let payload_str = serde_json::to_string(&payload)?;
 
 		let result = match task_type {
 			"research" => {
-				let agent = self.research_agent.lock().await;
-				let _agent_inner = agent.lock().await;
-
-				// TODO: Well Actually invoke agent when agents are fully implemented
-				// let payload_str = serde_json::to_string(&payload)?;
-				// let response = agent_inner.invoke(&payload_str).await?;
-
-				json!({
-					"agent": "research",
-					"status": "completed",
-					"data": {
-						"attractions": ["Eiffel Tower", "Louvre Museum", "Notre-Dame"],
-						"restaurants": ["Le Comptoir", "L'Ami Jean"],
-						"hotels": ["Hotel Plaza", "Le Meurice"]
+				let agent_outer = self.research_agent.lock().await;
+				let agent_inner = agent_outer.lock().await;
+				match agent_inner
+					.invoke(langchain_rust::prompt_args! {
+						"input" => payload_str.as_str(),
+					})
+					.await
+				{
+					Ok(response) => {
+						// Parse response as JSON Value if possible
+						let data: Value = serde_json::from_str(&response)
+							.unwrap_or_else(|_| json!({ "raw": response }));
+						json!({
+							"agent": "research",
+							"status": "completed",
+							"data": data
+						})
 					}
-				})
+					Err(e) => json!({
+						"agent": "research",
+						"status": "error",
+						"error": format!("{}", e)
+					}),
+				}
 			}
 			"constraint" => {
-				let agent = self.constraint_agent.lock().await;
-				let _agent_inner = agent.lock().await;
-
-				json!({
-					"agent": "constraint",
-					"status": "completed",
-					"data": {
-						"budget_valid": true,
-						"dietary_options_available": true,
-						"accessibility_compatible": true,
-						"warnings": []
+				let agent_outer = self.constraint_agent.lock().await;
+				let agent_inner = agent_outer.lock().await;
+				match agent_inner
+					.invoke(langchain_rust::prompt_args! {
+						"input" => payload_str.as_str(),
+					})
+					.await
+				{
+					Ok(response) => {
+						let data: Value = serde_json::from_str(&response)
+							.unwrap_or_else(|_| json!({ "raw": response }));
+						json!({
+							"agent": "constraint",
+							"status": "completed",
+							"data": data
+						})
 					}
-				})
+					Err(e) => json!({
+						"agent": "constraint",
+						"status": "error",
+						"error": format!("{}", e)
+					}),
+				}
 			}
 			"optimize" => {
-				let agent = self.optimize_agent.lock().await;
-				let _agent_inner = agent.lock().await;
-
-				json!({
-					"agent": "optimize",
-					"status": "completed",
-					"data": {
-						"itinerary": [
-							{"day": 1, "activities": ["Eiffel Tower", "Seine River Cruise"]},
-							{"day": 2, "activities": ["Louvre Museum", "Tuileries Garden"]}
-						],
-						"estimated_cost": 2800,
-						"optimization_score": 0.92
+				let agent_outer = self.optimize_agent.lock().await;
+				let agent_inner = agent_outer.lock().await;
+				match agent_inner
+					.invoke(langchain_rust::prompt_args! {
+						"input" => payload_str.as_str(),
+					})
+					.await
+				{
+					Ok(response) => {
+						let data: Value = serde_json::from_str(&response)
+							.unwrap_or_else(|_| json!({ "raw": response }));
+						json!({
+							"agent": "optimize",
+							"status": "completed",
+							"data": data
+						})
 					}
-				})
+					Err(e) => json!({
+						"agent": "optimize",
+						"status": "error",
+						"error": format!("{}", e)
+					}),
+				}
 			}
 			_ => {
 				return Err(format!("Unknown task type: {}", task_type).into());
@@ -373,6 +475,7 @@ impl Tool for MergePartialResultsTool {
 	}
 
 	fn parameters(&self) -> Value {
+		// Parameters match array of PartialResult model structure
 		json!({
 			"type": "object",
 			"properties": {
@@ -382,11 +485,24 @@ impl Tool for MergePartialResultsTool {
 					"items": {
 						"type": "object",
 						"properties": {
-							"agent": {"type": "string"},
-							"data": {"type": "object"},
-							"success": {"type": "boolean"},
-							"error": {"type": ["string", "null"]}
-						}
+							"agent": {
+								"type": "string",
+								"description": "Name of the agent that produced this result"
+							},
+							"data": {
+								"type": "object",
+								"description": "The result data from the agent (any JSON object)"
+							},
+							"success": {
+								"type": "boolean",
+								"description": "Whether the agent execution was successful"
+							},
+							"error": {
+								"type": ["string", "null"],
+								"description": "Error message if success is false"
+							}
+						},
+						"required": ["agent", "data", "success"]
 					}
 				}
 			},
@@ -513,15 +629,14 @@ impl Tool for AskForClarificationTool {
 /// Tool 7: Update Context
 /// Updates conversation context with new information.
 /// Used to store the conversation context in the database.
-/// TODO: Implement DB connection for this.
 #[derive(Clone)]
 pub struct UpdateContextTool {
-	// db: Arc<Mutex<DbConnection>>,
+	pool: PgPool,
 }
 
 impl UpdateContextTool {
-	pub fn new() -> Self {
-		Self {}
+	pub fn new(pool: PgPool) -> Self {
+		Self { pool }
 	}
 }
 
@@ -553,15 +668,70 @@ impl Tool for UpdateContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let _chat_id = input["chat_id"]
+		let chat_id_str = input["chat_id"]
 			.as_str()
 			.ok_or("chat_id must be a string")?;
-		let _updates = input["updates"].clone();
+		let chat_id: i32 = chat_id_str
+			.parse()
+			.map_err(|_| "chat_id must be a valid integer")?;
+		let updates = input["updates"].clone();
 
-		// TODO: Persist to database
+		// Update chat session title if provided
+		if let Some(title) = updates.get("title").and_then(|t| t.as_str()) {
+			sqlx::query!(
+				"UPDATE chat_sessions SET title = $1 WHERE id = $2",
+				title,
+				chat_id
+			)
+			.execute(&self.pool)
+			.await
+			.map_err(|e| format!("Database error: {}", e))?;
+		}
+
+		// Store tool execution history if provided
+		if let Some(tool_exec) = updates.get("tool_execution") {
+			// Get existing context
+			let context_row = sqlx::query!(
+				r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+				chat_id
+			)
+			.fetch_optional(&self.pool)
+			.await
+			.map_err(|e| format!("Database error: {}", e))?;
+
+			let mut existing_context: Value = context_row
+				.and_then(|row| row.context)
+				.unwrap_or_else(|| json!({ "tool_history": [] }));
+
+			// Parse tool execution and add to history
+			if let Ok(tool_exec_obj) = serde_json::from_value::<crate::agent::models::context::ToolExecution>(tool_exec.clone()) {
+				// Get or create tool_history array
+				if !existing_context.get("tool_history").is_some() {
+					existing_context["tool_history"] = json!([]);
+				}
+
+				// Add new tool execution (keep last 100 entries)
+				if let Some(tool_history_array) = existing_context.get_mut("tool_history").and_then(|th| th.as_array_mut()) {
+					tool_history_array.push(json!(tool_exec_obj));
+					if tool_history_array.len() > 100 {
+						tool_history_array.remove(0);
+					}
+				}
+
+				sqlx::query!(
+					r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
+					existing_context as serde_json::Value,
+					chat_id
+				)
+				.execute(&self.pool)
+				.await
+				.map_err(|e| format!("Database error: {}", e))?;
+			}
+		}
 
 		Ok(json!({
 			"status": "updated",
+			"chat_id": chat_id,
 			"timestamp": chrono::Utc::now().to_rfc3339()
 		})
 		.to_string())
@@ -572,6 +742,7 @@ impl Tool for UpdateContextTool {
 /// Returns a vector of Arc<dyn Tool> objects.
 pub fn get_orchestrator_tools(
 	llm: Arc<dyn LLM + Send + Sync>,
+	pool: PgPool,
 	research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	constraint_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
@@ -580,8 +751,8 @@ pub fn get_orchestrator_tools(
 		Arc::new(ParseUserIntentTool {
 			llm: Arc::clone(&llm),
 		}),
-		Arc::new(RetrieveChatContextTool::new()),
-		Arc::new(RetrieveUserProfileTool::new()),
+		Arc::new(RetrieveChatContextTool::new(pool.clone())),
+		Arc::new(RetrieveUserProfileTool::new(pool.clone())),
 		Arc::new(RouteTaskTool::new(
 			research_agent,
 			constraint_agent,
@@ -593,7 +764,7 @@ pub fn get_orchestrator_tools(
 		Arc::new(AskForClarificationTool {
 			llm: Arc::clone(&llm),
 		}),
-		Arc::new(UpdateContextTool::new()),
+		Arc::new(UpdateContextTool::new(pool)),
 	]
 }
 

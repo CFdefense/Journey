@@ -16,11 +16,21 @@ pub struct TaskRoute {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolExecution {
+	pub tool_name: String,
+	pub timestamp: String, // ISO 8601 format
+	pub input: Value,
+	pub output: Value,
+	pub success: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContextData {
 	pub user_profile: Option<Value>,
 	pub chat_history: Vec<Value>,
 	pub active_itinerary: Option<Value>,
 	pub events: Vec<Value>,
+	pub tool_history: Vec<ToolExecution>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -16,45 +16,11 @@ use langchain_rust::{
 use sqlx::PgPool;
 
 use crate::agent::configs::constraint::create_constraint_agent;
+use crate::agent::configs::mock::MockLLM;
 use crate::agent::configs::optimizer::create_optimize_agent;
 use crate::agent::configs::research::create_research_agent;
 use crate::agent::tools::orchestrator::{ORCHESTRATOR_SYSTEM_PROMPT, get_orchestrator_tools};
-use async_trait::async_trait;
-use futures::stream::{self, Stream};
-use langchain_rust::language_models::GenerateResult;
-use langchain_rust::language_models::LLMError;
 use langchain_rust::language_models::llm::LLM;
-use langchain_rust::schemas::{Message, StreamData};
-use serde_json::Value;
-use std::pin::Pin;
-
-/// Mock LLM implementation for testing that returns dummy responses
-/// without making actual API calls
-#[derive(Clone)]
-pub struct MockLLM;
-
-#[async_trait]
-impl LLM for MockLLM {
-	async fn generate(&self, _messages: &[Message]) -> Result<GenerateResult, LLMError> {
-		Ok(GenerateResult {
-			generation: "This is a mock response for testing.".to_string(),
-			tokens: None,
-		})
-	}
-
-	async fn stream(
-		&self,
-		_messages: &[Message],
-	) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, LLMError>> + Send>>, LLMError> {
-		let response = StreamData::new(
-			Value::String("This is a mock response for testing.".to_string()),
-			None,
-			"This is a mock response for testing.",
-		);
-		let stream = stream::once(async move { Ok(response) });
-		Ok(Box::pin(stream))
-	}
-}
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -101,6 +67,7 @@ pub fn create_orchestrator_agent(
 	// Get orchestrator tools
 	let tools = get_orchestrator_tools(
 		llm_for_tools,
+		pool.clone(),
 		research_agent,
 		constraint_agent,
 		optimize_agent,
@@ -132,7 +99,9 @@ pub fn create_orchestrator_agent(
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_orchestrator_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Use MockLLM for testing to avoid API key requirements
 	let llm = MockLLM;
 
@@ -148,6 +117,7 @@ pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalA
 	let llm_arc = Arc::new(llm.clone());
 	let tools = get_orchestrator_tools(
 		llm_arc,
+		pool,
 		Arc::new(tokio::sync::Mutex::new(research_agent)),
 		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
 		Arc::new(tokio::sync::Mutex::new(optimize_agent)),

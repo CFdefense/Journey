@@ -1012,7 +1012,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	let pool = pool.0.clone();
 
 	// Always use dummy agent for tests
-	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
 		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
@@ -1397,7 +1397,7 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Always use dummy agent for tests
-	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
+	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
 		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
