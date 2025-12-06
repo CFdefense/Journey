@@ -257,8 +257,6 @@ export default function Account() {
     setNewPassword("");
     setConfirmPassword("");
     setPasswordErrors({});
-
-    toast.error("Unable to update account. Please try again.");
   };
 
   const handleUpdate = async (e: React.FormEvent) => {

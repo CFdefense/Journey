@@ -335,25 +335,22 @@ function ViewItineraryPage() {
         toast.error("Unable to load itinerary. Please try again.");
         return;
       }
+      // Store metadata
+      setItineraryMetadata({
+        id: apiResponse.result.id,
+        startDate: apiResponse.result.start_date,
+        endDate: apiResponse.result.end_date,
+        title: apiResponse.result.title,
+        chatSessionId: apiResponse.result.chat_session_id
+      });
 
-      if (apiResponse.result) {
-        // Store metadata
-        setItineraryMetadata({
-          id: apiResponse.result.id,
-          startDate: apiResponse.result.start_date,
-          endDate: apiResponse.result.end_date,
-          title: apiResponse.result.title,
-          chatSessionId: apiResponse.result.chat_session_id
-        });
+      // Transform and store days
+      const data = populateItinerary(apiResponse.result);
+      setLocalDays(data);
 
-        // Transform and store days
-        const data = populateItinerary(apiResponse.result);
-        setLocalDays(data);
-
-        // Load unassigned events
-        const unassigned = getUnassignedEvents(apiResponse.result);
-        setUnassignedEvents(unassigned);
-      }
+      // Load unassigned events
+      const unassigned = getUnassignedEvents(apiResponse.result);
+      setUnassignedEvents(unassigned);
     }
 
     load();

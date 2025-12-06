@@ -14,9 +14,10 @@ import {
 	canDropEventInTimeBlock,
 	getDropErrorMessage
 } from "../src/helpers/itinerary";
-import type {
-	Itinerary as ApiItinerary,
-	DayItinerary
+import {
+	type Itinerary as ApiItinerary,
+	type DayItinerary,
+	EVENT_DEFAULT
 } from "../src/models/itinerary";
 import * as itineraryApi from "../src/api/itinerary";
 import {
@@ -124,6 +125,7 @@ describe("Itinerary Helper Tests", () => {
 					date: "2025-01-01",
 					morning_events: [
 						{
+							...EVENT_DEFAULT,
 							id: 1,
 							event_name: "Breakfast",
 							event_description: "Morning meal",
@@ -131,36 +133,7 @@ describe("Itinerary Helper Tests", () => {
 							postal_code: 12345,
 							city: "TestCity",
 							country: "TestCountry",
-							event_type: "food",
-							user_created: false,
-							hard_start: null,
-							hard_end: null,
-							timezone: null,
-							coords: null,
-							place_id: null,
-							wheelchair_accessible_parking: null,
-							wheelchair_accessible_entrance: null,
-							wheelchair_accessible_restroom: null,
-							wheelchair_accessible_seating: null,
-							serves_vegetarian_food: null,
-							price_level: null,
-							utc_offset_minutes: null,
-							website_uri: null,
-							types: null,
-							photo_name: null,
-							photo_width: null,
-							photo_height: null,
-							photo_author: null,
-							photo_author_uri: null,
-							photo_author_photo_uri: null,
-							weekday_descriptions: null,
-							secondary_hours_type: null,
-							next_open_time: null,
-							next_close_time: null,
-							open_now: null,
-							periods: [],
-							special_days: [],
-							block_index: null
+							event_type: "food"
 						}
 					],
 					afternoon_events: [],
@@ -200,6 +173,7 @@ describe("Itinerary Helper Tests", () => {
 						time: "Morning",
 						events: [
 							{
+								...EVENT_DEFAULT,
 								id: 1,
 								event_name: "Breakfast",
 								event_description: "Morning meal",
@@ -207,36 +181,7 @@ describe("Itinerary Helper Tests", () => {
 								postal_code: 12345,
 								city: "New York",
 								country: "USA",
-								event_type: "dining",
-								user_created: false,
-								hard_start: null,
-								hard_end: null,
-								timezone: null,
-								coords: null,
-								place_id: null,
-								wheelchair_accessible_parking: null,
-								wheelchair_accessible_entrance: null,
-								wheelchair_accessible_restroom: null,
-								wheelchair_accessible_seating: null,
-								serves_vegetarian_food: null,
-								price_level: null,
-								utc_offset_minutes: null,
-								website_uri: null,
-								types: null,
-								photo_name: null,
-								photo_width: null,
-								photo_height: null,
-								photo_author: null,
-								photo_author_uri: null,
-								photo_author_photo_uri: null,
-								weekday_descriptions: null,
-								secondary_hours_type: null,
-								next_open_time: null,
-								next_close_time: null,
-								open_now: null,
-								periods: [],
-								special_days: [],
-								block_index: null
+								event_type: "dining"
 							}
 						]
 					},
@@ -394,6 +339,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - No hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Flexible Event",
 			event_description: "Can move anywhere",
@@ -401,36 +347,7 @@ describe("Itinerary Helper Tests", () => {
 			postal_code: 12345,
 			city: "TestCity",
 			country: "TestCountry",
-			event_type: "food",
-			user_created: false,
-			hard_start: null,
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			event_type: "food"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -443,6 +360,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Unassigned events (targetTimeIndex -1)", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Any Event",
 			event_description: "Test",
@@ -452,34 +370,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(
@@ -489,6 +380,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Matching time block and date", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be at specific time",
@@ -498,34 +390,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-01", 0)).toBe(
@@ -535,6 +400,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Wrong time block", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be in morning",
@@ -544,34 +410,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(
@@ -581,6 +420,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test canDropEventInTimeBlock - Wrong date", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Fixed Event",
 			event_description: "Must be on specific date",
@@ -590,34 +430,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "food",
 			user_created: false,
-			hard_start: "2025-01-01T08:00:00Z",
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			hard_start: "2025-01-01T08:00:00Z"
 		};
 
 		expect(canDropEventInTimeBlock(event, "Morning", "2025-01-02", 0)).toBe(
@@ -627,6 +440,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test getDropErrorMessage - Event with hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Concert",
 			event_description: "Must attend at specific time",
@@ -636,34 +450,7 @@ describe("Itinerary Helper Tests", () => {
 			country: "TestCountry",
 			event_type: "entertainment",
 			user_created: false,
-			hard_start: "2025-01-01T19:00:00Z",
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			hard_start: "2025-01-01T19:00:00Z"
 		};
 
 		const message = getDropErrorMessage(event);
@@ -674,6 +461,7 @@ describe("Itinerary Helper Tests", () => {
 
 	test("Test getDropErrorMessage - Event without hard_start", () => {
 		const event: Event = {
+			...EVENT_DEFAULT,
 			id: 1,
 			event_name: "Flexible Event",
 			event_description: "Can be anywhere",
@@ -681,36 +469,7 @@ describe("Itinerary Helper Tests", () => {
 			postal_code: 12345,
 			city: "TestCity",
 			country: "TestCountry",
-			event_type: "food",
-			user_created: false,
-			hard_start: null,
-			hard_end: null,
-			timezone: null,
-			coords: null,
-			place_id: null,
-			wheelchair_accessible_parking: null,
-			wheelchair_accessible_entrance: null,
-			wheelchair_accessible_restroom: null,
-			wheelchair_accessible_seating: null,
-			serves_vegetarian_food: null,
-			price_level: null,
-			utc_offset_minutes: null,
-			website_uri: null,
-			types: null,
-			photo_name: null,
-			photo_width: null,
-			photo_height: null,
-			photo_author: null,
-			photo_author_uri: null,
-			photo_author_photo_uri: null,
-			weekday_descriptions: null,
-			secondary_hours_type: null,
-			next_open_time: null,
-			next_close_time: null,
-			open_now: null,
-			periods: [],
-			special_days: [],
-			block_index: null
+			event_type: "food"
 		};
 
 		expect(getDropErrorMessage(event)).toBe(null);
