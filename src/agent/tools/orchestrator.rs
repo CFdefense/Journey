@@ -2,6 +2,26 @@
  * src/agent/tools/orchestrator.rs
  *
  * Orchestrator Agent Tools Implementation - LLM-based extraction
+ *
+ * IMPORTANT: Tool Parameter Schema Pattern
+ * ========================================
+ * For parameters that can be objects/arrays, ALWAYS use "type": "string" in the schema.
+ * Do NOT use "anyOf" or omit the type - langchain_rust 4.6.0 has a validation bug
+ * that causes "invalid type: map, expected a string" errors during agent planning.
+ *
+ * Pattern to follow:
+ * 1. Schema: Use "type": "string" for flexible parameters (objects/arrays)
+ * 2. Description: Explicitly instruct LLM to pass JSON as strings
+ * 3. Run method: Parse strings as JSON, but handle objects/arrays as fallback
+ *
+ * Example (see ask_for_clarification tool):
+ *   "missing_info": {
+ *     "type": "string",  // NOT "anyOf" or no type!
+ *     "description": "...as a JSON string. Example: '[\"item\"]'"
+ *   }
+ *
+ * This allows langchain_rust validation to pass while still accepting
+ * whatever format the LLM generates (we handle both in run()).
  */
 
 use crate::agent::models::context::{ContextData, ToolExecution};
@@ -44,7 +64,7 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	fn parameters(&self) -> Value {
-		json!({
+		let params = json!({
 			"type": "object",
 			"properties": {
 				"user_message": {
@@ -53,13 +73,32 @@ impl Tool for ParseUserIntentTool {
 				}
 			},
 			"required": ["user_message"]
-		})
+		});
+		debug!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			parameters = %serde_json::to_string(&params).unwrap_or_else(|_| "failed".to_string()),
+			"Tool parameters schema"
+		);
+		params
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let user_message = input["user_message"]
-			.as_str()
-			.ok_or("user_message must be a string")?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in parse_user_intent"
+		);
+		
+		// Handle user_message as string or object (convert object to string)
+		let user_message = if let Some(s) = input["user_message"].as_str() {
+			s.to_string()
+		} else if input["user_message"].is_object() {
+			serde_json::to_string(&input["user_message"])?
+		} else {
+			input["user_message"].to_string()
+		};
 
 		let prompt = format!(
 			r#"Extract travel planning information from the user's message.
@@ -157,7 +196,7 @@ impl Tool for RetrieveChatContextTool {
 			"properties": {
 				"chat_id": {
 					"type": "string",
-					"description": "The ID of the chat/conversation to retrieve"
+					"description": "The ID of the chat/conversation to retrieve as a string"
 				}
 			},
 			"required": ["chat_id"]
@@ -165,9 +204,38 @@ impl Tool for RetrieveChatContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let chat_id_str = input["chat_id"]
-			.as_str()
-			.ok_or("chat_id must be a string")?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "retrieve_chat_context",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in retrieve_chat_context"
+		);
+		
+		// Handle chat_id as string, number, or object (extract string value)
+		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
+			s.to_string()
+		} else if let Some(n) = input["chat_id"].as_i64() {
+			n.to_string()
+		} else if input["chat_id"].is_object() {
+			// Try to extract "id" field from object, or convert whole object to string
+			if let Some(id_val) = input["chat_id"].get("id") {
+				if let Some(n) = id_val.as_i64() {
+					n.to_string()
+				} else if let Some(s) = id_val.as_str() {
+					if let Ok(n) = s.parse::<i64>() {
+						n.to_string()
+					} else {
+						input["chat_id"].to_string()
+					}
+				} else {
+					input["chat_id"].to_string()
+				}
+			} else {
+				input["chat_id"].to_string()
+			}
+		} else {
+			input["chat_id"].to_string()
+		};
 		let chat_id: i32 = chat_id_str
 			.parse()
 			.map_err(|_| "chat_id must be a valid integer")?;
@@ -337,7 +405,7 @@ impl Tool for RetrieveUserProfileTool {
 			"properties": {
 				"user_id": {
 					"type": "string",
-					"description": "The ID of the user whose profile to retrieve"
+					"description": "The ID of the user whose profile to retrieve as a string"
 				}
 			},
 			"required": ["user_id"]
@@ -345,9 +413,38 @@ impl Tool for RetrieveUserProfileTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let user_id_str = input["user_id"]
-			.as_str()
-			.ok_or("user_id must be a string")?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "retrieve_user_profile",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in retrieve_user_profile"
+		);
+		
+		// Handle user_id as string, number, or object (extract string value)
+		let user_id_str = if let Some(s) = input["user_id"].as_str() {
+			s.to_string()
+		} else if let Some(n) = input["user_id"].as_i64() {
+			n.to_string()
+		} else if input["user_id"].is_object() {
+			// Try to extract "id" field from object, or convert whole object to string
+			if let Some(id_val) = input["user_id"].get("id") {
+				if let Some(n) = id_val.as_i64() {
+					n.to_string()
+				} else if let Some(s) = id_val.as_str() {
+					if let Ok(n) = s.parse::<i64>() {
+						n.to_string()
+					} else {
+						input["user_id"].to_string()
+					}
+				} else {
+					input["user_id"].to_string()
+				}
+			} else {
+				input["user_id"].to_string()
+			}
+		} else {
+			input["user_id"].to_string()
+		};
 		let user_id: i32 = user_id_str
 			.parse()
 			.map_err(|_| "user_id must be a valid integer")?;
@@ -428,35 +525,85 @@ impl Tool for RouteTaskTool {
 	}
 
 	fn description(&self) -> String {
-		"Routes a task to the appropriate sub-agent (research, constraint, or optimize)."
+		"Routes a task to the appropriate sub-agent (research, constraint, or optimize). IMPORTANT: All parameters must be passed as strings. For 'payload', pass the JSON object as a JSON string."
 			.to_string()
 	}
 
 	fn parameters(&self) -> Value {
-		// Parameters match TaskRoute model structure
-		json!({
+		let params = json!({
 			"type": "object",
 			"properties": {
 				"task_type": {
 					"type": "string",
-					"description": "The type of task to route: 'research', 'constraint', or 'optimize'",
-					"enum": ["research", "constraint", "optimize"]
+					"enum": ["research", "constraint", "optimize"],
+					"description": "The type of task to route: 'research', 'constraint', or 'optimize'"
 				},
 				"payload": {
-					"type": "object",
-					"description": "The data to send to the sub-agent (any JSON object)"
+					"type": "string",
+					"description": "The data to send to the sub-agent as a JSON string. If you have an object, serialize it to JSON first."
 				}
 			},
 			"required": ["task_type", "payload"]
-		})
+		});
+		debug!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			parameters = %serde_json::to_string(&params).unwrap_or_else(|_| "failed".to_string()),
+			"Tool parameters schema"
+		);
+		params
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let task_type = input["task_type"]
-			.as_str()
-			.ok_or("task_type must be a string")?;
-		let payload = input["payload"].clone();
-		let payload_str = serde_json::to_string(&payload)?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in route_task"
+		);
+		
+		// Handle task_type - can be string, object, or JSON string
+		let task_type = if let Some(s) = input["task_type"].as_str() {
+			// Try to parse as JSON object first, then extract value
+			if let Ok(obj) = serde_json::from_str::<Value>(s) {
+				if obj.is_object() {
+					obj.get("value")
+						.or_else(|| obj.get("task_type"))
+						.and_then(|v| v.as_str())
+						.map(|s| s.to_string())
+						.unwrap_or_else(|| s.to_string())
+				} else {
+					s.to_string()
+				}
+			} else {
+				s.to_string()
+			}
+		} else if input["task_type"].is_object() {
+			// Try to extract value from object
+			input["task_type"].get("value")
+				.or_else(|| input["task_type"].get("task_type"))
+				.and_then(|v| v.as_str())
+				.map(|s| s.to_string())
+				.unwrap_or_else(|| serde_json::to_string(&input["task_type"]).unwrap_or_else(|_| "unknown".to_string()))
+		} else {
+			input["task_type"].to_string()
+		};
+		
+		// Handle payload - can be string (JSON), object, or already a string
+		let payload_str = if let Some(s) = input["payload"].as_str() {
+			// If it's a string, check if it's valid JSON, otherwise use as-is
+			if serde_json::from_str::<Value>(s).is_ok() {
+				s.to_string()
+			} else {
+				s.to_string()
+			}
+		} else if input["payload"].is_object() {
+			// If it's an object, serialize it to string
+			serde_json::to_string(&input["payload"])?
+		} else {
+			// Fallback: convert to string representation
+			input["payload"].to_string()
+		};
 
 		info!(
 			target: "orchestrator_tool",
@@ -471,7 +618,10 @@ impl Tool for RouteTaskTool {
 			"Tool input"
 		);
 
-		let result = match task_type {
+		// Normalize task_type to lowercase string
+		let task_type_normalized = task_type.to_lowercase().trim().to_string();
+		
+		let result = match task_type_normalized.as_str() {
 			"research" => {
 				info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
 				debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
@@ -605,15 +755,19 @@ impl Tool for RouteTaskTool {
 
 /// Tool 5: Ask for Clarification
 /// Generates a natural clarification question using an LLM when user input is ambiguous.
-/// Returns a string containing the clarification question.
+/// STOPS THE PIPELINE by inserting the clarification message into the chat and returning success.
 #[derive(Clone)]
 pub struct AskForClarificationTool {
 	llm: Arc<dyn LLM + Send + Sync>,
+	pool: PgPool,
 }
 
 impl AskForClarificationTool {
-	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self { llm: Arc::new(llm) }
+	pub fn new(llm: Arc<dyn LLM + Send + Sync>, pool: PgPool) -> Self {
+		Self { 
+			llm,
+			pool,
+		}
 	}
 }
 
@@ -624,37 +778,116 @@ impl Tool for AskForClarificationTool {
 	}
 
 	fn description(&self) -> String {
-		"Generates a natural clarification question using an LLM when user input is ambiguous."
+		"STOPS THE PIPELINE by generating a natural clarification question and sending it to the user. This tool inserts a message into the chat and returns success. Use this when critical information is missing. After calling this tool, STOP - do not call any other tools. Always provide the missing_info parameter as a JSON string array (e.g., '[\"destination\", \"dates\", \"budget\"]'). If missing_info is not provided, the tool will use default common missing information."
 			.to_string()
 	}
 
 	fn parameters(&self) -> Value {
-		json!({
+		let params = json!({
 			"type": "object",
 			"properties": {
+				"chat_id": {
+					"type": "string",
+					"description": "The ID of the chat session as a string"
+				},
 				"missing_info": {
-					"type": "array",
-					"description": "Array of strings describing what information is missing",
-					"items": {"type": "string"}
+					"type": "string",
+					"description": "Array of strings describing what information is missing, as a JSON string. Example: '[\"destination\", \"dates\", \"budget\"]'. If you have an array, serialize it to JSON first."
 				},
 				"context": {
 					"type": "string",
-					"description": "Additional context about the conversation"
+					"description": "Additional context about the conversation as a JSON string. Optional."
 				}
 			},
-			"required": ["missing_info"]
-		})
+			"required": ["chat_id"]
+		});
+		debug!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			parameters = %serde_json::to_string(&params).unwrap_or_else(|_| "failed".to_string()),
+			"Tool parameters schema"
+		);
+		params
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let missing_info = input["missing_info"]
-			.as_array()
-			.ok_or("missing_info must be an array")?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in ask_for_clarification"
+		);
+		
+		// Handle missing_info - can be array, string, object, or missing
+		debug!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			missing_info_type = ?input.get("missing_info").map(|v| {
+				if v.is_array() { "array" }
+				else if v.is_string() { "string" }
+				else if v.is_object() { "object" }
+				else { "other" }
+			}),
+			missing_info_value = ?input.get("missing_info"),
+			"Processing missing_info"
+		);
+		
+		// missing_info should be a JSON string, but handle all cases for robustness
+		let missing_info: Vec<String> = if let Some(s) = input["missing_info"].as_str() {
+			// Try to parse as JSON array first
+			if let Ok(parsed) = serde_json::from_str::<Vec<String>>(s) {
+				parsed
+			} else {
+				// If not valid JSON, treat as single string
+				vec![s.to_string()]
+			}
+		} else if let Some(arr) = input["missing_info"].as_array() {
+			// Fallback: if somehow we get an array directly
+			arr.iter()
+				.filter_map(|v| v.as_str().map(|s| s.to_string()))
+				.collect()
+		} else if input["missing_info"].is_object() {
+			// If it's an object, try to find an array field in it
+			input["missing_info"].get("missing_info")
+				.and_then(|v| v.as_array())
+				.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+				.or_else(|| {
+					// Try other common field names
+					input["missing_info"].get("items")
+						.and_then(|v| v.as_array())
+						.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+				})
+				.unwrap_or_else(|| vec!["destination".to_string(), "dates".to_string(), "budget".to_string()])
+		} else if input.get("missing_info").is_some() {
+			// Some other type - use defaults
+			vec!["destination".to_string(), "dates".to_string(), "budget".to_string()]
+		} else {
+			// If missing_info is not provided at all, use default common missing information
+			// This prevents the tool from failing and allows the agent to continue
+			info!(target: "orchestrator_tool", tool = "ask_for_clarification", "missing_info not provided, using defaults");
+			vec!["destination".to_string(), "travel dates".to_string(), "budget".to_string(), "preferences".to_string()]
+		};
+		
+		// Handle context - can be string (JSON), object, or missing
 		let context = input.get("context").unwrap_or(&Value::Null);
+		let context_str = if let Some(s) = context.as_str() {
+			// If it's a string, check if it's JSON, otherwise use as-is
+			if serde_json::from_str::<Value>(s).is_ok() {
+				s.to_string()
+			} else {
+				s.to_string()
+			}
+		} else if context.is_object() {
+			serde_json::to_string(context).unwrap_or_else(|_| "{}".to_string())
+		} else {
+			"".to_string()
+		};
 
 		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
 		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&input)?, "Tool input");
 
+		let missing_info_str = missing_info.join(", ");
+		
 		let prompt = format!(
 			r#"Generate a friendly, natural clarification question for a travel planning conversation.
  
@@ -665,21 +898,306 @@ impl Tool for AskForClarificationTool {
  The question should be helpful and friendly.
  
  Return ONLY the question text, nothing else."#,
-			serde_json::to_string(&missing_info)?,
-			context
+			missing_info_str,
+			context_str
 		);
 
 		let response = self.llm.invoke(&prompt).await?;
 		let clarification = response.trim().to_string();
 
-		info!(target: "orchestrator_tool", tool = "ask_for_clarification", "Clarification question generated");
-		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", clarification = %clarification, "Tool output");
+		// Handle chat_id - required to insert message and stop pipeline
+		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
+			s.to_string()
+		} else if let Some(n) = input["chat_id"].as_i64() {
+			n.to_string()
+		} else if input["chat_id"].is_object() {
+			// Try to extract "id" field from object
+			if let Some(id_val) = input["chat_id"].get("id") {
+				if let Some(n) = id_val.as_i64() {
+					n.to_string()
+				} else if let Some(s) = id_val.as_str() {
+					if let Ok(n) = s.parse::<i64>() {
+						n.to_string()
+					} else {
+						return Err("chat_id must be a valid integer".into());
+					}
+				} else {
+					return Err("chat_id must be a valid integer".into());
+				}
+			} else {
+				return Err("chat_id must be provided".into());
+			}
+		} else {
+			return Err("chat_id must be provided".into());
+		};
+		let chat_id: i32 = chat_id_str
+			.parse()
+			.map_err(|_| "chat_id must be a valid integer")?;
 
-		Ok(clarification)
+		// Insert the clarification message into the database to stop the pipeline
+		let record = sqlx::query!(
+			r#"
+			INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+			VALUES ($1, NULL, FALSE, NOW(), $2)
+			RETURNING id;
+			"#,
+			chat_id,
+			clarification
+		)
+		.fetch_one(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		info!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			chat_id = chat_id,
+			message_id = record.id,
+			"Clarification message sent - pipeline stopped"
+		);
+		debug!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			clarification = %clarification,
+			"Tool output"
+		);
+
+		// Return success message - this signals the pipeline is stopped
+		Ok(json!({
+			"status": "clarification_sent",
+			"chat_id": chat_id,
+			"message_id": record.id,
+			"message": clarification,
+			"timestamp": chrono::Utc::now().to_rfc3339()
+		})
+		.to_string())
 	}
 }
 
-/// Tool 7: Update Context
+/// Tool 7: Respond to User
+/// Sends a response to the user with the current itinerary (if available) or asks for more information.
+/// This tool STOPS the pipeline and sends the final message to the user.
+#[derive(Clone)]
+pub struct RespondToUserTool {
+	pool: PgPool,
+}
+
+impl RespondToUserTool {
+	pub fn new(pool: PgPool) -> Self {
+		Self { pool }
+	}
+}
+
+#[async_trait]
+impl Tool for RespondToUserTool {
+	fn name(&self) -> String {
+		"respond_to_user".to_string()
+	}
+
+	fn description(&self) -> String {
+		"STOPS THE PIPELINE and sends a response to the user. If active_itinerary exists in context, creates/updates the itinerary in the database and sends it to the user. If active_itinerary is empty or missing, sends a message asking for more information. This tool inserts a message into the chat and returns a success message. Use this as your final action when ready to respond to the user."
+			.to_string()
+	}
+
+	fn parameters(&self) -> Value {
+		json!({
+			"type": "object",
+			"properties": {
+				"chat_id": {
+					"type": "string",
+					"description": "The ID of the chat session as a string"
+				},
+				"message": {
+					"type": "string",
+					"description": "Optional message to send to the user as a string. If not provided, will generate based on itinerary status."
+				}
+			},
+			"required": ["chat_id"]
+		})
+	}
+
+	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		debug!(
+			target: "orchestrator_tool",
+			tool = "respond_to_user",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in respond_to_user"
+		);
+		
+		// Handle chat_id as string, number, or object (extract string value)
+		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
+			s.to_string()
+		} else if let Some(n) = input["chat_id"].as_i64() {
+			n.to_string()
+		} else if input["chat_id"].is_object() {
+			// Try to extract "id" field from object, or convert whole object to string
+			if let Some(id_val) = input["chat_id"].get("id") {
+				if let Some(n) = id_val.as_i64() {
+					n.to_string()
+				} else if let Some(s) = id_val.as_str() {
+					if let Ok(n) = s.parse::<i64>() {
+						n.to_string()
+					} else {
+						input["chat_id"].to_string()
+					}
+				} else {
+					input["chat_id"].to_string()
+				}
+			} else {
+				input["chat_id"].to_string()
+			}
+		} else {
+			input["chat_id"].to_string()
+		};
+		let chat_id: i32 = chat_id_str
+			.parse()
+			.map_err(|_| "chat_id must be a valid integer")?;
+		// Handle message as either string or object (convert object to string)
+		let optional_message = input.get("message").map(|m| {
+			if m.is_string() {
+				m.as_str().unwrap_or("").to_string()
+			} else if m.is_object() {
+				serde_json::to_string(m).unwrap_or_else(|_| "{}".to_string())
+			} else {
+				m.to_string()
+			}
+		});
+
+		info!(target: "orchestrator_tool", tool = "respond_to_user", chat_id = chat_id, "Responding to user - pipeline stopped");
+		debug!(target: "orchestrator_tool", tool = "respond_to_user", input = %serde_json::to_string(&input)?, "Tool input");
+
+		// Get context to check for active_itinerary
+		let context_row = sqlx::query!(
+			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+			chat_id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		let context_data = if let Some(row) = context_row {
+			if let Some(ctx) = row.context {
+				serde_json::from_value::<ContextData>(ctx.clone())
+					.unwrap_or_else(|_| ContextData {
+						user_profile: None,
+						chat_history: vec![],
+						active_itinerary: None,
+						events: vec![],
+						tool_history: vec![],
+						pipeline_stage: None,
+						researched_events: vec![],
+						constrained_events: vec![],
+						optimized_events: vec![],
+						constraints: vec![],
+					})
+			} else {
+				ContextData {
+					user_profile: None,
+					chat_history: vec![],
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+					constraints: vec![],
+				}
+			}
+		} else {
+			ContextData {
+				user_profile: None,
+				chat_history: vec![],
+				active_itinerary: None,
+				events: vec![],
+				tool_history: vec![],
+				pipeline_stage: None,
+				researched_events: vec![],
+				constrained_events: vec![],
+				optimized_events: vec![],
+				constraints: vec![],
+			}
+		};
+
+		// Check if we have an active itinerary
+		let has_itinerary = context_data.active_itinerary.is_some() 
+			&& context_data.active_itinerary.as_ref().map(|it| {
+				// Check if itinerary is not empty (has some structure)
+				!it.is_null() && (!it.is_object() || !it.as_object().unwrap().is_empty())
+			}).unwrap_or(false);
+
+		let (message_text, message_id) = if has_itinerary {
+			// We have an itinerary - for now, just create a placeholder message
+			// TODO: In the future, another agent will create the actual itinerary in the DB
+			// For now, we'll insert a message with the itinerary data as text
+			let itinerary_text = serde_json::to_string_pretty(&context_data.active_itinerary)?;
+			let default_message = format!(
+				"I've created your itinerary! Here are the details:\n\n{}",
+				itinerary_text
+			);
+			let message = optional_message.map(|s| s.to_string()).unwrap_or(default_message);
+
+			// Insert message without itinerary_id for now (since we're not creating the itinerary yet)
+			// TODO: When itinerary creation is implemented, create the itinerary and use its ID
+			let record = sqlx::query!(
+				r#"
+				INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+				VALUES ($1, NULL, FALSE, NOW(), $2)
+				RETURNING id;
+				"#,
+				chat_id,
+				message
+			)
+			.fetch_one(&self.pool)
+			.await
+			.map_err(|e| format!("Database error: {}", e))?;
+
+			info!(
+				target: "orchestrator_tool",
+				tool = "respond_to_user",
+				chat_id = chat_id,
+				message_id = record.id,
+				"Sent itinerary to user"
+			);
+
+			(message, record.id)
+		} else {
+			// No itinerary - ask for more information
+			let default_message = "I need more information to create your itinerary. Could you please provide:\n- Your travel destination\n- Travel dates (start and end)\n- Budget\n- Any preferences or constraints you have?";
+			let message = optional_message.unwrap_or(default_message.to_string());
+
+			// Insert message asking for more info
+			let record = sqlx::query!(
+				r#"
+				INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+				VALUES ($1, NULL, FALSE, NOW(), $2)
+				RETURNING id;
+				"#,
+				chat_id,
+				message
+			)
+			.fetch_one(&self.pool)
+			.await
+			.map_err(|e| format!("Database error: {}", e))?;
+
+			info!(
+				target: "orchestrator_tool",
+				tool = "respond_to_user",
+				chat_id = chat_id,
+				message_id = record.id,
+				"Asked user for more information"
+			);
+
+			(message, record.id)
+		};
+
+		// Return a special marker that send_message_to_llm can detect
+		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
+		Ok(format!("MESSAGE_INSERTED:{}:{}", message_id, message_text))
+	}
+}
+
+/// Tool 8: Update Context
 /// Updates conversation context with new information.
 /// Used to store the conversation context in the database.
 #[derive(Clone)]
@@ -709,11 +1227,11 @@ impl Tool for UpdateContextTool {
 			"properties": {
 				"chat_id": {
 					"type": "string",
-					"description": "The chat/conversation ID"
+					"description": "The chat/conversation ID as a string"
 				},
 				"updates": {
-					"type": "object",
-					"description": "The context updates to persist"
+					"type": "string",
+					"description": "The context updates to persist as a JSON string. If you have an object, serialize it to JSON first."
 				}
 			},
 			"required": ["chat_id", "updates"]
@@ -721,13 +1239,61 @@ impl Tool for UpdateContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		let chat_id_str = input["chat_id"]
-			.as_str()
-			.ok_or("chat_id must be a string")?;
+		debug!(
+			target: "orchestrator_tool",
+			tool = "update_context",
+			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
+			"Received input in update_context"
+		);
+		
+		// Handle chat_id as string, number, or object (extract string value)
+		let chat_id_str = if let Some(s) = input["chat_id"].as_str() {
+			s.to_string()
+		} else if let Some(n) = input["chat_id"].as_i64() {
+			n.to_string()
+		} else if input["chat_id"].is_object() {
+			// Try to extract "id" field from object, or convert whole object to string
+			if let Some(id_val) = input["chat_id"].get("id") {
+				if let Some(n) = id_val.as_i64() {
+					n.to_string()
+				} else if let Some(s) = id_val.as_str() {
+					if let Ok(n) = s.parse::<i64>() {
+						n.to_string()
+					} else {
+						input["chat_id"].to_string()
+					}
+				} else {
+					input["chat_id"].to_string()
+				}
+			} else {
+				input["chat_id"].to_string()
+			}
+		} else {
+			input["chat_id"].to_string()
+		};
 		let chat_id: i32 = chat_id_str
 			.parse()
 			.map_err(|_| "chat_id must be a valid integer")?;
-		let updates = input["updates"].clone();
+		
+		debug!(
+			target: "orchestrator_tool",
+			tool = "update_context",
+			chat_id = chat_id,
+			updates_type = ?input["updates"].as_object().map(|_| "object").or_else(|| input["updates"].as_str().map(|_| "string")),
+			"Processing updates"
+		);
+		
+		// Handle updates - can be string (JSON), object, or already parsed
+		let updates: Value = if let Some(s) = input["updates"].as_str() {
+			// If it's a string, try to parse it as JSON
+			serde_json::from_str(s).unwrap_or_else(|_| json!({}))
+		} else if input["updates"].is_object() {
+			// If it's already an object, use it directly
+			input["updates"].clone()
+		} else {
+			// Fallback to empty object
+			json!({})
+		};
 
 		// Update chat session title if provided
 		if let Some(title) = updates.get("title").and_then(|t| t.as_str()) {
@@ -996,82 +1562,11 @@ pub fn get_orchestrator_tools(
 			constraint_agent,
 			optimize_agent,
 		)),
-		Arc::new(AskForClarificationTool {
-			llm: Arc::clone(&llm),
-		}),
+		Arc::new(AskForClarificationTool::new(
+			Arc::clone(&llm),
+			pool.clone(),
+		)),
+		Arc::new(RespondToUserTool::new(pool.clone())),
 		Arc::new(UpdateContextTool::new(pool)),
 	]
 }
-
-/// The system prompt for the Orchestrator Agent.
-pub const ORCHESTRATOR_SYSTEM_PROMPT: &str = r#"
-You are the Orchestrator Agent, the central brain of a multi-agent travel planning system.
-
-Your responsibilities:
-1. Parse user input to understand their travel intent, destination, dates, budget, and constraints
-2. Retrieve relevant context (user profile, chat history, active itineraries, pipeline state)
-3. Guide the workflow through the pipeline stages:
-   - Initial: Parse intent, load context, check for missing info
-   - Researching: Route to Research Agent to gather events and POIs
-   - Constraining: Route to Constraint Agent to validate timing, budget, accessibility
-   - Optimizing: Route to Optimizer Agent to rank POIs and build schedule
-   - Validating: Validate pipeline completion and final itinerary
-   - Complete: Display final readable itinerary to user
-   - UserFeedback: Handle user feedback and route to relevant agent
-4. Maintain the running list of events as they progress through the pipeline
-5. Update context with pipeline stage and events at each stage
-6. Ask for clarification when information is missing or ambiguous
-
-Pipeline Workflow:
-1. INITIAL STAGE:
-   - Use parse_user_intent to understand what the user wants
-   - Extract constraints from the parsed intent and use update_context to store them in context.constraints
-   - Use retrieve_user_profile and retrieve_chat_context to get relevant background
-   - Check pipeline_stage in context to see if we're continuing or starting fresh
-   - If critical information is missing, use ask_for_clarification and set pipeline_stage to "initial"
-   - If complete, set pipeline_stage to "researching" and proceed
-
-2. RESEARCHING STAGE:
-   - Use route_task with task_type "research" to gather events and POIs
-   - Update context with researched_events from the research agent response
-   - Set pipeline_stage to "constraining" when research is complete
-   - Update events field with the researched events
-
-3. CONSTRAINING STAGE:
-   - Use route_task with task_type "constraint" to validate events
-   - Pass the researched_events to the constraint agent
-   - Update context with constrained_events from the constraint agent response
-   - Set pipeline_stage to "optimizing" when constraints are validated
-   - Update events field with the constrained events
-
-4. OPTIMIZING STAGE:
-   - Use route_task with task_type "optimize" to rank POIs and build schedule
-   - Pass the constrained_events to the optimizer agent
-   - Update context with optimized_events and active_itinerary from optimizer response
-   - Set pipeline_stage to "validating" when optimization is complete
-   - Update events field with the optimized events
-
-5. VALIDATING STAGE:
-   - Validate that the itinerary is complete and coherent
-   - Set pipeline_stage to "complete" when validation passes
-   - Update active_itinerary with the final itinerary
-
-6. COMPLETE STAGE:
-   - Display the final readable itinerary to the user
-   - Wait for user feedback
-
-7. USER FEEDBACK:
-   - If user provides feedback, set pipeline_stage to "user_feedback"
-   - Route to the appropriate agent based on feedback type
-   - Update context and return to appropriate stage
-
-Always use update_context to:
-- Set pipeline_stage when moving between stages
-- Update events with the current running list
-- Update researched_events, constrained_events, optimized_events as they're produced
-- Update active_itinerary when a complete itinerary is ready
-
-Maintain context awareness and ensure a smooth, conversational experience.
-Be proactive - if the user's request is clear and complete, proceed through the pipeline.
-If information is missing, ask for it naturally and conversationally.
-"#;

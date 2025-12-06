@@ -27,7 +27,7 @@ use crate::{
 	swagger::SecurityAddon,
 };
 use langchain_rust::{chain::Chain, prompt_args};
-use tracing::{debug, info};
+use tracing::{debug, error, info, warn};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -117,12 +117,27 @@ async fn send_message_to_llm(
 	);
 	
 	let agent_guard = agent.lock().await;
+	
+	debug!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		input_text = text,
+		"Invoking orchestrator agent"
+	);
+	
 	let ai_text = agent_guard
 		.invoke(prompt_args! {
 			"input" => text,
 		})
 		.await
 		.map_err(|e| {
+			error!(
+				target: "orchestrator_pipeline",
+				chat_session_id = chat_session_id,
+				error = %e,
+				error_debug = ?e,
+				"Orchestrator agent error - full details"
+			);
 			info!(
 				target: "orchestrator_pipeline",
 				chat_session_id = chat_session_id,
@@ -145,9 +160,59 @@ async fn send_message_to_llm(
 		"Orchestrator agent output"
 	);
 
-	// Create dummy itinerary (used when MockLLM is active)
-	let mut ai_itinerary = Itinerary {
-		id: 0,
+	// Check if RespondToUserTool already inserted the message
+	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
+	if ai_text.starts_with("MESSAGE_INSERTED:") {
+		let parts: Vec<&str> = ai_text.splitn(3, ':').collect();
+		if parts.len() == 3 {
+			if let Ok(message_id) = parts[1].parse::<i32>() {
+				// Fetch the message that was already inserted by RespondToUserTool
+				let record = sqlx::query!(
+					r#"
+					SELECT id, timestamp, text, itinerary_id
+					FROM messages
+					WHERE id = $1 AND chat_session_id = $2
+					"#,
+					message_id,
+					chat_session_id
+				)
+				.fetch_optional(pool)
+				.await
+				.map_err(AppError::from)?;
+
+				if let Some(msg) = record {
+					info!(
+						target: "orchestrator_pipeline",
+						chat_session_id = chat_session_id,
+						message_id = msg.id,
+						"Message already inserted by RespondToUserTool, returning it"
+					);
+					return Ok(Message {
+						id: msg.id,
+						is_user: false,
+						timestamp: msg.timestamp,
+						text: msg.text,
+						itinerary_id: msg.itinerary_id,
+					});
+				}
+			}
+		}
+		// If parsing failed, fall through to default behavior
+		warn!(
+			target: "orchestrator_pipeline",
+			chat_session_id = chat_session_id,
+			"Failed to parse MESSAGE_INSERTED marker, falling back to default behavior"
+		);
+	}
+
+	// Default behavior: Create itinerary based on whether MockLLM is used
+	// Check if we're using MockLLM
+	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
+	
+	let mut ai_itinerary = if use_mock {
+		// Create dummy itinerary when MockLLM is active
+		Itinerary {
+			id: 0,
 		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 		end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 		event_days: vec![
@@ -236,9 +301,21 @@ async fn send_message_to_llm(
 				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
 			},
 		],
-		chat_session_id: None,
-		title: String::from("World Tour 11/5-15 2025"),
-		unassigned_events: vec![],
+			chat_session_id: None,
+			title: String::from("World Tour 11/5-15 2025"),
+			unassigned_events: vec![],
+		}
+	} else {
+		// Return empty itinerary when real LLM is used
+		Itinerary {
+			id: 0,
+			start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+			end_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
+			event_days: vec![],
+			chat_session_id: None,
+			title: String::from("Empty Itinerary"),
+			unassigned_events: vec![],
+		}
 	};
 
 	// Insert generated itinerary into db
