@@ -818,7 +818,7 @@ pub async fn api_user_event(
 			event.hard_start,
 			event.hard_end,
 			event.timezone,
-			event.photo_name,  // Add this
+			event.photo_name,
 			id,
 			user.id,
 		)
@@ -850,7 +850,7 @@ pub async fn api_user_event(
 			event.hard_start,
 			event.hard_end,
 			event.timezone,
-			event.photo_name, 
+			event.photo_name,
 		)
 		.fetch_one(&pool)
 		.await
