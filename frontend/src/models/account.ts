@@ -33,7 +33,6 @@ export type UpdateRequest = {
 	/// Optional new disabilites
 	/// * String is a comma-separated list of preferences
 	disabilities: string | null;
-	profile_picture: string | null;
 };
 
 /// API route response for POST `/api/account/update`.
@@ -55,7 +54,6 @@ export type UpdateResponse = {
 	/// Optional disabilites
 	/// * String is a comma-separated list of preferences
 	disabilities: string | null;
-	profile_picture: string | null;
 };
 
 /// API route response for GET `/api/account/current`.
@@ -75,7 +73,6 @@ export type CurrentResponse = {
 	food_allergies: string | null;
 	/// Optional food and allergies preferences
 	disabilities: string | null;
-	profile_picture: string | null;
 };
 
 export enum BudgetBucket {

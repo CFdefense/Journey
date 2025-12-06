@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import { useLocation } from "react-router-dom";
 import "../styles/Account.css";
 import type { EventDay, Itinerary } from "../models/itinerary";
+import userPfp from "../assets/user-pfp-temp.png";
 
 export default function Itineraries() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Itineraries() {
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
-  const navbarAvatarUrl = "/user-pfp-temp.png";
+  const navbarAvatarUrl = userPfp;
   const [profileImageUrl, setProfileImageUrl] =
     useState<string>(navbarAvatarUrl);
   const [tripsPlanned, setTripsPlanned] = useState<number | null>(null);
@@ -37,7 +38,6 @@ export default function Itineraries() {
       if (account && currentResult.status === 200) {
         setFirstName(account.first_name || "");
         setLastName(account.last_name || "");
-        setProfileImageUrl(account.profile_picture || navbarAvatarUrl);
         const maybeTrips = (account as any).trips_planned;
         setTripsPlanned(typeof maybeTrips === "number" ? maybeTrips : 5);
         const maybeCreated = (account as any).created_at;
@@ -135,11 +135,7 @@ export default function Itineraries() {
 
   return (
     <div className="auth-page auth-page--account">
-      <Navbar
-        page="view"
-        firstName={firstName}
-        profileImageUrl={profileImageUrl}
-      />
+      <Navbar page="view" />
       <div className="auth-content">
         <div className="account-wrapper">
           <aside className="sidebar">

@@ -433,8 +433,7 @@ pub async fn api_validate(Extension(user): Extension<AuthUser>) -> ApiResult<()>
 				"budget_preference": "MediumBudget",
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
-				"disabilities": "knee replacement",
-				"profile_picture": "base64-txt"
+				"disabilities": "knee replacement"
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -465,8 +464,7 @@ pub async fn api_current(
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             COALESCE(food_allergies, '') as "food_allergies!: String",
-            COALESCE(disabilities, '') as "disabilities!: String",
-			COALESCE(profile_picture, '') as "profile_picture!: String"
+            COALESCE(disabilities, '') as "disabilities!: String"
         FROM accounts
         WHERE id = $1
         "#,
@@ -493,7 +491,6 @@ pub async fn api_current(
 /// - 'risk_preference': The user's risk preference (string).
 /// - 'food_allergies': The user's allergies (string).
 /// - 'disabilities': The user's disabilities (string).
-/// - 'profile_picture': The user's profile pic (string)
 ///
 /// # Responses
 /// - `200 OK` - with body: [UpdateResponse]
@@ -512,8 +509,7 @@ pub async fn api_current(
 ///         "budget_preference": "",
 ///         "risk_preference": "",
 ///         "food_allergies": "",
-///         "disabilities": "",
-/// 		"profile_picture": ""
+///         "disabilities": ""
 ///       }'
 /// ```
 #[utoipa::path(
@@ -542,8 +538,7 @@ pub async fn api_current(
 				"budget_preference": "LowBudget",
 				"risk_preference": "Adventurer",
 				"food_allergies": "peanuts,vegetarian,pollen",
-				"disabilities": "knee replacement",
-				"profile_picture": "base64-txt"
+				"disabilities": "knee replacement"
 			})
 		),
 		(status=400, description="Bad Request"),
@@ -614,10 +609,8 @@ pub async fn api_update(
             budget_preference = COALESCE($5, budget_preference),
             risk_preference = COALESCE($6, risk_preference),
             food_allergies = COALESCE($7, food_allergies),
-            disabilities = COALESCE($8, disabilities),
-			profile_picture = COALESCE($9, profile_picture)
-			
-        WHERE id = $10
+            disabilities = COALESCE($8, disabilities)
+        WHERE id = $9
         RETURNING
             email,
             first_name,
@@ -625,8 +618,7 @@ pub async fn api_update(
             budget_preference as "budget_preference: BudgetBucket",
             risk_preference as "risk_preference: RiskTolerence",
             food_allergies,
-            disabilities,
-			profile_picture
+            disabilities
         "#,
 		payload.email,
 		payload.first_name,
@@ -636,7 +628,6 @@ pub async fn api_update(
 		payload.risk_preference as Option<RiskTolerence>,
 		payload.food_allergies,
 		payload.disabilities,
-		payload.profile_picture,
 		user.id
 	)
 	.fetch_one(&pool)

@@ -57,8 +57,6 @@ pub struct UpdateRequest {
 	/// Optional new disabilites
 	/// * String is a comma-separated list of preferences
 	pub disabilities: Option<String>,
-	/// Optional new profile pic
-	pub profile_picture: Option<String>,
 }
 
 /// API route response for POST `/api/account/update`.
@@ -81,8 +79,6 @@ pub struct UpdateResponse {
 	/// Optional disabilites
 	/// * String is a comma-separated list of preferences
 	pub disabilities: String,
-	/// Optional new profile pic
-	pub profile_picture: Option<String>,
 }
 
 /// API route response for GET `/api/account/current`.
@@ -100,13 +96,9 @@ pub struct CurrentResponse {
 	/// Optional risk enum
 	pub risk_preference: Option<RiskTolerence>,
 	/// Optional food and allergies preferences
-	/// should this have option encoded...
 	pub food_allergies: String,
 	/// Optional food and allergies preferences
-	/// should this have option encoded...
 	pub disabilities: String,
-	/// Optional new profile pic
-	pub profile_picture: Option<String>,
 }
 
 impl SignupRequest {
