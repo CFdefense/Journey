@@ -60,6 +60,7 @@ export type Event = {
 	periods: Period[];
 	special_days: string[];
 	block_index: number | null;
+	custom_image: string | null;
 };
 
 /// If you use this as a spread initializer, it must come before all other fields to not overwrite them.
@@ -106,7 +107,8 @@ export const EVENT_DEFAULT: Event = {
 	open_now: null,
 	periods: [],
 	special_days: [],
-	block_index: null
+	block_index: null,
+	custom_image: null
 };
 
 export type Period = {
@@ -148,6 +150,7 @@ export type UserEventRequest = {
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	custom_image: string | null;
 };
 
 export type UserEventResponse = {

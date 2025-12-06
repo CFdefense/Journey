@@ -68,6 +68,9 @@ const EventCard: React.FC<EventCardProps> = ({
     ...JSON.parse(JSON.stringify(event)),
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
   });
+  const [customImagePreview, setCustomImagePreview] = useState<string | null>(
+  inputEvent.custom_image || null
+);
 
   const navigate = useNavigate();
 
@@ -108,6 +111,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const closeModal = () => {
     setInputEvent(eventData);
+    setCustomImagePreview(eventData.custom_image || null); 
     setIsOpen(false);
   };
 
@@ -178,60 +182,126 @@ const EventCard: React.FC<EventCardProps> = ({
     return addr;
   };
 
+  const handleCustomImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setCustomImagePreview(base64String);
+      setInputEvent({
+        ...inputEvent,
+        custom_image: base64String
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const handleCustomImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setCustomImagePreview(base64String);
+      setInputEvent({
+        ...inputEvent,
+        custom_image: base64String
+      });
+    };
+    reader.readAsDataURL(file);
+  } else {
+    toast.error('Please drop an image file');
+  }
+};
+
+const handleCustomImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
+const removeCustomImage = () => {
+  setCustomImagePreview(null);
+  setInputEvent({
+    ...inputEvent,
+    custom_image: null
+  });
+};
+
   const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const userEvent: UserEventRequest = {
-      id: eventData.id,
-      event_name: sanitize(inputEvent.event_name)!,
-      event_description: sanitize(inputEvent.event_description),
-      event_type: sanitize(inputEvent.event_type),
-      street_address: sanitize(inputEvent.street_address),
-      city: sanitize(inputEvent.city),
-      country: sanitize(inputEvent.country),
-      postal_code: inputEvent.postal_code,
-      hard_start: sanitize(inputEvent.hard_start),
-      hard_end: sanitize(inputEvent.hard_end),
-      timezone:
-        inputEvent.timezoneIndex === -1
-          ? null
-          : TIMEZONES[inputEvent.timezoneIndex]
-    };
-    const result = await apiUserEvent(userEvent);
-
-    if (result.status === 401) {
-      toast.error("Unauthorized user. Please log in.");
-      navigate("/login");
-      return;
-    }
-
-    if (result.status == 404) {
-      toast.error("User event not found, please try again.");
-      return;
-    }
-
-    if (!result.result || result.status !== 200) {
-      toast.error("Could not update user event, please try again.");
-      return;
-    }
-
-    const updatedEvent: Event = {
-      ...EVENT_DEFAULT, // user events don't use google maps stuff so we can use
-      ...userEvent,
-      user_created: true,
-      block_index: event.block_index,
-      id: event.id
-    };
-    setEventData(updatedEvent);
-    const updatedDays = localDays.map((day) => ({
-      ...day,
-      timeBlocks: day.timeBlocks.map((block) => ({
-        ...block,
-        events: block.events.map((e) => (e.id === event.id ? updatedEvent : e))
-      }))
-    }));
-    onDaysUpdate(updatedDays);
-    setIsOpen(false);
+  e.preventDefault();
+  const userEvent: UserEventRequest = {
+    id: eventData.id,
+    event_name: sanitize(inputEvent.event_name)!,
+    event_description: sanitize(inputEvent.event_description),
+    event_type: sanitize(inputEvent.event_type),
+    street_address: sanitize(inputEvent.street_address),
+    city: sanitize(inputEvent.city),
+    country: sanitize(inputEvent.country),
+    postal_code: inputEvent.postal_code,
+    hard_start: sanitize(inputEvent.hard_start),
+    hard_end: sanitize(inputEvent.hard_end),
+    timezone:
+      inputEvent.timezoneIndex === -1
+        ? null
+        : TIMEZONES[inputEvent.timezoneIndex],
+    custom_image: inputEvent.custom_image || null // ADD THIS LINE
   };
+  const result = await apiUserEvent(userEvent);
+
+  if (result.status === 401) {
+    toast.error("Unauthorized user. Please log in.");
+    navigate("/login");
+    return;
+  }
+
+  if (result.status == 404) {
+    toast.error("User event not found, please try again.");
+    return;
+  }
+
+  if (!result.result || result.status !== 200) {
+    toast.error("Could not update user event, please try again.");
+    return;
+  }
+
+  const updatedEvent: Event = {
+    ...EVENT_DEFAULT,
+    ...userEvent,
+    user_created: true,
+    block_index: event.block_index,
+    id: event.id
+  };
+  setEventData(updatedEvent);
+  const updatedDays = localDays.map((day) => ({
+    ...day,
+    timeBlocks: day.timeBlocks.map((block) => ({
+      ...block,
+      events: block.events.map((e) => (e.id === event.id ? updatedEvent : e))
+    }))
+  }));
+  onDaysUpdate(updatedDays);
+  setIsOpen(false);
+};
 
   const onDeleteUserEvent = async () => {
     if (
@@ -335,46 +405,53 @@ const EventCard: React.FC<EventCardProps> = ({
         </button>
 
         <div className="event-image-container">
-          <div className="event-image-placeholder">
-            {eventData.photo_name && !imageError ? (
-              <>
-                <img
-                  src={getGooglePhotoUrl(eventData.photo_name)}
-                  alt={eventData.event_name}
-                  className="event-image"
-                  onError={() => setImageError(true)}
-                />
-                {eventData.photo_author && (
-                  <a
-                    href={eventData.photo_author_uri || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="photo-attribution"
-                    title={`Photo by ${eventData.photo_author}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    📷
-                  </a>
-                )}
-              </>
-            ) : (
-              <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 200 200"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect width="200" height="200" fill="#f0f0f0" />
-                <path
-                  d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
-                  fill="#d0d0d0"
-                />
-                <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
-              </svg>
-            )}
-          </div>
-        </div>
+  <div className="event-image-placeholder">
+    {/* Priority: custom_image > photo_name > placeholder */}
+    {eventData.custom_image ? (
+      <img
+        src={eventData.custom_image}
+        alt={eventData.event_name}
+        className="event-image"
+      />
+    ) : eventData.photo_name && !imageError ? (
+      <>
+        <img
+          src={getGooglePhotoUrl(eventData.photo_name)}
+          alt={eventData.event_name}
+          className="event-image"
+          onError={() => setImageError(true)}
+        />
+        {eventData.photo_author && (
+          <a
+            href={eventData.photo_author_uri || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="photo-attribution"
+            title={`Photo by ${eventData.photo_author}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            📷
+          </a>
+        )}
+      </>
+    ) : (
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 200 200"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect width="200" height="200" fill="#f0f0f0" />
+        <path
+          d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
+          fill="#d0d0d0"
+        />
+        <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
+      </svg>
+    )}
+  </div>
+</div>
         <div className="event-content">
           {/* Title should always appear above the date/time */}
           <h3 className="event-title">{eventData.event_name}</h3>
@@ -712,6 +789,94 @@ const EventCard: React.FC<EventCardProps> = ({
                       </select>
                     </label>
                   )}
+
+                  <div style={{ marginTop: '16px' }}>
+  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+    Custom Image (Optional)
+  </label>
+  
+  {!customImagePreview ? (
+    <div
+      onDrop={handleCustomImageDrop}
+      onDragOver={handleCustomImageDragOver}
+      style={{
+        border: '2px dashed #ccc',
+        borderRadius: '8px',
+        padding: '32px',
+        textAlign: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        backgroundColor: '#f9fafb'
+      }}
+      onClick={() => document.getElementById('edit-image-upload-input')?.click()}
+    >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#9ca3af"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ margin: '0 auto 12px' }}
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+      <p style={{ color: '#6b7280', marginBottom: '8px' }}>
+        Drop an image here or click to select
+      </p>
+      <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+        PNG, JPG, GIF up to 5MB
+      </p>
+      <input
+        id="edit-image-upload-input"
+        type="file"
+        accept="image/*"
+        onChange={handleCustomImageChange}
+        style={{ display: 'none' }}
+      />
+    </div>
+  ) : (
+    <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
+      <img
+        src={customImagePreview}
+        alt="Preview"
+        style={{
+          width: '100%',
+          maxHeight: '300px',
+          objectFit: 'cover',
+          borderRadius: '8px'
+        }}
+      />
+      <button
+        type="button"
+        onClick={removeCustomImage}
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: '32px',
+          height: '32px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '18px',
+          fontWeight: 'bold'
+        }}
+      >
+        ×
+      </button>
+    </div>
+  )}
+</div>
 
                   <button
                     type="submit"
