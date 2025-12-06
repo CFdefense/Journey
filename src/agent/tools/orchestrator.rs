@@ -39,17 +39,129 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use tokio::sync::Mutex;
 use tracing::{debug, info};
 
+/// Helper function to automatically track tool executions in context
+/// This is called by every tool to record its execution in the tool_history
+async fn track_tool_execution(
+	pool: &PgPool,
+	chat_session_id: &Arc<AtomicI32>,
+	tool_name: &str,
+	input: &Value,
+	output: &str,
+) -> Result<(), Box<dyn Error>> {
+	let chat_id = chat_session_id.load(Ordering::Relaxed);
+	if chat_id == 0 {
+		// If chat_session_id is not set, we're probably in a test or the tool is being called outside the agent context
+		return Ok(());
+	}
+
+	// Get existing context
+	let context_row = sqlx::query!(
+		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+		chat_id
+	)
+	.fetch_optional(pool)
+	.await
+	.map_err(|e| format!("Database error: {}", e))?;
+
+	let mut context_data = if let Some(row) = context_row {
+		if let Some(ctx) = row.context {
+			serde_json::from_value::<ContextData>(ctx.clone())
+				.unwrap_or_else(|_| ContextData {
+					user_profile: None,
+					chat_history: vec![],
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+					constraints: vec![],
+				})
+		} else {
+			ContextData {
+				user_profile: None,
+				chat_history: vec![],
+				active_itinerary: None,
+				events: vec![],
+				tool_history: vec![],
+				pipeline_stage: None,
+				researched_events: vec![],
+				constrained_events: vec![],
+				optimized_events: vec![],
+				constraints: vec![],
+			}
+		}
+	} else {
+		ContextData {
+			user_profile: None,
+			chat_history: vec![],
+			active_itinerary: None,
+			events: vec![],
+			tool_history: vec![],
+			pipeline_stage: None,
+			researched_events: vec![],
+			constrained_events: vec![],
+			optimized_events: vec![],
+			constraints: vec![],
+		}
+	};
+
+	// Add tool execution to history
+	let tool_exec = ToolExecution {
+		tool_name: tool_name.to_string(),
+		input: input.clone(),
+		output: serde_json::from_str(output).unwrap_or_else(|_| json!(output)),
+		timestamp: chrono::Utc::now().to_rfc3339(),
+		success: true, // Assume success if the tool is calling this function
+	};
+	
+	context_data.tool_history.push(tool_exec);
+	
+	// Keep only last 100 entries
+	if context_data.tool_history.len() > 100 {
+		context_data.tool_history.remove(0);
+	}
+
+	// Save updated context to database
+	let context_json = serde_json::to_value(&context_data)?;
+	sqlx::query!(
+		r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
+		context_json as serde_json::Value,
+		chat_id
+	)
+	.execute(pool)
+	.await
+	.map_err(|e| format!("Database error: {}", e))?;
+
+	debug!(
+		target: "orchestrator_tool",
+		tool = tool_name,
+		chat_id = chat_id,
+		tool_history_count = context_data.tool_history.len(),
+		"Tracked tool execution"
+	);
+
+	Ok(())
+}
+
 /// Tool 1: Parse User Intent
 /// Parses user input to extract intent, destination, dates, budget, and constraints.
 /// Returns a UserIntent object.
 #[derive(Clone)]
 pub struct ParseUserIntentTool {
 	llm: Arc<dyn LLM + Send + Sync>,
+	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl ParseUserIntentTool {
-	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self { llm: Arc::new(llm) }
+	pub fn new(llm: Arc<dyn LLM + Send + Sync>, pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
+		Self { 
+			llm,
+			pool,
+			chat_session_id,
+		}
 	}
 }
 
@@ -60,7 +172,7 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	fn description(&self) -> String {
-		"Parses user input using an LLM to extract intent, destination, dates, budget, preferences, and constraints. Returns a UserIntent object with constraints array that should be stored in context for other agents to access."
+		"Parses user input using an LLM to extract intent, destination, dates, budget, preferences, and constraints. Returns a UserIntent object with constraints array that should be stored in context for other agents to access. IMPORTANT: If you have retrieved chat context, include the recent conversation history in your analysis to extract information from previous messages."
              .to_string()
 	}
 
@@ -70,7 +182,7 @@ impl Tool for ParseUserIntentTool {
 			"properties": {
 				"user_message": {
 					"type": "string",
-					"description": "The raw user message to parse"
+					"description": "The raw user message to parse. If you have conversation history from retrieve_chat_context, include the recent messages (last 3-5 exchanges) as context in this field to help extract information from previous messages."
 				}
 			},
 			"required": ["user_message"]
@@ -85,6 +197,8 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone(); // Clone for tracking
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "parse_user_intent",
@@ -102,30 +216,39 @@ impl Tool for ParseUserIntentTool {
 		};
 
 		let prompt = format!(
-			r#"Extract travel planning information from the user's message.
- 
- User message: "{}"
- 
- Extract the following information and return ONLY a valid JSON object with these fields:
- {{
-   "action": "create_itinerary" | "modify_itinerary" | "query" | "other",
-   "destination": string or null (city/country name),
-   "start_date": string or null (ISO format YYYY-MM-DD if mentioned),
-   "end_date": string or null (ISO format YYYY-MM-DD if mentioned),
-   "budget": number or null (total budget in USD),
-   "preferences": [array of strings - interests like "museums", "food", "nightlife", etc.],
-   "constraints": [array of strings - dietary restrictions, accessibility needs, etc.],
-   "missing_info": [array of strings - what critical information is missing]
- }}
- 
- Rules:
- - If dates are relative (e.g., "next month", "in June"), convert to approximate ISO dates
- - Budget should be extracted as a number without currency symbols
- - Preferences include activities, interests, and travel style
- - Constraints include dietary restrictions, accessibility needs, budget limitations
- - missing_info should list critical missing information like "destination", "dates", "budget"
- 
- Return ONLY the JSON object, no other text."#,
+			r#"Extract travel planning information from the user's conversation history.
+
+CRITICAL: You will receive either:
+1. A JSON string containing a chat_history array with role/content messages
+2. A JSON object with destination/dates/budget fields that you should parse
+3. Plain text describing the travel request
+
+Your job is to extract ALL information mentioned in ANY format.
+
+User input: {}
+
+Extract the following information and return ONLY a valid JSON object with these fields:
+{{
+  "action": "create_itinerary" | "modify_itinerary" | "query" | "other",
+  "destination": string or null (extract from ANY field - look for country/city names like "brazil", "paris", "destination", etc.),
+  "start_date": string or null (ISO format YYYY-MM-DD if mentioned - look in "dates", "start_date", or message content),
+  "end_date": string or null (ISO format YYYY-MM-DD if mentioned - look in "dates", "end_date", or message content),
+  "budget": number or null (total budget in USD - look in "budget" field or dollar amounts in messages. Use midpoint for ranges like "20-30"),
+  "preferences": [array of strings - look in "preferences" field or message content for activities, interests],
+  "constraints": [array of strings - dietary restrictions, accessibility needs found anywhere],
+  "missing_info": [array of strings - list ONLY what is truly missing. If destination/dates/budget appear ANYWHERE, they are NOT missing]
+}}
+
+Rules:
+- If input has a "chat_history" array, read ALL messages in it
+- If input has direct fields like "destination", "dates", "budget", extract those
+- If input is plain text, parse it directly
+- For "july 20-30th" or "june 10-20", extract as start_date "2026-07-20" and end_date "2026-07-30" (year 2026 since we're in Dec 2025)
+- For budget ranges like "20-30 dollars", use the midpoint: 25
+- If preferences say "no preferences" or similar, use empty array but don't list it as missing
+- missing_info should ONLY contain items that are completely absent from the input
+
+Return ONLY the JSON object, no other text."#,
 			user_message
 		);
 
@@ -152,7 +275,12 @@ impl Tool for ParseUserIntentTool {
 			tool = "parse_user_intent",
 			action = %intent.action,
 			destination = ?intent.destination,
+			start_date = ?intent.start_date,
+			end_date = ?intent.end_date,
+			budget = ?intent.budget,
+			preferences_count = intent.preferences.len(),
 			constraints_count = intent.constraints.len(),
+			missing_info = ?intent.missing_info,
 			"Parsed user intent successfully"
 		);
 		debug!(
@@ -163,7 +291,12 @@ impl Tool for ParseUserIntentTool {
 		);
 
 		// Return serialized UserIntent
-		Ok(serde_json::to_string(&intent)?)
+		let result = serde_json::to_string(&intent)?;
+		
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "parse_user_intent", &input_clone, &result).await?;
+		
+		Ok(result)
 	}
 }
 
@@ -201,6 +334,8 @@ impl Tool for RetrieveChatContextTool {
 	}
 
 	async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = _input.clone(); // Clone for tracking
+		
 		// Get chat_session_id from shared atomic (set by controller before agent invocation)
 		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
 		if chat_id == 0 {
@@ -343,7 +478,12 @@ impl Tool for RetrieveChatContextTool {
 		);
 
 		// Return full context including pipeline state
-		Ok(serde_json::to_string(&context_data)?)
+		let result = serde_json::to_string(&context_data)?;
+		
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "retrieve_chat_context", &input_clone, &result).await?;
+		
+		Ok(result)
 	}
 }
 
@@ -353,11 +493,12 @@ impl Tool for RetrieveChatContextTool {
 #[derive(Clone)]
 pub struct RetrieveUserProfileTool {
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl RetrieveUserProfileTool {
-	pub fn new(pool: PgPool) -> Self {
-		Self { pool }
+	pub fn new(pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
+		Self { pool, chat_session_id }
 	}
 }
 
@@ -385,6 +526,8 @@ impl Tool for RetrieveUserProfileTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone(); // Clone for tracking
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "retrieve_user_profile",
@@ -462,7 +605,12 @@ impl Tool for RetrieveUserProfileTool {
 			return Err(format!("User with id {} not found", user_id).into());
 		};
 
-		Ok(serde_json::to_string(&profile)?)
+		let result = serde_json::to_string(&profile)?;
+		
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "retrieve_user_profile", &input_clone, &result).await?;
+		
+		Ok(result)
 	}
 }
 
@@ -471,6 +619,8 @@ pub struct RouteTaskTool {
 	pub research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	pub constraint_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	pub optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
+	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl RouteTaskTool {
@@ -478,11 +628,15 @@ impl RouteTaskTool {
 		research_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 		constraint_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 		optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
+		pool: PgPool,
+		chat_session_id: Arc<AtomicI32>,
 	) -> Self {
 		Self {
 			research_agent,
 			constraint_agent,
 			optimize_agent,
+			pool,
+			chat_session_id,
 		}
 	}
 }
@@ -527,6 +681,8 @@ impl Tool for RouteTaskTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone(); // Clone for tracking
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "route_task",
@@ -721,6 +877,9 @@ impl Tool for RouteTaskTool {
 			"Tool output"
 		);
 		
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "route_task", &input_clone, &result_str).await?;
+		
 		Ok(result_str)
 	}
 }
@@ -752,7 +911,7 @@ impl Tool for AskForClarificationTool {
 	}
 
 	fn description(&self) -> String {
-		"STOPS THE PIPELINE by generating a natural, human-readable clarification question and sending it to the user. This tool inserts a message into the chat and returns the readable question text. Use this when critical information is missing. CRITICAL: After calling this tool, you MUST immediately return 'Final Answer' with the tool's response text. DO NOT call this tool again. DO NOT call any other tools. The tool returns ONLY the readable question text - use that text as your Final Answer. Always provide the missing_info parameter as a JSON string array (e.g., '[\"destination\", \"dates\", \"budget\"]'). If missing_info is not provided, the tool will use default common missing information."
+		"STOPS THE PIPELINE by generating a natural, human-readable clarification question and sending it to the user. This tool inserts a message into the chat and returns the readable question text. Use this when critical information is missing. CRITICAL STOPPING RULE: After calling this tool, you MUST immediately return 'Final Answer' with the EXACT text returned by this tool. DO NOT call this tool again. DO NOT call any other tools. DO NOT call retrieve_chat_context or parse_user_intent after this. The tool returns ONLY the readable question text - use that EXACT text as your Final Answer. This is your FINAL response to the user - stop immediately after receiving the tool response. Always provide the missing_info parameter as a JSON string array (e.g., '[\"destination\", \"dates\", \"budget\"]'). If missing_info is not provided, the tool will use default common missing information."
 			.to_string()
 	}
 
@@ -781,6 +940,8 @@ impl Tool for AskForClarificationTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone(); // Clone for tracking
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "ask_for_clarification",
@@ -866,30 +1027,163 @@ impl Tool for AskForClarificationTool {
 		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
 		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
+		// Retrieve chat context to extract known information
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+
+		// Get chat history to extract known information
+		let messages = sqlx::query!(
+			r#"
+			SELECT
+				m.id,
+				m.is_user,
+				m.timestamp,
+				m.text,
+				m.itinerary_id
+			FROM messages m
+			WHERE m.chat_session_id = $1
+			ORDER BY m.timestamp ASC
+			LIMIT 50
+			"#,
+			chat_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		// Get context to check for parsed intent information
+		let context_row = sqlx::query!(
+			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+			chat_id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+
+		// Extract known information from chat history and context
+		let mut known_info: Vec<String> = Vec::new();
+		let chat_text = messages.iter()
+			.filter(|m| m.is_user)
+			.map(|m| m.text.as_str())
+			.collect::<Vec<&str>>()
+			.join(" ");
+
+		// First, try to get parsed intent from context (most reliable)
+		if let Some(row) = &context_row {
+			if let Some(ctx) = &row.context {
+				// Check for parsed_intent stored in context
+				if let Some(intent_str) = ctx.get("parsed_intent").and_then(|i| i.as_str()) {
+					if let Ok(intent) = serde_json::from_str::<UserIntent>(intent_str) {
+						if let Some(dest) = &intent.destination {
+							known_info.push(format!("Destination: {}", dest));
+						}
+						if let Some(budget) = intent.budget {
+							known_info.push(format!("Budget: ${}", budget));
+						}
+						if intent.start_date.is_some() || intent.end_date.is_some() {
+							let dates = if let (Some(start), Some(end)) = (&intent.start_date, &intent.end_date) {
+								format!("{} to {}", start, end)
+							} else if let Some(start) = &intent.start_date {
+								format!("Starting {}", start)
+							} else if let Some(end) = &intent.end_date {
+								format!("Ending {}", end)
+							} else {
+								"Dates mentioned".to_string()
+							};
+							known_info.push(format!("Dates: {}", dates));
+						}
+						if !intent.preferences.is_empty() {
+							known_info.push(format!("Preferences: {}", intent.preferences.join(", ")));
+						}
+					}
+				}
+				// Also check for direct fields in context
+				if let Some(dest) = ctx.get("destination").and_then(|d| d.as_str()) {
+					if !known_info.iter().any(|i| i.starts_with("Destination:")) {
+						known_info.push(format!("Destination: {}", dest));
+					}
+				}
+			}
+		}
+
+		// If no parsed intent, try to extract from chat history using simple patterns
+		if known_info.is_empty() {
+			let chat_lower = chat_text.to_lowercase();
+			
+			// Check for destination (common country/city names)
+			let destinations = vec!["brazil", "paris", "tokyo", "london", "new york", "rome", "barcelona", "amsterdam", "berlin", "dubai", "singapore", "sydney", "mumbai", "bangkok"];
+			for dest in destinations {
+				if chat_lower.contains(dest) {
+					known_info.push(format!("Destination: {}", dest.split_whitespace().next().unwrap_or(dest).to_uppercase()));
+					break;
+				}
+			}
+			
+			// Check for budget (numbers with $ or dollar/buck keywords)
+			if chat_lower.contains("$") || chat_lower.contains("dollar") || chat_lower.contains("budget") || chat_lower.contains("buck") {
+				let words: Vec<&str> = chat_text.split_whitespace().collect();
+				for (i, word) in words.iter().enumerate() {
+					let word_lower = word.to_lowercase();
+					if word_lower.contains("$") || word_lower.contains("dollar") || word_lower.contains("budget") || word_lower.contains("buck") {
+						// Look for numbers nearby
+						for j in i.saturating_sub(2)..(i + 3).min(words.len()) {
+							if words[j].chars().any(|c| c.is_numeric()) {
+								known_info.push(format!("Budget: {}", words[j]));
+								break;
+							}
+						}
+					}
+				}
+			}
+			
+			// Check for dates (months or date patterns)
+			let months = vec!["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+			for month in months {
+				if chat_lower.contains(month) {
+					known_info.push(format!("Dates: mentioned in conversation"));
+					break;
+				}
+			}
+		}
+
+		let known_info_str = if known_info.is_empty() {
+			"None yet".to_string()
+		} else {
+			known_info.join(", ")
+		};
 		let missing_info_str = missing_info.join(", ");
 		
 		let prompt = format!(
-			r#"Generate a friendly, natural clarification question for a travel planning conversation.
- 
- Missing Information: {}
- Conversation Context: {}
- 
- Create a single, conversational question that asks for the missing information in a natural way.
- The question should be helpful and friendly.
- 
- Return ONLY the question text, nothing else."#,
+			r#"Generate a friendly, natural clarification message for a travel planning conversation.
+
+IMPORTANT: You must show the user what information you already have and what you still need.
+
+Information I Already Have:
+{}
+
+Information I Still Need:
+{}
+
+Conversation Context: {}
+
+Create a friendly message that:
+1. Acknowledges what information you already have (if any)
+2. Clearly states what information is still needed to create the itinerary
+3. Asks for the missing information in a natural, conversational way
+
+Format your response as a complete message that shows both what you know and what you need.
+Example: "Great! I see you're planning a trip to [destination]. To create your itinerary, I still need to know [missing info]. Could you share [specific questions]?"
+
+Return ONLY the message text, nothing else."#,
+			known_info_str,
 			missing_info_str,
 			context_str
 		);
 
 		let response = self.llm.invoke(&prompt).await?;
 		let clarification = response.trim().to_string();
-
-		// Get chat_session_id from shared atomic (set by controller before agent invocation)
-		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
-		if chat_id == 0 {
-			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
-		}
 
 		// Insert the clarification message into the database to stop the pipeline
 		let record = sqlx::query!(
@@ -919,10 +1213,15 @@ impl Tool for AskForClarificationTool {
 			"Tool output"
 		);
 
-		// Return just the readable message text - no parsing needed by controller
+		// Return a format that makes it absolutely clear this is the final answer
 		// The message is already inserted in the database with the ID in record.id
-		// Controller will use this text directly
-		Ok(clarification)
+		// Return format that forces agent to stop and use as Final Answer
+		let result = format!("FINAL_ANSWER: {}", clarification);
+		
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "ask_for_clarification", &input_clone, &result).await?;
+		
+		Ok(result)
 	}
 }
 
@@ -966,6 +1265,8 @@ impl Tool for RespondToUserTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone(); // Clone for tracking
+		
 		debug!(
 			target: "orchestrator_tool",
 			tool = "respond_to_user",
@@ -1130,336 +1431,12 @@ impl Tool for RespondToUserTool {
 
 		// Return a special marker that send_message_to_llm can detect
 		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
-		Ok(format!("MESSAGE_INSERTED:{}:{}", message_id, message_text))
-	}
-}
-
-/// Tool 8: Update Context
-/// Updates conversation context with new information.
-/// Used to store the conversation context in the database.
-#[derive(Clone)]
-pub struct UpdateContextTool {
-	pool: PgPool,
-	chat_session_id: Arc<AtomicI32>,
-}
-
-impl UpdateContextTool {
-	pub fn new(pool: PgPool, chat_session_id: Arc<AtomicI32>) -> Self {
-		Self { pool, chat_session_id }
-	}
-}
-
-#[async_trait]
-impl Tool for UpdateContextTool {
-	fn name(&self) -> String {
-		"update_context".to_string()
-	}
-
-	fn description(&self) -> String {
-		"Updates conversation context with new information.".to_string()
-	}
-
-	fn parameters(&self) -> Value {
-		json!({
-			"type": "object",
-			"properties": {
-				"updates": {
-					"type": "string",
-					"description": "The context updates to persist as a JSON string. If you have an object, serialize it to JSON first."
-				}
-			},
-			"required": ["updates"]
-		})
-	}
-
-	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		debug!(
-			target: "orchestrator_tool",
-			tool = "update_context",
-			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
-			"Received input in update_context"
-		);
+		let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
 		
-		// Get chat_session_id from shared atomic (set by controller before agent invocation)
-		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
-		if chat_id == 0 {
-			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
-		}
+		// Track this tool execution
+		track_tool_execution(&self.pool, &self.chat_session_id, "respond_to_user", &input_clone, &result).await?;
 		
-		// langchain_rust passes action_input as a STRING, so we need to parse it first
-		let parsed_input: Value = if input.is_string() {
-			// If input is a string (JSON string from action_input), parse it
-			serde_json::from_str(input.as_str().unwrap_or("{}"))
-				.unwrap_or_else(|_| json!({}))
-		} else {
-			// If it's already a Value object, use it directly
-			input
-		};
-		
-		debug!(
-			target: "orchestrator_tool",
-			tool = "update_context",
-			chat_id = chat_id,
-			updates_type = ?parsed_input["updates"].as_object().map(|_| "object").or_else(|| parsed_input["updates"].as_str().map(|_| "string")),
-			"Processing updates"
-		);
-		
-		// Handle updates - can be string (JSON), object, or already parsed
-		let updates: Value = if let Some(s) = parsed_input["updates"].as_str() {
-			// If it's a string, try to parse it as JSON
-			serde_json::from_str(s).unwrap_or_else(|_| json!({}))
-		} else if parsed_input["updates"].is_object() {
-			// If it's already an object, use it directly
-			parsed_input["updates"].clone()
-		} else {
-			// Fallback to empty object
-			json!({})
-		};
-
-		// Update chat session title if provided
-		if let Some(title) = updates.get("title").and_then(|t| t.as_str()) {
-			sqlx::query!(
-				"UPDATE chat_sessions SET title = $1 WHERE id = $2",
-				title,
-				chat_id
-			)
-			.execute(&self.pool)
-			.await
-			.map_err(|e| format!("Database error: {}", e))?;
-		}
-
-		// Get existing context
-		let context_row = sqlx::query!(
-			r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
-			chat_id
-		)
-		.fetch_optional(&self.pool)
-		.await
-		.map_err(|e| format!("Database error: {}", e))?;
-
-		let mut context_data = if let Some(row) = context_row {
-			if let Some(ctx) = row.context {
-				serde_json::from_value::<ContextData>(ctx.clone())
-					.unwrap_or_else(|_| {
-						// Build from existing structure
-						ContextData {
-							user_profile: ctx.get("user_profile").cloned(),
-							chat_history: vec![],
-							active_itinerary: ctx.get("active_itinerary").cloned(),
-							events: ctx.get("events")
-								.and_then(|e| e.as_array())
-								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
-								.unwrap_or_default(),
-							tool_history: ctx.get("tool_history")
-								.and_then(|th| serde_json::from_value::<Vec<ToolExecution>>(th.clone()).ok())
-								.unwrap_or_default(),
-							pipeline_stage: ctx.get("pipeline_stage").and_then(|s| s.as_str()).map(|s| s.to_string()),
-							researched_events: ctx.get("researched_events")
-								.and_then(|e| e.as_array())
-								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
-								.unwrap_or_default(),
-							constrained_events: ctx.get("constrained_events")
-								.and_then(|e| e.as_array())
-								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
-								.unwrap_or_default(),
-							optimized_events: ctx.get("optimized_events")
-								.and_then(|e| e.as_array())
-								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
-								.unwrap_or_default(),
-							constraints: ctx.get("constraints")
-								.and_then(|c| c.as_array())
-								.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
-								.unwrap_or_default(),
-						}
-					})
-			} else {
-				ContextData {
-					user_profile: None,
-					chat_history: vec![],
-					active_itinerary: None,
-					events: vec![],
-					tool_history: vec![],
-					pipeline_stage: None,
-					researched_events: vec![],
-					constrained_events: vec![],
-					optimized_events: vec![],
-					constraints: vec![],
-				}
-			}
-		} else {
-			ContextData {
-				user_profile: None,
-				chat_history: vec![],
-				active_itinerary: None,
-				events: vec![],
-				tool_history: vec![],
-				pipeline_stage: None,
-				researched_events: vec![],
-				constrained_events: vec![],
-				optimized_events: vec![],
-				constraints: vec![],
-			}
-		};
-
-		info!(target: "orchestrator_tool", tool = "update_context", chat_id = chat_id, "Updating context");
-		debug!(target: "orchestrator_tool", tool = "update_context", input = %serde_json::to_string(&parsed_input)?, "Tool input");
-
-		// Update pipeline stage if provided
-		if let Some(stage) = updates.get("pipeline_stage").and_then(|s| s.as_str()) {
-			let old_stage = context_data.pipeline_stage.clone();
-			context_data.pipeline_stage = Some(stage.to_string());
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_stage = ?old_stage,
-				new_stage = stage,
-				"Pipeline stage transition"
-			);
-		}
-
-		// Update events list if provided (current running list)
-		if let Some(events) = updates.get("events").and_then(|e| e.as_array()) {
-			let old_count = context_data.events.len();
-			context_data.events = events.iter()
-				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
-				.collect();
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_events_count = old_count,
-				new_events_count = context_data.events.len(),
-				"Updated events list"
-			);
-			debug!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				events = %serde_json::to_string(&context_data.events)?,
-				"Full events list"
-			);
-		}
-
-		// Update researched_events if provided
-		if let Some(researched) = updates.get("researched_events").and_then(|e| e.as_array()) {
-			let old_count = context_data.researched_events.len();
-			context_data.researched_events = researched.iter()
-				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
-				.collect();
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_count = old_count,
-				new_count = context_data.researched_events.len(),
-				"Updated researched_events"
-			);
-		}
-
-		// Update constrained_events if provided
-		if let Some(constrained) = updates.get("constrained_events").and_then(|e| e.as_array()) {
-			let old_count = context_data.constrained_events.len();
-			context_data.constrained_events = constrained.iter()
-				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
-				.collect();
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_count = old_count,
-				new_count = context_data.constrained_events.len(),
-				"Updated constrained_events"
-			);
-		}
-
-		// Update optimized_events if provided
-		if let Some(optimized) = updates.get("optimized_events").and_then(|e| e.as_array()) {
-			let old_count = context_data.optimized_events.len();
-			context_data.optimized_events = optimized.iter()
-				.filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok())
-				.collect();
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_count = old_count,
-				new_count = context_data.optimized_events.len(),
-				"Updated optimized_events"
-			);
-		}
-
-		// Update active_itinerary if provided
-		if let Some(itinerary) = updates.get("active_itinerary") {
-			context_data.active_itinerary = Some(itinerary.clone());
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				"Updated active_itinerary"
-			);
-			debug!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				itinerary = %serde_json::to_string(itinerary)?,
-				"Full itinerary"
-			);
-		}
-
-		// Update constraints if provided (from parsed user intent)
-		if let Some(constraints) = updates.get("constraints").and_then(|c| c.as_array()) {
-			let old_count = context_data.constraints.len();
-			context_data.constraints = constraints.iter()
-				.filter_map(|v| v.as_str().map(|s| s.to_string()))
-				.collect();
-			info!(
-				target: "orchestrator_pipeline",
-				chat_id = chat_id,
-				old_count = old_count,
-				new_count = context_data.constraints.len(),
-				constraints = ?context_data.constraints,
-				"Updated constraints"
-			);
-		}
-
-		// Store tool execution history if provided
-		if let Some(tool_exec) = updates.get("tool_execution") {
-			if let Ok(tool_exec_obj) = serde_json::from_value::<ToolExecution>(tool_exec.clone()) {
-				context_data.tool_history.push(tool_exec_obj);
-				// Keep last 100 entries
-				if context_data.tool_history.len() > 100 {
-					context_data.tool_history.remove(0);
-				}
-			}
-		}
-
-		// Save updated context to database
-		let context_json = serde_json::to_value(&context_data)?;
-		sqlx::query!(
-			r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
-			context_json as serde_json::Value,
-			chat_id
-		)
-		.execute(&self.pool)
-		.await
-		.map_err(|e| format!("Database error: {}", e))?;
-
-		info!(
-			target: "orchestrator_tool",
-			tool = "update_context",
-			chat_id = chat_id,
-			pipeline_stage = ?context_data.pipeline_stage,
-			events_count = context_data.events.len(),
-			constraints_count = context_data.constraints.len(),
-			"Context updated successfully"
-		);
-		debug!(
-			target: "orchestrator_tool",
-			tool = "update_context",
-			chat_id = chat_id,
-			context = %serde_json::to_string(&context_data)?,
-			"Full context state"
-		);
-
-		Ok(json!({
-			"status": "updated",
-			"chat_id": chat_id,
-			"timestamp": chrono::Utc::now().to_rfc3339()
-		})
-		.to_string())
+		Ok(result)
 	}
 }
 
@@ -1475,22 +1452,25 @@ pub fn get_orchestrator_tools(
 	chat_session_id: Arc<AtomicI32>,
 ) -> Vec<Arc<dyn Tool>> {
 	vec![
-		Arc::new(ParseUserIntentTool {
-			llm: Arc::clone(&llm),
-		}),
+		Arc::new(ParseUserIntentTool::new(
+			Arc::clone(&llm),
+			pool.clone(),
+			Arc::clone(&chat_session_id),
+		)),
 		Arc::new(RetrieveChatContextTool::new(pool.clone(), Arc::clone(&chat_session_id))),
-		Arc::new(RetrieveUserProfileTool::new(pool.clone())),
+		Arc::new(RetrieveUserProfileTool::new(pool.clone(), Arc::clone(&chat_session_id))),
 		Arc::new(RouteTaskTool::new(
 			research_agent,
 			constraint_agent,
 			optimize_agent,
+			pool.clone(),
+			Arc::clone(&chat_session_id),
 		)),
 		Arc::new(AskForClarificationTool::new(
 			Arc::clone(&llm),
 			pool.clone(),
 			Arc::clone(&chat_session_id),
 		)),
-		Arc::new(RespondToUserTool::new(pool.clone(), Arc::clone(&chat_session_id))),
-		Arc::new(UpdateContextTool::new(pool, chat_session_id)),
+		Arc::new(RespondToUserTool::new(pool, chat_session_id)),
 	]
 }

@@ -119,6 +119,39 @@ async fn send_message_to_llm(
 	use std::sync::atomic::Ordering;
 	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
 	
+	// Log context state BEFORE agent invocation
+	let context_before = sqlx::query!(
+		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+		chat_session_id
+	)
+	.fetch_optional(pool)
+	.await
+	.map_err(AppError::from)?;
+	
+	if let Some(row) = &context_before {
+		if let Some(ctx) = &row.context {
+			info!(
+				target: "orchestrator_context",
+				chat_session_id = chat_session_id,
+				when = "before_agent",
+				pipeline_stage = ?ctx.get("pipeline_stage"),
+				events_count = ctx.get("events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				researched_events_count = ctx.get("researched_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				constrained_events_count = ctx.get("constrained_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				optimized_events_count = ctx.get("optimized_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				constraints_count = ctx.get("constraints").and_then(|c| c.as_array()).map(|a| a.len()).unwrap_or(0),
+				"Context state before agent invocation"
+			);
+			debug!(
+				target: "orchestrator_context",
+				chat_session_id = chat_session_id,
+				when = "before_agent",
+				context = %serde_json::to_string(ctx).unwrap_or_else(|_| "failed to serialize".to_string()),
+				"Full context before agent"
+			);
+		}
+	}
+	
 	let agent_guard = agent.lock().await;
 	
 	debug!(
@@ -164,6 +197,39 @@ async fn send_message_to_llm(
 		"Orchestrator agent output"
 	);
 
+	// Log context state AFTER agent invocation
+	let context_after = sqlx::query!(
+		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
+		chat_session_id
+	)
+	.fetch_optional(pool)
+	.await
+	.map_err(AppError::from)?;
+	
+	if let Some(row) = &context_after {
+		if let Some(ctx) = &row.context {
+			info!(
+				target: "orchestrator_context",
+				chat_session_id = chat_session_id,
+				when = "after_agent",
+				pipeline_stage = ?ctx.get("pipeline_stage"),
+				events_count = ctx.get("events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				researched_events_count = ctx.get("researched_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				constrained_events_count = ctx.get("constrained_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				optimized_events_count = ctx.get("optimized_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
+				constraints_count = ctx.get("constraints").and_then(|c| c.as_array()).map(|a| a.len()).unwrap_or(0),
+				"Context state after agent invocation"
+			);
+			debug!(
+				target: "orchestrator_context",
+				chat_session_id = chat_session_id,
+				when = "after_agent",
+				context = %serde_json::to_string(ctx).unwrap_or_else(|_| "failed to serialize".to_string()),
+				"Full context after agent"
+			);
+		}
+	}
+
 
 	// Check if RespondToUserTool already inserted the message
 	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
@@ -204,10 +270,48 @@ async fn send_message_to_llm(
 		}
 	}
 	
+	// Check if response starts with FINAL_ANSWER: (from ask_for_clarification tool)
+	if ai_text.trim().starts_with("FINAL_ANSWER:") {
+		let clarification_text = ai_text.trim().strip_prefix("FINAL_ANSWER:").unwrap_or("").trim();
+		// Fetch the most recent non-user message (ask_for_clarification already inserted it)
+		let record = sqlx::query!(
+			r#"
+			SELECT id, timestamp, text, itinerary_id
+			FROM messages
+			WHERE chat_session_id = $1 AND is_user = FALSE
+			ORDER BY timestamp DESC
+			LIMIT 1
+			"#,
+			chat_session_id
+		)
+		.fetch_optional(pool)
+		.await
+		.map_err(AppError::from)?;
+		
+		if let Some(msg) = record {
+			// Verify the text matches (tool just inserted it)
+			if msg.text.trim() == clarification_text {
+				info!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					message_id = msg.id,
+					"Found matching message inserted by ask_for_clarification, returning it"
+				);
+				return Ok(Message {
+					id: msg.id,
+					is_user: false,
+					timestamp: msg.timestamp,
+					text: msg.text,
+					itinerary_id: msg.itinerary_id,
+				});
+			}
+		}
+	}
+	
 	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED), 
 	// it's likely from ask_for_clarification tool which already inserted it
 	// Fetch the most recent non-user message for this chat session
-	if !ai_text.trim().starts_with('{') && !ai_text.trim().starts_with('[') && !ai_text.starts_with("MESSAGE_INSERTED:") {
+	if !ai_text.trim().starts_with('{') && !ai_text.trim().starts_with('[') && !ai_text.starts_with("MESSAGE_INSERTED:") && !ai_text.starts_with("FINAL_ANSWER:") {
 		// This looks like plain readable text - tool already inserted it, so fetch it
 		let record = sqlx::query!(
 			r#"
