@@ -1,10 +1,7 @@
 /*
  * src/agent/configs/orchestrator.rs
  *
- * File for Orchestrator Agent Configuration
- *
- * Purpose:
- *   Store Orchestrator Agent Configuration
+ * File for Orchestrator Agent Configuration (Updated with shared LLM)
  */
 
 use std::sync::Arc;
@@ -16,7 +13,7 @@ use langchain_rust::{
 	memory::SimpleMemory,
 };
 
-use crate::agent::tools::orchestrator::*;
+use crate::agent::tools::orchestrator::{ORCHESTRATOR_SYSTEM_PROMPT, get_orchestrator_tools};
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -33,25 +30,25 @@ pub fn create_orchestrator_agent(
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
-	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
-	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
-
-	// Create memory
-	let memory = SimpleMemory::new();
-
-	// Get tools
-	// TODO: Add tools here will use the research, constraint, and optimize agents
-
-	// Select model (will read key from environment variable)
+	// Create a shared LLM instance for the orchestrator and its tools
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
-	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
+	// Create memory for conversation history
+	let memory = SimpleMemory::new();
 
+	// Get orchestrator tools with shared LLM
+	let tools = get_orchestrator_tools(
+		llm.clone(),
+		Arc::new(tokio::sync::Mutex::new(research_agent)),
+		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
+		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
+	);
+
+	// Create agent with system prompt and tools
 	let agent = ConversationalAgentBuilder::new()
-		.prefix(system_prompt)
-		// TODO: Add tools here
-		.options(ChainCallOptions::new().with_max_tokens(1000))
+		.prefix(ORCHESTRATOR_SYSTEM_PROMPT.to_string())
+		.tools(&tools)
+		.options(ChainCallOptions::new().with_max_tokens(2000))
 		.build(llm)
 		.unwrap();
 
@@ -65,30 +62,37 @@ pub fn create_orchestrator_agent(
 #[cfg(test)]
 pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
-	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
 
-	// Set a dummy API key temporarily so agent creation doesn't fail
 	unsafe {
 		std::env::set_var("OPENAI_API_KEY", "sk-dummy-key-for-testing-only");
 	}
 
+	// Create a shared LLM instance
+	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	// TODO: Add tools here
-
-	// Select model
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+	// For testing, create dummy sub-agents (they won't be invoked)
+	let dummy_agent = Arc::new(tokio::sync::Mutex::new(create_dummy_sub_agent()?));
+	let research_agent = Arc::clone(&dummy_agent);
+	let constraint_agent = Arc::clone(&dummy_agent);
+	let optimize_agent = Arc::clone(&dummy_agent);
+	
+	// Get tools with shared LLM
+	let tools = get_orchestrator_tools(
+		llm.clone(),
+		Arc::new(tokio::sync::Mutex::new(research_agent)),
+		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
+		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
+	);
 
 	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
-
 	let agent = ConversationalAgentBuilder::new()
-		.prefix(system_prompt)
-		// TODO: Add tools here
-		.options(ChainCallOptions::new().with_max_tokens(1000))
+		.prefix(ORCHESTRATOR_SYSTEM_PROMPT.to_string())
+		.tools(&tools)
+		.options(ChainCallOptions::new().with_max_tokens(2000))
 		.build(llm)
 		.unwrap();
 
@@ -100,6 +104,20 @@ pub fn create_dummy_orchestrator_agent() -> Result<AgentExecutor<ConversationalA
 			std::env::remove_var("OPENAI_API_KEY");
 		}
 	}
+
+	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+}
+
+#[cfg(test)]
+fn create_dummy_sub_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+	let memory = SimpleMemory::new();
+	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+
+	let agent = ConversationalAgentBuilder::new()
+		.prefix("Dummy sub-agent".to_string())
+		.options(ChainCallOptions::new().with_max_tokens(1000))
+		.build(llm)
+		.unwrap();
 
 	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }
