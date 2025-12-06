@@ -317,7 +317,7 @@ function ViewItineraryPage() {
 
     async function load() {
       // Fetch the full API response to get metadata
-      const apiResponse = await apiItineraryDetails(itineraryId);
+      const apiResponse = await apiItineraryDetails(10);
 
       if (apiResponse.status == 401) {
         toast.error("Unauthorized user, please log in.");
@@ -327,6 +327,7 @@ function ViewItineraryPage() {
 
       if (apiResponse.status == 404) {
         toast.error("Itinerary not found. Please try again.");
+        navigate("/home");
         return;
       }
 
