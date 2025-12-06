@@ -346,7 +346,8 @@ const removeCustomImage = () => {
       return;
     }
 
-    if (!result.result || result.status !== 200) {
+    if (result.status !== 200) {
+      console.log(result.status);
       toast.error("Could not delete user event, please try again.");
       return;
     }
