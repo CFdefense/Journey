@@ -48,6 +48,7 @@ pub struct ContextData {
 	pub researched_events: Vec<Event>,   // Events from research agent
 	pub constrained_events: Vec<Event>,  // Events validated by constraint agent
 	pub optimized_events: Vec<Event>,   // Events ranked/optimized by optimizer agent
+	pub constraints: Vec<String>,        // User constraints extracted from intent (dietary, accessibility, budget, etc.)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

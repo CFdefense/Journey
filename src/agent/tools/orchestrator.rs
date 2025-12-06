@@ -38,7 +38,7 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	fn description(&self) -> String {
-		"Parses user input using an LLM to extract intent, destination, dates, budget, and constraints."
+		"Parses user input using an LLM to extract intent, destination, dates, budget, preferences, and constraints. Returns a UserIntent object with constraints array that should be stored in context for other agents to access."
              .to_string()
 	}
 
@@ -228,6 +228,10 @@ impl Tool for RetrieveChatContextTool {
 								.and_then(|e| e.as_array())
 								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
 								.unwrap_or_default(),
+							constraints: ctx.get("constraints")
+								.and_then(|c| c.as_array())
+								.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+								.unwrap_or_default(),
 						}
 					})
 			} else {
@@ -241,6 +245,7 @@ impl Tool for RetrieveChatContextTool {
 					researched_events: vec![],
 					constrained_events: vec![],
 					optimized_events: vec![],
+					constraints: vec![],
 				}
 			}
 		} else {
@@ -254,6 +259,7 @@ impl Tool for RetrieveChatContextTool {
 				researched_events: vec![],
 				constrained_events: vec![],
 				optimized_events: vec![],
+				constraints: vec![],
 			}
 		};
 
@@ -668,6 +674,10 @@ impl Tool for UpdateContextTool {
 								.and_then(|e| e.as_array())
 								.map(|arr| arr.iter().filter_map(|v| serde_json::from_value::<Event>(v.clone()).ok()).collect())
 								.unwrap_or_default(),
+							constraints: ctx.get("constraints")
+								.and_then(|c| c.as_array())
+								.map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+								.unwrap_or_default(),
 						}
 					})
 			} else {
@@ -681,6 +691,7 @@ impl Tool for UpdateContextTool {
 					researched_events: vec![],
 					constrained_events: vec![],
 					optimized_events: vec![],
+					constraints: vec![],
 				}
 			}
 		} else {
@@ -694,6 +705,7 @@ impl Tool for UpdateContextTool {
 				researched_events: vec![],
 				constrained_events: vec![],
 				optimized_events: vec![],
+				constraints: vec![],
 			}
 		};
 
@@ -733,6 +745,13 @@ impl Tool for UpdateContextTool {
 		// Update active_itinerary if provided
 		if let Some(itinerary) = updates.get("active_itinerary") {
 			context_data.active_itinerary = Some(itinerary.clone());
+		}
+
+		// Update constraints if provided (from parsed user intent)
+		if let Some(constraints) = updates.get("constraints").and_then(|c| c.as_array()) {
+			context_data.constraints = constraints.iter()
+				.filter_map(|v| v.as_str().map(|s| s.to_string()))
+				.collect();
 		}
 
 		// Store tool execution history if provided
@@ -815,6 +834,7 @@ Your responsibilities:
 Pipeline Workflow:
 1. INITIAL STAGE:
    - Use parse_user_intent to understand what the user wants
+   - Extract constraints from the parsed intent and use update_context to store them in context.constraints
    - Use retrieve_user_profile and retrieve_chat_context to get relevant background
    - Check pipeline_stage in context to see if we're continuing or starting fresh
    - If critical information is missing, use ask_for_clarification and set pipeline_stage to "initial"
