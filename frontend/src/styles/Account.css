@@ -333,7 +333,6 @@
   border-radius: 50%;
   border: 3px solid #ffffff;
   background: #f7f7f7;
-  box-sizing: border-box;
 }
 
 .profile-meta {
@@ -710,15 +709,6 @@
   transform: translateY(-1px);
 }
 
-.btn-secondary {
-  background: #eef1f4;
-  color: #0b1220;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e4e8ec;
-}
-
 /* Section Divider */
 .section-divider {
   margin: 2.5rem 0;
@@ -778,6 +768,80 @@
   margin: 4px 0;
   color: #666;
   font-size: 0.9rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #666;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .account-wrapper .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+    left: 0;
+  }
+
+  .account-wrapper .sidebar:hover {
+    width: 100%;
+  }
+
+  .account-wrapper .sidebar-content {
+    display: flex;
+    overflow-x: auto;
+    padding: 12px;
+    width: 100%;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  .account-wrapper .sidebar-item {
+    flex-direction: column;
+    padding: 12px;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .account-wrapper .sidebar-icon {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .account-wrapper .sidebar-label {
+    opacity: 1;
+    font-size: 0.85rem;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .avatar-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+
+  .hs-hero-card {
+    padding: 20px;
+  }
+
+  .account-box {
+    width: 94vw;
+    padding: 1.75rem;
+  }
+}
+
+@media (max-width: 1100px) {
+  .auth-page--account {
+    background:
+      radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
+      linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
+  }
 }
 
 /* Three-dot menu button on itinerary cards */
@@ -849,13 +913,7 @@
   background: rgba(220, 53, 69, 0.1);
 }
 
-.empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  color: #666;
-}
-
-/* Modal Overlay - Shared by both profile picture and itinerary delete */
+/* Delete Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -874,30 +932,17 @@
   background: #ffffff;
   border-radius: 16px;
   padding: 32px;
-  max-width: 480px;
+  max-width: 440px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
-  animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .modal-content h2 {
-  margin: 0 0 20px 0;
-  color: #0b1220;
+  margin: 0 0 12px 0;
   font-size: 1.5rem;
+  color: #0b1220;
   font-weight: 700;
-  text-align: center;
 }
 
 .modal-content p {
@@ -907,52 +952,6 @@
   line-height: 1.5;
 }
 
-/* Profile Picture Modal Specific Styles */
-.modal-file-input {
-  width: 100%;
-  padding: 4px;
-  border: 2px dashed #d87f75;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: transparent;
-  text-align: center;
-  font-size: 0.95rem;
-  color: #0b1220;
-}
-
-.modal-file-input::file-selector-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background: #0b1220;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-  margin-right: 12px;
-  transition: background 0.2s ease;
-}
-
-.modal-file-input::file-selector-button:hover {
-  background: #1a1a1a;
-}
-
-.preview-container {
-  margin: 16px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.preview-image {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #0b1220;
-}
-
-/* Modal Actions */
 .modal-actions {
   display: flex;
   gap: 12px;
@@ -960,7 +959,7 @@
   align-items: center;
 }
 
-/* Base button styling for modal actions */
+/* Base button styling */
 .modal-actions button {
   min-width: 120px;
   padding: 14px 28px;
@@ -976,7 +975,7 @@
   justify-content: center;
 }
 
-/* Secondary button (Cancel) */
+/* Cancel button */
 .btn-secondary {
   background: #eef1f4;
   color: #0b1220;
@@ -986,112 +985,34 @@
   background: #e4e8ec;
 }
 
-/* Primary button */
-.btn-primary {
-  background: #0b1220;
-  color: #ffffff;
-  padding: 14px 28px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1a1a1a;
-  transform: translateY(-1px);
-}
-
-/* Danger button (Delete) */
+/* DELETE button (RED) */
 .btn-danger {
-  background: #dc3545;
+  background: linear-gradient(135deg, #d32f2f 0%, #ff6659 100%);
   color: #ffffff;
-  margin-top: -1px;
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+  position: relative;
+  top: -10px;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #c82333;
+  background: linear-gradient(135deg, #b71c1c 0%, #ff5447 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
 }
 
 .btn-danger:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(211, 47, 47, 0.25);
 }
 
-/* Disabled state for all buttons */
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-danger:disabled {
+/* Disabled state for both buttons */
+.btn-danger:disabled,
+.btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
-  .account-wrapper .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    top: 0;
-    left: 0;
-  }
-
-  .account-wrapper .sidebar:hover {
-    width: 100%;
-  }
-
-  .account-wrapper .sidebar-content {
-    display: flex;
-    overflow-x: auto;
-    padding: 12px;
-    width: 100%;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: all;
-  }
-
-  .account-wrapper .sidebar-item {
-    flex-direction: column;
-    padding: 12px;
-    min-width: 100px;
-    text-align: center;
-  }
-
-  .account-wrapper .sidebar-icon {
-    margin-right: 0;
-    margin-bottom: 8px;
-  }
-
-  .account-wrapper .sidebar-label {
-    opacity: 1;
-    font-size: 0.85rem;
-  }
-
-  .main-content {
-    margin-left: 0;
-  }
-
-  .avatar-wrapper {
-    width: 120px;
-    height: 120px;
-  }
-
-  .hs-hero-card {
-    padding: 20px;
-  }
-
-  .account-box {
-    width: 94vw;
-    padding: 1.75rem;
-  }
-
   .modal-content {
     padding: 24px;
   }
@@ -1100,150 +1021,64 @@
     flex-direction: column-reverse;
   }
 
-  .modal-actions button,
-  .btn-primary {
+  .modal-actions button {
     width: 100%;
   }
+}
 
-  @media (max-width: 1100px) {
-    .auth-page--account {
-      background:
-        radial-gradient(900px 480px at 50% 0%, #d87f75, transparent 0%),
-        linear-gradient(180deg, #e67d71 0%, #e8c89f 30%, #ffffff 100%);
-    }
-  }
-  .avatar-wrapper {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    padding: 0;
-    background: transparent;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
-    cursor: pointer;
-    transition: transform 0.2s ease;
-  }
+.tag-input-container {
+  width: 100%;
+}
 
-  .avatar-wrapper:hover {
-    transform: scale(1.02);
-  }
+.tags-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  min-height: 40px;
+}
 
-  .avatar-wrapper.uploading {
-    cursor: wait;
-  }
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 14px;
+}
 
-  .avatar {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 3px solid #ffffff;
-    background: #f7f7f7;
-    transition: opacity 0.2s ease;
-  }
+.tag-text {
+  color: #333;
+}
 
-  /* Overlay that appears on hover */
-  .avatar-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-    overflow: hidden;
-  }
+.tag-remove {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .avatar-wrapper:hover .avatar-overlay {
-    opacity: 1;
-  }
+.tag-remove:hover {
+  color: #d32f2f;
+}
 
-  .avatar-wrapper.uploading .avatar-overlay {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.7);
-  }
-
-  .avatar-edit-icon {
-    font-size: 32px;
-    color: #ffffff;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  }
-
-  /* Upload spinner */
-  .upload-spinner {
-    font-size: 32px;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .tag-input-container {
-    width: 100%;
-  }
-
-  .tags-display {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding: 8px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    min-height: 40px;
-  }
-
-  .tag-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    background: white;
-    border: 1px solid #d0d0d0;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  .tag-text {
-    color: #333;
-  }
-
-  .tag-remove {
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .tag-remove:hover {
-    color: #d32f2f;
-  }
-
-  .tag-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-  }
+.tag-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
 }

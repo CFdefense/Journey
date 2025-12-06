@@ -2,24 +2,16 @@ import { Link, useLocation } from "react-router-dom";
 import { useContext, useEffect, useRef, useState, type Context } from "react";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
+import userPfp from "../assets/user-pfp-temp.png";
 import { apiLogout } from "../api/account";
-import { apiCurrent } from "../api/account";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
 import "../styles/Navbar.css";
 
-const userPfp = "/user-pfp-temp.png";
-
 type NavbarProps = {
   page: "login" | "signup" | "index" | "home" | "view";
-  firstName?: string;
-  profileImageUrl?: string; // Add this
 };
 
-export default function Navbar({
-  page,
-  firstName,
-  profileImageUrl
-}: NavbarProps) {
+export default function Navbar({ page }: NavbarProps) {
   const location = useLocation();
   const isAccountRoute = location.pathname.startsWith("/account");
   const { authorized, setAuthorized } = useContext<GlobalState>(
@@ -27,10 +19,6 @@ export default function Navbar({
   );
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [displayName, setDisplayName] = useState<string>(firstName || "");
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    profileImageUrl || userPfp
-  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -43,35 +31,8 @@ export default function Navbar({
   }, []);
 
   useEffect(() => {
-    // Update avatar when prop changes
-    if (profileImageUrl) {
-      setAvatarUrl(profileImageUrl);
-    }
-  }, [profileImageUrl]);
-
-  useEffect(() => {
-    // Prefer explicit prop when provided
-    if (firstName && firstName.trim().length > 0) {
-      setDisplayName(firstName);
-    }
-    // Fallback: when authorized, fetch current user's first name and profile picture
-    if (authorized && (!firstName || !profileImageUrl)) {
-      apiCurrent()
-        .then((res) => {
-          const name = (res?.result?.first_name as string) || "";
-          const picture = (res?.result?.profile_picture as string) || userPfp;
-          if (!firstName) setDisplayName(name);
-          if (!profileImageUrl) setAvatarUrl(picture);
-        })
-        .catch(() => {
-          setDisplayName("");
-          setAvatarUrl(userPfp);
-        });
-    } else if (!authorized) {
-      setDisplayName("");
-      setAvatarUrl(userPfp);
-    }
-  }, [authorized, firstName, profileImageUrl]);
+    // No-op: user menu no longer displays name
+  }, [authorized]);
 
   const onLogout = async () => {
     const { status } = await apiLogout();
@@ -93,19 +54,7 @@ export default function Navbar({
           aria-expanded={menuOpen}
           aria-haspopup="menu"
         >
-          <span
-            className={`user-menu-name ${displayName ? "ready" : "pending"}`}
-          >
-            {displayName || ""}
-          </span>
-          <img
-            src={avatarUrl}
-            alt="User profile"
-            className="user-menu-avatar"
-            onError={(e) => {
-              e.currentTarget.src = userPfp;
-            }}
-          />
+          <img src={userPfp} alt="User profile" className="user-menu-avatar" />
         </button>
         <div
           className={`user-menu-dropdown ${menuOpen ? "open" : ""}`}
@@ -132,7 +81,6 @@ export default function Navbar({
       </div>
     );
   };
-
   const renderCTA = () => {
     switch (page) {
       case "login":

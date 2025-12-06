@@ -758,7 +758,6 @@ async fn test_update_endpoint_returns_account(
 		risk_preference: Some(RiskTolerence::Adventurer),
 		food_allergies: Some(String::from("Peanuts, shellfish")),
 		disabilities: Some(String::from("Wheelchair accessible")),
-		profile_picture: Some(String::from("base64-txt")),
 	});
 	_ = controllers::account::api_update(pool, user, json)
 		.await
@@ -799,7 +798,6 @@ async fn test_update_endpoint_partial_fields(
 		risk_preference: None,
 		food_allergies: Some(String::from("Gluten")),
 		disabilities: None,
-		profile_picture: None,
 	});
 	_ = controllers::account::api_update(pool, user, json)
 		.await
@@ -840,7 +838,6 @@ async fn test_update_endpoint_with_preferences(
 		risk_preference: Some(RiskTolerence::RiskTaker),
 		food_allergies: None,
 		disabilities: None,
-		profile_picture: None,
 	});
 	_ = controllers::account::api_update(pool, user, json)
 		.await
@@ -1775,29 +1772,14 @@ async fn test_signup_logout() {
 	let cookie = signup_resp.res_cookie("auth-token").unwrap();
 	assert!(cookie.expires.unwrap() > SystemTime::now());
 
-	// Test profile picture update WHILE LOGGED IN
-	let update_resp = hc
-		.do_post(
-			"/api/account/update",
-			json!({
-				"profile_picture": "https://example.com/pic.jpg"
-			}),
-		)
-		.await
-		.unwrap();
-	assert_eq!(update_resp.status().as_u16(), 200);
-
-	let body = update_resp.json_body().unwrap();
-	assert_eq!(body["profile_picture"], "https://example.com/pic.jpg");
-
-	// NOW logout
+	// Logout
 	let logout_resp = hc.do_get("/api/account/logout").await.unwrap();
 	assert_eq!(logout_resp.status().as_u16(), 200);
 
 	let cookie = logout_resp.res_cookie("auth-token").unwrap();
 	assert!(cookie.expires.unwrap() < SystemTime::now());
 
-	// Hit any protected route - should be 401 now
+	// Hit any protected route
 	let validate_res = hc.do_get("/api/account/validate").await.unwrap();
 	assert_eq!(
 		validate_res.status().as_u16(),
