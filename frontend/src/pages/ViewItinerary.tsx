@@ -371,6 +371,7 @@ function ViewItineraryPage() {
         onAddDay={handleAddDay}
         onEditWithAI={handleEditWithAI}
       />
+
       <div className="view-content with-sidebar">
         <Itinerary
           localDays={localDays}

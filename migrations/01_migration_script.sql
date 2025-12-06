@@ -181,6 +181,26 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful str
 (7, '1 Rue de la Seine', 00000, 'Paris', 'France', 'Museum', 'Explore the beautiful landmark of Paris.', 'Eiffel Tower', FALSE, NULL, NULL, NULL),
 (8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-05 08:00', NULL);
 
+UPDATE events
+SET 
+    photo_name = 'places/ChIJWTGPjmaAhYARxz6l1hOj92w/photos/AWn5SU5Er9gWi5jilVeHqFVvSEXMwCeX-mlXTiRpSoacmgGi6eJk021kXT7TSPe1PbFEj8Oe-5JYpMk5jc2e6A1zHf76i45Mg2JcTqhmihTAWyW4b2vixtaHLq7GCuxQicTvwvM65I1qTt9sAEiMW2k1jPvHiU5qL7R8BN2Ltqfo_I0zTcUrJyup6Pdsd0FLpDAm7ia5B-qaaw80x6guoa0r7uoiFGkyJeB3zqXIDKsP5q25HgPb6HMIVtiTM7Gf0WEU6hnhpg9Admq3h-WARF0hTmQQqCg_J9C-dRrzuu279uwDaw',
+    photo_width = 3850,
+    photo_height = 2991,
+    photo_author = 'Ferry Building',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/116985961358506551836',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a/ACg8ocKXdGznTApl3bUhp8fBHvPlpZCrTK_fq8h1PliUWm9Q7aJDBg=s100-p-k-no-mo'
+WHERE id = 1;
+
+UPDATE events
+SET 
+    photo_name = 'places/ChIJ1dIqa2OAhYAREimtEtfBLyc/photos/AWn5SU64-FqzTMnkxlg9F-trzmWqkl2f0y_bCRBqLjkP8qLzGD8JTaThyGhmIzilkbOptFyHfbKj11kyTbga2m9scTSyhPBYd6TvsoDUoL6UTzXn5pKpUcbist3SB1ccAE5H7Wt-d_C2ycfmqAgHudsYBNOJLMtVV5Ij559zA4KoA_hOuDoNBaNI9pKwRharo8uKaAKDwDDefIpQki7VLigFZ7R0dvzhIl57MIdLoRgEoCQvELCv9KjE-9cORp7X1qsKG37QbudAJzgmmN8xwlf9XpCc57YTOABuM8dtS4WmNYOXEEyoKpNZptwOBh6RkiKhOY7Uhu8gwBXuVv9PLAHr6aa3ZOFhnaPCewvAdwfA0yd3insxeH12f80VdQyJ5nx9umKNVZHlEG-d7Tek5cc3k3UDIgdc2gbirc80wXn_AUyMkHDU',
+    photo_width = 3024,
+    photo_height = 4032,
+    photo_author = 'Barry Yen',
+    photo_author_uri = 'https://maps.google.com/maps/contrib/102121354402180572298',
+    photo_author_photo_uri = 'https://lh3.googleusercontent.com/a-/ALV-UjUoOkFbUTTB1UQ96TqA-K8eeYRUXWzmR4APPQ4DMBPzzj8dPygh=s100-p-k-no-mo'
+WHERE id = 4;
+
 -- Ensure the events id sequence matches the max(id)
 SELECT setval(
     pg_get_serial_sequence('events', 'id'),
