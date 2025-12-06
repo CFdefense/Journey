@@ -1010,7 +1010,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 
 	// Always use dummy agent for tests
 	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
-	.expect("Dummy agent creation failed");
+		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));
@@ -1395,7 +1395,7 @@ async fn test_endpoints() {
 
 	// Always use dummy agent for tests
 	let agent = agent::configs::orchestrator::create_dummy_orchestrator_agent()
-	.expect("Dummy agent creation failed");
+		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent)));

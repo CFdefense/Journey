@@ -26,9 +26,7 @@ pub struct ParseUserIntentTool {
 
 impl ParseUserIntentTool {
 	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self {
-			llm: Arc::new(llm),
-		}
+		Self { llm: Arc::new(llm) }
 	}
 }
 
@@ -359,9 +357,7 @@ pub struct MergePartialResultsTool {
 
 impl MergePartialResultsTool {
 	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self {
-			llm: Arc::new(llm),
-		}
+		Self { llm: Arc::new(llm) }
 	}
 }
 
@@ -455,9 +451,7 @@ pub struct AskForClarificationTool {
 
 impl AskForClarificationTool {
 	pub fn new<L: LLM + Send + Sync + 'static>(llm: L) -> Self {
-		Self {
-			llm: Arc::new(llm),
-		}
+		Self { llm: Arc::new(llm) }
 	}
 }
 
@@ -583,7 +577,9 @@ pub fn get_orchestrator_tools(
 	optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 ) -> Vec<Arc<dyn Tool>> {
 	vec![
-		Arc::new(ParseUserIntentTool { llm: Arc::clone(&llm) }),
+		Arc::new(ParseUserIntentTool {
+			llm: Arc::clone(&llm),
+		}),
 		Arc::new(RetrieveChatContextTool::new()),
 		Arc::new(RetrieveUserProfileTool::new()),
 		Arc::new(RouteTaskTool::new(
@@ -591,8 +587,12 @@ pub fn get_orchestrator_tools(
 			constraint_agent,
 			optimize_agent,
 		)),
-		Arc::new(MergePartialResultsTool { llm: Arc::clone(&llm) }),
-		Arc::new(AskForClarificationTool { llm: Arc::clone(&llm) }),
+		Arc::new(MergePartialResultsTool {
+			llm: Arc::clone(&llm),
+		}),
+		Arc::new(AskForClarificationTool {
+			llm: Arc::clone(&llm),
+		}),
 		Arc::new(UpdateContextTool::new()),
 	]
 }
