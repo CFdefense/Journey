@@ -87,7 +87,7 @@ CREATE TABLE events (
     hard_end TIMESTAMP WITHOUT TIME ZONE,
     timezone VARCHAR(255),
     --remaining places fields
-    place_id VARCHAR(255),
+    place_id VARCHAR(255) UNIQUE,
     wheelchair_accessible_parking BOOLEAN,
     wheelchair_accessible_entrance BOOLEAN,
     wheelchair_accessible_restroom BOOLEAN,

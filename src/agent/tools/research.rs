@@ -8,9 +8,9 @@
  */
 
 use async_trait::async_trait;
-use google_maps::places_new::{Circle, Field, FieldMask, LatLng, LocationRestriction, PlaceType};
+use google_maps::places_new::{Field, FieldMask, PlaceType};
 use langchain_rust::tools::Tool;
-use serde::{Deserialize, Serialize, de::IntoDeserializer};
+use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::error::Error;
@@ -23,9 +23,12 @@ pub struct GeocodeTool;
 
 /// This tool queries the DB for events that may be relevant to the itinerary being generated.
 #[derive(Clone)]
-pub struct QueryDbEventsTool;
+pub struct QueryDbEventsTool {
+	pub db: PgPool
+}
 
 /// This tool uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria.
+/// The resulting events are inserted or updated in the database.
 #[derive(Clone)]
 pub struct NearbySearchTool {
 	pub db: PgPool
@@ -136,7 +139,7 @@ impl<'db> Tool for NearbySearchTool {
 	}
 
 	fn description(&self) -> String {
-		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria."
+		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria. The resulting events are inserted or updated in the database."
             .to_string()
 	}
 
@@ -256,6 +259,152 @@ impl<'db> Tool for NearbySearchTool {
 		}
 
 		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
+
+		/// ## NOTICE
+		/// If you change the fields in the events table or the [Event] struct,
+		/// you must make sure the EVENT_FIELD_COUNT is set to the number of fields
+		/// that need to be inserted.
+		const EVENT_FIELD_COUNT: usize = 36;
+		let mut placeholders = String::new();
+		for r in 0..events.len() {
+			if r > 0 {
+				placeholders.push(',');
+			}
+			placeholders.push('(');
+			for c in 0..EVENT_FIELD_COUNT {
+				if c > 0 {
+					placeholders.push(',');
+				}
+				placeholders.push_str(&format!("${}", r * EVENT_FIELD_COUNT + c + 1));
+			}
+			placeholders.push(')');
+		}
+
+		let sql = format!(
+			r#"
+			INSERT INTO events (
+				event_name,
+				event_description,
+				street_address,
+				city,
+				country,
+				postal_code,
+				lat,
+				lng,
+				event_type,
+				user_created,
+				hard_start,
+				hard_end,
+				timezone,
+				place_id,
+				wheelchair_accessible_parking,
+				wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom,
+				wheelchair_accessible_seating,
+				serves_vegetarian_food,
+				price_level,
+				utc_offset_minutes,
+				website_uri,
+				types,
+				photo_name,
+				photo_width,
+				photo_height,
+				photo_author,
+				photo_author_uri,
+				photo_author_photo_uri,
+				weekday_descriptions,
+				secondary_hours_type,
+				next_open_time,
+				next_close_time,
+				open_now,
+				periods,
+				special_days
+			)
+			VALUES {}
+			ON CONFLICT (place_id) DO UPDATE SET
+				event_name = EXCLUDED.event_name,
+				event_description = EXCLUDED.event_description,
+				street_address = EXCLUDED.street_address,
+				city = EXCLUDED.city,
+				country = EXCLUDED.country,
+				postal_code = EXCLUDED.postal_code,
+				lat = EXCLUDED.lat,
+				lng = EXCLUDED.lng,
+				event_type = EXCLUDED.event_type,
+				user_created = EXCLUDED.user_created,
+				hard_start = EXCLUDED.hard_start,
+				hard_end = EXCLUDED.hard_end,
+				timezone = EXCLUDED.timezone,
+				wheelchair_accessible_parking = EXCLUDED.wheelchair_accessible_parking,
+				wheelchair_accessible_entrance = EXCLUDED.wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom = EXCLUDED.wheelchair_accessible_restroom,
+				wheelchair_accessible_seating = EXCLUDED.wheelchair_accessible_seating,
+				serves_vegetarian_food = EXCLUDED.serves_vegetarian_food,
+				price_level = EXCLUDED.price_level,
+				utc_offset_minutes = EXCLUDED.utc_offset_minutes,
+				website_uri = EXCLUDED.website_uri,
+				types = EXCLUDED.types,
+				photo_name = EXCLUDED.photo_name,
+				photo_width = EXCLUDED.photo_width,
+				photo_height = EXCLUDED.photo_height,
+				photo_author = EXCLUDED.photo_author,
+				photo_author_uri = EXCLUDED.photo_author_uri,
+				photo_author_photo_uri = EXCLUDED.photo_author_photo_uri,
+				weekday_descriptions = EXCLUDED.weekday_descriptions,
+				secondary_hours_type = EXCLUDED.secondary_hours_type,
+				next_open_time = EXCLUDED.next_open_time,
+				next_close_time = EXCLUDED.next_close_time,
+				open_now = EXCLUDED.open_now,
+				periods = EXCLUDED.periods,
+				special_days = EXCLUDED.special_days;
+			"#,
+			placeholders
+		);
+
+		let mut query = sqlx::query(&sql);
+
+		for ev in events.iter() {
+			query = query
+				.bind(&ev.event_name)
+				.bind(&ev.event_description)
+				.bind(&ev.street_address)
+				.bind(&ev.city)
+				.bind(&ev.country)
+				.bind(ev.postal_code)
+				.bind(ev.lat)
+				.bind(ev.lng)
+				.bind(&ev.event_type)
+				.bind(ev.user_created)
+				.bind(ev.hard_start)
+				.bind(ev.hard_end)
+				.bind(&ev.timezone)
+				.bind(&ev.place_id)   // conflict target
+				.bind(ev.wheelchair_accessible_parking)
+				.bind(ev.wheelchair_accessible_entrance)
+				.bind(ev.wheelchair_accessible_restroom)
+				.bind(ev.wheelchair_accessible_seating)
+				.bind(ev.serves_vegetarian_food)
+				.bind(ev.price_level)
+				.bind(ev.utc_offset_minutes)
+				.bind(&ev.website_uri)
+				.bind(&ev.types)
+				.bind(&ev.photo_name)
+				.bind(ev.photo_width)
+				.bind(ev.photo_height)
+				.bind(&ev.photo_author)
+				.bind(&ev.photo_author_uri)
+				.bind(&ev.photo_author_photo_uri)
+				.bind(&ev.weekday_descriptions)
+				.bind(ev.secondary_hours_type)
+				.bind(ev.next_open_time)
+				.bind(ev.next_close_time)
+				.bind(ev.open_now)
+				.bind(&ev.periods)
+				.bind(&ev.special_days);
+		}
+
+		query.execute(&self.db).await?;
+
 		Ok(json!(events).to_string())
 	}
 }

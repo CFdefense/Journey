@@ -13,7 +13,7 @@ use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
 	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
-	memory::SimpleMemory,
+	memory::SimpleMemory, tools::Tool,
 };
 
 use sqlx::PgPool;
@@ -42,15 +42,18 @@ pub fn create_research_agent(
 	// Create memory
 	let memory = SimpleMemory::new();
 
+	// Init tools
+	let tools: [Arc<dyn Tool>; _] = [
+		Arc::new(GeocodeTool),
+		Arc::new(NearbySearchTool {db: pool.clone()}),
+	];
+
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
-	// Create agent with system prompt and tools
-	let system_prompt = SYSTEM_PROMPT.to_string();
-
 	let agent = ConversationalAgentBuilder::new()
-		.prefix(system_prompt)
-		.tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool {db: pool.clone()})])
+		.prefix(SYSTEM_PROMPT.to_string())
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -76,15 +79,18 @@ pub fn create_dummy_research_agent() -> Result<AgentExecutor<ConversationalAgent
 	// Create memory
 	let memory = SimpleMemory::new();
 
+	// Init tools
+	let tools: [Arc<dyn Tool>; _] = [
+		// Arc::new(GeocodeTool),
+		// Arc::new(NearbySearchTool {db: pool.clone()}),
+	];
+
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
-	// Create agent with system prompt and tools
-	let system_prompt = SYSTEM_PROMPT.to_string();
-
 	let agent = ConversationalAgentBuilder::new()
-		.prefix(system_prompt)
-		// .tools(&[Arc::new(GeocodeTool), Arc::new(NearbySearchTool)])
+		.prefix(SYSTEM_PROMPT.to_string())
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
