@@ -69,7 +69,9 @@ const EventCard: React.FC<EventCardProps> = ({
     timezoneIndex: TIMEZONES.findIndex((tz) => tz === event.timezone)
   });
   const [customImagePreview, setCustomImagePreview] = useState<string | null>(
-  inputEvent.custom_image || null
+  inputEvent.photo_name && inputEvent.photo_name.startsWith('data:') 
+    ? inputEvent.photo_name 
+    : null  
 );
 
   const navigate = useNavigate();
@@ -110,10 +112,18 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const closeModal = () => {
-    setInputEvent(eventData);
-    setCustomImagePreview(eventData.custom_image || null); 
-    setIsOpen(false);
-  };
+  setInputEvent(eventData);
+  setCustomImagePreview(
+    eventData.photo_name && eventData.photo_name.startsWith('data:')
+      ? eventData.photo_name
+      : null
+  );
+  setIsOpen(false);
+};
+
+const isBase64Image = (photoName: string | null): boolean => {
+  return photoName !== null && photoName.startsWith('data:image');
+};
 
   const handleDragStart = (e: React.DragEvent) => {
     if (onDragStart) {
@@ -201,7 +211,7 @@ const EventCard: React.FC<EventCardProps> = ({
       setCustomImagePreview(base64String);
       setInputEvent({
         ...inputEvent,
-        custom_image: base64String
+        photo_name: base64String  // CHANGE from custom_image
       });
     };
     reader.readAsDataURL(file);
@@ -225,7 +235,7 @@ const handleCustomImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
       setCustomImagePreview(base64String);
       setInputEvent({
         ...inputEvent,
-        custom_image: base64String
+        photo_name: base64String  
       });
     };
     reader.readAsDataURL(file);
@@ -243,12 +253,23 @@ const removeCustomImage = () => {
   setCustomImagePreview(null);
   setInputEvent({
     ...inputEvent,
-    custom_image: null
+    photo_name: null  
   });
 };
 
   const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
+
+   // Validate image size before proceeding
+  if (inputEvent.photo_name && inputEvent.photo_name.startsWith('data:')) {
+    const base64Length = inputEvent.photo_name.length - (inputEvent.photo_name.indexOf(',') + 1);
+    const sizeInBytes = (base64Length * 3) / 4;
+    if (sizeInBytes > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+  }
+
   const userEvent: UserEventRequest = {
     id: eventData.id,
     event_name: sanitize(inputEvent.event_name)!,
@@ -264,7 +285,6 @@ const removeCustomImage = () => {
       inputEvent.timezoneIndex === -1
         ? null
         : TIMEZONES[inputEvent.timezoneIndex],
-    custom_image: inputEvent.custom_image || null // ADD THIS LINE
   };
   const result = await apiUserEvent(userEvent);
 
@@ -289,8 +309,10 @@ const removeCustomImage = () => {
     ...userEvent,
     user_created: true,
     block_index: event.block_index,
-    id: event.id
+    id: event.id,
+    photo_name: inputEvent.photo_name 
   };
+  
   setEventData(updatedEvent);
   const updatedDays = localDays.map((day) => ({
     ...day,
@@ -404,54 +426,56 @@ const removeCustomImage = () => {
           )}
         </button>
 
-        <div className="event-image-container">
-  <div className="event-image-placeholder">
-    {/* Priority: custom_image > photo_name > placeholder */}
-    {eventData.custom_image ? (
-      <img
-        src={eventData.custom_image}
-        alt={eventData.event_name}
-        className="event-image"
-      />
-    ) : eventData.photo_name && !imageError ? (
-      <>
+    <div className="event-image-container">
+    <div className="event-image-placeholder">
+      {eventData.photo_name && isBase64Image(eventData.photo_name) ? (
+        // Custom base64 image
         <img
-          src={getGooglePhotoUrl(eventData.photo_name)}
+          src={eventData.photo_name}
           alt={eventData.event_name}
           className="event-image"
-          onError={() => setImageError(true)}
         />
-        {eventData.photo_author && (
-          <a
-            href={eventData.photo_author_uri || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="photo-attribution"
-            title={`Photo by ${eventData.photo_author}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            📷
-          </a>
-        )}
-      </>
-    ) : (
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 200 200"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect width="200" height="200" fill="#f0f0f0" />
-        <path
-          d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
-          fill="#d0d0d0"
-        />
-        <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
-      </svg>
-    )}
+      ) : eventData.photo_name && !imageError ? (
+        // Google Maps photo
+        <>
+          <img
+            src={getGooglePhotoUrl(eventData.photo_name)}
+            alt={eventData.event_name}
+            className="event-image"
+            onError={() => setImageError(true)}
+          />
+          {eventData.photo_author && (
+            <a
+              href={eventData.photo_author_uri || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="photo-attribution"
+              title={`Photo by ${eventData.photo_author}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              📷
+            </a>
+          )}
+        </>
+      ) : (
+        // Placeholder
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 200 200"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect width="200" height="200" fill="#f0f0f0" />
+          <path
+            d="M80 70L100 90L120 70L140 90L160 70V150H40V70L80 70Z"
+            fill="#d0d0d0"
+          />
+          <circle cx="70" cy="60" r="15" fill="#d0d0d0" />
+        </svg>
+      )}
+    </div>
   </div>
-</div>
         <div className="event-content">
           {/* Title should always appear above the date/time */}
           <h3 className="event-title">{eventData.event_name}</h3>

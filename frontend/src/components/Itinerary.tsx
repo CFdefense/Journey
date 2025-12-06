@@ -90,7 +90,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
     start: "",
     end: "",
     timezoneIndex: -1,
-    customImage: ""
+    photoName: ""
   });
   const [searchEventForm, setSearchEventForm] = useState({
     name: "",
@@ -334,8 +334,20 @@ const Itinerary: React.FC<ItineraryProps> = ({
   };
 
   const closeCreateModal = () => setCreateModalOpen(false);
+  
   const onSaveUserEvent = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
+
+  // Validate image size before proceeding
+  if (userEventForm.photoName && userEventForm.photoName.startsWith('data:')) {
+    const base64Length = userEventForm.photoName.length - (userEventForm.photoName.indexOf(',') + 1);
+    const sizeInBytes = (base64Length * 3) / 4;
+    if (sizeInBytes > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+  }
+  
   const userEvent: UserEventRequest = {
     id: null,
     event_name: sanitize(userEventForm.name)!,
@@ -354,7 +366,6 @@ const Itinerary: React.FC<ItineraryProps> = ({
       userEventForm.timezoneIndex === -1
         ? null
         : TIMEZONES[userEventForm.timezoneIndex],
-    custom_image: userEventForm.customImage || null, // Add this line
   };
   const result = await apiUserEvent(userEvent);
   if (result.status === 401) {
@@ -384,9 +395,9 @@ const Itinerary: React.FC<ItineraryProps> = ({
     start: "",
     end: "",
     timezoneIndex: -1,
-    customImage: ""
+    photoName: ""
   });
-  setImagePreview(null); // Add this line to reset preview
+  setImagePreview(null); 
   
   const event: Event = {
     ...EVENT_DEFAULT,
@@ -408,7 +419,7 @@ const Itinerary: React.FC<ItineraryProps> = ({
         ? null
         : TIMEZONES[userEventForm.timezoneIndex],
     user_created: true,
-    custom_image: userEventForm.customImage || null, // Add this line
+    photo_name: userEventForm.photoName || null, // Add this line
   };
 
   const updatedUnassigned = [...unassigned, event];
@@ -538,13 +549,11 @@ const Itinerary: React.FC<ItineraryProps> = ({
 const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
   if (file) {
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
     
-    // Validate file size (e.g., max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
@@ -556,7 +565,7 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setImagePreview(base64String);
       setUserEventForm({
         ...userEventForm,
-        customImage: base64String
+        photoName: base64String  
       });
     };
     reader.readAsDataURL(file);
@@ -569,7 +578,6 @@ const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
   
   const file = e.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) {
-    // Validate file size
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
@@ -581,7 +589,7 @@ const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
       setImagePreview(base64String);
       setUserEventForm({
         ...userEventForm,
-        customImage: base64String
+        photoName: base64String 
       });
     };
     reader.readAsDataURL(file);
@@ -599,7 +607,7 @@ const removeImage = () => {
   setImagePreview(null);
   setUserEventForm({
     ...userEventForm,
-    customImage: ""
+    photoName: ""  
   });
 };
 
