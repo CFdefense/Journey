@@ -5,10 +5,11 @@ import ContextWindow from "./ContextWindow";
 import type { ChatSession } from "../models/home";
 import { apiDeleteChat, apiRenameChat } from "../api/home";
 import { ACTIVE_CHAT_SESSION } from "../pages/Home";
-import userPfp from "../assets/user-pfp-temp.png";
 import { GlobalContext } from "../helpers/global";
 import type { GlobalState } from "./GlobalProvider";
 import { apiLogout } from "../api/account";
+
+const userPfp = "/user-pfp-temp.png";
 
 interface PrevChatSideBarProps {
   chats: ChatSession[] | null;
@@ -19,6 +20,8 @@ interface PrevChatSideBarProps {
   onDeleteChat: (id: number) => void;
   onRenameChat: (id: number, newTitle: string) => void;
   sidebarVisible: boolean;
+  firstName?: string;
+  profileImageUrl?: string;
 }
 
 export default function PrevChatSideBar({
@@ -29,7 +32,9 @@ export default function PrevChatSideBar({
   onToggleSidebar,
   onDeleteChat,
   onRenameChat,
-  sidebarVisible
+  sidebarVisible,
+  firstName,
+  profileImageUrl
 }: PrevChatSideBarProps) {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -375,9 +380,12 @@ export default function PrevChatSideBar({
       <div className="sidebar-bottom">
         <Link to="/account" className="sidebar-profile-link">
           <img
-            src={userPfp}
-            alt="User profile"
+            src={profileImageUrl || userPfp}
+            alt={firstName ? `${firstName}'s profile` : "User profile"}
             className="sidebar-profile-pic"
+            onError={(e) => {
+              e.currentTarget.src = userPfp;
+            }}
           />
         </Link>
         <button

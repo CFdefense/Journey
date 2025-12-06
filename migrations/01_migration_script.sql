@@ -60,7 +60,8 @@ CREATE TABLE accounts (
     budget_preference budget_bucket,
     risk_preference risk_tolerence,
     food_allergies TEXT NOT NULL DEFAULT '',
-    disabilities TEXT NOT NULL DEFAULT ''
+    disabilities TEXT NOT NULL DEFAULT '',
+    profile_picture TEXT
 );
 
 -- Events table

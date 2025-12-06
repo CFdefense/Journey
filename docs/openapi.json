@@ -38,6 +38,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "Last",
+                  "profile_picture": "base64-txt",
                   "risk_preference": "Adventurer"
                 }
               }
@@ -238,6 +239,7 @@
                   "first_name": "First",
                   "food_allergies": "peanuts,vegetarian,pollen",
                   "last_name": "last",
+                  "profile_picture": "base64-txt",
                   "risk_preference": "Adventurer"
                 }
               }
@@ -1300,7 +1302,7 @@
           },
           "disabilities": {
             "type": "string",
-            "description": "Optional food and allergies preferences"
+            "description": "Optional food and allergies preferences\nshould this have option encoded..."
           },
           "email": {
             "type": "string",
@@ -1312,11 +1314,18 @@
           },
           "food_allergies": {
             "type": "string",
-            "description": "Optional food and allergies preferences"
+            "description": "Optional food and allergies preferences\nshould this have option encoded..."
           },
           "last_name": {
             "type": "string",
             "description": "Last name"
+          },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
           },
           "risk_preference": {
             "oneOf": [
@@ -2202,6 +2211,13 @@
             ],
             "description": "Optional new plaintext password"
           },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
+          },
           "risk_preference": {
             "oneOf": [
               {
@@ -2256,6 +2272,13 @@
           "last_name": {
             "type": "string",
             "description": "Current last name"
+          },
+          "profile_picture": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional new profile pic"
           },
           "risk_preference": {
             "oneOf": [
