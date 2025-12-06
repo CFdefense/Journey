@@ -101,29 +101,16 @@ async fn send_message_to_llm(
 		None => None,
 	};
 
-	// Check if DEPLOY_LLM == "1", return dummy response if not
-	let ai_text = match env::var("DEPLOY_LLM") {
-		#[cfg(not(tarpaulin_include))]
-		Ok(s) if s.as_str() == "1" => {
-			// DEPLOY_LLM is set, call the actual AI agent
-			let agent_guard = agent.lock().await;
-			agent_guard
-				.invoke(prompt_args! {
-					"input" => text,
-				})
-				.await
-				.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
-		}
-		_ => {
-			// DEPLOY_LLM != "1", return dummy response
-			format!(
-				"This is a dummy response for testing. You said: \"{}\"",
-				text
-			)
-		}
-	};
+	// Always invoke the agent (it will use MockLLM when DEPLOY_LLM != "1")
+	let agent_guard = agent.lock().await;
+	let ai_text = agent_guard
+		.invoke(prompt_args! {
+			"input" => text,
+		})
+		.await
+		.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?;
 
-	// Create dummy itinerary (always used when DEPLOY_LLM != "1")
+	// Create dummy itinerary (used when MockLLM is active)
 	let mut ai_itinerary = Itinerary {
 		id: 0,
 		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),

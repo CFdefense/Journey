@@ -12,9 +12,11 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
 };
+
+use sqlx::PgPool;
 
 use crate::agent::tools::research::*;
 
@@ -25,7 +27,10 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_research_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_research_agent(
+	llm: OpenAI<OpenAIConfig>,
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -37,6 +42,8 @@ pub fn create_research_agent() -> Result<AgentExecutor<ConversationalAgent>, Age
 
 	// Get tools
 	// TODO: Add tools here
+
+	// TODO initialize llm with the provided llm
 
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
