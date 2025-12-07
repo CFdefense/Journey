@@ -24,7 +24,7 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
   // Ensure selectedDayIndex is valid
   const validDayIndex = Math.min(selectedDayIndex, days.length - 1);
   const currentDay = days[validDayIndex];
-  
+
   // Safety check: if currentDay doesn't exist or has invalid date, return empty state
   if (!currentDay || !currentDay.date) {
     return (
