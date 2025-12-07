@@ -11,24 +11,25 @@ use async_trait::async_trait;
 use langchain_rust::tools::Tool;
 use langchain_rust::language_models::llm::LLM;
 use serde_json::{json, Value};
+use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, info};
 
+use crate::http_models::event::Event;
+
 /// Uses an LLM to intelligently determine if an event should be included
 /// based on trip context, user preferences, and constraints
 async fn should_include_event(
 	llm: &Arc<dyn LLM + Send + Sync>,
-	event: &Value,
+	event: &Event,
 	preferences: &[String],
 	constraints: &[String],
 ) -> Result<(bool, Option<String>), Box<dyn Error>> {
-	let event_name = event.get("event_name").and_then(|v| v.as_str()).unwrap_or("Unknown");
-	
-	// Serialize the entire event as pretty JSON for the LLM to analyze
+	// Serialize the event as JSON for the LLM to analyze
 	let event_json = serde_json::to_string_pretty(event)
-		.unwrap_or_else(|_| event.to_string());
+		.unwrap_or_else(|_| format!("Event: {}", event.event_name));
 	
 	// Create a prompt with all event details
 	let prompt = format!(
@@ -69,19 +70,19 @@ Respond with ONLY a JSON object in this exact format:
 		},
 		Err(_) => {
 			// If parsing fails, default to including the event
-			debug!(target: "constraint_tools", "Failed to parse LLM response for event: {}, response: {}", event_name, response);
+			debug!(target: "constraint_tools", "Failed to parse LLM response for event: {}, response: {}", event.event_name, response);
 			Ok((true, Some("LLM response parsing failed, including by default".to_string())))
 		}
 	}
 }
 
-/// Tool that filters a list of events based on simple constraints.
+/// Tool that filters a list of event IDs based on user constraints.
 ///
 /// Expected input (from the Orchestrator via `route_task` with `task_type = "constraint"`):
 ///
 /// ```json
 /// {
-///   "events": [ /* array of event-like objects */ ],
+///   "event_ids": [1, 2, 3, ...], // array of event IDs from research agent
 ///   "constraints": ["No Tree Nuts", "No Peanuts", "Wheelchair accessible required: ..."],
 ///   "trip_context": { ... } // optional, for future use
 /// }
@@ -89,22 +90,24 @@ Respond with ONLY a JSON object in this exact format:
 ///
 /// - If `constraints` is empty, this tool returns a natural-language question
 ///   asking the user for constraints/preferences.
-/// - If constraints are present, it returns a JSON string:
+/// - If constraints are present, it fetches the events from the database by ID,
+///   evaluates each with an LLM, and returns:
 ///
 /// ```json
 /// {
-///   "filtered_events": [ ... ],
-///   "removed_events": [ { "event": { ... }, "reasons": ["..."] } ]
+///   "filtered_event_ids": [1, 3, 5, ...],
+///   "removed_events": [ { "event_id": 2, "event_name": "...", "reasons": ["..."] } ]
 /// }
 /// ```
 #[derive(Clone)]
 pub struct FilterEventsByConstraintsTool {
 	llm: Arc<dyn LLM + Send + Sync>,
+	db: PgPool,
 }
 
 impl FilterEventsByConstraintsTool {
-	pub fn new(llm: Arc<dyn LLM + Send + Sync>) -> Self {
-		Self { llm }
+	pub fn new(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Self {
+		Self { llm, db }
 	}
 }
 
@@ -115,7 +118,7 @@ impl Tool for FilterEventsByConstraintsTool {
 	}
 
 	fn description(&self) -> String {
-		"Filters a list of events from the Research Agent using the user's constraints (e.g., wheelchair accessibility). If no constraints are available, asks the user once for their preferences and constraints."
+		"Filters a list of event IDs from the Research Agent using the user's constraints (e.g., wheelchair accessibility). Accepts event IDs (as a JSON string or from payload), fetches events from the database, evaluates each with an LLM, and returns filtered event IDs. If no constraints are available, asks the user once for their preferences and constraints."
 			.to_string()
 	}
 
@@ -123,13 +126,13 @@ impl Tool for FilterEventsByConstraintsTool {
 		json!({
 			"type": "object",
 			"properties": {
-				"events": {
+				"event_ids": {
 					"type": "string",
-					"description": "OPTIONAL. JSON stringified array of events to filter. If omitted, the tool will look for an 'events' field or 'research_result' object in the input payload."
+					"description": "JSON stringified array of event IDs to filter (e.g., '[1, 2, 3]'). If omitted, the tool will extract event_ids from the input payload."
 				},
 				"constraints": {
 					"type": "string",
-					"description": "OPTIONAL. JSON stringified array of constraint strings (e.g., '[\"No Tree Nuts\", \"Wheelchair accessible\"]'). If omitted, the tool will look for a 'constraints' or 'trip_context.constraints' field."
+					"description": "JSON stringified array of constraint strings (e.g., '[\"No Tree Nuts\", \"Wheelchair accessible\"]'). If omitted, the tool will extract constraints from the input payload."
 				}
 			},
 			"required": []
@@ -164,70 +167,191 @@ impl Tool for FilterEventsByConstraintsTool {
 			input
 		};
 
-	// Extract events array - handle both array and JSON string formats
-	let mut events_val = parsed_input
-		.get("events")
-		.cloned()
-		.or_else(|| parsed_input.get("research_result").cloned())
-		.or_else(|| parsed_input.get("data").cloned())
-		.unwrap_or(Value::Null);
+		// Extract event_ids array - handle both array and JSON string formats
+		let mut event_ids_val = parsed_input
+			.get("event_ids")
+			.cloned()
+			.or_else(|| parsed_input.get("events").and_then(|v| v.get("event_ids")).cloned())
+			.or_else(|| parsed_input.get("data").and_then(|v| v.get("event_ids")).cloned())
+			.unwrap_or(Value::Null);
 
-	// If events is a JSON string, parse it into an array
-	if events_val.is_string() {
-		let events_str = events_val.as_str().unwrap_or("[]");
-		events_val = serde_json::from_str(events_str).unwrap_or(Value::Null);
-	}
+		// If event_ids is a JSON string, parse it into an array
+		if event_ids_val.is_string() {
+			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
+			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		}
 
-	let events = events_val
-		.as_array()
-		.ok_or("events should be an array of event-like objects")?;
+		let event_ids: Vec<i32> = event_ids_val
+			.as_array()
+			.ok_or("event_ids should be an array of integers")?
+			.iter()
+			.filter_map(|v| v.as_i64().map(|i| i as i32))
+			.collect();
+
+		if event_ids.is_empty() {
+			crate::tool_trace!(
+				agent: "constraint",
+				tool: "filter_events_by_constraints",
+				status: "error",
+				details: "no event IDs provided"
+			);
+			return Err("No event IDs provided to constraint agent".into());
+		}
+
+		info!(
+			target: "constraint_tools",
+			tool = "filter_events_by_constraints",
+			event_ids_count = event_ids.len(),
+			"Fetching events from database"
+		);
+
+		// Fetch all events from database by their IDs
+		let rows = sqlx::query!(
+			r#"
+			SELECT 
+				id,
+				event_name,
+				event_description,
+				street_address,
+				city,
+				country,
+				postal_code,
+				lat,
+				lng,
+				event_type,
+				user_created,
+				hard_start,
+				hard_end,
+				timezone,
+				place_id,
+				wheelchair_accessible_parking,
+				wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom,
+				wheelchair_accessible_seating,
+				serves_vegetarian_food,
+				price_level,
+				utc_offset_minutes,
+				website_uri,
+				types,
+				photo_name,
+				photo_width,
+				photo_height,
+				photo_author,
+				photo_author_uri,
+				photo_author_photo_uri,
+				weekday_descriptions,
+				secondary_hours_type,
+				next_open_time,
+				next_close_time,
+				open_now,
+				periods as "periods!: Vec<crate::sql_models::Period>",
+				special_days
+			FROM events
+			WHERE id = ANY($1)
+			"#,
+			&event_ids
+		)
+		.fetch_all(&self.db)
+		.await?;
+
+		// Map rows to Event structs
+		let events: Vec<Event> = rows
+			.into_iter()
+			.map(|row| Event {
+				id: row.id,
+				event_name: row.event_name,
+				event_description: row.event_description,
+				street_address: row.street_address,
+				city: row.city,
+				country: row.country,
+				postal_code: row.postal_code,
+				lat: row.lat,
+				lng: row.lng,
+				event_type: row.event_type,
+				user_created: row.user_created,
+				hard_start: row.hard_start,
+				hard_end: row.hard_end,
+				timezone: row.timezone,
+				place_id: row.place_id,
+				wheelchair_accessible_parking: row.wheelchair_accessible_parking,
+				wheelchair_accessible_entrance: row.wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom: row.wheelchair_accessible_restroom,
+				wheelchair_accessible_seating: row.wheelchair_accessible_seating,
+				serves_vegetarian_food: row.serves_vegetarian_food,
+				price_level: row.price_level,
+				utc_offset_minutes: row.utc_offset_minutes,
+				website_uri: row.website_uri,
+				types: row.types,
+				photo_name: row.photo_name,
+				photo_width: row.photo_width,
+				photo_height: row.photo_height,
+				photo_author: row.photo_author,
+				photo_author_uri: row.photo_author_uri,
+				photo_author_photo_uri: row.photo_author_photo_uri,
+				weekday_descriptions: row.weekday_descriptions,
+				secondary_hours_type: row.secondary_hours_type,
+				next_open_time: row.next_open_time,
+				next_close_time: row.next_close_time,
+				open_now: row.open_now,
+				periods: row.periods,
+				special_days: row.special_days,
+				block_index: None, // Not used in constraint filtering
+			})
+			.collect();
 
 		if events.is_empty() {
 			crate::tool_trace!(
 				agent: "constraint",
 				tool: "filter_events_by_constraints",
 				status: "error",
-				details: "no events provided"
+				details: "no events found in database for provided IDs"
 			);
-			return Err("No events provided to constraint agent".into());
+			return Err("No events found in database for the provided IDs".into());
 		}
 
-	// Extract constraints (strings, lowercased for matching)
-	let mut constraints_val = if parsed_input.get("constraints").is_some() {
-		parsed_input.get("constraints").cloned().unwrap_or(Value::Null)
-	} else {
-		parsed_input
-			.get("trip_context")
-			.and_then(|tc| tc.get("constraints"))
-			.cloned()
-			.unwrap_or(Value::Null)
-	};
+		info!(
+			target: "constraint_tools",
+			tool = "filter_events_by_constraints",
+			events_fetched = events.len(),
+			"Events fetched successfully"
+		);
 
-	// If constraints is a JSON string, parse it into an array
-	if constraints_val.is_string() {
-		let constraints_str = constraints_val.as_str().unwrap_or("[]");
-		constraints_val = serde_json::from_str(constraints_str).unwrap_or(Value::Null);
-	}
+		// Extract constraints (strings, lowercased for matching)
+		let mut constraints_val = if parsed_input.get("constraints").is_some() {
+			parsed_input.get("constraints").cloned().unwrap_or(Value::Null)
+		} else {
+			parsed_input
+				.get("trip_context")
+				.and_then(|tc| tc.get("constraints"))
+				.cloned()
+				.unwrap_or(Value::Null)
+		};
 
-	let constraints: Vec<String> = if let Some(arr) = constraints_val.as_array() {
-		arr.iter()
-			.filter_map(|v| v.as_str().map(|s| s.to_lowercase()))
-			.collect()
-	} else {
-		Vec::new()
-	};
+		// If constraints is a JSON string, parse it into an array
+		if constraints_val.is_string() {
+			let constraints_str = constraints_val.as_str().unwrap_or("[]");
+			constraints_val = serde_json::from_str(constraints_str).unwrap_or(Value::Null);
+		}
 
-	// Extract preferences from trip_context
-	let preferences: Vec<String> = parsed_input
-		.get("trip_context")
-		.and_then(|tc| tc.get("preferences"))
-		.and_then(|p| p.as_array())
-		.map(|arr| {
+		let constraints: Vec<String> = if let Some(arr) = constraints_val.as_array() {
 			arr.iter()
 				.filter_map(|v| v.as_str().map(|s| s.to_lowercase()))
 				.collect()
-		})
-		.unwrap_or_else(Vec::new);
+		} else {
+			Vec::new()
+		};
+
+		// Extract preferences from trip_context
+		let preferences: Vec<String> = parsed_input
+			.get("trip_context")
+			.and_then(|tc| tc.get("preferences"))
+			.and_then(|p| p.as_array())
+			.map(|arr| {
+				arr.iter()
+					.filter_map(|v| v.as_str().map(|s| s.to_lowercase()))
+					.collect()
+			})
+			.unwrap_or_else(Vec::new);
 
 		// If we truly have no constraints, ask the user for them.
 		if constraints.is_empty() {
@@ -246,31 +370,30 @@ impl Tool for FilterEventsByConstraintsTool {
 			return Ok(question.to_string());
 		}
 
-	debug!(
-		target: "constraint_tools",
-		tool = "filter_events_by_constraints",
-		preferences = ?preferences,
-		constraints = ?constraints,
-		events_count = events.len(),
-		"Processing events with LLM-based filtering"
-	);
+		debug!(
+			target: "constraint_tools",
+			tool = "filter_events_by_constraints",
+			preferences = ?preferences,
+			constraints = ?constraints,
+			events_count = events.len(),
+			"Processing events with LLM-based filtering"
+		);
 
-		let mut filtered: Vec<Value> = Vec::new();
+		let mut filtered_ids: Vec<i32> = Vec::new();
 		let mut removed: Vec<Value> = Vec::new();
 
 		// Process each event with LLM evaluation
-		for ev in events.iter() {
-			let event_name = ev.get("event_name").and_then(|v| v.as_str()).unwrap_or("Unknown");
-			
+		for event in events.iter() {
 			// Use LLM to evaluate if event should be included
-			match should_include_event(&self.llm, ev, &preferences, &constraints).await {
+			match should_include_event(&self.llm, event, &preferences, &constraints).await {
 				Ok((should_include, reason)) => {
 					if should_include {
-						filtered.push(ev.clone());
+						filtered_ids.push(event.id);
 					} else {
 						let reason_text = reason.unwrap_or_else(|| "not relevant for trip".to_string());
 						removed.push(json!({
-							"event": ev.clone(),
+							"event_id": event.id,
+							"event_name": &event.event_name,
 							"reasons": [reason_text],
 						}));
 					}
@@ -280,66 +403,63 @@ impl Tool for FilterEventsByConstraintsTool {
 						target: "constraint_tools",
 						tool = "filter_events_by_constraints",
 						error = %e,
-						event_name = %event_name,
+						event_name = %event.event_name,
 						"LLM evaluation failed, including event by default"
 					);
 					// On error, include the event by default to avoid over-filtering
-					filtered.push(ev.clone());
+					filtered_ids.push(event.id);
 				}
 			}
 		}
 
-	let result = json!({
-		"filtered_events": filtered,
-		"removed_events": removed
-	});
+		let result = json!({
+			"filtered_event_ids": filtered_ids,
+			"removed_events": removed,
+			"count": filtered_ids.len()
+		});
 
-	let elapsed = start_time.elapsed();
+		let elapsed = start_time.elapsed();
 
-	// Extract event names for debugging
-	let filtered_names: Vec<String> = result["filtered_events"]
-		.as_array()
-		.map(|arr| {
-			arr.iter()
-				.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()).map(|s| s.to_string()))
-				.collect()
-		})
-		.unwrap_or_default();
-	
-	let removed_names: Vec<String> = result["removed_events"]
-		.as_array()
-		.map(|arr| {
-			arr.iter()
-				.filter_map(|e| {
-					e.get("event")
-						.and_then(|ev| ev.get("event_name"))
-						.and_then(|n| n.as_str())
-						.map(|s| s.to_string())
-				})
-				.collect()
-		})
-		.unwrap_or_default();
+		// Extract event names for debugging
+		let filtered_names: Vec<String> = events
+			.iter()
+			.filter(|e| filtered_ids.contains(&e.id))
+			.map(|e| e.event_name.clone())
+			.collect();
+		
+		let removed_names: Vec<String> = result["removed_events"]
+			.as_array()
+			.map(|arr| {
+				arr.iter()
+					.filter_map(|e| {
+						e.get("event_name")
+							.and_then(|n| n.as_str())
+							.map(|s| s.to_string())
+					})
+					.collect()
+			})
+			.unwrap_or_default();
 
-	crate::tool_trace!(
-		agent: "constraint",
-		tool: "filter_events_by_constraints",
-		status: "success",
-		details: format!(
-			"elapsed_ms={}, filtered_count={}, removed_count={}, filtered=[{}], removed=[{}]",
-			elapsed.as_millis(),
-			result["filtered_events"].as_array().map(|a| a.len()).unwrap_or(0),
-			result["removed_events"].as_array().map(|a| a.len()).unwrap_or(0),
-			filtered_names.join(", "),
-			removed_names.join(", ")
-		)
-	);
+		crate::tool_trace!(
+			agent: "constraint",
+			tool: "filter_events_by_constraints",
+			status: "success",
+			details: format!(
+				"elapsed_ms={}, filtered_count={}, removed_count={}, filtered=[{}], removed=[{}]",
+				elapsed.as_millis(),
+				filtered_ids.len(),
+				removed.len(),
+				filtered_names.join(", "),
+				removed_names.join(", ")
+			)
+		);
 
 		info!(
 			target: "constraint_tools",
 			tool = "filter_events_by_constraints",
 			elapsed_ms = elapsed.as_millis() as u64,
-			filtered_count = result["filtered_events"].as_array().map(|a| a.len()).unwrap_or(0),
-			removed_count = result["removed_events"].as_array().map(|a| a.len()).unwrap_or(0),
+			filtered_count = filtered_ids.len(),
+			removed_count = removed.len(),
 			"Constraint filtering completed"
 		);
 
@@ -347,6 +467,6 @@ impl Tool for FilterEventsByConstraintsTool {
 	}
 }
 
-pub fn constraint_tools(llm: Arc<dyn LLM + Send + Sync>) -> Vec<Arc<dyn Tool>> {
-	vec![Arc::new(FilterEventsByConstraintsTool::new(llm))]
+pub fn constraint_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<dyn Tool>> {
+	vec![Arc::new(FilterEventsByConstraintsTool::new(llm, db))]
 }

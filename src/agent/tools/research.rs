@@ -33,6 +33,7 @@ struct GeocodeTool;
 
 /// This tool queries the DB for events that may be relevant to the itinerary being generated.
 #[derive(Clone)]
+#[allow(dead_code)]
 struct QueryDbEventsTool {
 	pub db: PgPool,
 }
@@ -249,7 +250,7 @@ impl<'db> Tool for NearbySearchTool {
 	}
 
 	fn description(&self) -> String {
-		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria. The resulting events are inserted or updated in the database."
+		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria. The resulting events are inserted or updated in the database and their IDs are returned. Returns a JSON object with 'event_ids' (array of integer IDs) and 'count' (number of events found)."
             .to_string()
 	}
 
@@ -529,29 +530,27 @@ impl<'db> Tool for NearbySearchTool {
 			"Found places from Google Maps"
 		);
 
-		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
+	let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 
-		/// ## NOTICE
-		/// If you change the fields in the events table or the [Event] struct,
-		/// you must make sure the EVENT_FIELD_COUNT is set to the number of fields
-		/// that need to be inserted.
-		const EVENT_FIELD_COUNT: usize = 36;
-		let mut placeholders = String::new();
-		for r in 0..events.len() {
-			if r > 0 {
-				placeholders.push(',');
-			}
-			placeholders.push('(');
-			for c in 0..EVENT_FIELD_COUNT {
-				if c > 0 {
-					placeholders.push(',');
-				}
-				placeholders.push_str(&format!("${}", r * EVENT_FIELD_COUNT + c + 1));
-			}
-			placeholders.push(')');
-		}
+	info!(
+		target: "research_tools",
+		tool = "nearby_search_tool",
+		events_to_insert = events.len(),
+		"Inserting/updating events in database"
+	);
 
-		let sql = format!(
+	// Define a struct to capture the RETURNING clause results
+	struct EventInsertResult {
+		id: i32,
+		event_name: String,
+	}
+
+	// Use query! macro for compile-time type checking
+	// Insert events one by one to use the type-safe macro
+	let mut results: Vec<EventInsertResult> = Vec::with_capacity(events.len());
+	
+	for ev in events.iter() {
+		let result = sqlx::query!(
 			r#"
 			INSERT INTO events (
 				event_name,
@@ -591,7 +590,7 @@ impl<'db> Tool for NearbySearchTool {
 				periods,
 				special_days
 			)
-			VALUES {}
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
 			ON CONFLICT (place_id) DO UPDATE SET
 				event_name = EXCLUDED.event_name,
 				event_description = EXCLUDED.event_description,
@@ -627,81 +626,79 @@ impl<'db> Tool for NearbySearchTool {
 				next_close_time = EXCLUDED.next_close_time,
 				open_now = EXCLUDED.open_now,
 				periods = EXCLUDED.periods,
-				special_days = EXCLUDED.special_days;
+				special_days = EXCLUDED.special_days
+			RETURNING id, event_name
 			"#,
-			placeholders
-		);
-
-		let mut query = sqlx::query(&sql);
-
-		for ev in events.iter() {
-			query = query
-				.bind(&ev.event_name)
-				.bind(&ev.event_description)
-				.bind(&ev.street_address)
-				.bind(&ev.city)
-				.bind(&ev.country)
-				.bind(ev.postal_code)
-				.bind(ev.lat)
-				.bind(ev.lng)
-				.bind(&ev.event_type)
-				.bind(ev.user_created)
-				.bind(ev.hard_start)
-				.bind(ev.hard_end)
-				.bind(&ev.timezone)
-				.bind(&ev.place_id) // conflict target
-				.bind(ev.wheelchair_accessible_parking)
-				.bind(ev.wheelchair_accessible_entrance)
-				.bind(ev.wheelchair_accessible_restroom)
-				.bind(ev.wheelchair_accessible_seating)
-				.bind(ev.serves_vegetarian_food)
-				.bind(ev.price_level)
-				.bind(ev.utc_offset_minutes)
-				.bind(&ev.website_uri)
-				.bind(&ev.types)
-				.bind(&ev.photo_name)
-				.bind(ev.photo_width)
-				.bind(ev.photo_height)
-				.bind(&ev.photo_author)
-				.bind(&ev.photo_author_uri)
-				.bind(&ev.photo_author_photo_uri)
-				.bind(&ev.weekday_descriptions)
-				.bind(ev.secondary_hours_type)
-				.bind(ev.next_open_time)
-				.bind(ev.next_close_time)
-				.bind(ev.open_now)
-				.bind(&ev.periods)
-				.bind(&ev.special_days);
-		}
-
-		info!(
-			target: "research_tools",
-			tool = "nearby_search_tool",
-			"Inserting/updating events in database"
-		);
-
-		query.execute(&self.db).await?;
+			&ev.event_name,
+			ev.event_description.as_ref(),
+			ev.street_address.as_ref(),
+			ev.city.as_ref(),
+			ev.country.as_ref(),
+			ev.postal_code,
+			ev.lat,
+			ev.lng,
+			ev.event_type.as_ref(),
+			ev.user_created,
+			ev.hard_start,
+			ev.hard_end,
+			ev.timezone.as_ref(),
+			ev.place_id.as_ref(),
+			ev.wheelchair_accessible_parking,
+			ev.wheelchair_accessible_entrance,
+			ev.wheelchair_accessible_restroom,
+			ev.wheelchair_accessible_seating,
+			ev.serves_vegetarian_food,
+			ev.price_level,
+			ev.utc_offset_minutes,
+			ev.website_uri.as_ref(),
+			ev.types.as_ref(),
+			ev.photo_name.as_ref(),
+			ev.photo_width,
+			ev.photo_height,
+			ev.photo_author.as_ref(),
+			ev.photo_author_uri.as_ref(),
+			ev.photo_author_photo_uri.as_ref(),
+			ev.weekday_descriptions.as_ref(),
+			ev.secondary_hours_type,
+			ev.next_open_time,
+			ev.next_close_time,
+			ev.open_now,
+			&ev.periods as _,
+			&ev.special_days as _,
+		)
+		.fetch_one(&self.db)
+		.await?;
+		
+		results.push(EventInsertResult {
+			id: result.id,
+			event_name: result.event_name,
+		});
+	}
 
 	let elapsed = start_time.elapsed();
-	let result = json!(events);
 	
-	// Extract event names for debugging
-	let event_names: Vec<String> = events
-		.iter()
-		.map(|e| e.event_name.clone())
-		.collect();
+	// Extract event IDs and names for the response and debugging
+	let event_ids: Vec<i32> = results.iter().map(|r| r.id).collect();
+	let event_names: Vec<String> = results.iter().map(|r| r.event_name.clone()).collect();
+	
+	// Return only the IDs to keep the context window clean
+	let result = json!({
+		"event_ids": event_ids,
+		"count": event_ids.len()
+	});
 	
 	info!(
 		target: "research_tools",
 		tool = "nearby_search_tool",
 		elapsed_ms = elapsed.as_millis() as u64,
-		events_count = events.len(),
+		events_count = event_ids.len(),
+		event_ids = ?event_ids,
 		"Nearby search completed successfully"
 	);
 	debug!(
 		target: "research_tools",
 		tool = "nearby_search_tool",
-		events_sample = %serde_json::to_string(&events.iter().take(3).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
+		events_sample = %serde_json::to_string(&results.iter().take(3).map(|r| json!({"id": r.id, "name": &r.event_name})).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
 		"Sample of events (first 3)"
 	);
 	
@@ -709,7 +706,7 @@ impl<'db> Tool for NearbySearchTool {
 		agent: "research", 
 		tool: "nearby_search_tool", 
 		status: "success",
-		details: format!("{}ms - {} events - [{}]", elapsed.as_millis(), events.len(), event_names.join(", "))
+		details: format!("{}ms - {} events - [{}]", elapsed.as_millis(), event_ids.len(), event_names.join(", "))
 	);
 		
 		Ok(result.to_string())
