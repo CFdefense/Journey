@@ -26,8 +26,8 @@ use crate::{
 	swagger::SecurityAddon,
 };
 
-use langchain_rust::prompt_args;
 use langchain_rust::chain::Chain;
+use langchain_rust::prompt_args;
 use tracing::{debug, error, info};
 
 #[derive(OpenApi)]
