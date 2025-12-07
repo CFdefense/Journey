@@ -1365,12 +1365,6 @@
               "null"
             ]
           },
-          "coords": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "country": {
             "type": [
               "string",
@@ -1410,6 +1404,20 @@
             "type": "integer",
             "format": "int32",
             "description": "Primary key"
+          },
+          "lat": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "lng": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
           },
           "next_close_time": {
             "type": [
