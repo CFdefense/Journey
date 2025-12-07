@@ -1,4 +1,8 @@
 use chrono::{NaiveDate, NaiveDateTime};
+use google_maps::places_new::Place;
+use num_traits::ToPrimitive;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::{ToResponse, ToSchema};
@@ -16,7 +20,8 @@ pub struct Event {
 	pub city: Option<String>,
 	pub country: Option<String>,
 	pub postal_code: Option<i32>,
-	pub coords: Option<String>,
+	pub lat: Option<f64>,
+	pub lng: Option<f64>,
 	pub event_type: Option<String>,
 	pub user_created: bool,
 	pub hard_start: Option<NaiveDateTime>,
@@ -61,7 +66,8 @@ impl From<&EventListJoinRow> for Event {
 			city: value.city.clone(),
 			country: value.country.clone(),
 			postal_code: value.postal_code,
-			coords: value.coords.clone(),
+			lat: value.lat.clone(),
+			lng: value.lng.clone(),
 			event_type: value.event_type.clone(),
 			user_created: value.user_created.clone(),
 			hard_start: value.hard_start.clone(),
@@ -95,6 +101,223 @@ impl From<&EventListJoinRow> for Event {
 	}
 }
 
+pub static REGEX_ST_ADDR: Lazy<Regex> =
+	Lazy::new(|| Regex::new(r#"<span\s+class="street-address"\s*>([^<]*)</span>"#).unwrap());
+pub static REGEX_LOCALITY: Lazy<Regex> =
+	Lazy::new(|| Regex::new(r#"<span\s+class="locality"\s*>([^<]*)</span>"#).unwrap());
+pub static REGEX_COUNTRY: Lazy<Regex> =
+	Lazy::new(|| Regex::new(r#"<span\s+class="country-name"\s*>([^<]*)</span>"#).unwrap());
+pub static REGEX_POST_CODE: Lazy<Regex> =
+	Lazy::new(|| Regex::new(r#"<span\s+class="postal-code"\s*>([^<]*)</span>"#).unwrap());
+
+impl From<&Place> for Event {
+	fn from(value: &Place) -> Self {
+		#[inline]
+		fn extract(input: &str, re: &Regex) -> Option<String> {
+			re.captures(input)
+				.and_then(|caps| caps.get(1))
+				.map(|m| m.as_str().to_string())
+		}
+		let empty = String::new();
+		let input = value.adr_format_address.as_ref().unwrap_or(&empty).as_str();
+		let street_address = extract(input, &REGEX_ST_ADDR);
+		let city = extract(input, &REGEX_LOCALITY);
+		let country = extract(input, &REGEX_COUNTRY);
+		let postal_code = extract(input, &REGEX_POST_CODE)
+			.map(|p| p.parse().ok())
+			.unwrap_or(None);
+		Self {
+			id: -1,
+			event_name: value
+				.display_name
+				.as_ref()
+				.map(|n| n.to_string())
+				.unwrap_or("Unnamed Event".to_string()),
+			event_description: value.editorial_summary.as_ref().map(|n| n.to_string()),
+			street_address,
+			city,
+			country,
+			postal_code,
+			lat: value.location.map(|l| l.latitude.to_f64()).unwrap_or(None),
+			lng: value.location.map(|l| l.longitude.to_f64()).unwrap_or(None),
+			event_type: value.primary_type.map(|t| t.to_string()),
+			user_created: false,
+			hard_start: None,
+			hard_end: None,
+			timezone: None,
+			place_id: value.id.clone(),
+			wheelchair_accessible_parking: value
+				.accessibility_options
+				.map(|a| a.wheelchair_accessible_parking)
+				.unwrap_or(None),
+			wheelchair_accessible_entrance: value
+				.accessibility_options
+				.map(|a| a.wheelchair_accessible_entrance)
+				.unwrap_or(None),
+			wheelchair_accessible_restroom: value
+				.accessibility_options
+				.map(|a| a.wheelchair_accessible_restroom)
+				.unwrap_or(None),
+			wheelchair_accessible_seating: value
+				.accessibility_options
+				.map(|a| a.wheelchair_accessible_seating)
+				.unwrap_or(None),
+			serves_vegetarian_food: value.serves_vegetarian_food,
+			price_level: value.price_level.map(|p| p as i32),
+			utc_offset_minutes: value.utc_offset_minutes,
+			website_uri: value.website_uri.as_ref().map(|w| w.to_string()),
+			types: Some(
+				value
+					.types
+					.iter()
+					.map(|t| t.to_string())
+					.collect::<Vec<_>>()
+					.join(","),
+			),
+			photo_name: if value.has_photos() {
+				Some(value.photos[0].name.clone())
+			} else {
+				None
+			},
+			photo_width: if value.has_photos() {
+				Some(value.photos[0].width_px as i32)
+			} else {
+				None
+			},
+			photo_height: if value.has_photos() {
+				Some(value.photos[0].height_px as i32)
+			} else {
+				None
+			},
+			photo_author: if value.has_photos() && !value.photos[0].author_attributions.is_empty() {
+				value.photos[0].author_attributions[0].display_name.clone()
+			} else {
+				None
+			},
+			photo_author_uri: if value.has_photos()
+				&& !value.photos[0].author_attributions.is_empty()
+			{
+				value.photos[0].author_attributions[0]
+					.uri
+					.as_ref()
+					.map(|u| u.to_string())
+			} else {
+				None
+			},
+			photo_author_photo_uri: if value.has_photos()
+				&& !value.photos[0].author_attributions.is_empty()
+			{
+				value.photos[0].author_attributions[0]
+					.photo_uri
+					.as_ref()
+					.map(|u| u.to_string())
+			} else {
+				None
+			},
+			weekday_descriptions: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| r.weekday_descriptions.join("\n")),
+			secondary_hours_type: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| r.secondary_hours_type.map(|s| s as i32))
+				.unwrap_or(None),
+			next_open_time: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| {
+					r.next_open_time.map(|t| {
+						chrono::DateTime::parse_from_rfc3339(t.to_string().as_str())
+							.map(|d| d.naive_utc())
+							.ok()
+					})
+				})
+				.unwrap_or(None)
+				.unwrap_or(None),
+			next_close_time: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| {
+					r.next_close_time.map(|t| {
+						chrono::DateTime::parse_from_rfc3339(t.to_string().as_str())
+							.map(|d| d.naive_utc())
+							.ok()
+					})
+				})
+				.unwrap_or(None)
+				.unwrap_or(None),
+			open_now: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| r.open_now)
+				.unwrap_or(None),
+			periods: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| {
+					r.periods
+						.iter()
+						.map(|p| Period {
+							open_date: p
+								.open
+								.date
+								.map(|d| {
+									NaiveDate::from_ymd_opt(
+										d.year() as i32,
+										d.month() as u32,
+										d.day() as u32,
+									)
+								})
+								.unwrap_or(None),
+							open_truncated: p.open.truncated,
+							open_day: p.open.day as i32,
+							open_hour: p.open.hour,
+							open_minute: p.open.minute,
+							close_date: p
+								.close
+								.as_ref()
+								.map(|p| {
+									p.date.map(|d| {
+										NaiveDate::from_ymd_opt(
+											d.year() as i32,
+											d.month() as u32,
+											d.day() as u32,
+										)
+									})
+								})
+								.unwrap_or(None)
+								.unwrap_or(None),
+							close_truncated: p.close.as_ref().map(|p| p.truncated).unwrap_or(None),
+							close_day: p.close.as_ref().map(|p| p.day as i32),
+							close_hour: p.close.as_ref().map(|p| p.hour),
+							close_minute: p.close.as_ref().map(|p| p.minute),
+						})
+						.collect()
+				})
+				.unwrap_or(Vec::new()),
+			special_days: value
+				.regular_opening_hours
+				.as_ref()
+				.map(|r| {
+					r.special_days
+						.iter()
+						.map(|d| {
+							NaiveDate::from_ymd_opt(
+								d.year()? as i32,
+								d.month()? as u32,
+								d.day()? as u32,
+							)
+						})
+						.collect::<Option<Vec<_>>>()
+				})
+				.unwrap_or(None)
+				.unwrap_or(Vec::new()),
+			block_index: None,
+		}
+	}
+}
+
 /// A user-created event. It must have a name, and all other fields are optional.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UserEventRequest {
@@ -111,6 +334,7 @@ pub struct UserEventRequest {
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
 	pub timezone: Option<String>,
+	pub photo_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema, ToResponse)]

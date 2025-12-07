@@ -28,13 +28,15 @@ async-trait = "0.1"
 futures = "0.3.31"
 google_maps = { version = "3.9.1", default-features = false, features = [
 	"decimal-serde",
-	"places-new",
+	"geocoding",
+	"places-new-nearby-search",
 	"reqwest",
 	"reqwest-default-tls",
 	"reqwest-http2",
 	"reqwest-brotli"
 ] }
-
+num-traits = "0.2.19"
+once_cell = "1.21.3"
 
 [dev-dependencies]
 sqlx-cli = "0.8"
