@@ -29,7 +29,8 @@ export type Event = {
 	city: string | null;
 	country: string | null;
 	postal_code: number | null;
-	coords: string | null;
+	lat: number | null;
+	lng: number | null;
 	event_type: string | null;
 	user_created: boolean;
 	hard_start: string | null;
@@ -77,7 +78,8 @@ export const EVENT_DEFAULT: Event = {
 	city: null,
 	country: null,
 	postal_code: null,
-	coords: null,
+	lat: null,
+	lng: null,
 	event_type: null,
 	user_created: false,
 	hard_start: null,
@@ -148,6 +150,7 @@ export type UserEventRequest = {
 	hard_end: string | null;
 	/// Timezone of hard start and hard end
 	timezone: string | null;
+	photo_name: string | null;
 };
 
 export type UserEventResponse = {

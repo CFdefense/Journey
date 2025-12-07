@@ -125,7 +125,25 @@
   border-radius: 22px;
   overflow: hidden;
   background: #dde5ef;
+  position: relative;
 }
+
+/* Add this new rule */
+.event-image-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+/* Add this new rule for SVG placeholders */
+.event-image-placeholder svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .event-content {
   flex: 1;
   padding: 22px 26px;
