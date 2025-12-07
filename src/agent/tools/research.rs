@@ -14,6 +14,8 @@ use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::{error::Error, sync::Arc};
+use std::time::Instant;
+use tracing::{debug, info};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
 
@@ -67,9 +69,33 @@ impl Tool for GeocodeTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
+		
+		crate::tool_trace!(agent: "research", tool: "geocode_tool", status: "start");
+		
+		info!(
+			target: "research_tools",
+			tool = "geocode_tool",
+			"Starting geocoding"
+		);
+		debug!(
+			target: "research_tools",
+			tool = "geocode_tool",
+			input = %serde_json::to_string(&input).unwrap_or_else(|_| "invalid".to_string()),
+			"Tool input"
+		);
+		
 		let location = input["location"]
 			.as_str()
 			.ok_or("Location should be a string")?;
+		
+		debug!(
+			target: "research_tools",
+			tool = "geocode_tool",
+			location = %location,
+			"Geocoding location"
+		);
+		
 		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
 		let gm_api_key =
 			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
@@ -83,6 +109,13 @@ impl Tool for GeocodeTool {
 			.execute()
 			.await?;
 		if let Some(err) = geocode_res.error_message {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research", 
+				tool: "geocode_tool", 
+				status: "error",
+				details: format!("{}ms - Geocoding API error: {}", elapsed.as_millis(), err)
+			);
 			return Err(format!(
 				"Geocoding failed with status {} - {err}",
 				geocode_res.status
@@ -90,18 +123,57 @@ impl Tool for GeocodeTool {
 			.into());
 		}
 		if !matches!(geocode_res.status, google_maps::geocoding::Status::Ok) {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research", 
+				tool: "geocode_tool", 
+				status: "error",
+				details: format!("{}ms - Bad status: {}", elapsed.as_millis(), geocode_res.status)
+			);
 			return Err(format!("Geocoding failed with status {}", geocode_res.status).into());
 		}
 		if geocode_res.results.is_empty() {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research", 
+				tool: "geocode_tool", 
+				status: "error",
+				details: format!("{}ms - No results", elapsed.as_millis())
+			);
 			return Err(format!("Geocoding could not get coordinates for {location}").into());
 		}
 
-		Ok(json!({
-			"lat": geocode_res.results[0].geometry.location.lat,
-			"lng": geocode_res.results[0].geometry.location.lng
-		})
-		.to_string())
-	}
+	let result = json!({
+		"lat": geocode_res.results[0].geometry.location.lat,
+		"lng": geocode_res.results[0].geometry.location.lng
+	});
+	
+	let elapsed = start_time.elapsed();
+	
+	info!(
+		target: "research_tools",
+		tool = "geocode_tool",
+		elapsed_ms = elapsed.as_millis() as u64,
+		lat = %geocode_res.results[0].geometry.location.lat,
+		lng = %geocode_res.results[0].geometry.location.lng,
+		"Geocoding completed successfully"
+	);
+	debug!(
+		target: "research_tools",
+		tool = "geocode_tool",
+		result = %result.to_string(),
+		"Tool output"
+	);
+	
+	crate::tool_trace!(
+		agent: "research", 
+		tool: "geocode_tool", 
+		status: "success",
+		details: format!("{}ms", elapsed.as_millis())
+	);
+	
+	Ok(result.to_string())
+}
 }
 
 #[async_trait]
@@ -177,12 +249,36 @@ impl<'db> Tool for NearbySearchTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
+		
+		crate::tool_trace!(agent: "research", tool: "nearby_search_tool", status: "start");
+		
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			"Starting nearby search"
+		);
+		debug!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			input = %serde_json::to_string(&input).unwrap_or_else(|_| "invalid".to_string()),
+			"Tool input"
+		);
+		
 		let lat = input["lat"]
 			.as_f64()
 			.ok_or("lat should be a 64-bit floating point number")?;
 		let lng = input["lng"]
 			.as_f64()
 			.ok_or("lng should be a 64-bit floating point number")?;
+
+		debug!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			lat = lat,
+			lng = lng,
+			"Search coordinates"
+		);
 
 		const INCLUDE_TYPES_ERR: &str = "includedTypes should be an array of strings";
 		const EXCLUDE_TYPES_ERR: &str = "excludedTypes should be an array of strings";
@@ -209,6 +305,14 @@ impl<'db> Tool for NearbySearchTool {
 			Vec::new()
 		};
 
+		debug!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			included_types_count = included_types.len(),
+			excluded_types_count = excluded_types.len(),
+			"Place type filters"
+		);
+
 		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
 		let gm_api_key =
 			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
@@ -216,6 +320,12 @@ impl<'db> Tool for NearbySearchTool {
 		// use google maps api to get nearby places
 		let gm_client = google_maps::Client::try_new(gm_api_key)
 			.map_err(|_| "Failed to create client for Google Maps API")?;
+
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			"Calling Google Maps API"
+		);
 
 		let search_res = gm_client
 			.nearby_search((lat, lng, 50_000.))?
@@ -259,12 +369,46 @@ impl<'db> Tool for NearbySearchTool {
 			.await?;
 
 		if let Some(err) = search_res.error() {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research", 
+				tool: "nearby_search_tool", 
+				status: "error",
+				details: format!("{}ms - API error: {}", elapsed.as_millis(), err)
+			);
+			info!(
+				target: "research_tools",
+				tool = "nearby_search_tool",
+				elapsed_ms = elapsed.as_millis() as u64,
+				error = %err,
+				"Nearby search API error"
+			);
 			return Err(format!("Nearby Search failed - {err}").into());
 		}
 		let places = search_res.places();
 		if places.is_empty() {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research", 
+				tool: "nearby_search_tool", 
+				status: "error",
+				details: format!("{}ms - No places found", elapsed.as_millis())
+			);
+			info!(
+				target: "research_tools",
+				tool = "nearby_search_tool",
+				elapsed_ms = elapsed.as_millis() as u64,
+				"No places found in nearby search"
+			);
 			return Err(format!("Nearby Search returned an empty array of places").into());
 		}
+
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			places_count = places.len(),
+			"Found places from Google Maps"
+		);
 
 		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 
@@ -411,8 +555,38 @@ impl<'db> Tool for NearbySearchTool {
 				.bind(&ev.special_days);
 		}
 
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			"Inserting/updating events in database"
+		);
+
 		query.execute(&self.db).await?;
 
-		Ok(json!(events).to_string())
+		let elapsed = start_time.elapsed();
+		let result = json!(events);
+		
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			elapsed_ms = elapsed.as_millis() as u64,
+			events_count = events.len(),
+			"Nearby search completed successfully"
+		);
+		debug!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			events_sample = %serde_json::to_string(&events.iter().take(3).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
+			"Sample of events (first 3)"
+		);
+		
+		crate::tool_trace!(
+			agent: "research", 
+			tool: "nearby_search_tool", 
+			status: "success",
+			details: format!("{}ms - {} events", elapsed.as_millis(), events.len())
+		);
+		
+		Ok(result.to_string())
 	}
 }

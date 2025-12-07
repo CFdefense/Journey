@@ -342,23 +342,56 @@ impl Tool for RouteTaskTool {
 			});
 			let tracking_str = serde_json::to_string(&tracking_value)?;
 
-			track_tool_execution(
-				&self.context_store,
-				&self.chat_session_id,
-				"route_task",
-				&input_clone,
-				&tracking_str,
-			)
-			.await?;
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"route_task",
+			&input_clone,
+			&tracking_str,
+		)
+		.await?;
 
-			return Ok(response);
+		return Ok(response);
+	}
+
+	// For research/constraint/optimize agents, inject trip context from context_store
+	let payload_str = if matches!(task_type_normalized.as_str(), "research" | "constraint" | "optimize") {
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id > 0 {
+			let store_guard = self.context_store.read().await;
+			if let Some(context_data) = store_guard.get(&chat_id) {
+				// Serialize trip_context to JSON string
+				let trip_context_json = serde_json::to_string(&context_data.trip_context)
+					.unwrap_or_else(|_| "{}".to_string());
+				
+				info!(
+					target: "orchestrator_pipeline",
+					agent = task_type_normalized.as_str(),
+					"Injecting trip context into payload"
+				);
+				debug!(
+					target: "orchestrator_pipeline",
+					trip_context = %trip_context_json,
+					"Trip context being passed to agent"
+				);
+				
+				drop(store_guard);
+				trip_context_json
+			} else {
+				payload_str
+			}
+		} else {
+			payload_str
 		}
+	} else {
+		payload_str
+	};
 
-		let result = match task_type_normalized.as_str() {
-			"research" => {
-				crate::tool_trace!(agent: "research", tool: "begin", status: "invoked");
-				info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
-				debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
+	let result = match task_type_normalized.as_str() {
+		"research" => {
+			crate::tool_trace!(agent: "research", tool: "begin", status: "invoked");
+			info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
+			debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
 
 				let agent_outer = self.research_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;

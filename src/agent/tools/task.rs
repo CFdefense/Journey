@@ -26,6 +26,7 @@ use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::time::Instant;
 use tracing::{debug, info};
 
 /// Tool 1: Parse User Intent
@@ -87,6 +88,7 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "parse_user_intent", status: "start");
@@ -184,6 +186,14 @@ Return ONLY the JSON object, no other text."#,
 
 		// Return serialized UserIntent
 		let result = serde_json::to_string(&intent)?;
+		
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
 
 		// Track this tool execution
 		track_tool_execution(
@@ -242,6 +252,7 @@ impl Tool for RetrieveChatContextTool {
 	}
 
 	async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = _input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "retrieve_chat_context", status: "start");
@@ -362,6 +373,15 @@ impl Tool for RetrieveChatContextTool {
 
 		// Return full context including pipeline state
 		drop(store_guard);
+		
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_chat_context",
+			elapsed_ms = elapsed.as_millis() as u64,
+			chat_history_count = chat_history.len(),
+			"Tool completed"
+		);
 
 		// Track this tool execution
 		track_tool_execution(
@@ -424,6 +444,7 @@ impl Tool for RetrieveUserProfileTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "retrieve_user_profile", status: "start");
@@ -472,24 +493,33 @@ impl Tool for RetrieveUserProfileTool {
 				"disabilities": ""
 			});
 
-			// Save empty profile into in-memory context for this chat (if any)
-			let mut store_guard = self.context_store.write().await;
-			if let Some(context_data) = store_guard.get_mut(&chat_id) {
-				context_data.user_profile = Some(empty_profile.clone());
-			}
-
-			let result = serde_json::to_string(&empty_profile)?;
-			track_tool_execution(
-				&self.context_store,
-				&self.chat_session_id,
-				"retrieve_user_profile",
-				&input_clone,
-				&result,
-			)
-			.await?;
-
-			return Ok(result);
+		// Save empty profile into in-memory context for this chat (if any)
+		let mut store_guard = self.context_store.write().await;
+		if let Some(context_data) = store_guard.get_mut(&chat_id) {
+			context_data.user_profile = Some(empty_profile.clone());
 		}
+
+		let result = serde_json::to_string(&empty_profile)?;
+		
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_user_profile",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed (no user logged in)"
+		);
+		
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"retrieve_user_profile",
+			&input_clone,
+			&result,
+		)
+		.await?;
+
+		return Ok(result);
+	}
 
 		info!(target: "orchestrator_tool", tool = "retrieve_user_profile", user_id = user_id, "Retrieving user profile");
 		debug!(target: "orchestrator_tool", tool = "retrieve_user_profile", input = %serde_json::to_string(&input)?, "Tool input");
@@ -584,22 +614,31 @@ impl Tool for RetrieveUserProfileTool {
 					"Pre-filled constraints from user profile"
 				);
 			}
-		}
-
-		let result = serde_json::to_string(&profile)?;
-
-		// Track this tool execution
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"retrieve_user_profile",
-			&input_clone,
-			&result,
-		)
-		.await?;
-
-		Ok(result)
 	}
+
+	let result = serde_json::to_string(&profile)?;
+	
+	let elapsed = start_time.elapsed();
+	info!(
+		target: "orchestrator_tool",
+		tool = "retrieve_user_profile",
+		elapsed_ms = elapsed.as_millis() as u64,
+		user_id = user_id,
+		"Tool completed"
+	);
+
+	// Track this tool execution
+	track_tool_execution(
+		&self.context_store,
+		&self.chat_session_id,
+		"retrieve_user_profile",
+		&input_clone,
+		&result,
+	)
+	.await?;
+
+	Ok(result)
+}
 }
 
 /// Tool: Ask for Clarification
@@ -665,6 +704,7 @@ impl Tool for AskForClarificationTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "ask_for_clarification", status: "start");
@@ -972,23 +1012,31 @@ Return ONLY the message text, nothing else."#,
 			}
 		}
 
-		// Return a format that makes it absolutely clear this is the final answer
-		// The message is already inserted in the database with the ID in record.id
-		// Return format that forces agent to stop and use as Final Answer
-		let result = format!("FINAL_ANSWER: {}", clarification);
+	// Return a format that makes it absolutely clear this is the final answer
+	// The message is already inserted in the database with the ID in record.id
+	// Return format that forces agent to stop and use as Final Answer
+	let result = format!("FINAL_ANSWER: {}", clarification);
+	
+	let elapsed = start_time.elapsed();
+	info!(
+		target: "orchestrator_tool",
+		tool = "ask_for_clarification",
+		elapsed_ms = elapsed.as_millis() as u64,
+		"Tool completed - pipeline stopped"
+	);
 
-		// Track this tool execution
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"ask_for_clarification",
-			&input_clone,
-			&result,
-		)
-		.await?;
+	// Track this tool execution
+	track_tool_execution(
+		&self.context_store,
+		&self.chat_session_id,
+		"ask_for_clarification",
+		&input_clone,
+		&result,
+	)
+	.await?;
 
-		Ok(result)
-	}
+	Ok(result)
+}
 }
 
 /// Tool: Respond to User
@@ -1040,6 +1088,7 @@ impl Tool for RespondToUserTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "orchestrator", tool: "respond_to_user", status: "start");
@@ -1179,22 +1228,30 @@ impl Tool for RespondToUserTool {
 			(message, record.id)
 		};
 
-		// Return a special marker that send_message_to_llm can detect
-		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
-		let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
+	// Return a special marker that send_message_to_llm can detect
+	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
+	let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
+	
+	let elapsed = start_time.elapsed();
+	info!(
+		target: "orchestrator_tool",
+		tool = "respond_to_user",
+		elapsed_ms = elapsed.as_millis() as u64,
+		"Tool completed"
+	);
 
-		// Track this tool execution
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"respond_to_user",
-			&input_clone,
-			&result,
-		)
-		.await?;
+	// Track this tool execution
+	track_tool_execution(
+		&self.context_store,
+		&self.chat_session_id,
+		"respond_to_user",
+		&input_clone,
+		&result,
+	)
+	.await?;
 
-		Ok(result)
-	}
+	Ok(result)
+}
 }
 
 /// Tool: Update Trip Context
@@ -1241,6 +1298,7 @@ impl Tool for UpdateTripContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone();
 
 		crate::tool_trace!(agent: "task", tool: "update_trip_context", status: "start");
@@ -1472,33 +1530,35 @@ Return valid JSON only."#,
 			"asked_clarification_before": has_asked_before
 		});
 
-		let result_str = serde_json::to_string(&result)?;
+	let result_str = serde_json::to_string(&result)?;
+	
+	let elapsed = start_time.elapsed();
+	info!(
+		target: "orchestrator_tool",
+		tool = "update_trip_context",
+		elapsed_ms = elapsed.as_millis() as u64,
+		chat_id = chat_id,
+		missing_count = missing.len(),
+		ready = missing.is_empty(),
+		"Trip context update complete - SUMMARY",
+	);
+	debug!(
+		target: "trip_context",
+		missing_fields = ?missing,
+		"Missing information details"
+	);
 
-		info!(
-			target: "orchestrator_tool",
-			tool = "update_trip_context",
-			chat_id = chat_id,
-			missing_count = missing.len(),
-			ready = missing.is_empty(),
-			"Trip context update complete - SUMMARY",
-		);
-		debug!(
-			target: "trip_context",
-			missing_fields = ?missing,
-			"Missing information details"
-		);
+	track_tool_execution(
+		&self.context_store,
+		&self.chat_session_id,
+		"update_trip_context",
+		&input_clone,
+		&result_str,
+	)
+	.await?;
 
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"update_trip_context",
-			&input_clone,
-			&result_str,
-		)
-		.await?;
-
-		Ok(result_str)
-	}
+	Ok(result_str)
+}
 }
 
 /// Tool 6: Update Chat Title
@@ -1545,6 +1605,7 @@ impl Tool for UpdateChatTitleTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone();
 
 		crate::tool_trace!(agent: "task", tool: "update_chat_title", status: "start");
@@ -1651,22 +1712,30 @@ impl Tool for UpdateChatTitleTool {
 			"Updated chat session title"
 		);
 
-		let result = json!({
-			"updated": true,
-			"new_title": new_title
-		});
+	let result = json!({
+		"updated": true,
+		"new_title": new_title
+	});
+	
+	let elapsed = start_time.elapsed();
+	info!(
+		target: "orchestrator_tool",
+		tool = "update_chat_title",
+		elapsed_ms = elapsed.as_millis() as u64,
+		"Tool completed"
+	);
 
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"update_chat_title",
-			&input_clone,
-			&result.to_string(),
-		)
-		.await?;
+	track_tool_execution(
+		&self.context_store,
+		&self.chat_session_id,
+		"update_chat_title",
+		&input_clone,
+		&result.to_string(),
+	)
+	.await?;
 
-		Ok(result.to_string())
-	}
+	Ok(result.to_string())
+}
 }
 
 /// Gets the tools used by the Task Agent to build planning context.
