@@ -29,7 +29,9 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_optimize_agent(llm: OpenAI<OpenAIConfig>) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_optimize_agent(
+	llm: OpenAI<OpenAIConfig>,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -58,7 +60,9 @@ pub fn create_optimize_agent(llm: OpenAI<OpenAIConfig>) -> Result<AgentExecutor<
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_optimize_agent(llm: OpenAI<OpenAIConfig>) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_optimize_agent(
+	llm: OpenAI<OpenAIConfig>,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();

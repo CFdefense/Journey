@@ -29,7 +29,9 @@ pub type AgentType = Arc<
 
 const SYSTEM_PROMPT: &str = include_str!("../prompts/research.md");
 
-pub fn create_research_agent(pool: PgPool) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_research_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 

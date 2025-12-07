@@ -14,8 +14,8 @@ use std::{error::Error, sync::Arc};
 
 pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>) -> [Arc<dyn Tool>; 3] {
 	[
-		Arc::new(RankPOIsByPreferenceTool {llm: llm.clone()}),
-		Arc::new(DraftItineraryTool {llm}),
+		Arc::new(RankPOIsByPreferenceTool { llm: llm.clone() }),
+		Arc::new(DraftItineraryTool { llm }),
 		Arc::new(OptimizeRouteTool),
 	]
 }
@@ -116,7 +116,7 @@ impl Tool for DraftItineraryTool {
 
 	fn description(&self) -> String {
 		"Assemble an itinerary from the list of POIs into the provided itinerary model structure."
-            .to_string()
+			.to_string()
 	}
 
 	fn parameters(&self) -> Value {
@@ -144,9 +144,10 @@ impl Tool for DraftItineraryTool {
 		let pois = input["pois"]
 			.as_array()
 			.ok_or("pois must be an array of objects")?;
-		let diversity_factor = input["diversity_factor"]
-			.as_number()
-			.map(|n| n.as_f64().ok_or("diversity_factor must be a 64-bit floating point number"));
+		let diversity_factor = input["diversity_factor"].as_number().map(|n| {
+			n.as_f64()
+				.ok_or("diversity_factor must be a 64-bit floating point number")
+		});
 
 		let prompt = format!(
 			include_str!("../prompts/draft_itinerary.md"),

@@ -425,7 +425,12 @@ impl<'db> Tool for NearbySearchTool {
 			let id: i32 = row.get("id");
 			let mut ev = None;
 			if let Some(place_id) = row.get::<Option<String>, _>("place_id") {
-				ev = events.iter_mut().find(|ev| ev.place_id.as_ref().and_then(|i| if *i == place_id {Some(())} else {None}).is_some());
+				ev = events.iter_mut().find(|ev| {
+					ev.place_id
+						.as_ref()
+						.and_then(|i| if *i == place_id { Some(()) } else { None })
+						.is_some()
+				});
 			}
 
 			if ev.is_none() {
