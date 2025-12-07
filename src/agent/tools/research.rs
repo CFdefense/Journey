@@ -12,7 +12,7 @@ use google_maps::places_new::{Field, FieldMask, PlaceType};
 use langchain_rust::tools::Tool;
 use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use std::{error::Error, sync::Arc};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
@@ -125,7 +125,8 @@ impl Tool for QueryDbEventsTool {
 				},
 				"keywords": {
 					"type": "array",
-					"description": "An array of keywords from the user's prompt that can be used to search for relevant events."
+					"description": "An array of keywords from the user's prompt that can be used to search for relevant events.",
+					"items": {"type": "string"}
 				}
 			},
 			"required": ["location"]
@@ -165,11 +166,13 @@ impl<'db> Tool for NearbySearchTool {
 				},
 				"includedTypes": {
 					"type": "array",
-					"description": "An array of places types to include."
+					"description": "An array of places types to include.",
+					"items": {"type": "string"}
 				},
 				"excludedTypes": {
 					"type": "array",
-					"description": "An array of places types to exclude."
+					"description": "An array of places types to exclude.",
+					"items": {"type": "string"}
 				}
 			},
 			"required": ["lat", "lng"]
@@ -266,7 +269,7 @@ impl<'db> Tool for NearbySearchTool {
 			return Err(format!("Nearby Search returned an empty array of places").into());
 		}
 
-		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
+		let mut events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 
 		/// ## NOTICE
 		/// If you change the fields in the events table or the [Event] struct,
@@ -364,7 +367,8 @@ impl<'db> Tool for NearbySearchTool {
 				next_close_time = EXCLUDED.next_close_time,
 				open_now = EXCLUDED.open_now,
 				periods = EXCLUDED.periods,
-				special_days = EXCLUDED.special_days;
+				special_days = EXCLUDED.special_days
+			RETURNING id, place_id, event_name;
 			"#,
 			placeholders
 		);
@@ -411,7 +415,33 @@ impl<'db> Tool for NearbySearchTool {
 				.bind(&ev.special_days);
 		}
 
-		query.execute(&self.db).await?;
+		// Event ID is set to -1 initially and assigned when it's inserted into the db.
+		// We need to return the new event ID and update the events vector.
+		// The best way I can think of is to just find the event with the same place ID
+		// and fallback to the event with the same event name. If there are duplicate names
+		// or something, then it might cause bugs, but they should be rare and all it does is tell
+		// the LLM that some event IDs are -1 or the wrong ID.
+		for row in query.fetch_all(&self.db).await?.into_iter() {
+			let id: i32 = row.get("id");
+			let mut ev = None;
+			if let Some(place_id) = row.get::<Option<String>, _>("place_id") {
+				ev = events.iter_mut().find(|ev| {
+					ev.place_id
+						.as_ref()
+						.and_then(|i| if *i == place_id { Some(()) } else { None })
+						.is_some()
+				});
+			}
+
+			if ev.is_none() {
+				let name: String = row.get("event_name");
+				ev = events.iter_mut().find(|ev| ev.event_name == name);
+			}
+
+			if let Some(event) = ev {
+				event.id = id;
+			}
+		}
 
 		Ok(json!(events).to_string())
 	}
