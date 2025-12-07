@@ -1152,7 +1152,7 @@ pub async fn api_delete_chat(
 		chat_session_id,
 		user.id
 	)
-	.fetch_optional(&pool)
+	.execute(&pool)
 	.await
 	.map_err(AppError::from)?;
 

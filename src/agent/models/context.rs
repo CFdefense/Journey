@@ -32,6 +32,7 @@ pub struct TripContext {
 	pub constraints: Vec<String>,    // Dietary, accessibility, etc. - pre-filled from profile
 	pub action: Option<String>,      // "create", "modify", "view", "delete"
 	pub itinerary_id: Option<i32>,   // For modify/view/delete actions
+	pub asked_clarification: bool,   // Track if we've asked user at least once
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

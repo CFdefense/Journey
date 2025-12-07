@@ -18,6 +18,7 @@ use crate::agent::models::context::{ContextData, SharedContextStore};
 use crate::agent::models::user::UserIntent;
 use crate::agent::tools::orchestrator::track_tool_execution;
 use async_trait::async_trait;
+use chrono::Datelike;
 use langchain_rust::language_models::llm::LLM;
 use langchain_rust::tools::Tool;
 use serde_json::{Value, json};
@@ -875,6 +876,20 @@ Return ONLY the message text, nothing else."#,
 			"Tool output"
 		);
 
+		// Mark that we've asked for clarification in the trip context
+		{
+			let mut store_guard = self.context_store.write().await;
+			if let Some(context_data) = store_guard.get_mut(&chat_id) {
+				context_data.trip_context.asked_clarification = true;
+				info!(
+					target: "trip_context",
+					tool = "ask_for_clarification",
+					chat_id = chat_id,
+					"Marked asked_clarification flag in trip context"
+				);
+			}
+		}
+
 		// Return a format that makes it absolutely clear this is the final answer
 		// The message is already inserted in the database with the ID in record.id
 		// Return format that forces agent to stop and use as Final Answer
@@ -1149,7 +1164,7 @@ impl Tool for UpdateTripContextTool {
 		
 		// Get current trip context AND extract the last 5 user messages from chat_history
 		// We need multiple messages because user provides info across multiple turns
-		let (mut current_context, user_messages) = {
+		let (current_context, user_messages) = {
 			let store_guard = self.context_store.read().await;
 			let context_data = store_guard
 				.get(&chat_id)
@@ -1338,10 +1353,19 @@ Return valid JSON only."#,
 		}
 		// Budget, preferences, and constraints are optional - don't add to missing
 		
+		// Check if we've asked clarification at least once
+		let has_asked_before = updated_context.asked_clarification;
+		
+		// Ready for pipeline only if:
+		// 1. No missing required fields AND
+		// 2. We've asked clarification at least once
+		let ready_for_pipeline = missing.is_empty() && has_asked_before;
+		
 		let result = json!({
 			"trip_context": updated_context,
 			"missing_info": missing,
-			"ready_for_pipeline": missing.is_empty()
+			"ready_for_pipeline": ready_for_pipeline,
+			"asked_clarification_before": has_asked_before
 		});
 		
 		let result_str = serde_json::to_string(&result)?;
@@ -1370,6 +1394,172 @@ Return valid JSON only."#,
 		.await?;
 		
 		Ok(result_str)
+	}
+}
+
+/// Tool 6: Update Chat Title
+/// Automatically updates the chat session title based on trip context
+/// Only updates if the title is still "New Chat" (default)
+#[derive(Clone)]
+pub struct UpdateChatTitleTool {
+	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
+	context_store: SharedContextStore,
+}
+
+impl UpdateChatTitleTool {
+	pub fn new(
+		pool: PgPool,
+		chat_session_id: Arc<AtomicI32>,
+		context_store: SharedContextStore,
+	) -> Self {
+		Self {
+			pool,
+			chat_session_id,
+			context_store,
+		}
+	}
+}
+
+#[async_trait]
+impl Tool for UpdateChatTitleTool {
+	fn name(&self) -> String {
+		"update_chat_title".to_string()
+	}
+
+	fn description(&self) -> String {
+		"Automatically updates the chat session title with destination and dates when trip context is available. Only updates if title is still 'New Chat'. Call this after update_trip_context when you have destination and dates. No parameters needed."
+			.to_string()
+	}
+
+	fn parameters(&self) -> Value {
+		json!({
+			"type": "object",
+			"properties": {},
+			"required": []
+		})
+	}
+
+	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let input_clone = input.clone();
+		
+		crate::tool_trace!(agent: "task", tool: "update_chat_title", status: "start");
+		
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set".into());
+		}
+		
+		// Get trip context
+		let trip_context = {
+			let store_guard = self.context_store.read().await;
+			store_guard
+				.get(&chat_id)
+				.map(|ctx| ctx.trip_context.clone())
+				.ok_or("Context not found")?
+		};
+		
+		// Check if we have enough info to make a title
+		if trip_context.destination.is_none() {
+			return Ok(json!({
+				"updated": false,
+				"reason": "No destination set yet"
+			}).to_string());
+		}
+		
+		// Check current title - only update if it's "New Chat"
+		let current_title = sqlx::query!(
+			r#"SELECT title FROM chat_sessions WHERE id = $1"#,
+			chat_id
+		)
+		.fetch_one(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?
+		.title;
+		
+		if current_title != "New Chat" {
+			info!(
+				target: "orchestrator_tool",
+				tool = "update_chat_title",
+				chat_id = chat_id,
+				current_title = %current_title,
+				"Title already set, skipping update"
+			);
+			return Ok(json!({
+				"updated": false,
+				"reason": "Title already set",
+				"current_title": current_title
+			}).to_string());
+		}
+		
+		// Build new title from trip context
+		let mut title_parts = Vec::new();
+		
+		if let Some(dest) = &trip_context.destination {
+			title_parts.push(dest.clone());
+		}
+		
+		// Format dates if we have both
+		if let (Some(start), Some(end)) = (&trip_context.start_date, &trip_context.end_date) {
+			// Try to format as "MMM DD-DD" if same month
+			if let (Ok(start_date), Ok(end_date)) = (
+				chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d"),
+				chrono::NaiveDate::parse_from_str(end, "%Y-%m-%d")
+			) {
+				if start_date.month() == end_date.month() {
+					title_parts.push(format!("{} {}-{}", 
+						start_date.format("%b"),
+						start_date.day(),
+						end_date.day()
+					));
+				} else {
+					title_parts.push(format!("{} - {}", 
+						start_date.format("%b %d"),
+						end_date.format("%b %d")
+					));
+				}
+			}
+		}
+		
+		let new_title = if title_parts.is_empty() {
+			"New Trip".to_string()
+		} else {
+			title_parts.join(", ")
+		};
+		
+		// Update the title
+		sqlx::query!(
+			r#"UPDATE chat_sessions SET title = $1 WHERE id = $2"#,
+			new_title,
+			chat_id
+		)
+		.execute(&self.pool)
+		.await
+		.map_err(|e| format!("Database error: {}", e))?;
+		
+		info!(
+			target: "orchestrator_tool",
+			tool = "update_chat_title",
+			chat_id = chat_id,
+			new_title = %new_title,
+			"Updated chat session title"
+		);
+		
+		let result = json!({
+			"updated": true,
+			"new_title": new_title
+		});
+		
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"update_chat_title",
+			&input_clone,
+			&result.to_string(),
+		)
+		.await?;
+		
+		Ok(result.to_string())
 	}
 }
 
@@ -1406,6 +1596,11 @@ pub fn get_task_tools(
 		)),
 		Arc::new(UpdateTripContextTool::new(
 			Arc::clone(&llm),
+			Arc::clone(&chat_session_id),
+			context_store.clone(),
+		)),
+		Arc::new(UpdateChatTitleTool::new(
+			pool.clone(),
 			Arc::clone(&chat_session_id),
 			context_store.clone(),
 		)),
