@@ -85,9 +85,39 @@ impl Tool for GeocodeTool {
 			"Tool input"
 		);
 		
-		let location = input["location"]
-			.as_str()
-			.ok_or("Location should be a string")?;
+		// langchain-rust passes `action_input` as a STRING, but the LLM may:
+		// - pass a plain text location like "Connecticut"
+		// - pass a JSON string like "{\"location\":\"Connecticut\"}"
+		// - or pass an object with `location` or `destination` fields.
+		//
+		// Normalize all of these into a single `location` string.
+		let location: String = if input.is_string() {
+			let raw = input.as_str().unwrap_or("").trim();
+
+			if raw.is_empty() {
+				return Err("Location is required".into());
+			}
+
+			if raw.starts_with('{') || raw.starts_with('[') {
+				let v: Value = serde_json::from_str(raw)
+					.unwrap_or_else(|_| json!({ "location": raw }));
+
+				v.get("location")
+					.or_else(|| v.get("destination"))
+					.and_then(|v| v.as_str())
+					.ok_or("Location or destination field should be a string")?
+					.to_string()
+			} else {
+				raw.to_string()
+			}
+		} else {
+			input
+				.get("location")
+				.or_else(|| input.get("destination"))
+				.and_then(|v| v.as_str())
+				.ok_or("Location or destination field should be a string")?
+				.to_string()
+		};
 		
 		debug!(
 			target: "research_tools",
@@ -105,7 +135,7 @@ impl Tool for GeocodeTool {
 			.map_err(|_| "Failed to create client for Google Maps API")?;
 		let geocode_res = gm_client
 			.geocoding()
-			.with_address(location)
+			.with_address(&location)
 			.execute()
 			.await?;
 		if let Some(err) = geocode_res.error_message {
@@ -264,13 +294,102 @@ impl<'db> Tool for NearbySearchTool {
 			input = %serde_json::to_string(&input).unwrap_or_else(|_| "invalid".to_string()),
 			"Tool input"
 		);
+
+		// langchain-rust usually passes `action_input` as a STRING. Normalize it:
+		// - If it's a JSON string, parse it into an object.
+		// - If it's a plain string, treat it as a "lat,lng" location string.
+		let parsed_input: Value = if input.is_string() {
+			let raw = input.as_str().unwrap_or("").trim();
+			if raw.starts_with('{') || raw.starts_with('[') {
+				serde_json::from_str(raw).unwrap_or_else(|_| json!({ "location": raw }))
+			} else {
+				json!({ "location": raw })
+			}
+		} else {
+			input
+		};
 		
-		let lat = input["lat"]
-			.as_f64()
-			.ok_or("lat should be a 64-bit floating point number")?;
-		let lng = input["lng"]
-			.as_f64()
-			.ok_or("lng should be a 64-bit floating point number")?;
+		// Handle multiple input formats:
+		// 1. Combined "location" field as "lat,lng" string
+		// 2. "location" field as object with lat/lng properties
+		// 3. Separate lat/lng fields (as numbers or strings)
+		let (lat, lng) = if let Some(location_val) = parsed_input.get("location") {
+			debug!(
+				target: "research_tools",
+				tool = "nearby_search_tool",
+				location_val = %location_val,
+				"Processing location field"
+			);
+
+			// Check if location is an object with lat/lng properties
+			if location_val.is_object() {
+				let lat = if let Some(f) = location_val.get("lat").and_then(|v| v.as_f64()) {
+					f
+				} else if let Some(s) = location_val.get("lat").and_then(|v| v.as_str()) {
+					s.parse::<f64>()
+						.map_err(|e| format!("lat in location object should be a valid number: {}", e))?
+				} else {
+					return Err("location object must have a 'lat' field as a number or string".into());
+				};
+
+				let lng = if let Some(f) = location_val.get("lng").and_then(|v| v.as_f64()) {
+					f
+				} else if let Some(s) = location_val.get("lng").and_then(|v| v.as_str()) {
+					s.parse::<f64>()
+						.map_err(|e| format!("lng in location object should be a valid number: {}", e))?
+				} else {
+					return Err("location object must have a 'lng' field as a number or string".into());
+				};
+
+				(lat, lng)
+			} else if let Some(location_str) = location_val.as_str() {
+				// Parse from "location" field as "lat,lng" string
+				debug!(
+					target: "research_tools",
+					tool = "nearby_search_tool",
+					location = %location_str,
+					"Parsing location string"
+				);
+
+				let parts: Vec<&str> = location_str.split(',').collect();
+				if parts.len() != 2 {
+					return Err("location string should be in format 'lat,lng'".into());
+				}
+				let lat = parts[0].trim().parse::<f64>()
+					.map_err(|e| format!("Invalid latitude in location string: {}", e))?;
+				let lng = parts[1].trim().parse::<f64>()
+					.map_err(|e| format!("Invalid longitude in location string: {}", e))?;
+				(lat, lng)
+			} else {
+				return Err("location field should be either a string in format 'lat,lng' or an object with lat/lng properties".into());
+			}
+		} else {
+			// Parse from separate lat/lng fields
+			debug!(
+				target: "research_tools",
+				tool = "nearby_search_tool",
+				"No location field, looking for separate lat/lng fields"
+			);
+
+			let lat = if let Some(f) = parsed_input.get("lat").and_then(|v| v.as_f64()) {
+				f
+			} else if let Some(s) = parsed_input.get("lat").and_then(|v| v.as_str()) {
+				s.parse::<f64>()
+					.map_err(|e| format!("lat should be a valid number: {}", e))?
+			} else {
+				return Err("lat should be a 64-bit floating point number".into());
+			};
+
+			let lng = if let Some(f) = parsed_input.get("lng").and_then(|v| v.as_f64()) {
+				f
+			} else if let Some(s) = parsed_input.get("lng").and_then(|v| v.as_str()) {
+				s.parse::<f64>()
+					.map_err(|e| format!("lng should be a valid number: {}", e))?
+			} else {
+				return Err("lng should be a 64-bit floating point number".into());
+			};
+			(lat, lng)
+		};
 
 		debug!(
 			target: "research_tools",
@@ -282,8 +401,8 @@ impl<'db> Tool for NearbySearchTool {
 
 		const INCLUDE_TYPES_ERR: &str = "includedTypes should be an array of strings";
 		const EXCLUDE_TYPES_ERR: &str = "excludedTypes should be an array of strings";
-		let included_types = if !input["includedTypes"].is_null() {
-			input["includedTypes"]
+		let included_types = if !parsed_input["includedTypes"].is_null() {
+			parsed_input["includedTypes"]
 				.as_array()
 				.ok_or(INCLUDE_TYPES_ERR)?
 				.iter()
@@ -293,8 +412,8 @@ impl<'db> Tool for NearbySearchTool {
 		} else {
 			Vec::new()
 		};
-		let excluded_types = if !input["excludedTypes"].is_null() {
-			input["excludedTypes"]
+		let excluded_types = if !parsed_input["excludedTypes"].is_null() {
+			parsed_input["excludedTypes"]
 				.as_array()
 				.ok_or(EXCLUDE_TYPES_ERR)?
 				.iter()
