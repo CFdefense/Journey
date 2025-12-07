@@ -481,6 +481,7 @@ export default function ChatWindow({
                   message={msg}
                   onItinerarySelect={onItinerarySelect}
                   onEditMessage={onEditMessage}
+                  isAiResponding={isAiResponding}
                 />
               );
             })}

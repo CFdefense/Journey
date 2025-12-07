@@ -4,17 +4,20 @@ import "../styles/UserMessageActions.css";
 export type UserMessageActionsParams = {
   messageId: number;
   onEdit: (messageId: number) => void;
+  isAiResponding?: boolean;
 };
 
 export default function UserMessageActions({
   messageId,
-  onEdit
+  onEdit,
+  isAiResponding = false
 }: UserMessageActionsParams) {
   return (
     <button
       className="chat-edit-button"
       onClick={() => onEdit(messageId)}
-      title="Edit message"
+      title={isAiResponding ? "Cannot edit while AI is responding" : "Edit message"}
+      disabled={isAiResponding}
     >
       <svg
         width="16"
