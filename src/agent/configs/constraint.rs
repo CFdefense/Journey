@@ -40,7 +40,7 @@ pub fn create_constraint_agent(
 	let memory = SimpleMemory::new();
 
 	// Get tools
-	// TODO: Add tools here
+	let tools = constraint_tools();
 
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
@@ -49,12 +49,12 @@ pub fn create_constraint_agent(
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
 	let system_prompt = SYSTEM_PROMPT.to_string();
 
-	let agent = ConversationalAgentBuilder::new()
-		.prefix(system_prompt)
-		// TODO: Add tools here
-		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
-		.unwrap();
+		let agent = ConversationalAgentBuilder::new()
+			.prefix(system_prompt)
+			.tools(&tools)
+			.options(ChainCallOptions::new().with_max_tokens(1000))
+			.build(llm)
+			.unwrap();
 
 	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }
@@ -78,7 +78,7 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 	let memory = SimpleMemory::new();
 
 	// Get tools
-	// TODO: Add tools here
+	let tools = constraint_tools();
 
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
@@ -89,7 +89,7 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		// TODO: Add tools here
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
