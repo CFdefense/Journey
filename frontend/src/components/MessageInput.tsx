@@ -2,15 +2,16 @@ import { useState } from "react";
 
 interface MessageInputProps {
   onSend: (text: string) => void;
+  isAiResponding?: boolean;
 }
 
-export default function MessageInput({ onSend }: MessageInputProps) {
+export default function MessageInput({ onSend, isAiResponding = false}: MessageInputProps) {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
+    if (input.trim() && !isAiResponding) {
       setIsSending(true);
       onSend(input.trim());
       setInput("");
@@ -28,11 +29,12 @@ export default function MessageInput({ onSend }: MessageInputProps) {
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Ask anything"
+        placeholder={isAiResponding ? "Generating response..." : "Ask anything"}
         className="chat-empty-input"
         autoFocus
+        disabled={isAiResponding}
       />
-      <button type="submit" className="chat-empty-submit">
+      <button type="submit" className="chat-empty-submit" disabled={isAiResponding}>
         <svg
           width="24"
           height="24"

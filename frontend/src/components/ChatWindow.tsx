@@ -17,6 +17,7 @@ interface ChatWindowProps {
   set_messages: (msgs: Message[], chat_id: number) => void;
   prevMsgId: number | null | undefined;
   setPrevMsgId: (id: number | null | undefined) => void;
+  isAiResponding?: boolean;
 }
 
 const BASE_TEXT = "What are your ";
@@ -36,7 +37,8 @@ export default function ChatWindow({
   chat_session_id,
   set_messages,
   prevMsgId,
-  setPrevMsgId
+  setPrevMsgId,
+  isAiResponding = false
 }: ChatWindowProps) {
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
@@ -359,7 +361,7 @@ export default function ChatWindow({
 
   const handleEmptyStateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (emptyStateInput.trim()) {
+    if (emptyStateInput.trim() && !isAiResponding) {
       setIsSendingEmpty(true);
       onSend(emptyStateInput.trim());
       setEmptyStateInput("");
@@ -431,7 +433,7 @@ export default function ChatWindow({
               className="chat-empty-input"
               autoFocus
             />
-            <button type="submit" className="chat-empty-submit">
+            <button type="submit" className="chat-empty-submit" disabled={isAiResponding}>
               <svg
                 width="24"
                 height="24"
@@ -484,7 +486,7 @@ export default function ChatWindow({
             })}
           </div>
 
-          <MessageInput onSend={onSend} />
+          <MessageInput onSend={onSend} isAiResponding={isAiResponding} />
         </>
       )}
     </div>
