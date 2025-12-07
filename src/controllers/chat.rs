@@ -25,6 +25,9 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
+
+use tracing::{debug, error, info};
+
 #[derive(OpenApi)]
 #[openapi(
 	paths(
