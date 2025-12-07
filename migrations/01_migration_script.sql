@@ -115,7 +115,8 @@ CREATE TABLE events (
 CREATE TABLE chat_sessions (
 	id SERIAL PRIMARY KEY,
 	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-	title VARCHAR(255) NOT NULL
+	title VARCHAR(255) NOT NULL,
+	context JSONB DEFAULT '{"tool_history": []}'::jsonb
 );
 
 -- Itineraries table

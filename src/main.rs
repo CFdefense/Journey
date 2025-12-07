@@ -60,8 +60,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
 		// Initialize the AI agent
 		// The agent will use MockLLM when DEPLOY_LLM != "1", so creation should always succeed
-		let agent = agent::configs::orchestrator::create_orchestrator_agent(pool.clone())
-			.expect("Failed to create orchestrator agent");
+		let (agent, chat_session_id, user_id, context_store) =
+			agent::configs::orchestrator::create_orchestrator_agent(pool.clone())
+				.expect("Failed to create orchestrator agent");
 
 		/*
 		/ Configure CORS
@@ -115,6 +116,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 			.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
 				agent,
 			))))
+			.layer(Extension(chat_session_id))
+			.layer(Extension(user_id))
+			.layer(Extension(context_store))
 			.layer(CookieManagerLayer::new())
 			.layer(cors);
 
