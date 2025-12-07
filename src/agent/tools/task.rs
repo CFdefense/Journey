@@ -815,14 +815,32 @@ impl Tool for AskForClarificationTool {
 			"".to_string()
 		};
 
-		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
-		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
+	info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
+	debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
-		// Retrieve chat context to extract known information
-		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
-		if chat_id == 0 {
-			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+	// Retrieve chat context to extract known information
+	let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+	if chat_id == 0 {
+		return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+	}
+	
+	// ANTI-LOOP PROTECTION: Check if we've already asked for clarification
+	// If asked_clarification flag is already true in trip context, we should NOT ask again
+	{
+		let store_guard = self.context_store.read().await;
+		if let Some(context_data) = store_guard.get(&chat_id) {
+			if context_data.trip_context.asked_clarification {
+				info!(
+					target: "orchestrator_tool",
+					tool = "ask_for_clarification",
+					chat_id = chat_id,
+					"Already asked for clarification before - returning ready signal to prevent loop"
+				);
+				// Return a signal that tells the agent we're ready to proceed
+				return Ok("Ready for research pipeline.".to_string());
+			}
 		}
+	}
 
 		// Get chat history to extract known information
 		let messages = sqlx::query!(
@@ -1012,10 +1030,10 @@ Return ONLY the message text, nothing else."#,
 			}
 		}
 
-	// Return a format that makes it absolutely clear this is the final answer
+	// Return the clarification text directly.
 	// The message is already inserted in the database with the ID in record.id
-	// Return format that forces agent to stop and use as Final Answer
-	let result = format!("FINAL_ANSWER: {}", clarification);
+	// The agent prompt instructs to use this as Final Answer immediately.
+	let result = clarification.clone();
 	
 	let elapsed = start_time.elapsed();
 	info!(

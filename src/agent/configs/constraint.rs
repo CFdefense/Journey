@@ -39,11 +39,12 @@ pub fn create_constraint_agent(
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	let tools = constraint_tools();
-
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
+	
+	// Get tools - pass LLM as Arc<dyn LLM>
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> = Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
@@ -77,11 +78,12 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	let tools = constraint_tools();
-
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+	
+	// Get tools - pass LLM as Arc<dyn LLM>
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> = Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");

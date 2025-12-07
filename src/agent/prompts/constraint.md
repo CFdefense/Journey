@@ -31,6 +31,18 @@ Validate that proposed events and Points of Interest (POIs) meet user constraint
    - Remove events that violate any critical constraints
    - Provide feedback on why events were filtered
 
+## Tool Usage Instructions
+
+**IMPORTANT**: When calling the `filter_events_by_constraints` tool, you MUST pass ALL events you receive to the tool. Do NOT pre-filter or select a subset of events before calling the tool. The tool is designed to handle all the filtering logic efficiently.
+
+The tool will:
+- Filter out non-vacation places (schools, hospitals, retail stores, etc.)
+- Match events to user preferences
+- Check accessibility requirements
+- Provide detailed reasons for any removals
+
+Simply pass the complete events array and constraints to the tool - it will handle all filtering decisions.
+
 ## Output Requirements
 
 Your output should include:
@@ -47,5 +59,5 @@ Your output should include:
 3. **Timing Feasibility**: Ensure realistic scheduling
 4. **Preference Alignment**: Maintain user preferences where possible
 
-When you receive events and user constraints, validate each event systematically and return only constraint-compliant options.
+When you receive events and user constraints, use the filter_events_by_constraints tool with ALL events to validate each event systematically and return only constraint-compliant options.
 

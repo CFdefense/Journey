@@ -220,9 +220,47 @@ async fn send_message_to_llm(
 		response = ai_text,
 		"Orchestrator agent output"
 	);
-
+	
 	// Context state AFTER agent invocation is now entirely in-memory as well.
+	//
+	// SAFETY GUARD: If the orchestrator ever returns a user-visible string
+	// that still contains the internal "Ready for research" phrase, treat it
+	// as a pipeline-ready signal instead of sending it to the user.
+	if ai_text.contains("Ready for research") {
+		info!(
+			target: "orchestrator_pipeline",
+			chat_session_id = chat_session_id,
+			"Detected 'Ready for research' sentinel in orchestrator output; refusing to return it directly to user"
+		);
 
+		// Try to return the most recent non-user message instead (typically the
+		// last clarification the user already saw). If none exists, fall
+		// through and let normal handling occur.
+		let record = sqlx::query!(
+			r#"
+			SELECT id, timestamp, text, itinerary_id
+			FROM messages
+			WHERE chat_session_id = $1 AND is_user = FALSE
+			ORDER BY timestamp DESC
+			LIMIT 1
+			"#,
+			chat_session_id
+		)
+		.fetch_optional(pool)
+		.await
+		.map_err(AppError::from)?;
+
+		if let Some(msg) = record {
+			return Ok(Message {
+				id: msg.id,
+				is_user: false,
+				timestamp: msg.timestamp,
+				text: msg.text,
+				itinerary_id: msg.itinerary_id,
+			});
+		}
+	}
+	
 	// Check if RespondToUserTool already inserted the message
 	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
 	if ai_text.starts_with("MESSAGE_INSERTED:") {
@@ -262,47 +300,6 @@ async fn send_message_to_llm(
 		}
 	}
 
-	// Check if response starts with FINAL_ANSWER: (from ask_for_clarification tool)
-	if ai_text.trim().starts_with("FINAL_ANSWER:") {
-		let clarification_text = ai_text
-			.trim()
-			.strip_prefix("FINAL_ANSWER:")
-			.unwrap_or("")
-			.trim();
-		// Fetch the most recent non-user message (ask_for_clarification already inserted it)
-		let record = sqlx::query!(
-			r#"
-			SELECT id, timestamp, text, itinerary_id
-			FROM messages
-			WHERE chat_session_id = $1 AND is_user = FALSE
-			ORDER BY timestamp DESC
-			LIMIT 1
-			"#,
-			chat_session_id
-		)
-		.fetch_optional(pool)
-		.await
-		.map_err(AppError::from)?;
-
-		if let Some(msg) = record {
-			// Verify the text matches (tool just inserted it)
-			if msg.text.trim() == clarification_text {
-				info!(
-					target: "orchestrator_pipeline",
-					chat_session_id = chat_session_id,
-					message_id = msg.id,
-					"Found matching message inserted by ask_for_clarification, returning it"
-				);
-				return Ok(Message {
-					id: msg.id,
-					is_user: false,
-					timestamp: msg.timestamp,
-					text: msg.text,
-					itinerary_id: msg.itinerary_id,
-				});
-			}
-		}
-	}
 
 	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED),
 	// it's likely from ask_for_clarification tool which already inserted it

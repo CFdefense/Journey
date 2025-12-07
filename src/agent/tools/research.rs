@@ -682,29 +682,35 @@ impl<'db> Tool for NearbySearchTool {
 
 		query.execute(&self.db).await?;
 
-		let elapsed = start_time.elapsed();
-		let result = json!(events);
-		
-		info!(
-			target: "research_tools",
-			tool = "nearby_search_tool",
-			elapsed_ms = elapsed.as_millis() as u64,
-			events_count = events.len(),
-			"Nearby search completed successfully"
-		);
-		debug!(
-			target: "research_tools",
-			tool = "nearby_search_tool",
-			events_sample = %serde_json::to_string(&events.iter().take(3).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
-			"Sample of events (first 3)"
-		);
-		
-		crate::tool_trace!(
-			agent: "research", 
-			tool: "nearby_search_tool", 
-			status: "success",
-			details: format!("{}ms - {} events", elapsed.as_millis(), events.len())
-		);
+	let elapsed = start_time.elapsed();
+	let result = json!(events);
+	
+	// Extract event names for debugging
+	let event_names: Vec<String> = events
+		.iter()
+		.map(|e| e.event_name.clone())
+		.collect();
+	
+	info!(
+		target: "research_tools",
+		tool = "nearby_search_tool",
+		elapsed_ms = elapsed.as_millis() as u64,
+		events_count = events.len(),
+		"Nearby search completed successfully"
+	);
+	debug!(
+		target: "research_tools",
+		tool = "nearby_search_tool",
+		events_sample = %serde_json::to_string(&events.iter().take(3).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
+		"Sample of events (first 3)"
+	);
+	
+	crate::tool_trace!(
+		agent: "research", 
+		tool: "nearby_search_tool", 
+		status: "success",
+		details: format!("{}ms - {} events - [{}]", elapsed.as_millis(), events.len(), event_names.join(", "))
+	);
 		
 		Ok(result.to_string())
 	}
