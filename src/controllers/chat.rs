@@ -61,7 +61,7 @@ async fn send_message_to_llm(
 	pool: &PgPool,
 	agent: &AgentType,
 	chat_session_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
-	user_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
+	context_store: &crate::agent::models::context::SharedContextStore,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
@@ -116,75 +116,91 @@ async fn send_message_to_llm(
 		"Orchestrator agent input"
 	);
 	
-	// Set chat_session_id and user_id in the shared atomics before invoking agent
-	use std::sync::atomic::Ordering;
-	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
-	user_id_atomic.store(account_id, Ordering::Relaxed);
+	// We no longer persist live agent context in the database; all dynamic context
+	// lives in the in-memory SharedContextStore. These DB-based context logs are
+	// intentionally removed to avoid confusion.
 	
-	// Log context state BEFORE agent invocation
-	let context_before = sqlx::query!(
-		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
-		chat_session_id
-	)
-	.fetch_optional(pool)
-	.await
-	.map_err(AppError::from)?;
-	
-	if let Some(row) = &context_before {
-		if let Some(ctx) = &row.context {
+	// Initialize context with chat_session_id and user_id BEFORE agent runs
+	// This prevents race conditions from global atomics
+	// IMPORTANT: Only initialize if context doesn't exist - preserve existing trip_context!
+	{
+		use crate::agent::models::context::{ContextData, TripContext};
+		let mut store_guard = context_store.write().await;
+		
+		// Only insert if this chat_session doesn't have context yet
+		if !store_guard.contains_key(&chat_session_id) {
+			store_guard.insert(chat_session_id, ContextData {
+				chat_session_id,
+				user_id: account_id,
+				user_profile: None,
+				chat_history: vec![],
+				trip_context: TripContext::default(),
+				active_itinerary: None,
+				events: vec![],
+				tool_history: vec![],
+				pipeline_stage: None,
+				researched_events: vec![],
+				constrained_events: vec![],
+				optimized_events: vec![],
+				constraints: vec![],
+			});
+			
 			info!(
-				target: "orchestrator_context",
-				chat_session_id = chat_session_id,
-				when = "before_agent",
-				pipeline_stage = ?ctx.get("pipeline_stage"),
-				events_count = ctx.get("events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				researched_events_count = ctx.get("researched_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				constrained_events_count = ctx.get("constrained_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				optimized_events_count = ctx.get("optimized_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				constraints_count = ctx.get("constraints").and_then(|c| c.as_array()).map(|a| a.len()).unwrap_or(0),
-				"Context state before agent invocation"
+				target: "orchestrator_pipeline",
+				chat_id = chat_session_id,
+				"Initialized new context for chat session"
 			);
-			debug!(
-				target: "orchestrator_context",
-				chat_session_id = chat_session_id,
-				when = "before_agent",
-				context = %serde_json::to_string(ctx).unwrap_or_else(|_| "failed to serialize".to_string()),
-				"Full context before agent"
+		} else {
+			// Context exists - just update user_id in case it changed
+			if let Some(ctx) = store_guard.get_mut(&chat_session_id) {
+				ctx.user_id = account_id;
+			}
+			
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_session_id,
+				"Reusing existing context for chat session"
 			);
 		}
 	}
 	
-	let agent_guard = agent.lock().await;
+	// Set the atomic so tools can look up the context
+	use std::sync::atomic::Ordering;
+	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
 	
-	debug!(
-		target: "orchestrator_pipeline",
-		chat_session_id = chat_session_id,
-		input_text = text,
-		"Invoking orchestrator agent"
-	);
-	
-	
-	let ai_text = agent_guard
-		.invoke(prompt_args! {
-			"input" => text,
-		})
-		.await
-		.map_err(|e| {
-			error!(
-				target: "orchestrator_pipeline",
-				chat_session_id = chat_session_id,
-				error = %e,
-				error_debug = ?e,
-				"Orchestrator agent error - full details"
-			);
-			info!(
-				target: "orchestrator_pipeline",
-				chat_session_id = chat_session_id,
-				error = %e,
-				"Orchestrator agent error"
-			);
-			AppError::Internal(format!("AI agent error: {}", e))
-		})?;
+	// Invoke the agent
+	let ai_text = {
+		let agent_guard = agent.lock().await;
+		
+		debug!(
+			target: "orchestrator_pipeline",
+			chat_session_id = chat_session_id,
+			input_text = text,
+			"Invoking orchestrator agent"
+		);
+		
+		agent_guard
+			.invoke(prompt_args! {
+				"input" => text,
+			})
+			.await
+			.map_err(|e| {
+				error!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					error = %e,
+					error_debug = ?e,
+					"Orchestrator agent error - full details"
+				);
+				info!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					error = %e,
+					"Orchestrator agent error"
+				);
+				AppError::Internal(format!("AI agent error: {}", e))
+			})?
+	};
 	
 	info!(
 		target: "orchestrator_pipeline",
@@ -199,39 +215,7 @@ async fn send_message_to_llm(
 		"Orchestrator agent output"
 	);
 
-	// Log context state AFTER agent invocation
-	let context_after = sqlx::query!(
-		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
-		chat_session_id
-	)
-	.fetch_optional(pool)
-	.await
-	.map_err(AppError::from)?;
-	
-	if let Some(row) = &context_after {
-		if let Some(ctx) = &row.context {
-			info!(
-				target: "orchestrator_context",
-				chat_session_id = chat_session_id,
-				when = "after_agent",
-				pipeline_stage = ?ctx.get("pipeline_stage"),
-				events_count = ctx.get("events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				researched_events_count = ctx.get("researched_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				constrained_events_count = ctx.get("constrained_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				optimized_events_count = ctx.get("optimized_events").and_then(|e| e.as_array()).map(|a| a.len()).unwrap_or(0),
-				constraints_count = ctx.get("constraints").and_then(|c| c.as_array()).map(|a| a.len()).unwrap_or(0),
-				"Context state after agent invocation"
-			);
-			debug!(
-				target: "orchestrator_context",
-				chat_session_id = chat_session_id,
-				when = "after_agent",
-				context = %serde_json::to_string(ctx).unwrap_or_else(|_| "failed to serialize".to_string()),
-				"Full context after agent"
-			);
-		}
-	}
-
+	// Context state AFTER agent invocation is now entirely in-memory as well.
 
 	// Check if RespondToUserTool already inserted the message
 	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
@@ -819,7 +803,7 @@ pub async fn api_update_message(
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
 	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
-	Extension(user_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(context_store): Extension<crate::agent::models::context::SharedContextStore>,
 	Json(UpdateMessageRequest {
 		message_id,
 		new_text,
@@ -888,7 +872,7 @@ pub async fn api_update_message(
 		&pool,
 		&agent,
 		&chat_session_id_atomic,
-		&user_id_atomic,
+		&context_store,
 	)
 	.await?;
 
@@ -967,7 +951,7 @@ pub async fn api_send_message(
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
 	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
-	Extension(user_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(context_store): Extension<crate::agent::models::context::SharedContextStore>,
 	Json(SendMessageRequest {
 		chat_session_id,
 		text,
@@ -1016,7 +1000,7 @@ pub async fn api_send_message(
 		&pool,
 		&agent,
 		&chat_session_id_atomic,
-		&user_id_atomic,
+		&context_store,
 	)
 	.await?;
 

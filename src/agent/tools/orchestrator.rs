@@ -24,7 +24,7 @@
  * whatever format the LLM generates (we handle both in run()).
  */
 
-use crate::agent::models::context::{ContextData, ToolExecution};
+use crate::agent::models::context::{ContextData, SharedContextStore, ToolExecution};
 use crate::agent::tools::task::RespondToUserTool;
 use async_trait::async_trait;
 use langchain_rust::chain::Chain;
@@ -44,7 +44,7 @@ use tracing::{debug, info};
 /// Marked pub(crate) so it can be reused by Task tools without exposing it outside
 /// the agent tools module.
 pub(crate) async fn track_tool_execution(
-	pool: &PgPool,
+	_context_store: &SharedContextStore,
 	chat_session_id: &Arc<AtomicI32>,
 	tool_name: &str,
 	input: &Value,
@@ -56,34 +56,19 @@ pub(crate) async fn track_tool_execution(
 		return Ok(());
 	}
 
-	// Get existing context
-	let context_row = sqlx::query!(
-		r#"SELECT context as "context: serde_json::Value" FROM chat_sessions WHERE id = $1"#,
-		chat_id
-	)
-	.fetch_optional(pool)
-	.await
-	.map_err(|e| format!("Database error: {}", e))?;
-
-	let mut context_data = if let Some(row) = context_row {
-		if let Some(ctx) = row.context {
-			serde_json::from_value::<ContextData>(ctx.clone())
-				.unwrap_or_else(|_| ContextData {
-					user_profile: None,
-					chat_history: vec![],
-					active_itinerary: None,
-					events: vec![],
-					tool_history: vec![],
-					pipeline_stage: None,
-					researched_events: vec![],
-					constrained_events: vec![],
-					optimized_events: vec![],
-					constraints: vec![],
-				})
-		} else {
-			ContextData {
+	// Get existing in-memory context (should exist from controller initialization)
+	let mut store_guard = _context_store.write().await;
+	let context_data = match store_guard.get_mut(&chat_id) {
+		Some(ctx) => ctx,
+		None => {
+			// Context doesn't exist - this shouldn't happen in normal flow
+			// but create it to be safe
+			store_guard.insert(chat_id, ContextData {
+				chat_session_id: chat_id,
+				user_id: 0, // Unknown
 				user_profile: None,
 				chat_history: vec![],
+				trip_context: crate::agent::models::context::TripContext::default(),
 				active_itinerary: None,
 				events: vec![],
 				tool_history: vec![],
@@ -92,20 +77,8 @@ pub(crate) async fn track_tool_execution(
 				constrained_events: vec![],
 				optimized_events: vec![],
 				constraints: vec![],
-			}
-		}
-	} else {
-		ContextData {
-			user_profile: None,
-			chat_history: vec![],
-			active_itinerary: None,
-			events: vec![],
-			tool_history: vec![],
-			pipeline_stage: None,
-			researched_events: vec![],
-			constrained_events: vec![],
-			optimized_events: vec![],
-			constraints: vec![],
+			});
+			store_guard.get_mut(&chat_id).unwrap()
 		}
 	};
 
@@ -124,17 +97,6 @@ pub(crate) async fn track_tool_execution(
 	if context_data.tool_history.len() > 100 {
 		context_data.tool_history.remove(0);
 	}
-
-	// Save updated context to database
-	let context_json = serde_json::to_value(&context_data)?;
-	sqlx::query!(
-		r#"UPDATE chat_sessions SET context = $1::jsonb WHERE id = $2"#,
-		context_json as serde_json::Value,
-		chat_id
-	)
-	.execute(pool)
-	.await
-	.map_err(|e| format!("Database error: {}", e))?;
 
 	debug!(
 		target: "orchestrator_tool",
@@ -155,6 +117,7 @@ pub struct RouteTaskTool {
 	pub optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,
+	context_store: SharedContextStore,
 }
 
 impl RouteTaskTool {
@@ -165,6 +128,7 @@ impl RouteTaskTool {
 		optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 		pool: PgPool,
 		chat_session_id: Arc<AtomicI32>,
+		context_store: SharedContextStore,
 	) -> Self {
 		Self {
 			task_agent,
@@ -173,6 +137,7 @@ impl RouteTaskTool {
 			optimize_agent,
 			pool,
 			chat_session_id,
+			context_store,
 		}
 	}
 }
@@ -226,47 +191,74 @@ impl Tool for RouteTaskTool {
 			"Received input in route_task"
 		);
 		
-		// Handle task_type - can be string, object, or JSON string
-		let task_type = if let Some(s) = input["task_type"].as_str() {
-			// Try to parse as JSON object first, then extract value
-			if let Ok(obj) = serde_json::from_str::<Value>(s) {
-				if obj.is_object() {
-					obj.get("value")
-						.or_else(|| obj.get("task_type"))
-						.and_then(|v| v.as_str())
-						.map(|s| s.to_string())
-						.unwrap_or_else(|| s.to_string())
-				} else {
-					s.to_string()
-				}
-			} else {
-				s.to_string()
-			}
-		} else if input["task_type"].is_object() {
-			// Try to extract value from object
-			input["task_type"].get("value")
-				.or_else(|| input["task_type"].get("task_type"))
-				.and_then(|v| v.as_str())
-				.map(|s| s.to_string())
-				.unwrap_or_else(|| serde_json::to_string(&input["task_type"]).unwrap_or_else(|_| "unknown".to_string()))
+		// langchain_rust passes action_input as a STRING, so parse it first if needed
+		let parsed_input: Value = if input.is_string() {
+			// If input is a string (JSON string from action_input), parse it
+			serde_json::from_str(input.as_str().unwrap_or("{}"))
+				.unwrap_or_else(|_| {
+					debug!(
+						target: "orchestrator_tool",
+						tool = "route_task",
+						"Failed to parse input as JSON, using as-is"
+					);
+					input.clone()
+				})
 		} else {
-			input["task_type"].to_string()
+			// If it's already a Value object, use it directly
+			input
 		};
 		
+		// Handle task_type - prefer simple string, but be defensive about weird shapes
+		//
+		// In theory the LLM should always pass a plain string (\"task\", \"research\", etc.)
+		// but in practice we have seen cases in logs where this ended up as \"null\"
+		// and caused `Unknown task type: null` errors, preventing the Task Agent from running.
+		//
+		// Strategy:
+		// - If we can read a string, use it directly.
+		// - If it's an object, look for common fields (`value`, `task_type`).
+		// - If it's missing / null / empty, *default to \"task\"* so first-turn
+		//   orchestration still calls the Task Agent instead of hard failing.
+		let raw_task_type_value = &parsed_input["task_type"];
+
+		let mut task_type = if let Some(s) = raw_task_type_value.as_str() {
+			s.to_string()
+		} else if raw_task_type_value.is_object() {
+			raw_task_type_value
+				.get("value")
+				.or_else(|| raw_task_type_value.get("task_type"))
+				.and_then(|v| v.as_str())
+				.map(|s| s.to_string())
+				.unwrap_or_else(|| raw_task_type_value.to_string())
+		} else if raw_task_type_value.is_null() {
+			// This is the problematic case we've seen in logs; default to \"task\"
+			"task".to_string()
+		} else {
+			raw_task_type_value.to_string()
+		};
+		
+		debug!(
+			target: "orchestrator_tool",
+			tool = "route_task",
+			raw_task_type = %serde_json::to_string(&raw_task_type_value)?,
+			parsed_task_type = %task_type,
+			"Parsed task_type from input"
+		);
+		
 		// Handle payload - can be string (JSON), object, or already a string
-		let payload_str = if let Some(s) = input["payload"].as_str() {
+		let payload_str = if let Some(s) = parsed_input["payload"].as_str() {
 			// If it's a string, check if it's valid JSON, otherwise use as-is
 			if serde_json::from_str::<Value>(s).is_ok() {
 				s.to_string()
 			} else {
 				s.to_string()
 			}
-		} else if input["payload"].is_object() {
+		} else if parsed_input["payload"].is_object() {
 			// If it's an object, serialize it to string
-			serde_json::to_string(&input["payload"])?
+			serde_json::to_string(&parsed_input["payload"])?
 		} else {
 			// Fallback: convert to string representation
-			input["payload"].to_string()
+			parsed_input["payload"].to_string()
 		};
 
 		info!(
@@ -278,12 +270,33 @@ impl Tool for RouteTaskTool {
 		debug!(
 			target: "orchestrator_tool",
 			tool = "route_task",
-			input = %serde_json::to_string(&input)?,
+			input = %serde_json::to_string(&parsed_input)?,
 			"Tool input"
 		);
 
-		// Normalize task_type to lowercase string
-		let task_type_normalized = task_type.to_lowercase().trim().to_string();
+		// Normalize task_type to lowercase string and handle degenerate values
+		let mut task_type_normalized = task_type.to_lowercase().trim().to_string();
+
+		// If the normalized value is empty or literally \"null\", treat it as \"task\"
+		// so that we still invoke the Task Agent instead of erroring.
+		if task_type_normalized.is_empty() || task_type_normalized == "null" {
+			debug!(
+				target: "orchestrator_tool",
+				tool = "route_task",
+				raw_task_type = %raw_task_type_value,
+				"task_type was empty or 'null'; defaulting to 'task'"
+			);
+			task_type_normalized = "task".to_string();
+			task_type = "task".to_string();
+		}
+
+		// Tool trace logging
+		crate::tool_trace!(
+			agent: "orchestrator",
+			tool: "route_task",
+			status: "start",
+			details: format!("task_type={}", task_type)
+		);
 
 		// SPECIAL HANDLING: High-level Task Agent
 		//
@@ -292,6 +305,7 @@ impl Tool for RouteTaskTool {
 		// This preserves markers like "MESSAGE_INSERTED:" and "FINAL_ANSWER:" so that
 		// `send_message_to_llm` can handle them as before.
 		if task_type_normalized == "task" {
+			crate::tool_trace!(agent: "task", tool: "begin", status: "invoked");
 			info!(target: "orchestrator_pipeline", agent = "task", "Invoking task agent");
 			debug!(target: "orchestrator_pipeline", agent = "task", payload = %payload_str, "Agent input");
 
@@ -305,11 +319,13 @@ impl Tool for RouteTaskTool {
 				.await
 			{
 				Ok(response) => {
+					crate::tool_trace!(agent: "task", tool: "complete", status: "success");
 					info!(target: "orchestrator_pipeline", agent = "task", status = "completed", "Task agent completed");
 					debug!(target: "orchestrator_pipeline", agent = "task", response = %response, "Task agent raw output");
 					response
 				}
 				Err(e) => {
+					crate::tool_trace!(agent: "task", tool: "complete", status: "error", details: format!("{}", e));
 					info!(target: "orchestrator_pipeline", agent = "task", status = "error", error = %e, "Task agent error");
 					format!("TASK_AGENT_ERROR: {}", e)
 				}
@@ -325,7 +341,7 @@ impl Tool for RouteTaskTool {
 			let tracking_str = serde_json::to_string(&tracking_value)?;
 
 			track_tool_execution(
-				&self.pool,
+				&self.context_store,
 				&self.chat_session_id,
 				"route_task",
 				&input_clone,
@@ -338,6 +354,7 @@ impl Tool for RouteTaskTool {
 
 		let result = match task_type_normalized.as_str() {
 			"research" => {
+				crate::tool_trace!(agent: "research", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
 				debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
 				
@@ -354,6 +371,7 @@ impl Tool for RouteTaskTool {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
 						
+						crate::tool_trace!(agent: "research", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "research", status = "completed", "Research agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "research", response = %serde_json::to_string(&data)?, "Agent output");
 						
@@ -364,6 +382,7 @@ impl Tool for RouteTaskTool {
 						})
 					}
 					Err(e) => {
+						crate::tool_trace!(agent: "research", tool: "complete", status: "error", details: format!("{}", e));
 						info!(target: "orchestrator_pipeline", agent = "research", status = "error", error = %e, "Research agent error");
 						json!({
 							"agent": "research",
@@ -374,6 +393,7 @@ impl Tool for RouteTaskTool {
 				}
 			}
 			"constraint" => {
+				crate::tool_trace!(agent: "constraint", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "constraint", "Invoking constraint agent");
 				debug!(target: "orchestrator_pipeline", agent = "constraint", payload = %payload_str, "Agent input");
 				
@@ -389,6 +409,7 @@ impl Tool for RouteTaskTool {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
 						
+						crate::tool_trace!(agent: "constraint", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "constraint", status = "completed", "Constraint agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "constraint", response = %serde_json::to_string(&data)?, "Agent output");
 						
@@ -399,6 +420,7 @@ impl Tool for RouteTaskTool {
 						})
 					}
 					Err(e) => {
+						crate::tool_trace!(agent: "constraint", tool: "complete", status: "error", details: format!("{}", e));
 						info!(target: "orchestrator_pipeline", agent = "constraint", status = "error", error = %e, "Constraint agent error");
 						json!({
 							"agent": "constraint",
@@ -409,6 +431,7 @@ impl Tool for RouteTaskTool {
 				}
 			}
 			"optimize" => {
+				crate::tool_trace!(agent: "optimize", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "optimize", "Invoking optimize agent");
 				debug!(target: "orchestrator_pipeline", agent = "optimize", payload = %payload_str, "Agent input");
 				
@@ -424,6 +447,7 @@ impl Tool for RouteTaskTool {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
 						
+						crate::tool_trace!(agent: "optimize", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "optimize", status = "completed", "Optimize agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "optimize", response = %serde_json::to_string(&data)?, "Agent output");
 						
@@ -434,6 +458,7 @@ impl Tool for RouteTaskTool {
 						})
 					}
 					Err(e) => {
+						crate::tool_trace!(agent: "optimize", tool: "complete", status: "error", details: format!("{}", e));
 						info!(target: "orchestrator_pipeline", agent = "optimize", status = "error", error = %e, "Optimize agent error");
 						json!({
 							"agent": "optimize",
@@ -465,7 +490,14 @@ impl Tool for RouteTaskTool {
 		);
 		
 		// Track this tool execution
-		track_tool_execution(&self.pool, &self.chat_session_id, "route_task", &input_clone, &result_str).await?;
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"route_task",
+			&input_clone,
+			&result_str,
+		)
+		.await?;
 		
 		Ok(result_str)
 	}
@@ -483,6 +515,7 @@ pub fn get_orchestrator_tools(
 	optimize_agent: Arc<Mutex<crate::agent::configs::orchestrator::AgentType>>,
 	chat_session_id: Arc<AtomicI32>,
 	_user_id: Arc<AtomicI32>,
+	context_store: SharedContextStore,
 ) -> Vec<Arc<dyn Tool>> {
 	vec![
 		Arc::new(RouteTaskTool::new(
@@ -492,8 +525,9 @@ pub fn get_orchestrator_tools(
 			optimize_agent,
 			pool.clone(),
 			Arc::clone(&chat_session_id),
+			context_store.clone(),
 		)),
-		Arc::new(RespondToUserTool::new(pool, chat_session_id)),
+		Arc::new(RespondToUserTool::new(pool, chat_session_id, context_store)),
 		// Note: context-building tools (profile, chat history, intent, clarification)
 		// are exposed via the Task Agent through `get_task_tools` and should not be
 		// called directly by the Orchestrator.

@@ -28,6 +28,7 @@ use langchain_rust::{
 use sqlx::PgPool;
 
 use crate::agent::configs::mock::MockLLM;
+use crate::agent::models::context::SharedContextStore;
 use crate::agent::tools::task::get_task_tools;
 use langchain_rust::language_models::llm::LLM;
 
@@ -39,6 +40,7 @@ pub fn create_task_agent(
 	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,
 	user_id: Arc<AtomicI32>,
+	context_store: SharedContextStore,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
@@ -62,6 +64,7 @@ pub fn create_task_agent(
 		pool,
 		Arc::clone(&chat_session_id),
 		Arc::clone(&user_id),
+		context_store,
 	);
 
 	// Create agent with system prompt and tools
@@ -107,11 +110,16 @@ pub fn create_dummy_task_agent(
 	// Dummy sub-agents (all the same simple agent)
 	let llm_arc = Arc::new(llm.clone());
 
+	// In-memory context store for tests
+	let context_store: SharedContextStore =
+		Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
+
 	let tools = get_task_tools(
 		llm_arc,
 		pool,
 		Arc::clone(&chat_session_id),
 		Arc::clone(&user_id),
+		context_store,
 	);
 
 	let agent = ConversationalAgentBuilder::new()

@@ -21,7 +21,7 @@ use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde_json::json;
 use serial_test::serial;
 use sqlx::{PgPool, migrate};
-use std::sync::Arc;
+use crate::agent::configs::orchestrator::create_dummy_orchestrator_agent;
 use std::{
 	fs,
 	io::Write,
@@ -1012,13 +1012,14 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	let pool = pool.0.clone();
 
 	// Always use dummy agent for tests
-	let (agent_executor, chat_session_id_atomic, user_id_atomic) = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
-		.expect("Dummy agent creation failed");
+	let (agent_executor, chat_session_id_atomic, _user_id_atomic, context_store) =
+		create_dummy_orchestrator_agent(pool.clone())
+			.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> as usual
 	let agent = Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent_executor)));
 	let chat_session_id_atomic_ext = Extension(chat_session_id_atomic);
-	let user_id_atomic_ext = Extension(user_id_atomic);
+	let context_store_ext = Extension(context_store);
 
 	let pool_ext = Extension(pool.clone());
 
@@ -1050,7 +1051,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 			itinerary_id: None,
 		});
 		message_ids[i] =
-			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+			controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 				.await
 				.unwrap()
 				.user_message_id;
@@ -1064,7 +1065,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1079,7 +1080,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+		controllers::chat::api_send_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1145,7 +1146,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1160,7 +1161,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		itinerary_id: None,
 	});
 	assert_eq!(
-		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+		controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 			.await
 			.unwrap_err()
 			.status_code()
@@ -1174,7 +1175,7 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		new_text: String::from("Updated message"),
 		itinerary_id: None,
 	});
-	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), user_id_atomic_ext.clone(), json)
+	_ = controllers::chat::api_update_message(user, Extension(pool.clone()), agent.clone(), chat_session_id_atomic_ext.clone(), context_store_ext.clone(), json)
 		.await
 		.unwrap();
 	let json = Json(MessagePageRequest {
@@ -1399,7 +1400,7 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Always use dummy agent for tests
-	let (agent_executor, chat_session_id_atomic, user_id_atomic) = agent::configs::orchestrator::create_dummy_orchestrator_agent(pool.clone())
+	let (agent_executor, chat_session_id_atomic, user_id_atomic, _context_store) = create_dummy_orchestrator_agent(pool.clone())
 		.expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> for router layers
