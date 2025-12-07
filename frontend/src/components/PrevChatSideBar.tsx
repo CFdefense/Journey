@@ -22,6 +22,7 @@ interface PrevChatSideBarProps {
   sidebarVisible: boolean;
   firstName?: string;
   profileImageUrl?: string;
+  isAiResponding?: boolean;
 }
 
 export default function PrevChatSideBar({
@@ -34,7 +35,8 @@ export default function PrevChatSideBar({
   onRenameChat,
   sidebarVisible,
   firstName,
-  profileImageUrl
+  profileImageUrl,
+  isAiResponding = false
 }: PrevChatSideBarProps) {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -258,7 +260,12 @@ export default function PrevChatSideBar({
           className={`action-btn primary ${sidebarVisible ? "expanded" : "icon-only"}`}
           onClick={onNewChat}
           aria-label="New chat"
-          title="New chat"
+          title={
+            isAiResponding
+              ? "Cannot create new chat while AI is responding"
+              : "New chat"
+          }
+          disabled={isAiResponding}
         >
           <span className="action-icon" aria-hidden="true">
             <svg
@@ -324,13 +331,13 @@ export default function PrevChatSideBar({
           chats.map((chat, index) => (
             <li
               key={chat.id}
-              className={chat.id === activeChatId ? "active" : ""}
+              className={`${chat.id === activeChatId ? "active" : ""} ${isAiResponding && chat.id !== activeChatId ? "disabled" : ""}`}
               style={{
                 transitionDelay:
                   chat.id === activeChatId ? "0ms" : `${450 + index * 150}ms`
               }}
               onClick={() => {
-                if (editingChatId !== chat.id) {
+                if (editingChatId !== chat.id && !isAiResponding) {
                   onSelectChat(chat.id);
                   sessionStorage.setItem(
                     ACTIVE_CHAT_SESSION,

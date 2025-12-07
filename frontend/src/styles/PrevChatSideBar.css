@@ -119,6 +119,17 @@
   box-shadow: 0 4px 8px rgba(216, 127, 117, 0.35);
 }
 
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.action-btn.primary:disabled {
+  background: linear-gradient(135deg, #b0b0b0 0%, #d0d0d0 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .action-btn.expanded {
   padding: 10px 12px;
   width: 100%;
@@ -436,6 +447,17 @@
   font-weight: 500;
   transition: all 0.2s ease !important;
   transition-delay: 0ms !important;
+}
+
+.chat-list li.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.chat-list li.disabled:hover {
+  background: #fafafa !important;
+  color: #555 !important;
 }
 
 .chat-list li:not(.active) {

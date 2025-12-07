@@ -555,6 +555,7 @@ export default function Home() {
           sidebarVisible={sidebarVisible}
           firstName={firstName}
           profileImageUrl={profileImageUrl}
+          isAiResponding={isAiResponding}
         />
 
         <div className="chat-window-wrapper">
