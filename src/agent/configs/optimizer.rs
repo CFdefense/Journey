@@ -29,10 +29,7 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_optimize_agent(
-	llm: OpenAI<OpenAIConfig>,
-	pool: PgPool,
-) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_optimize_agent(llm: OpenAI<OpenAIConfig>) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -43,14 +40,14 @@ pub fn create_optimize_agent(
 	let memory = SimpleMemory::new();
 
 	// Select model (will read key from environment variable)
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
+	let agent_llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools())
+		.tools(&optimizer_tools(Arc::new(llm)))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
+		.build(agent_llm)
 		.unwrap();
 
 	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
@@ -61,7 +58,7 @@ pub fn create_optimize_agent(
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_optimize_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_optimize_agent(llm: OpenAI<OpenAIConfig>) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
@@ -75,14 +72,14 @@ pub fn create_dummy_optimize_agent() -> Result<AgentExecutor<ConversationalAgent
 	let memory = SimpleMemory::new();
 
 	// Select model
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+	let agent_llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools())
+		.tools(&optimizer_tools(Arc::new(llm)))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
+		.build(agent_llm)
 		.unwrap();
 
 	// Restore original key if it existed

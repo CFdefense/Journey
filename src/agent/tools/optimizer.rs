@@ -8,15 +8,15 @@
  */
 
 use async_trait::async_trait;
-use langchain_rust::tools::Tool;
+use langchain_rust::{language_models::llm::LLM, tools::Tool};
 use serde_json::{Value, json};
 use std::{error::Error, sync::Arc};
 
-pub fn optimizer_tools() -> [Arc<dyn Tool>; 5] {
+pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>) -> [Arc<dyn Tool>; 5] {
 	[
-		Arc::new(RankPOIsByPreferenceTool),
-		Arc::new(ClusterPOIsTool),
-		Arc::new(SequenceDayTool),
+		Arc::new(RankPOIsByPreferenceTool {llm: llm.clone()}),
+		Arc::new(ClusterPOIsTool {llm: llm.clone()}),
+		Arc::new(SequenceDayTool {llm: llm.clone()}),
 		Arc::new(OptimizeRouteTool),
 		Arc::new(DeserializeEventsTool),
 	]
@@ -31,7 +31,9 @@ pub fn optimizer_tools() -> [Arc<dyn Tool>; 5] {
 /// - Accessibility needs/disabilities
 /// - Personal interests and preferences
 #[derive(Clone)]
-struct RankPOIsByPreferenceTool;
+struct RankPOIsByPreferenceTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+}
 
 /// Tool that clusters Points of Interest to ensure diversity
 ///
@@ -39,7 +41,9 @@ struct RankPOIsByPreferenceTool;
 /// similar activities (e.g., multiple museums in a row). Ensures variety
 /// in the itinerary by balancing activity types throughout the trip.
 #[derive(Clone)]
-struct ClusterPOIsTool;
+struct ClusterPOIsTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+}
 
 /// Tool that sequences POIs into a coherent daily schedule
 ///
@@ -50,7 +54,9 @@ struct ClusterPOIsTool;
 /// - Energy level requirements
 /// - Natural flow of activities
 #[derive(Clone)]
-struct SequenceDayTool;
+struct SequenceDayTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+}
 
 /// Tool that optimizes the travel route for a day using TSP algorithms
 ///
@@ -111,7 +117,22 @@ impl Tool for RankPOIsByPreferenceTool {
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
 		// TODO: Implement POI ranking logic will most likely query a LLM to rank the POIs
-		Ok("Ranked POIs placeholder".to_string())
+		let pois = input["pois"]
+			.as_array()
+			.ok_or("pois must be an array of objects")?;
+		let profile = input["user_profile"]
+			.as_array()
+			.ok_or("pois must be an array of objects")?;
+
+		let prompt = format!(
+			include_str!("../prompts/rank_pois_preference.md"),
+			serde_json::to_string_pretty(&pois)?,
+			serde_json::to_string_pretty(&profile)?
+		);
+
+		let response = self.llm.invoke(&prompt).await?;
+
+		Ok(response.trim().to_string())
 	}
 }
 
@@ -356,7 +377,22 @@ impl Tool for DeserializeEventsTool {
 					"type": "array",
 					"description": "Array of POIs with scheduling information",
 					"items": {
-						"type": "object"
+						"type": "object",
+						"properties": {
+							"date": {
+								"type": "string",
+								"description": "In the format 03/01/2025"
+							},
+							"time_block": {
+								"type": "string",
+								"description": "Morning events are 4am-12pm, Afternoon events are 12pm-6pm, and Evening events are 6pm-4am.",
+								"enum": ["Morning", "Afternoon", "Evening"]
+							},
+							"index": {
+								"type": "number",
+								"description": "The index of this event within the time block"
+							}
+						}
 					}
 				},
 				"trip_id": {

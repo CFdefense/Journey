@@ -85,7 +85,7 @@ pub fn create_orchestrator_agent(
 
 	// Create research agent
 	let research_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_research_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
+		create_research_agent(pool.clone()).unwrap(),
 	))));
 
 	// Create constraint agent
@@ -95,7 +95,7 @@ pub fn create_orchestrator_agent(
 
 	// Create optimize agent
 	let optimize_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_optimize_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
+		create_optimize_agent(llm_for_subagents.clone()).unwrap(),
 	))));
 
 	// Get orchestrator tools
