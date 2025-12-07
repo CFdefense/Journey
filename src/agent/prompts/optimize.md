@@ -10,17 +10,12 @@ Create complete day-by-day itineraries from Points of Interest (POIs) that maxim
    - Score based on user interests and preferences
    - Filter out incompatible or inaccessible options
 
-2. **Ensure Diversity**
-   - Prevent clustering of similar activity types (e.g., avoid 3 museums in a row)
-   - Balance indoor/outdoor activities
-   - Mix cultural, recreational, dining, and relaxation experiences
+2. **Build Draft Itinerary**
+   - Assemble a list POIs into a complete itinerary
+   - Follow provided rules to ensure times and locations are sensible
+   - Optimize the itinerary for the best realistic traveler experience.
 
-3. **Build Daily Schedules**
-   - Organize POIs into time blocks: Morning (6am-12pm), Afternoon (12pm-6pm), Evening (6pm-12am)
-   - Respect venue operating hours and typical activity durations
-   - Consider optimal times for specific activities (outdoor activities during daylight, etc.)
-
-4. **Optimize Routes**
+3. **Optimize Routes**
    - Minimize travel time and distance between locations
    - Group geographically proximate POIs when sensible
    - Consider transportation modes and accessibility

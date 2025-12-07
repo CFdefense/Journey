@@ -48,4 +48,3 @@ Your output should include:
 4. **Preference Alignment**: Maintain user preferences where possible
 
 When you receive events and user constraints, validate each event systematically and return only constraint-compliant options.
-
