@@ -56,7 +56,7 @@ pub fn init_logger() {
 		// Remove old logs
 		_ = fs::remove_file(Path::new(LOG_DIR).join(LATEST_LOG));
 		_ = fs::remove_file(Path::new(LOG_DIR).join(TOOLS_LOG));
-		
+
 		// Setup main log writer
 		let (log_writer, log_guard) =
 			tracing_appender::non_blocking(rolling::never(LOG_DIR, LATEST_LOG));
@@ -73,7 +73,7 @@ pub fn init_logger() {
 			.pretty()
 			.with_writer(log_writer.clone())
 			.with_filter(EnvFilter::from_default_env());
-		
+
 		// Setup tools log writer (only captures tool_trace target)
 		let (tools_log_writer, tools_guard) =
 			tracing_appender::non_blocking(rolling::never(LOG_DIR, TOOLS_LOG));
@@ -90,7 +90,7 @@ pub fn init_logger() {
 			.compact()
 			.with_writer(tools_log_writer.clone())
 			.with_filter(EnvFilter::new("tool_trace=info"));
-		
+
 		tracing_subscriber::registry()
 			.with(latest_log_layer)
 			.with(tools_log_layer)

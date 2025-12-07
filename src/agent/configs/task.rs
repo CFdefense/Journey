@@ -85,11 +85,9 @@ pub fn create_task_agent(
 			.unwrap()
 	};
 
-	Ok(
-		AgentExecutor::from_agent(agent)
-			.with_memory(memory.into())
-			.with_max_iterations(20),
-	)
+	Ok(AgentExecutor::from_agent(agent)
+		.with_memory(memory.into())
+		.with_max_iterations(20))
 }
 
 /// Creates a dummy Task Agent for testing purposes.
@@ -148,5 +146,3 @@ fn create_dummy_sub_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentE
 
 /// The system prompt for the Task Agent.
 pub const TASK_SYSTEM_PROMPT: &str = include_str!("../prompts/task.md");
-
-

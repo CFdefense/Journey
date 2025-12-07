@@ -91,9 +91,8 @@ pub fn create_orchestrator_agent(
 		context_store.clone(),
 	)?;
 	let task_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(task_agent_executor));
-	let task_agent =
-		Arc::new(tokio::sync::Mutex::new(task_agent_inner));
-	
+	let task_agent = Arc::new(tokio::sync::Mutex::new(task_agent_inner));
+
 	// Get orchestrator tools
 	let tools = get_orchestrator_tools(
 		llm_for_tools,
@@ -121,8 +120,8 @@ pub fn create_orchestrator_agent(
 			.prefix(ORCHESTRATOR_SYSTEM_PROMPT.to_string())
 			.tools(&tools)
 			.options(ChainCallOptions::new().with_max_tokens(2000))
-		.build(llm_for_subagents)
-		.unwrap()
+			.build(llm_for_subagents)
+			.unwrap()
 	};
 
 	// Create executor with increased max iterations for complex multi-agent workflows

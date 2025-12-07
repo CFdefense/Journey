@@ -106,7 +106,9 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 			))
 			.layer(Extension(pool.clone()))
 			.layer(Extension(cookie_key.clone()))
-			.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(agent))))
+			.layer(Extension(std::sync::Arc::new(tokio::sync::Mutex::new(
+				agent,
+			))))
 			.layer(Extension(chat_session_id))
 			.layer(Extension(user_id))
 			.layer(Extension(context_store))

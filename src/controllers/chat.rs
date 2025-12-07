@@ -1,11 +1,3 @@
-use axum::{
-	Extension, Json,
-	extract::Path,
-	routing::{delete, get, post},
-};
-use chrono::NaiveDate;
-use sqlx::PgPool;
-use utoipa::OpenApi;
 use crate::{
 	agent::configs::orchestrator::AgentType,
 	controllers::{AxumRouter, itinerary::insert_event_list},
@@ -24,8 +16,16 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
+use axum::{
+	Extension, Json,
+	extract::Path,
+	routing::{delete, get, post},
+};
+use chrono::NaiveDate;
 use langchain_rust::{chain::Chain, prompt_args};
+use sqlx::PgPool;
 use tracing::{debug, error, info};
+use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -115,36 +115,39 @@ async fn send_message_to_llm(
 		user_input = text,
 		"Orchestrator agent input"
 	);
-	
+
 	// We no longer persist live agent context in the database; all dynamic context
 	// lives in the in-memory SharedContextStore. These DB-based context logs are
 	// intentionally removed to avoid confusion.
-	
+
 	// Initialize context with chat_session_id and user_id BEFORE agent runs
 	// This prevents race conditions from global atomics
 	// IMPORTANT: Only initialize if context doesn't exist - preserve existing trip_context!
 	{
 		use crate::agent::models::context::{ContextData, TripContext};
 		let mut store_guard = context_store.write().await;
-		
+
 		// Only insert if this chat_session doesn't have context yet
 		if !store_guard.contains_key(&chat_session_id) {
-			store_guard.insert(chat_session_id, ContextData {
+			store_guard.insert(
 				chat_session_id,
-				user_id: account_id,
-				user_profile: None,
-				chat_history: vec![],
-				trip_context: TripContext::default(),
-				active_itinerary: None,
-				events: vec![],
-				tool_history: vec![],
-				pipeline_stage: None,
-				researched_events: vec![],
-				constrained_events: vec![],
-				optimized_events: vec![],
-				constraints: vec![],
-			});
-			
+				ContextData {
+					chat_session_id,
+					user_id: account_id,
+					user_profile: None,
+					chat_history: vec![],
+					trip_context: TripContext::default(),
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+					constraints: vec![],
+				},
+			);
+
 			info!(
 				target: "orchestrator_pipeline",
 				chat_id = chat_session_id,
@@ -155,7 +158,7 @@ async fn send_message_to_llm(
 			if let Some(ctx) = store_guard.get_mut(&chat_session_id) {
 				ctx.user_id = account_id;
 			}
-			
+
 			info!(
 				target: "orchestrator_pipeline",
 				chat_id = chat_session_id,
@@ -163,22 +166,22 @@ async fn send_message_to_llm(
 			);
 		}
 	}
-	
+
 	// Set the atomic so tools can look up the context
 	use std::sync::atomic::Ordering;
 	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
-	
+
 	// Invoke the agent
 	let ai_text = {
 		let agent_guard = agent.lock().await;
-		
+
 		debug!(
 			target: "orchestrator_pipeline",
 			chat_session_id = chat_session_id,
 			input_text = text,
 			"Invoking orchestrator agent"
 		);
-		
+
 		agent_guard
 			.invoke(prompt_args! {
 				"input" => text,
@@ -201,7 +204,7 @@ async fn send_message_to_llm(
 				AppError::Internal(format!("AI agent error: {}", e))
 			})?
 	};
-	
+
 	info!(
 		target: "orchestrator_pipeline",
 		chat_session_id = chat_session_id,
@@ -255,10 +258,14 @@ async fn send_message_to_llm(
 			}
 		}
 	}
-	
+
 	// Check if response starts with FINAL_ANSWER: (from ask_for_clarification tool)
 	if ai_text.trim().starts_with("FINAL_ANSWER:") {
-		let clarification_text = ai_text.trim().strip_prefix("FINAL_ANSWER:").unwrap_or("").trim();
+		let clarification_text = ai_text
+			.trim()
+			.strip_prefix("FINAL_ANSWER:")
+			.unwrap_or("")
+			.trim();
 		// Fetch the most recent non-user message (ask_for_clarification already inserted it)
 		let record = sqlx::query!(
 			r#"
@@ -273,7 +280,7 @@ async fn send_message_to_llm(
 		.fetch_optional(pool)
 		.await
 		.map_err(AppError::from)?;
-		
+
 		if let Some(msg) = record {
 			// Verify the text matches (tool just inserted it)
 			if msg.text.trim() == clarification_text {
@@ -293,11 +300,15 @@ async fn send_message_to_llm(
 			}
 		}
 	}
-	
-	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED), 
+
+	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED),
 	// it's likely from ask_for_clarification tool which already inserted it
 	// Fetch the most recent non-user message for this chat session
-	if !ai_text.trim().starts_with('{') && !ai_text.trim().starts_with('[') && !ai_text.starts_with("MESSAGE_INSERTED:") && !ai_text.starts_with("FINAL_ANSWER:") {
+	if !ai_text.trim().starts_with('{')
+		&& !ai_text.trim().starts_with('[')
+		&& !ai_text.starts_with("MESSAGE_INSERTED:")
+		&& !ai_text.starts_with("FINAL_ANSWER:")
+	{
 		// This looks like plain readable text - tool already inserted it, so fetch it
 		let record = sqlx::query!(
 			r#"
@@ -312,7 +323,7 @@ async fn send_message_to_llm(
 		.fetch_optional(pool)
 		.await
 		.map_err(AppError::from)?;
-		
+
 		if let Some(msg) = record {
 			// Verify the text matches (tool just inserted it)
 			if msg.text.trim() == ai_text.trim() {
@@ -336,99 +347,99 @@ async fn send_message_to_llm(
 	// Default behavior: Create itinerary based on whether MockLLM is used
 	// Check if we're using MockLLM
 	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
-	
+
 	let mut ai_itinerary = if use_mock {
 		// Create dummy itinerary when MockLLM is active
 		Itinerary {
 			id: 0,
-		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
-		event_days: vec![
-			EventDay {
-				morning_events: vec![Event {
-					id: 1,
-					street_address: Some(String::from("1114 Shannon Ln")),
-					postal_code: Some(17013),
-					city: Some(String::from("Carlisle")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Hike")),
-					event_description: Some(String::from(
-						"A beautiful stroll along a river in this cute small town.",
-					)),
-					event_name: String::from("Family Walking Path"),
-					..Default::default()
-				}],
-				afternoon_events: vec![Event {
-					id: 3,
-					street_address: Some(String::from("200 E 42nd St")),
-					postal_code: Some(10017),
-					city: Some(String::from("New York")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
-					)),
-					event_name: String::from("Museum of Modern Art- MoMA"),
-					..Default::default()
-				}],
-				evening_events: vec![Event {
-					id: 4,
-					street_address: Some(String::from("1 S Broad St")),
-					postal_code: Some(19107),
-					city: Some(String::from("Philadelphia")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Concert")),
-					event_description: Some(String::from(
-						"Music center which hosts local and national bands.",
-					)),
-					event_name: String::from("Jazz night at Broad Street"),
-					..Default::default()
-				}],
-				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-			},
-			EventDay {
-				morning_events: vec![Event {
-					id: 5,
-					street_address: Some(String::from("1 Citizens Bank Way")),
-					postal_code: Some(19148),
-					city: Some(String::from("Philadelphia")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Sports")),
-					event_description: Some(String::from(
-						"A Phillies baseball game is a must-do for locals and visitors alike.",
-					)),
-					event_name: String::from("Phillies Baseball Game"),
-					..Default::default()
-				}],
-				afternoon_events: vec![Event {
-					id: 7,
-					street_address: Some(String::from("1 Rue de la Seine")),
-					postal_code: Some(0),
-					city: Some(String::from("Paris")),
-					country: Some(String::from("France")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"Explore the beautiful landmark of Paris.",
-					)),
-					event_name: String::from("Eiffel Tower"),
-					..Default::default()
-				}],
-				evening_events: vec![Event {
-					id: 8,
-					street_address: Some(String::from("3 Rue de la Museu")),
-					postal_code: Some(0),
-					city: Some(String::from("Paris")),
-					country: Some(String::from("France")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"Wander the halls of the world famous art museum.",
-					)),
-					event_name: String::from("le Louvre"),
-					..Default::default()
-				}],
-				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
-			},
-		],
+			start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+			end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+			event_days: vec![
+				EventDay {
+					morning_events: vec![Event {
+						id: 1,
+						street_address: Some(String::from("1114 Shannon Ln")),
+						postal_code: Some(17013),
+						city: Some(String::from("Carlisle")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Hike")),
+						event_description: Some(String::from(
+							"A beautiful stroll along a river in this cute small town.",
+						)),
+						event_name: String::from("Family Walking Path"),
+						..Default::default()
+					}],
+					afternoon_events: vec![Event {
+						id: 3,
+						street_address: Some(String::from("200 E 42nd St")),
+						postal_code: Some(10017),
+						city: Some(String::from("New York")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
+						)),
+						event_name: String::from("Museum of Modern Art- MoMA"),
+						..Default::default()
+					}],
+					evening_events: vec![Event {
+						id: 4,
+						street_address: Some(String::from("1 S Broad St")),
+						postal_code: Some(19107),
+						city: Some(String::from("Philadelphia")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Concert")),
+						event_description: Some(String::from(
+							"Music center which hosts local and national bands.",
+						)),
+						event_name: String::from("Jazz night at Broad Street"),
+						..Default::default()
+					}],
+					date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+				},
+				EventDay {
+					morning_events: vec![Event {
+						id: 5,
+						street_address: Some(String::from("1 Citizens Bank Way")),
+						postal_code: Some(19148),
+						city: Some(String::from("Philadelphia")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Sports")),
+						event_description: Some(String::from(
+							"A Phillies baseball game is a must-do for locals and visitors alike.",
+						)),
+						event_name: String::from("Phillies Baseball Game"),
+						..Default::default()
+					}],
+					afternoon_events: vec![Event {
+						id: 7,
+						street_address: Some(String::from("1 Rue de la Seine")),
+						postal_code: Some(0),
+						city: Some(String::from("Paris")),
+						country: Some(String::from("France")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"Explore the beautiful landmark of Paris.",
+						)),
+						event_name: String::from("Eiffel Tower"),
+						..Default::default()
+					}],
+					evening_events: vec![Event {
+						id: 8,
+						street_address: Some(String::from("3 Rue de la Museu")),
+						postal_code: Some(0),
+						city: Some(String::from("Paris")),
+						country: Some(String::from("France")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"Wander the halls of the world famous art museum.",
+						)),
+						event_name: String::from("le Louvre"),
+						..Default::default()
+					}],
+					date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+				},
+			],
 			chat_session_id: None,
 			title: String::from("World Tour 11/5-15 2025"),
 			unassigned_events: vec![],

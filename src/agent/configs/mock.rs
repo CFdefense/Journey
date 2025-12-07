@@ -6,9 +6,9 @@
 
 use async_trait::async_trait;
 use futures::stream::{self, Stream};
-use langchain_rust::language_models::llm::LLM;
 use langchain_rust::language_models::GenerateResult;
 use langchain_rust::language_models::LLMError;
+use langchain_rust::language_models::llm::LLM;
 use langchain_rust::schemas::{Message, StreamData};
 use serde_json::Value;
 use std::pin::Pin;
@@ -40,4 +40,3 @@ impl LLM for MockLLM {
 		Ok(Box::pin(stream))
 	}
 }
-

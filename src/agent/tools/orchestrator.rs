@@ -40,7 +40,7 @@ use tracing::{debug, info};
 
 /// Helper function to automatically track tool executions in context.
 /// This is called by every tool to record its execution in the tool_history.
-/// 
+///
 /// Marked pub(crate) so it can be reused by Task tools without exposing it outside
 /// the agent tools module.
 pub(crate) async fn track_tool_execution(
@@ -63,21 +63,24 @@ pub(crate) async fn track_tool_execution(
 		None => {
 			// Context doesn't exist - this shouldn't happen in normal flow
 			// but create it to be safe
-			store_guard.insert(chat_id, ContextData {
-				chat_session_id: chat_id,
-				user_id: 0, // Unknown
-				user_profile: None,
-				chat_history: vec![],
-				trip_context: crate::agent::models::context::TripContext::default(),
-				active_itinerary: None,
-				events: vec![],
-				tool_history: vec![],
-				pipeline_stage: None,
-				researched_events: vec![],
-				constrained_events: vec![],
-				optimized_events: vec![],
-				constraints: vec![],
-			});
+			store_guard.insert(
+				chat_id,
+				ContextData {
+					chat_session_id: chat_id,
+					user_id: 0, // Unknown
+					user_profile: None,
+					chat_history: vec![],
+					trip_context: crate::agent::models::context::TripContext::default(),
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+					constraints: vec![],
+				},
+			);
 			store_guard.get_mut(&chat_id).unwrap()
 		}
 	};
@@ -90,9 +93,9 @@ pub(crate) async fn track_tool_execution(
 		timestamp: chrono::Utc::now().to_rfc3339(),
 		success: true, // Assume success if the tool is calling this function
 	};
-	
+
 	context_data.tool_history.push(tool_exec);
-	
+
 	// Keep only last 100 entries
 	if context_data.tool_history.len() > 100 {
 		context_data.tool_history.remove(0);
@@ -183,31 +186,30 @@ impl Tool for RouteTaskTool {
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
 		let input_clone = input.clone(); // Clone for tracking
-		
+
 		debug!(
 			target: "orchestrator_tool",
 			tool = "route_task",
 			input_raw = %serde_json::to_string(&input).unwrap_or_else(|_| "failed to serialize".to_string()),
 			"Received input in route_task"
 		);
-		
+
 		// langchain_rust passes action_input as a STRING, so parse it first if needed
 		let parsed_input: Value = if input.is_string() {
 			// If input is a string (JSON string from action_input), parse it
-			serde_json::from_str(input.as_str().unwrap_or("{}"))
-				.unwrap_or_else(|_| {
-					debug!(
-						target: "orchestrator_tool",
-						tool = "route_task",
-						"Failed to parse input as JSON, using as-is"
-					);
-					input.clone()
-				})
+			serde_json::from_str(input.as_str().unwrap_or("{}")).unwrap_or_else(|_| {
+				debug!(
+					target: "orchestrator_tool",
+					tool = "route_task",
+					"Failed to parse input as JSON, using as-is"
+				);
+				input.clone()
+			})
 		} else {
 			// If it's already a Value object, use it directly
 			input
 		};
-		
+
 		// Handle task_type - prefer simple string, but be defensive about weird shapes
 		//
 		// In theory the LLM should always pass a plain string (\"task\", \"research\", etc.)
@@ -236,7 +238,7 @@ impl Tool for RouteTaskTool {
 		} else {
 			raw_task_type_value.to_string()
 		};
-		
+
 		debug!(
 			target: "orchestrator_tool",
 			tool = "route_task",
@@ -244,7 +246,7 @@ impl Tool for RouteTaskTool {
 			parsed_task_type = %task_type,
 			"Parsed task_type from input"
 		);
-		
+
 		// Handle payload - can be string (JSON), object, or already a string
 		let payload_str = if let Some(s) = parsed_input["payload"].as_str() {
 			// If it's a string, check if it's valid JSON, otherwise use as-is
@@ -357,7 +359,7 @@ impl Tool for RouteTaskTool {
 				crate::tool_trace!(agent: "research", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "research", "Invoking research agent");
 				debug!(target: "orchestrator_pipeline", agent = "research", payload = %payload_str, "Agent input");
-				
+
 				let agent_outer = self.research_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -370,11 +372,11 @@ impl Tool for RouteTaskTool {
 						// Parse response as JSON Value if possible
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
-						
+
 						crate::tool_trace!(agent: "research", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "research", status = "completed", "Research agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "research", response = %serde_json::to_string(&data)?, "Agent output");
-						
+
 						json!({
 							"agent": "research",
 							"status": "completed",
@@ -389,14 +391,14 @@ impl Tool for RouteTaskTool {
 							"status": "error",
 							"error": format!("{}", e)
 						})
-					},
+					}
 				}
 			}
 			"constraint" => {
 				crate::tool_trace!(agent: "constraint", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "constraint", "Invoking constraint agent");
 				debug!(target: "orchestrator_pipeline", agent = "constraint", payload = %payload_str, "Agent input");
-				
+
 				let agent_outer = self.constraint_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -408,11 +410,11 @@ impl Tool for RouteTaskTool {
 					Ok(response) => {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
-						
+
 						crate::tool_trace!(agent: "constraint", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "constraint", status = "completed", "Constraint agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "constraint", response = %serde_json::to_string(&data)?, "Agent output");
-						
+
 						json!({
 							"agent": "constraint",
 							"status": "completed",
@@ -427,14 +429,14 @@ impl Tool for RouteTaskTool {
 							"status": "error",
 							"error": format!("{}", e)
 						})
-					},
+					}
 				}
 			}
 			"optimize" => {
 				crate::tool_trace!(agent: "optimize", tool: "begin", status: "invoked");
 				info!(target: "orchestrator_pipeline", agent = "optimize", "Invoking optimize agent");
 				debug!(target: "orchestrator_pipeline", agent = "optimize", payload = %payload_str, "Agent input");
-				
+
 				let agent_outer = self.optimize_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
 				match agent_inner
@@ -446,11 +448,11 @@ impl Tool for RouteTaskTool {
 					Ok(response) => {
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
-						
+
 						crate::tool_trace!(agent: "optimize", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "optimize", status = "completed", "Optimize agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "optimize", response = %serde_json::to_string(&data)?, "Agent output");
-						
+
 						json!({
 							"agent": "optimize",
 							"status": "completed",
@@ -465,7 +467,7 @@ impl Tool for RouteTaskTool {
 							"status": "error",
 							"error": format!("{}", e)
 						})
-					},
+					}
 				}
 			}
 			_ => {
@@ -474,7 +476,7 @@ impl Tool for RouteTaskTool {
 		};
 
 		let result_str = serde_json::to_string(&result)?;
-		
+
 		info!(
 			target: "orchestrator_tool",
 			tool = "route_task",
@@ -488,7 +490,7 @@ impl Tool for RouteTaskTool {
 			result = %result_str,
 			"Tool output"
 		);
-		
+
 		// Track this tool execution
 		track_tool_execution(
 			&self.context_store,
@@ -498,7 +500,7 @@ impl Tool for RouteTaskTool {
 			&result_str,
 		)
 		.await?;
-		
+
 		Ok(result_str)
 	}
 }
