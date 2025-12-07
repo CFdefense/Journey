@@ -488,7 +488,7 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
-    
+
     setIsAiResponding(false);
 
     // scroll to bottom

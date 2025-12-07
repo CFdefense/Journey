@@ -16,7 +16,9 @@ export default function UserMessageActions({
     <button
       className="chat-edit-button"
       onClick={() => onEdit(messageId)}
-      title={isAiResponding ? "Cannot edit while AI is responding" : "Edit message"}
+      title={
+        isAiResponding ? "Cannot edit while AI is responding" : "Edit message"
+      }
       disabled={isAiResponding}
     >
       <svg

@@ -161,7 +161,11 @@ export default function ChatMessage({
         <div className="timestamp-and-actions">
           <span className="timestamp">{formattedTimestamp}</span>
           {message.is_user && !isEditing && (
-            <UserMessageActions messageId={message.id} onEdit={handleEdit} isAiResponding={isAiResponding} />
+            <UserMessageActions
+              messageId={message.id}
+              onEdit={handleEdit}
+              isAiResponding={isAiResponding}
+            />
           )}
         </div>
       </div>

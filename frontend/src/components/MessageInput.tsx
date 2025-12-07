@@ -5,7 +5,10 @@ interface MessageInputProps {
   isAiResponding?: boolean;
 }
 
-export default function MessageInput({ onSend, isAiResponding = false}: MessageInputProps) {
+export default function MessageInput({
+  onSend,
+  isAiResponding = false
+}: MessageInputProps) {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -34,7 +37,11 @@ export default function MessageInput({ onSend, isAiResponding = false}: MessageI
         autoFocus
         disabled={isAiResponding}
       />
-      <button type="submit" className="chat-empty-submit" disabled={isAiResponding}>
+      <button
+        type="submit"
+        className="chat-empty-submit"
+        disabled={isAiResponding}
+      >
         <svg
           width="24"
           height="24"

@@ -433,7 +433,11 @@ export default function ChatWindow({
               className="chat-empty-input"
               autoFocus
             />
-            <button type="submit" className="chat-empty-submit" disabled={isAiResponding}>
+            <button
+              type="submit"
+              className="chat-empty-submit"
+              disabled={isAiResponding}
+            >
               <svg
                 width="24"
                 height="24"

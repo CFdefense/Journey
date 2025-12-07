@@ -372,13 +372,15 @@
   transform: translateY(-2px);
 }
 
-.chat-container:not(.chat-container-empty) .chat-empty-search:not(:disabled):focus-within {
+.chat-container:not(.chat-container-empty)
+  .chat-empty-search:not(:disabled):focus-within {
   border-color: #d87f75;
   box-shadow: 0 4px 20px rgba(216, 127, 117, 0.25);
   transform: translateX(-50%) translateY(-2px);
 }
 
-.chat-container:not(.chat-container-empty) .chat-empty-search:has(input:disabled) {
+.chat-container:not(.chat-container-empty)
+  .chat-empty-search:has(input:disabled) {
   transform: translateX(-50%) !important;
 }
 
