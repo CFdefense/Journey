@@ -427,8 +427,10 @@ impl Tool for OptimizeItineraryTool {
 
 		// Build schedule summary and a type map we can use for diversity enforcement.
 		use std::collections::HashMap;
-		let name_by_id: HashMap<i32, String> =
-			events.iter().map(|e| (e.id, e.event_name.clone())).collect();
+		let name_by_id: HashMap<i32, String> = events
+			.iter()
+			.map(|e| (e.id, e.event_name.clone()))
+			.collect();
 
 		let mut type_by_id: HashMap<i32, String> = HashMap::new();
 		for e in events.iter() {
@@ -462,12 +464,9 @@ impl Tool for OptimizeItineraryTool {
 					.map(|arr| {
 						arr.iter()
 							.filter_map(|e| {
-								if let Some(name) =
-									e.get("event_name").and_then(|n| n.as_str())
-								{
+								if let Some(name) = e.get("event_name").and_then(|n| n.as_str()) {
 									Some(name.to_string())
-								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
-								{
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64()) {
 									name_by_id.get(&(id as i32)).cloned()
 								} else {
 									None
@@ -484,12 +483,9 @@ impl Tool for OptimizeItineraryTool {
 					.map(|arr| {
 						arr.iter()
 							.filter_map(|e| {
-								if let Some(name) =
-									e.get("event_name").and_then(|n| n.as_str())
-								{
+								if let Some(name) = e.get("event_name").and_then(|n| n.as_str()) {
 									Some(name.to_string())
-								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
-								{
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64()) {
 									name_by_id.get(&(id as i32)).cloned()
 								} else {
 									None
@@ -506,12 +502,9 @@ impl Tool for OptimizeItineraryTool {
 					.map(|arr| {
 						arr.iter()
 							.filter_map(|e| {
-								if let Some(name) =
-									e.get("event_name").and_then(|n| n.as_str())
-								{
+								if let Some(name) = e.get("event_name").and_then(|n| n.as_str()) {
 									Some(name.to_string())
-								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
-								{
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64()) {
 									name_by_id.get(&(id as i32)).cloned()
 								} else {
 									None
@@ -762,7 +755,10 @@ impl Tool for OptimizeItineraryTool {
 		//       to persist and hydrate them).
 		let allowed_ids: std::collections::HashSet<i32> = event_ids.iter().cloned().collect();
 
-		if let Some(days) = itinerary.get_mut("event_days").and_then(|v| v.as_array_mut()) {
+		if let Some(days) = itinerary
+			.get_mut("event_days")
+			.and_then(|v| v.as_array_mut())
+		{
 			for day in days.iter_mut() {
 				for block in &["morning_events", "afternoon_events", "evening_events"] {
 					if let Some(events_arr) = day.get_mut(*block).and_then(|v| v.as_array_mut()) {

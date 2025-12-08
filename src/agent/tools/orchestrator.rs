@@ -534,9 +534,7 @@ impl Tool for RouteTaskTool {
 								if let Some(bracket_end) = after_bracket.find(']') {
 									let ids_segment = &after_bracket[..bracket_end];
 									let ids: Vec<Value> = ids_segment
-										.split(|c: char| {
-											c == ',' || c.is_whitespace()
-										})
+										.split(|c: char| c == ',' || c.is_whitespace())
 										.filter_map(|s| s.trim().parse::<i64>().ok())
 										.map(|n| json!(n as i32))
 										.collect();
@@ -593,9 +591,7 @@ impl Tool for RouteTaskTool {
 									parsed_outer.get("action_input").and_then(|v| v.as_str())
 								{
 									// Case 3: inner JSON string living in action_input
-									if let Ok(inner) =
-										serde_json::from_str::<Value>(action_input)
-									{
+									if let Ok(inner) = serde_json::from_str::<Value>(action_input) {
 										inner
 											.get("filtered_event_ids")
 											.cloned()
