@@ -583,6 +583,69 @@
         ]
       }
     },
+    "/api/chat/progress": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get status of LLM pipeline",
+        "description": "Fetches the progress of the llm pipeline for this chat session.",
+        "operationId": "api_progress",
+        "requestBody": {
+          "description": "Chat session ID must belong to the user who sent the request. New Title must not be empty string.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressRequest"
+              },
+              "example": {
+                "chat_session_id": 4
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The status of the LLM pipeline for the quested chat session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResponse"
+                },
+                "example": {
+                  "progress": "Ready",
+                  "title": "Possibly Updated Chat Title"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "User has an invalid cookie/no cookie"
+          },
+          "404": {
+            "description": "Chat session not found for this user"
+          },
+          "405": {
+            "description": "Method Not Allowed - Must be POST"
+          },
+          "408": {
+            "description": "Request Timed Out"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "set-cookie": []
+          }
+        ]
+      }
+    },
     "/api/chat/rename": {
       "post": {
         "tags": [
@@ -1683,6 +1746,16 @@
           }
         }
       },
+      "LlmProgress": {
+        "type": "string",
+        "description": "The status of the LLM pipeline",
+        "enum": [
+          "Ready",
+          "Searching",
+          "Scheduling",
+          "Optimizing"
+        ]
+      },
       "LoginRequest": {
         "type": "object",
         "description": "Request payload for POST `/api/account/login`.",
@@ -1865,6 +1938,35 @@
               "boolean",
               "null"
             ]
+          }
+        }
+      },
+      "ProgressRequest": {
+        "type": "object",
+        "description": "Request model for the `/api/chat/progress` endpoint",
+        "required": [
+          "chat_session_id"
+        ],
+        "properties": {
+          "chat_session_id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProgressResponse": {
+        "type": "object",
+        "description": "Response model from the `/api/chat/progress` endpoint",
+        "required": [
+          "progress",
+          "title"
+        ],
+        "properties": {
+          "progress": {
+            "$ref": "#/components/schemas/LlmProgress"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },

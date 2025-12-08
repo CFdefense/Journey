@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS messages CASCADE;
 DROP TYPE IF EXISTS risk_tolerence CASCADE;
 DROP TYPE IF EXISTS budget_bucket CASCADE;
 DROP TYPE IF EXISTS time_of_day CASCADE;
+DROP TYPE IF EXISTS llm_progress CASCADE;
 DROP TYPE IF EXISTS event_period CASCADE;
 
 CREATE EXTENSION IF NOT EXISTS vector; -- Use PGVECTOR (kept for future use)
@@ -35,6 +36,13 @@ CREATE TYPE time_of_day AS ENUM (
     'Morning',
     'Afternoon',
     'Evening'
+);
+
+CREATE TYPE llm_progress AS ENUM (
+    'Ready',
+    'Searching',
+    'Scheduling',
+    'Optimizing'
 );
 
 CREATE TYPE event_period AS (
@@ -116,7 +124,8 @@ CREATE TABLE chat_sessions (
 	id SERIAL PRIMARY KEY,
 	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
 	title VARCHAR(255) NOT NULL,
-	context JSONB DEFAULT '{"tool_history": []}'::jsonb
+	context JSONB DEFAULT '{"tool_history": []}'::jsonb,
+	llm_progress llm_progress NOT NULL DEFAULT 'Ready'
 );
 
 -- Itineraries table
