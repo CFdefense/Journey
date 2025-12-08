@@ -41,6 +41,7 @@ CREATE TYPE time_of_day AS ENUM (
 CREATE TYPE llm_progress AS ENUM (
     'Ready',
     'Searching',
+    'Filtering',
     'Scheduling',
     'Optimizing'
 );

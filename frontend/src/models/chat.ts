@@ -86,6 +86,7 @@ export type ProgressResponse = {
 export enum LlmProgress {
 	Ready,
 	Searching,
+	Filtering,
 	Scheduling,
 	Optimizing,
 }

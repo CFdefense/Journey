@@ -26,6 +26,7 @@
 
 use crate::agent::models::context::{ContextData, SharedContextStore, ToolExecution};
 use crate::agent::tools::task::RespondToUserTool;
+use crate::sql_models::LlmProgress;
 use async_trait::async_trait;
 use langchain_rust::chain::Chain;
 use langchain_rust::language_models::llm::LLM;
@@ -438,6 +439,23 @@ impl Tool for RouteTaskTool {
 		} else {
 			payload_str
 		};
+
+		if let Some(progress) = match task_type_normalized.as_str() {
+			"research" => Some(LlmProgress::Searching),
+			"constraint" => Some(LlmProgress::Filtering),
+			"optimize" => Some(LlmProgress::Optimizing),
+			_ => None,
+		} {
+			_ = sqlx::query!(
+				r#"UPDATE chat_sessions
+				SET llm_progress=$1
+				WHERE id=$2;"#,
+				progress as _,
+				self.chat_session_id.load(Ordering::Relaxed)
+			)
+			.execute(&self.pool)
+			.await;
+		}
 
 		let result = match task_type_normalized.as_str() {
 			"research" => {

@@ -50,6 +50,7 @@ pub enum TimeOfDay {
 pub enum LlmProgress {
 	Ready,
 	Searching,
+	Filtering,
 	Scheduling,
 	Optimizing,
 }

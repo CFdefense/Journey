@@ -497,6 +497,16 @@ async fn send_message_to_llm(
 
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
 
+	let pool = pool.clone();
+	tokio::spawn(async move {_ = sqlx::query!(
+		r#"UPDATE chat_sessions
+		SET llm_progress=$1
+		WHERE id=$2 AND account_id=$3;"#,
+		LlmProgress::Ready as _,
+		chat_session_id,
+		account_id,
+	).execute(&pool).await;});
+
 	Ok(Message {
 		id: bot_message_id,
 		is_user: false,
