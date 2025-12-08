@@ -13,13 +13,18 @@ and using the Google Maps Nearby Search API to gather POI data.
 
 2. **Nearby Search**
    - Use coordinates and an optional include and/or exclude list of place types
-   - Fetch events via Google Maps Nearby Search API and collect events into an array
+   - Fetch events via Google Maps Nearby Search API
    - Insert new events into the database
    - Update existing events with new data if the database is outdated
+   - The tool returns event IDs and a count of events found
 
 ## Output Requirements
 
-Your final output must be an **array of events**
+Your final output must be the **event IDs** returned by the nearby_search_tool wrapped in a JSON object containing:
+- `event_ids`: An array of integer event IDs
+- `count`: The total number of events found
+
+The events are already saved in the database, so you only need to return their IDs to keep the context clean.
 
 ## Place Types (Table A)
 **Automotive**

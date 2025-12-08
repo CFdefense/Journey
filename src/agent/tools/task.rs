@@ -26,6 +26,7 @@ use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::time::Instant;
 use tracing::{debug, info};
 
 /// Tool 1: Parse User Intent
@@ -87,6 +88,7 @@ impl Tool for ParseUserIntentTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "parse_user_intent", status: "start");
@@ -185,6 +187,14 @@ Return ONLY the JSON object, no other text."#,
 		// Return serialized UserIntent
 		let result = serde_json::to_string(&intent)?;
 
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "parse_user_intent",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
+
 		// Track this tool execution
 		track_tool_execution(
 			&self.context_store,
@@ -242,6 +252,7 @@ impl Tool for RetrieveChatContextTool {
 	}
 
 	async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = _input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "retrieve_chat_context", status: "start");
@@ -363,6 +374,15 @@ impl Tool for RetrieveChatContextTool {
 		// Return full context including pipeline state
 		drop(store_guard);
 
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_chat_context",
+			elapsed_ms = elapsed.as_millis() as u64,
+			chat_history_count = chat_history.len(),
+			"Tool completed"
+		);
+
 		// Track this tool execution
 		track_tool_execution(
 			&self.context_store,
@@ -424,6 +444,7 @@ impl Tool for RetrieveUserProfileTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "retrieve_user_profile", status: "start");
@@ -479,6 +500,15 @@ impl Tool for RetrieveUserProfileTool {
 			}
 
 			let result = serde_json::to_string(&empty_profile)?;
+
+			let elapsed = start_time.elapsed();
+			info!(
+				target: "orchestrator_tool",
+				tool = "retrieve_user_profile",
+				elapsed_ms = elapsed.as_millis() as u64,
+				"Tool completed (no user logged in)"
+			);
+
 			track_tool_execution(
 				&self.context_store,
 				&self.chat_session_id,
@@ -588,6 +618,15 @@ impl Tool for RetrieveUserProfileTool {
 
 		let result = serde_json::to_string(&profile)?;
 
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_user_profile",
+			elapsed_ms = elapsed.as_millis() as u64,
+			user_id = user_id,
+			"Tool completed"
+		);
+
 		// Track this tool execution
 		track_tool_execution(
 			&self.context_store,
@@ -665,6 +704,7 @@ impl Tool for AskForClarificationTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "task", tool: "ask_for_clarification", status: "start");
@@ -782,6 +822,24 @@ impl Tool for AskForClarificationTool {
 		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
 		if chat_id == 0 {
 			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+
+		// ANTI-LOOP PROTECTION: Check if we've already asked for clarification
+		// If asked_clarification flag is already true in trip context, we should NOT ask again
+		{
+			let store_guard = self.context_store.read().await;
+			if let Some(context_data) = store_guard.get(&chat_id) {
+				if context_data.trip_context.asked_clarification {
+					info!(
+						target: "orchestrator_tool",
+						tool = "ask_for_clarification",
+						chat_id = chat_id,
+						"Already asked for clarification before - returning ready signal to prevent loop"
+					);
+					// Return a signal that tells the agent we're ready to proceed
+					return Ok("Ready for research pipeline.".to_string());
+				}
+			}
 		}
 
 		// Get chat history to extract known information
@@ -972,10 +1030,18 @@ Return ONLY the message text, nothing else."#,
 			}
 		}
 
-		// Return a format that makes it absolutely clear this is the final answer
+		// Return the clarification text directly.
 		// The message is already inserted in the database with the ID in record.id
-		// Return format that forces agent to stop and use as Final Answer
-		let result = format!("FINAL_ANSWER: {}", clarification);
+		// The agent prompt instructs to use this as Final Answer immediately.
+		let result = clarification.clone();
+
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed - pipeline stopped"
+		);
 
 		// Track this tool execution
 		track_tool_execution(
@@ -1040,6 +1106,7 @@ impl Tool for RespondToUserTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone(); // Clone for tracking
 
 		crate::tool_trace!(agent: "orchestrator", tool: "respond_to_user", status: "start");
@@ -1183,6 +1250,14 @@ impl Tool for RespondToUserTool {
 		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
 		let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
 
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "respond_to_user",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
+
 		// Track this tool execution
 		track_tool_execution(
 			&self.context_store,
@@ -1241,6 +1316,7 @@ impl Tool for UpdateTripContextTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone();
 
 		crate::tool_trace!(agent: "task", tool: "update_trip_context", status: "start");
@@ -1474,9 +1550,11 @@ Return valid JSON only."#,
 
 		let result_str = serde_json::to_string(&result)?;
 
+		let elapsed = start_time.elapsed();
 		info!(
 			target: "orchestrator_tool",
 			tool = "update_trip_context",
+			elapsed_ms = elapsed.as_millis() as u64,
 			chat_id = chat_id,
 			missing_count = missing.len(),
 			ready = missing.is_empty(),
@@ -1545,6 +1623,7 @@ impl Tool for UpdateChatTitleTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
 		let input_clone = input.clone();
 
 		crate::tool_trace!(agent: "task", tool: "update_chat_title", status: "start");
@@ -1655,6 +1734,14 @@ impl Tool for UpdateChatTitleTool {
 			"updated": true,
 			"new_title": new_title
 		});
+
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "update_chat_title",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
 
 		track_tool_execution(
 			&self.context_store,
