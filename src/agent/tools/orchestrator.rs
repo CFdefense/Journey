@@ -489,13 +489,17 @@ impl Tool for RouteTaskTool {
 					// Handle multiple possible structures:
 					// 1. Direct: {"filtered_event_ids": [...]}
 					// 2. Wrapped in raw string: {"raw": "{\"filtered_event_ids\":[...]}"}
-					let filtered_ids = if let Some(ids) = constraint_data.get("filtered_event_ids") {
+					let filtered_ids = if let Some(ids) = constraint_data.get("filtered_event_ids")
+					{
 						ids.clone()
 					} else if let Some(raw) = constraint_data.get("raw") {
 						// Parse the raw string
 						if let Some(raw_str) = raw.as_str() {
 							if let Ok(parsed) = serde_json::from_str::<Value>(raw_str) {
-								parsed.get("filtered_event_ids").cloned().unwrap_or(json!([]))
+								parsed
+									.get("filtered_event_ids")
+									.cloned()
+									.unwrap_or(json!([]))
 							} else {
 								json!([])
 							}
@@ -506,7 +510,10 @@ impl Tool for RouteTaskTool {
 						// Parse constraint result if it's a string itself
 						let constraint_str = constraint_data.as_str().unwrap_or("{}");
 						if let Ok(parsed) = serde_json::from_str::<Value>(constraint_str) {
-							parsed.get("filtered_event_ids").cloned().unwrap_or(json!([]))
+							parsed
+								.get("filtered_event_ids")
+								.cloned()
+								.unwrap_or(json!([]))
 						} else {
 							json!([])
 						}

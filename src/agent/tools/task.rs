@@ -1181,53 +1181,56 @@ impl Tool for RespondToUserTool {
 				})
 				.unwrap_or(false);
 
-	let (message_text, message_id) = if has_itinerary {
-		// Parse and save the itinerary to database
-		let itinerary_json = context_data.active_itinerary.clone().unwrap();
-		
-		// Get user_id from chat_session
-		let user_id = sqlx::query!(
-			r#"
+		let (message_text, message_id) = if has_itinerary {
+			// Parse and save the itinerary to database
+			let itinerary_json = context_data.active_itinerary.clone().unwrap();
+
+			// Get user_id from chat_session
+			let user_id = sqlx::query!(
+				r#"
 			SELECT cs.account_id
 			FROM chat_sessions cs
 			WHERE cs.id = $1
 			"#,
-			chat_id
-		)
-		.fetch_one(&self.pool)
-		.await
-		.map_err(|e| format!("Failed to get user_id from chat_session: {}", e))?
-		.account_id;
+				chat_id
+			)
+			.fetch_one(&self.pool)
+			.await
+			.map_err(|e| format!("Failed to get user_id from chat_session: {}", e))?
+			.account_id;
 
-		// Extract event IDs from the LLM-generated itinerary
-		let mut all_event_ids = Vec::new();
-		if let Some(event_days) = itinerary_json.get("event_days").and_then(|v| v.as_array()) {
-			for day in event_days {
-				for time_block in &["morning_events", "afternoon_events", "evening_events"] {
-					if let Some(events) = day.get(time_block).and_then(|v| v.as_array()) {
-						for event in events {
-							if let Some(id) = event.get("id").and_then(|v| v.as_i64()) {
-								all_event_ids.push(id as i32);
+			// Extract event IDs from the LLM-generated itinerary
+			let mut all_event_ids = Vec::new();
+			if let Some(event_days) = itinerary_json.get("event_days").and_then(|v| v.as_array()) {
+				for day in event_days {
+					for time_block in &["morning_events", "afternoon_events", "evening_events"] {
+						if let Some(events) = day.get(time_block).and_then(|v| v.as_array()) {
+							for event in events {
+								if let Some(id) = event.get("id").and_then(|v| v.as_i64()) {
+									all_event_ids.push(id as i32);
+								}
 							}
 						}
 					}
 				}
 			}
-		}
-		if let Some(unassigned) = itinerary_json.get("unassigned_events").and_then(|v| v.as_array()) {
-			for event in unassigned {
-				if let Some(id) = event.get("id").and_then(|v| v.as_i64()) {
-					all_event_ids.push(id as i32);
+			if let Some(unassigned) = itinerary_json
+				.get("unassigned_events")
+				.and_then(|v| v.as_array())
+			{
+				for event in unassigned {
+					if let Some(id) = event.get("id").and_then(|v| v.as_i64()) {
+						all_event_ids.push(id as i32);
+					}
 				}
 			}
-		}
 
-		// Fetch full event objects from database
-		use crate::http_models::event::Event as HttpEvent;
-		let full_events = if !all_event_ids.is_empty() {
-			sqlx::query_as!(
-				HttpEvent,
-				r#"
+			// Fetch full event objects from database
+			use crate::http_models::event::Event as HttpEvent;
+			let full_events = if !all_event_ids.is_empty() {
+				sqlx::query_as!(
+					HttpEvent,
+					r#"
 				SELECT 
 					id, event_name, event_description, street_address, city, country, postal_code,
 					lat, lng, event_type, user_created, hard_start, hard_end, timezone, place_id,
@@ -1243,81 +1246,104 @@ impl Tool for RespondToUserTool {
 				FROM events
 				WHERE id = ANY($1)
 				"#,
-				&all_event_ids
-			)
-			.fetch_all(&self.pool)
-			.await
-			.map_err(|e| format!("Failed to fetch full events: {}", e))?
-		} else {
-			Vec::new()
-		};
-
-		// Create a map of event ID -> full event for quick lookup
-		let event_map: std::collections::HashMap<i32, HttpEvent> = full_events
-			.into_iter()
-			.map(|e| (e.id, e))
-			.collect();
-
-		// Helper function to hydrate events with full data from database
-		let hydrate_events = |partial_events: &Value| -> Vec<HttpEvent> {
-			if let Some(events_arr) = partial_events.as_array() {
-				events_arr
-					.iter()
-					.filter_map(|e| {
-						e.get("id")
-							.and_then(|v| v.as_i64())
-							.and_then(|id| event_map.get(&(id as i32)).cloned())
-					})
-					.collect()
+					&all_event_ids
+				)
+				.fetch_all(&self.pool)
+				.await
+				.map_err(|e| format!("Failed to fetch full events: {}", e))?
 			} else {
 				Vec::new()
+			};
+
+			// Create a map of event ID -> full event for quick lookup
+			let event_map: std::collections::HashMap<i32, HttpEvent> =
+				full_events.into_iter().map(|e| (e.id, e)).collect();
+
+			// Helper function to hydrate events with full data from database
+			let hydrate_events = |partial_events: &Value| -> Vec<HttpEvent> {
+				if let Some(events_arr) = partial_events.as_array() {
+					events_arr
+						.iter()
+						.filter_map(|e| {
+							e.get("id")
+								.and_then(|v| v.as_i64())
+								.and_then(|id| event_map.get(&(id as i32)).cloned())
+						})
+						.collect()
+				} else {
+					Vec::new()
+				}
+			};
+
+			// Parse itinerary structure (dates, title, days)
+			use crate::http_models::itinerary::EventDay as HttpEventDay;
+			let mut event_days = Vec::new();
+			if let Some(days) = itinerary_json.get("event_days").and_then(|v| v.as_array()) {
+				for day in days {
+					let date_str = day
+						.get("date")
+						.and_then(|v| v.as_str())
+						.unwrap_or("2025-01-01");
+					let date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+						.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
+
+					event_days.push(HttpEventDay {
+						morning_events: hydrate_events(
+							&day.get("morning_events").cloned().unwrap_or(json!([])),
+						),
+						afternoon_events: hydrate_events(
+							&day.get("afternoon_events").cloned().unwrap_or(json!([])),
+						),
+						evening_events: hydrate_events(
+							&day.get("evening_events").cloned().unwrap_or(json!([])),
+						),
+						date,
+					});
+				}
 			}
-		};
 
-		// Parse itinerary structure (dates, title, days)
-		use crate::http_models::itinerary::EventDay as HttpEventDay;
-		let mut event_days = Vec::new();
-		if let Some(days) = itinerary_json.get("event_days").and_then(|v| v.as_array()) {
-			for day in days {
-				let date_str = day.get("date").and_then(|v| v.as_str()).unwrap_or("2025-01-01");
-				let date = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-					.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
+			let unassigned_events = hydrate_events(
+				&itinerary_json
+					.get("unassigned_events")
+					.cloned()
+					.unwrap_or(json!([])),
+			);
 
-				event_days.push(HttpEventDay {
-					morning_events: hydrate_events(&day.get("morning_events").cloned().unwrap_or(json!([]))),
-					afternoon_events: hydrate_events(&day.get("afternoon_events").cloned().unwrap_or(json!([]))),
-					evening_events: hydrate_events(&day.get("evening_events").cloned().unwrap_or(json!([]))),
-					date,
-				});
-			}
-		}
+			// Create HttpItinerary with hydrated events
+			let start_date_str = itinerary_json
+				.get("start_date")
+				.and_then(|v| v.as_str())
+				.unwrap_or("2025-01-01");
+			let end_date_str = itinerary_json
+				.get("end_date")
+				.and_then(|v| v.as_str())
+				.unwrap_or("2025-01-01");
+			let start_date = chrono::NaiveDate::parse_from_str(start_date_str, "%Y-%m-%d")
+				.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
+			let end_date = chrono::NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d")
+				.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
+			let title = itinerary_json
+				.get("title")
+				.and_then(|v| v.as_str())
+				.unwrap_or("Trip Itinerary")
+				.to_string();
 
-		let unassigned_events = hydrate_events(&itinerary_json.get("unassigned_events").cloned().unwrap_or(json!([])));
+			let mut itinerary = HttpItinerary {
+				id: 0, // Temporary, will be set after insert
+				start_date,
+				end_date,
+				event_days,
+				chat_session_id: Some(chat_id),
+				title,
+				unassigned_events,
+			};
 
-		// Create HttpItinerary with hydrated events
-		let start_date_str = itinerary_json.get("start_date").and_then(|v| v.as_str()).unwrap_or("2025-01-01");
-		let end_date_str = itinerary_json.get("end_date").and_then(|v| v.as_str()).unwrap_or("2025-01-01");
-		let start_date = chrono::NaiveDate::parse_from_str(start_date_str, "%Y-%m-%d")
-			.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
-		let end_date = chrono::NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d")
-			.unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
-		let title = itinerary_json.get("title").and_then(|v| v.as_str()).unwrap_or("Trip Itinerary").to_string();
+			// Extract unassigned event IDs
+			let unassigned_event_ids: Vec<i32> =
+				itinerary.unassigned_events.iter().map(|e| e.id).collect();
 
-		let mut itinerary = HttpItinerary {
-			id: 0, // Temporary, will be set after insert
-			start_date,
-			end_date,
-			event_days,
-			chat_session_id: Some(chat_id),
-			title,
-			unassigned_events,
-		};
-
-		// Extract unassigned event IDs
-		let unassigned_event_ids: Vec<i32> = itinerary.unassigned_events.iter().map(|e| e.id).collect();
-
-		// Insert itinerary into database
-		let itinerary_id = sqlx::query!(
+			// Insert itinerary into database
+			let itinerary_id = sqlx::query!(
 			r#"
 			INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title, unassigned_event_ids)
 			VALUES ($1, FALSE, $2, $3, $4, FALSE, $5, $6)
@@ -1335,67 +1361,67 @@ impl Tool for RespondToUserTool {
 		.map_err(|e| format!("Failed to insert itinerary: {}", e))?
 		.id;
 
-		info!(
-			target: "orchestrator_tool",
-			tool = "respond_to_user",
-			chat_id = chat_id,
-			itinerary_id = itinerary_id,
-			"Created itinerary in database"
-		);
+			info!(
+				target: "orchestrator_tool",
+				tool = "respond_to_user",
+				chat_id = chat_id,
+				itinerary_id = itinerary_id,
+				"Created itinerary in database"
+			);
 
-		// Update itinerary ID for insert_event_list
-		itinerary.id = itinerary_id;
+			// Update itinerary ID for insert_event_list
+			itinerary.id = itinerary_id;
 
-		// Capture the number of days before moving itinerary
-		let num_days = itinerary.event_days.len();
+			// Capture the number of days before moving itinerary
+			let num_days = itinerary.event_days.len();
 
-		// Insert all events into event_list table
-		insert_event_list(itinerary, &self.pool)
-			.await
-			.map_err(|e| format!("Failed to insert event list: {}", e))?;
+			// Insert all events into event_list table
+			insert_event_list(itinerary, &self.pool)
+				.await
+				.map_err(|e| format!("Failed to insert event list: {}", e))?;
 
-		info!(
-			target: "orchestrator_tool",
-			tool = "respond_to_user",
-			itinerary_id = itinerary_id,
-			"Inserted event list for itinerary"
-		);
+			info!(
+				target: "orchestrator_tool",
+				tool = "respond_to_user",
+				itinerary_id = itinerary_id,
+				"Inserted event list for itinerary"
+			);
 
-		// Create user-friendly message
-		let default_message = format!(
-			"I've created your travel itinerary! It includes {} days with events scheduled throughout. You can view and edit it in your saved itineraries.",
-			num_days
-		);
-		let message = optional_message
-			.map(|s| s.to_string())
-			.unwrap_or(default_message);
+			// Create user-friendly message
+			let default_message = format!(
+				"I've created your travel itinerary! It includes {} days with events scheduled throughout. You can view and edit it in your saved itineraries.",
+				num_days
+			);
+			let message = optional_message
+				.map(|s| s.to_string())
+				.unwrap_or(default_message);
 
-		// Insert message with itinerary_id
-		let record = sqlx::query!(
-			r#"
+			// Insert message with itinerary_id
+			let record = sqlx::query!(
+				r#"
 			INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
 			VALUES ($1, $2, FALSE, NOW(), $3)
 			RETURNING id;
 			"#,
-			chat_id,
-			itinerary_id,
-			message
-		)
-		.fetch_one(&self.pool)
-		.await
-		.map_err(|e| format!("Database error: {}", e))?;
+				chat_id,
+				itinerary_id,
+				message
+			)
+			.fetch_one(&self.pool)
+			.await
+			.map_err(|e| format!("Database error: {}", e))?;
 
-		info!(
-			target: "orchestrator_tool",
-			tool = "respond_to_user",
-			chat_id = chat_id,
-			message_id = record.id,
-			itinerary_id = itinerary_id,
-			"Sent itinerary to user"
-		);
+			info!(
+				target: "orchestrator_tool",
+				tool = "respond_to_user",
+				chat_id = chat_id,
+				message_id = record.id,
+				itinerary_id = itinerary_id,
+				"Sent itinerary to user"
+			);
 
-		(message, record.id)
-	} else {
+			(message, record.id)
+		} else {
 			// No itinerary - ask for more information
 			let default_message = "I need more information to create your itinerary. Could you please provide:\n- Your travel destination\n- Travel dates (start and end)\n- Budget\n- Any preferences or constraints you have?";
 			let message = optional_message.unwrap_or(default_message.to_string());

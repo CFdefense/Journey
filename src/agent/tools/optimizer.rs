@@ -17,9 +17,10 @@ use tracing::{debug, info, warn};
 use crate::agent::models::event::Event;
 
 pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<dyn Tool>> {
-	vec![
-		Arc::new(OptimizeItineraryTool::new(llm.clone(), db.clone())),
-	]
+	vec![Arc::new(OptimizeItineraryTool::new(
+		llm.clone(),
+		db.clone(),
+	))]
 }
 
 /// Main tool that orchestrates the full optimization workflow.
@@ -239,13 +240,19 @@ impl Tool for OptimizeItineraryTool {
 		);
 
 		// Extract trip_context and user_profile
-		let mut trip_context_val = parsed_input.get("trip_context").cloned().unwrap_or(Value::Null);
+		let mut trip_context_val = parsed_input
+			.get("trip_context")
+			.cloned()
+			.unwrap_or(Value::Null);
 		if trip_context_val.is_string() {
 			trip_context_val = serde_json::from_str(trip_context_val.as_str().unwrap_or("{}"))
 				.unwrap_or(json!({}));
 		}
 
-		let mut user_profile_val = parsed_input.get("user_profile").cloned().unwrap_or(Value::Null);
+		let mut user_profile_val = parsed_input
+			.get("user_profile")
+			.cloned()
+			.unwrap_or(Value::Null);
 		if user_profile_val.is_string() {
 			user_profile_val = serde_json::from_str(user_profile_val.as_str().unwrap_or("{}"))
 				.unwrap_or(json!({}));
@@ -263,64 +270,66 @@ impl Tool for OptimizeItineraryTool {
 			"user_profile": user_profile_val
 		});
 
-	let rank_tool = RankPOIsByPreferenceTool {
-		llm: self.llm.clone(),
-	};
-	let ranked_result = rank_tool.run(rank_input).await?;
+		let rank_tool = RankPOIsByPreferenceTool {
+			llm: self.llm.clone(),
+		};
+		let ranked_result = rank_tool.run(rank_input).await?;
 
-	// Parse the ranked POIs (should be JSON array with rank fields added)
-	// Try to extract JSON from markdown code blocks if present
-	let cleaned_result = ranked_result
-		.trim()
-		.strip_prefix("```json")
-		.and_then(|s| s.strip_suffix("```"))
-		.or_else(|| ranked_result.trim().strip_prefix("```").and_then(|s| s.strip_suffix("```")))
-		.unwrap_or(ranked_result.trim());
+		// Parse the ranked POIs (should be JSON array with rank fields added)
+		// Try to extract JSON from markdown code blocks if present
+		let cleaned_result = ranked_result
+			.trim()
+			.strip_prefix("```json")
+			.and_then(|s| s.strip_suffix("```"))
+			.or_else(|| {
+				ranked_result
+					.trim()
+					.strip_prefix("```")
+					.and_then(|s| s.strip_suffix("```"))
+			})
+			.unwrap_or(ranked_result.trim());
 
-	let mut ranked_pois: Vec<Value> = serde_json::from_str(cleaned_result)
-		.map_err(|e| {
-			info!(
-				target: "optimize_tools",
-				error = %e,
-				response = %ranked_result,
-				"Failed to parse ranked POIs, adding default ranks"
-			);
-			e
-		})
-		.unwrap_or_else(|_| {
-			// Fallback: use original events and add default ranks
-			events_json.as_array()
-				.cloned()
-				.unwrap_or_default()
-		});
+		let mut ranked_pois: Vec<Value> = serde_json::from_str(cleaned_result)
+			.map_err(|e| {
+				info!(
+					target: "optimize_tools",
+					error = %e,
+					response = %ranked_result,
+					"Failed to parse ranked POIs, adding default ranks"
+				);
+				e
+			})
+			.unwrap_or_else(|_| {
+				// Fallback: use original events and add default ranks
+				events_json.as_array().cloned().unwrap_or_default()
+			});
 
-	// Ensure all POIs have a rank field (add default if missing)
-	for poi in ranked_pois.iter_mut() {
-		if poi.get("rank").is_none() {
-			// Add a high default rank for POIs missing the rank field
-			if let Some(obj) = poi.as_object_mut() {
-				obj.insert("rank".to_string(), json!(999));
+		// Ensure all POIs have a rank field (add default if missing)
+		for poi in ranked_pois.iter_mut() {
+			if poi.get("rank").is_none() {
+				// Add a high default rank for POIs missing the rank field
+				if let Some(obj) = poi.as_object_mut() {
+					obj.insert("rank".to_string(), json!(999));
+				}
 			}
 		}
-	}
 
-	// Sort by rank to ensure best POIs come first
-	ranked_pois.sort_by(|a, b| {
-		let rank_a = a.get("rank").and_then(|r| r.as_i64()).unwrap_or(999);
-		let rank_b = b.get("rank").and_then(|r| r.as_i64()).unwrap_or(999);
-		rank_a.cmp(&rank_b)
-	});
+		// Sort by rank to ensure best POIs come first
+		ranked_pois.sort_by(|a, b| {
+			let rank_a = a.get("rank").and_then(|r| r.as_i64()).unwrap_or(999);
+			let rank_b = b.get("rank").and_then(|r| r.as_i64()).unwrap_or(999);
+			rank_a.cmp(&rank_b)
+		});
 
 		// Extract ranking summary for logging
 		let mut rankings: Vec<String> = ranked_pois
 			.iter()
 			.map(|poi| {
-				let name = poi.get("event_name")
+				let name = poi
+					.get("event_name")
 					.and_then(|n| n.as_str())
 					.unwrap_or("Unknown");
-				let rank = poi.get("rank")
-					.and_then(|r| r.as_i64())
-					.unwrap_or(999);
+				let rank = poi.get("rank").and_then(|r| r.as_i64()).unwrap_or(999);
 				format!("{}(rank:{})", name, rank)
 			})
 			.collect();
@@ -345,102 +354,117 @@ impl Tool for OptimizeItineraryTool {
 			details: format!("rankings=[{}]", rankings.join(", "))
 		);
 
-	// STEP 2: Draft the itinerary
-	info!(
-		target: "optimize_tools",
-		"Step 2: Drafting itinerary structure"
-	);
+		// STEP 2: Draft the itinerary
+		info!(
+			target: "optimize_tools",
+			"Step 2: Drafting itinerary structure"
+		);
 
-	let draft_input = json!({
-		"pois": ranked_pois,
-		"diversity_factor": 0.7,
-		"trip_context": trip_context_val
-	});
+		let draft_input = json!({
+			"pois": ranked_pois,
+			"diversity_factor": 0.7,
+			"trip_context": trip_context_val
+		});
 
-	let draft_tool = DraftItineraryTool {
-		llm: self.llm.clone(),
-	};
-	let draft_result = draft_tool.run(draft_input).await?;
+		let draft_tool = DraftItineraryTool {
+			llm: self.llm.clone(),
+		};
+		let draft_result = draft_tool.run(draft_input).await?;
 
-	// Parse the draft itinerary
-	// Try to extract JSON from markdown code blocks if present
-	let cleaned_draft = draft_result
-		.trim()
-		.strip_prefix("```json")
-		.and_then(|s| s.strip_suffix("```"))
-		.or_else(|| draft_result.trim().strip_prefix("```").and_then(|s| s.strip_suffix("```")))
-		.unwrap_or(draft_result.trim());
+		// Parse the draft itinerary
+		// Try to extract JSON from markdown code blocks if present
+		let cleaned_draft = draft_result
+			.trim()
+			.strip_prefix("```json")
+			.and_then(|s| s.strip_suffix("```"))
+			.or_else(|| {
+				draft_result
+					.trim()
+					.strip_prefix("```")
+					.and_then(|s| s.strip_suffix("```"))
+			})
+			.unwrap_or(draft_result.trim());
 
-	// Try standard JSON parsing first
-	let mut itinerary: Value = match serde_json::from_str(cleaned_draft) {
-		Ok(value) => value,
-		Err(e) => {
-			warn!(
-				target: "optimize_tools",
-				error = %e,
-				response_len = draft_result.len(),
-				"Failed to parse draft itinerary with standard JSON parser, trying JSON5"
-			);
-			
-			// Try JSON5 parser which is more lenient (handles trailing commas, comments, etc.)
-			match json5::from_str(cleaned_draft) {
-				Ok(value) => {
-					info!(
-						target: "optimize_tools",
-						"Successfully parsed draft itinerary using JSON5 (lenient parser)"
-					);
-					value
-				}
-				Err(json5_err) => {
-					// Both parsers failed - log detailed error and return error
-					let preview = draft_result.chars().take(500).collect::<String>();
-					
-					crate::tool_trace!(
-						agent: "optimize",
-						tool: "draft_itinerary",
-						status: "error",
-						details: format!("JSON parse failed: {}", e)
-					);
-					
-					return Err(format!(
+		// Try standard JSON parsing first
+		let mut itinerary: Value = match serde_json::from_str(cleaned_draft) {
+			Ok(value) => value,
+			Err(e) => {
+				warn!(
+					target: "optimize_tools",
+					error = %e,
+					response_len = draft_result.len(),
+					"Failed to parse draft itinerary with standard JSON parser, trying JSON5"
+				);
+
+				// Try JSON5 parser which is more lenient (handles trailing commas, comments, etc.)
+				match json5::from_str(cleaned_draft) {
+					Ok(value) => {
+						info!(
+							target: "optimize_tools",
+							"Successfully parsed draft itinerary using JSON5 (lenient parser)"
+						);
+						value
+					}
+					Err(json5_err) => {
+						// Both parsers failed - log detailed error and return error
+						let preview = draft_result.chars().take(500).collect::<String>();
+
+						crate::tool_trace!(
+							agent: "optimize",
+							tool: "draft_itinerary",
+							status: "error",
+							details: format!("JSON parse failed: {}", e)
+						);
+
+						return Err(format!(
 						"Failed to parse draft itinerary. Standard JSON error: {}. JSON5 error: {}. Response preview: {}",
 						e, json5_err, preview
 					).into());
+					}
 				}
 			}
-		}
-	};
+		};
 
 		// Build schedule summary
 		let mut schedule_summary: Vec<String> = Vec::new();
 		if let Some(event_days) = itinerary.get("event_days").and_then(|v| v.as_array()) {
 			for (day_idx, day) in event_days.iter().enumerate() {
-				let date = day.get("date")
+				let date = day
+					.get("date")
 					.and_then(|d| d.as_str())
 					.unwrap_or("unknown");
-				
-				let morning = day.get("morning_events")
+
+				let morning = day
+					.get("morning_events")
 					.and_then(|e| e.as_array())
-					.map(|arr| arr.iter()
-						.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
-						.collect::<Vec<_>>()
-						.join(", "))
+					.map(|arr| {
+						arr.iter()
+							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.collect::<Vec<_>>()
+							.join(", ")
+					})
 					.unwrap_or_default();
-				
-				let afternoon = day.get("afternoon_events")
+
+				let afternoon = day
+					.get("afternoon_events")
 					.and_then(|e| e.as_array())
-					.map(|arr| arr.iter()
-						.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
-						.collect::<Vec<_>>()
-						.join(", "))
+					.map(|arr| {
+						arr.iter()
+							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.collect::<Vec<_>>()
+							.join(", ")
+					})
 					.unwrap_or_default();
-				
-				let evening = day.get("evening_events")
+
+				let evening = day
+					.get("evening_events")
 					.and_then(|e| e.as_array())
-					.map(|arr| arr.iter()
-						.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
-						.collect::<Vec<_>>()
-						.join(", "))
+					.map(|arr| {
+						arr.iter()
+							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.collect::<Vec<_>>()
+							.join(", ")
+					})
 					.unwrap_or_default();
 
 				let mut day_parts = Vec::new();
@@ -453,11 +477,16 @@ impl Tool for OptimizeItineraryTool {
 				if !evening.is_empty() {
 					day_parts.push(format!("EVE:[{}]", evening));
 				}
-				
-				schedule_summary.push(format!("Day{}({}):{}", 
-					day_idx + 1, 
-					date, 
-					if day_parts.is_empty() { "empty".to_string() } else { day_parts.join(" ") }
+
+				schedule_summary.push(format!(
+					"Day{}({}):{}",
+					day_idx + 1,
+					date,
+					if day_parts.is_empty() {
+						"empty".to_string()
+					} else {
+						day_parts.join(" ")
+					}
 				));
 			}
 		}
@@ -487,7 +516,10 @@ impl Tool for OptimizeItineraryTool {
 		let mut optimized_days = 0;
 
 		// Get event_days array
-		if let Some(event_days) = itinerary.get_mut("event_days").and_then(|v| v.as_array_mut()) {
+		if let Some(event_days) = itinerary
+			.get_mut("event_days")
+			.and_then(|v| v.as_array_mut())
+		{
 			for day in event_days.iter_mut() {
 				// Optimize morning events
 				if let Some(morning) = day.get("morning_events").cloned() {
@@ -506,7 +538,9 @@ impl Tool for OptimizeItineraryTool {
 								});
 
 								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+									if let Ok(optimized_arr) =
+										serde_json::from_str::<Value>(&optimized)
+									{
 										day["morning_events"] = optimized_arr;
 										optimized_days += 1;
 									}
@@ -532,7 +566,9 @@ impl Tool for OptimizeItineraryTool {
 								});
 
 								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+									if let Ok(optimized_arr) =
+										serde_json::from_str::<Value>(&optimized)
+									{
 										day["afternoon_events"] = optimized_arr;
 										optimized_days += 1;
 									}
@@ -558,7 +594,9 @@ impl Tool for OptimizeItineraryTool {
 								});
 
 								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+									if let Ok(optimized_arr) =
+										serde_json::from_str::<Value>(&optimized)
+									{
 										day["evening_events"] = optimized_arr;
 										optimized_days += 1;
 									}
@@ -584,8 +622,14 @@ impl Tool for OptimizeItineraryTool {
 		);
 
 		// Add metadata to itinerary
-		itinerary["start_date"] = trip_context_val.get("start_date").cloned().unwrap_or(Value::Null);
-		itinerary["end_date"] = trip_context_val.get("end_date").cloned().unwrap_or(Value::Null);
+		itinerary["start_date"] = trip_context_val
+			.get("start_date")
+			.cloned()
+			.unwrap_or(Value::Null);
+		itinerary["end_date"] = trip_context_val
+			.get("end_date")
+			.cloned()
+			.unwrap_or(Value::Null);
 		itinerary["title"] = trip_context_val
 			.get("destination")
 			.cloned()
@@ -783,29 +827,29 @@ impl Tool for DraftItineraryTool {
 			"Starting itinerary drafting"
 		);
 
-	let pois = input["pois"]
-		.as_array()
-		.ok_or("pois must be an array of objects")?;
-	let diversity_factor = input["diversity_factor"].as_number().map(|n| {
-		n.as_f64()
-			.ok_or("diversity_factor must be a 64-bit floating point number")
-	});
-	let trip_context = input.get("trip_context").cloned().unwrap_or(json!({}));
+		let pois = input["pois"]
+			.as_array()
+			.ok_or("pois must be an array of objects")?;
+		let diversity_factor = input["diversity_factor"].as_number().map(|n| {
+			n.as_f64()
+				.ok_or("diversity_factor must be a 64-bit floating point number")
+		});
+		let trip_context = input.get("trip_context").cloned().unwrap_or(json!({}));
 
-	info!(
-		target: "optimize_tools",
-		pois_count = pois.len(),
-		diversity_factor = diversity_factor.unwrap_or(Ok(0.7)).unwrap_or(0.7),
-		"Drafting itinerary from POIs"
-	);
+		info!(
+			target: "optimize_tools",
+			pois_count = pois.len(),
+			diversity_factor = diversity_factor.unwrap_or(Ok(0.7)).unwrap_or(0.7),
+			"Drafting itinerary from POIs"
+		);
 
-	let prompt = format!(
-		include_str!("../prompts/draft_itinerary.md"),
-		serde_json::to_string_pretty(&pois)?,
-		include_str!("../prompts/itinerary_model.md"),
-		diversity_factor.unwrap_or(Ok(0.7))?,
-		serde_json::to_string_pretty(&trip_context)?
-	);
+		let prompt = format!(
+			include_str!("../prompts/draft_itinerary.md"),
+			serde_json::to_string_pretty(&pois)?,
+			include_str!("../prompts/itinerary_model.md"),
+			diversity_factor.unwrap_or(Ok(0.7))?,
+			serde_json::to_string_pretty(&trip_context)?
+		);
 
 		let response = self.llm.invoke(&prompt).await?;
 

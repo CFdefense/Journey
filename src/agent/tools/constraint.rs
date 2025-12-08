@@ -394,17 +394,17 @@ impl Tool for FilterEventsByConstraintsTool {
 			})
 			.unwrap_or_else(Vec::new);
 
-	// Constraints are optional - if none exist, we proceed with no filtering
-	// The task agent should have already asked for clarification if critical info was missing
-	if constraints.is_empty() {
-		info!(
-			target: "constraint_tools",
-			tool = "filter_events_by_constraints",
-			"No constraints provided - will include all events"
-		);
-	}
+		// Constraints are optional - if none exist, we proceed with no filtering
+		// The task agent should have already asked for clarification if critical info was missing
+		if constraints.is_empty() {
+			info!(
+				target: "constraint_tools",
+				tool = "filter_events_by_constraints",
+				"No constraints provided - will include all events"
+			);
+		}
 
-	debug!(
+		debug!(
 			target: "constraint_tools",
 			tool = "filter_events_by_constraints",
 			preferences = ?preferences,

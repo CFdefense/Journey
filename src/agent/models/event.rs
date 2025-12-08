@@ -16,7 +16,7 @@ pub struct Event {
 	pub postal_code: Option<i32>,
 	pub lat: Option<f64>,
 	pub lng: Option<f64>,
-	pub event_type: Option<String>, 
+	pub event_type: Option<String>,
 	pub hard_start: Option<NaiveDateTime>,
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
