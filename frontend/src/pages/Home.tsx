@@ -312,47 +312,6 @@ export default function Home() {
     }
   };
 
-  // Helper function to refresh messages from the backend for a given chat.
-  // This ensures that after the LLM pipeline (including tools like
-  // `respond_to_user`) finishes, the UI always reflects the latest messages
-  // that were actually persisted in the database.
-  const refreshMessagesForChat = async (chatId: number) => {
-    const payload: MessagePageRequest = {
-      chat_session_id: chatId,
-      message_id: null
-    };
-
-    const messagePageResult = await apiMessages(payload);
-    if (messagePageResult.status === 401) {
-      navigate("/logout");
-      return;
-    }
-    if (
-      messagePageResult.status !== 200 ||
-      messagePageResult.result === null
-    ) {
-      // Do not overwrite existing messages on failure; just log for now.
-      console.error(
-        "Failed to refresh messages after pipeline completion",
-        messagePageResult.status
-      );
-      return;
-    }
-
-    const messages = messagePageResult.result.message_page;
-    setChats((prevChats) =>
-      (prevChats ?? []).map((c) =>
-        c.id === chatId
-          ? {
-              ...c,
-              messages,
-              prev_msg_id: messagePageResult.result!.prev_message_id
-            }
-          : c
-      )
-    );
-  };
-
   // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
   useEffect(() => {
     // Don't clear on initial mount when activeChatId is null
@@ -520,11 +479,6 @@ export default function Home() {
 
     setIsAiResponding(false);
 
-    // After the LLM pipeline (including tools like respond_to_user) completes,
-    // refresh the messages from the backend so that any messages inserted by
-    // tools are reflected immediately without requiring a page reload.
-    await refreshMessagesForChat(currChatId!);
-
     // scroll to bottom
     requestAnimationFrame(() => {
       const chatMsgWindow = document.getElementById("chat-messages")!;
@@ -593,11 +547,6 @@ export default function Home() {
     }
 
     setIsAiResponding(false);
-
-    // Ensure we pick up any additional messages/tools that may have been
-    // written during the update pipeline (e.g., clarification or itinerary
-    // responses) by refreshing from the backend.
-    await refreshMessagesForChat(activeChatId);
 
     // scroll to bottom
     requestAnimationFrame(() => {

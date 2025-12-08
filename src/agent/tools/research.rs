@@ -12,9 +12,9 @@ use google_maps::places_new::{Field, FieldMask, PlaceType};
 use langchain_rust::tools::Tool;
 use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use std::time::Instant;
-use std::{error::Error, sync::Arc};
+use std::{collections::HashSet, error::Error, sync::Arc};
 use tracing::{debug, info};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
@@ -454,14 +454,30 @@ impl<'db> Tool for NearbySearchTool {
 		let gm_client = google_maps::Client::try_new(gm_api_key)
 			.map_err(|_| "Failed to create client for Google Maps API")?;
 
+		// Google Places Nearby Search returns a maximum of 20 places per request.
+		// To get more coverage, perform two searches with slightly different centers
+		// and then de-duplicate results by place_id.
+		const SEARCH_RADIUS_METERS: f64 = 50_000.;
+		const OFFSET_METERS: f64 = 20_000.;
+		const METERS_PER_DEGREE_LAT: f64 = 111_320.0;
+
+		let offset_deg_lat = OFFSET_METERS / METERS_PER_DEGREE_LAT;
+		let secondary_lat = (lat + offset_deg_lat).clamp(-90.0, 90.0);
+
+		let mut all_events: Vec<Event> = Vec::new();
+
+		// Primary search around the given coordinates
 		info!(
 			target: "research_tools",
 			tool = "nearby_search_tool",
-			"Calling Google Maps API"
+			lat = lat,
+			lng = lng,
+			search_label = "primary",
+			"Calling Google Maps Nearby Search"
 		);
 
-		let search_res = gm_client
-			.nearby_search((lat, lng, 50_000.))?
+		let primary_res = gm_client
+			.nearby_search((lat, lng, SEARCH_RADIUS_METERS))?
 			.field_mask(FieldMask::Specific(vec![
 				Field::PlacesAccessibilityOptions,
 				Field::PlacesAdrFormatAddress,
@@ -477,7 +493,6 @@ impl<'db> Tool for NearbySearchTool {
 				Field::PlacesPrimaryType,
 				Field::PlacesEditorialSummary,
 			]))
-			// pray to our lord and savior Terry Davis that this works
 			.included_types(
 				included_types
 					.iter()
@@ -501,49 +516,158 @@ impl<'db> Tool for NearbySearchTool {
 			.execute()
 			.await?;
 
-		if let Some(err) = search_res.error() {
+		if let Some(err) = primary_res.error() {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
 				agent: "research",
 				tool: "nearby_search_tool",
 				status: "error",
-				details: format!("{}ms - API error: {}", elapsed.as_millis(), err)
+				details: format!(
+					"{}ms - API error during primary search: {}",
+					elapsed.as_millis(),
+					err
+				)
 			);
 			info!(
 				target: "research_tools",
 				tool = "nearby_search_tool",
 				elapsed_ms = elapsed.as_millis() as u64,
 				error = %err,
+				search_label = "primary",
 				"Nearby search API error"
 			);
-			return Err(format!("Nearby Search failed - {err}").into());
+			return Err(format!("Nearby Search (primary) failed - {err}").into());
 		}
-		let places = search_res.places();
-		if places.is_empty() {
+
+		let primary_places = primary_res.places();
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			search_label = "primary",
+			places_count = primary_places.len(),
+			"Found places from Google Maps (primary)"
+		);
+		all_events.extend(primary_places.into_iter().map(|p| Event::from(p)));
+
+		// Secondary search slightly north of the original point to get a different slice
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			lat = secondary_lat,
+			lng = lng,
+			search_label = "secondary",
+			"Calling Google Maps Nearby Search"
+		);
+
+		let secondary_res = gm_client
+			.nearby_search((secondary_lat, lng, SEARCH_RADIUS_METERS))?
+			.field_mask(FieldMask::Specific(vec![
+				Field::PlacesAccessibilityOptions,
+				Field::PlacesAdrFormatAddress,
+				Field::PlacesDisplayName,
+				Field::PlacesId,
+				Field::PlacesPhotos,
+				Field::PlacesUtcOffsetMinutes,
+				Field::PlacesPriceLevel,
+				Field::PlacesRegularOpeningHours,
+				Field::PlacesWebsiteUri,
+				Field::PlacesServesVegetarianFood,
+				Field::PlacesTypes,
+				Field::PlacesPrimaryType,
+				Field::PlacesEditorialSummary,
+			]))
+			.included_types(
+				included_types
+					.iter()
+					.map(|t| {
+						PlaceType::deserialize(t.into_deserializer()).map_err(
+							|_: serde::de::value::Error| "Could not deserialize place type within includedTypes array",
+						)
+					})
+					.collect::<Result<Vec<_>, _>>()?,
+			)
+			.excluded_types(
+				excluded_types
+					.iter()
+					.map(|t| {
+						PlaceType::deserialize(t.into_deserializer()).map_err(
+							|_: serde::de::value::Error| "Could not deserialize place type within excludedTypes array",
+						)
+					})
+					.collect::<Result<Vec<_>, _>>()?,
+			)
+			.execute()
+			.await?;
+
+		if let Some(err) = secondary_res.error() {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
 				agent: "research",
 				tool: "nearby_search_tool",
 				status: "error",
-				details: format!("{}ms - No places found", elapsed.as_millis())
+				details: format!(
+					"{}ms - API error during secondary search: {}",
+					elapsed.as_millis(),
+					err
+				)
 			);
 			info!(
 				target: "research_tools",
 				tool = "nearby_search_tool",
 				elapsed_ms = elapsed.as_millis() as u64,
-				"No places found in nearby search"
+				error = %err,
+				search_label = "secondary",
+				"Nearby search API error"
 			);
-			return Err(format!("Nearby Search returned an empty array of places").into());
+			return Err(format!("Nearby Search (secondary) failed - {err}").into());
+		}
+
+		let secondary_places = secondary_res.places();
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			search_label = "secondary",
+			places_count = secondary_places.len(),
+			"Found places from Google Maps (secondary)"
+		);
+		all_events.extend(secondary_places.into_iter().map(|p| Event::from(p)));
+
+		if all_events.is_empty() {
+			let elapsed = start_time.elapsed();
+			crate::tool_trace!(
+				agent: "research",
+				tool: "nearby_search_tool",
+				status: "error",
+				details: format!("{}ms - No places found across both searches", elapsed.as_millis())
+			);
+			info!(
+				target: "research_tools",
+				tool = "nearby_search_tool",
+				elapsed_ms = elapsed.as_millis() as u64,
+				"No places found in nearby searches"
+			);
+			return Err("Nearby Search returned an empty array of places".into());
+		}
+
+		// De-duplicate by place_id so we don't insert/update the same place twice.
+		let mut seen_place_ids: HashSet<String> = HashSet::new();
+		let mut events: Vec<Event> = Vec::new();
+
+		for ev in all_events.into_iter() {
+			if let Some(ref place_id) = ev.place_id {
+				if !seen_place_ids.insert(place_id.clone()) {
+					continue;
+				}
+			}
+			events.push(ev);
 		}
 
 		info!(
 			target: "research_tools",
 			tool = "nearby_search_tool",
-			places_count = places.len(),
-			"Found places from Google Maps"
+			unique_places_count = events.len(),
+			"Unique places after de-duplication across searches"
 		);
-
-		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 
 		info!(
 			target: "research_tools",
