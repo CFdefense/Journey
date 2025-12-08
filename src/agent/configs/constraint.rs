@@ -12,11 +12,12 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
 	memory::SimpleMemory,
 };
 
 use crate::agent::tools::constraint::*;
+use sqlx::PgPool;
 
 // Use a type alias for the agent type to make it easier to use
 pub type AgentType = Arc<
@@ -25,7 +26,10 @@ pub type AgentType = Arc<
 	>,
 >;
 
-pub fn create_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_constraint_agent(
+	llm: OpenAI<OpenAIConfig>,
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
 
@@ -35,23 +39,29 @@ pub fn create_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, A
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	// TODO: Add tools here
-
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
 
+	// Get tools - pass LLM as Arc<dyn LLM> and database pool
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
+		Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc, pool);
+
 	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
+	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
+	let system_prompt = SYSTEM_PROMPT.to_string();
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		// TODO: Add tools here
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
 
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+	// Limit to 3 iterations - agent should: 1) call tool, 2) get result, 3) return final answer
+	Ok(AgentExecutor::from_agent(agent)
+		.with_memory(memory.into())
+		.with_max_iterations(3))
 }
 
 /// Creates a dummy agent for testing purposes.
@@ -59,7 +69,9 @@ pub fn create_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, A
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_constraint_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
@@ -72,18 +84,21 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	// TODO: Add tools here
-
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 
+	// Get tools - pass LLM as Arc<dyn LLM> and database pool
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
+		Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc, pool);
+
 	// Create agent with system prompt and tools
-	let system_prompt = "".to_string(); // TODO: Add agent-specific system prompt here
+	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
+	let system_prompt = SYSTEM_PROMPT.to_string();
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		// TODO: Add tools here
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -97,5 +112,7 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 		}
 	}
 
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+	Ok(AgentExecutor::from_agent(agent)
+		.with_memory(memory.into())
+		.with_max_iterations(3))
 }

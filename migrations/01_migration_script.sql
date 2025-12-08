@@ -75,7 +75,8 @@ CREATE TABLE events (
     city VARCHAR(255),
     country VARCHAR(255),
     postal_code INTEGER,
-    coords VARCHAR(255),
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION,
     --places.primaryType
     event_type VARCHAR(255),
     user_created BOOLEAN NOT NULL DEFAULT FALSE,
@@ -86,7 +87,7 @@ CREATE TABLE events (
     hard_end TIMESTAMP WITHOUT TIME ZONE,
     timezone VARCHAR(255),
     --remaining places fields
-    place_id VARCHAR(255),
+    place_id VARCHAR(255) UNIQUE,
     wheelchair_accessible_parking BOOLEAN,
     wheelchair_accessible_entrance BOOLEAN,
     wheelchair_accessible_restroom BOOLEAN,
@@ -114,7 +115,8 @@ CREATE TABLE events (
 CREATE TABLE chat_sessions (
 	id SERIAL PRIMARY KEY,
 	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-	title VARCHAR(255) NOT NULL
+	title VARCHAR(255) NOT NULL,
+	context JSONB DEFAULT '{"tool_history": []}'::jsonb
 );
 
 -- Itineraries table
@@ -183,7 +185,7 @@ VALUES (1, '1114 Shannon Ln', 17013, 'Carlisle', 'USA', 'Hike', 'A beautiful str
 (8, '3 Rue de la Museu', 00000, 'Paris', 'France', 'Museum', 'Wander the halls of the world famous art museum.', 'le Louvre', FALSE, NULL, '2025-11-05 08:00', NULL);
 
 UPDATE events
-SET 
+SET
     photo_name = 'places/ChIJWTGPjmaAhYARxz6l1hOj92w/photos/AWn5SU5Er9gWi5jilVeHqFVvSEXMwCeX-mlXTiRpSoacmgGi6eJk021kXT7TSPe1PbFEj8Oe-5JYpMk5jc2e6A1zHf76i45Mg2JcTqhmihTAWyW4b2vixtaHLq7GCuxQicTvwvM65I1qTt9sAEiMW2k1jPvHiU5qL7R8BN2Ltqfo_I0zTcUrJyup6Pdsd0FLpDAm7ia5B-qaaw80x6guoa0r7uoiFGkyJeB3zqXIDKsP5q25HgPb6HMIVtiTM7Gf0WEU6hnhpg9Admq3h-WARF0hTmQQqCg_J9C-dRrzuu279uwDaw',
     photo_width = 3850,
     photo_height = 2991,
@@ -193,7 +195,7 @@ SET
 WHERE id = 1;
 
 UPDATE events
-SET 
+SET
     photo_name = 'places/ChIJ1dIqa2OAhYAREimtEtfBLyc/photos/AWn5SU64-FqzTMnkxlg9F-trzmWqkl2f0y_bCRBqLjkP8qLzGD8JTaThyGhmIzilkbOptFyHfbKj11kyTbga2m9scTSyhPBYd6TvsoDUoL6UTzXn5pKpUcbist3SB1ccAE5H7Wt-d_C2ycfmqAgHudsYBNOJLMtVV5Ij559zA4KoA_hOuDoNBaNI9pKwRharo8uKaAKDwDDefIpQki7VLigFZ7R0dvzhIl57MIdLoRgEoCQvELCv9KjE-9cORp7X1qsKG37QbudAJzgmmN8xwlf9XpCc57YTOABuM8dtS4WmNYOXEEyoKpNZptwOBh6RkiKhOY7Uhu8gwBXuVv9PLAHr6aa3ZOFhnaPCewvAdwfA0yd3insxeH12f80VdQyJ5nx9umKNVZHlEG-d7Tek5cc3k3UDIgdc2gbirc80wXn_AUyMkHDU',
     photo_width = 3024,
     photo_height = 4032,

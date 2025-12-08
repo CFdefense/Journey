@@ -5,7 +5,6 @@ use axum::{
 };
 use chrono::NaiveDate;
 use sqlx::PgPool;
-use std::env;
 use utoipa::OpenApi;
 
 use crate::{
@@ -26,7 +25,10 @@ use crate::{
 	sql_models::message::{ChatSessionRow, MessageRow},
 	swagger::SecurityAddon,
 };
-use langchain_rust::{chain::Chain, prompt_args};
+
+use langchain_rust::chain::Chain;
+use langchain_rust::prompt_args;
+use tracing::{debug, error, info};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -61,6 +63,8 @@ async fn send_message_to_llm(
 	itinerary_id: Option<i32>,
 	pool: &PgPool,
 	agent: &AgentType,
+	chat_session_id_atomic: &std::sync::Arc<std::sync::atomic::AtomicI32>,
+	context_store: &crate::agent::models::context::SharedContextStore,
 ) -> ApiResult<Message> {
 	// Give the LLM an itinerary for context
 	let itinerary_id = match itinerary_id {
@@ -101,156 +105,408 @@ async fn send_message_to_llm(
 		None => None,
 	};
 
-	// Check if DEPLOY_LLM == "1", return dummy response if not
-	let ai_text = match env::var("DEPLOY_LLM") {
-		#[cfg(not(tarpaulin_include))]
-		Ok(s) if s.as_str() == "1" => {
-			// DEPLOY_LLM is set, call the actual AI agent
-			let agent_guard = agent.lock().await;
-			agent_guard
-				.invoke(prompt_args! {
-					"input" => text,
-				})
+	// Always invoke the agent (it will use MockLLM when DEPLOY_LLM != "1")
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		account_id = account_id,
+		"Invoking orchestrator agent"
+	);
+	debug!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		user_input = text,
+		"Orchestrator agent input"
+	);
+
+	// We no longer persist live agent context in the database; all dynamic context
+	// lives in the in-memory SharedContextStore. These DB-based context logs are
+	// intentionally removed to avoid confusion.
+
+	// Initialize context with chat_session_id and user_id BEFORE agent runs
+	// This prevents race conditions from global atomics
+	// IMPORTANT: Only initialize if context doesn't exist - preserve existing trip_context!
+	{
+		use crate::agent::models::context::{ContextData, TripContext};
+		let mut store_guard = context_store.write().await;
+
+		// Only insert if this chat_session doesn't have context yet
+		if !store_guard.contains_key(&chat_session_id) {
+			store_guard.insert(
+				chat_session_id,
+				ContextData {
+					chat_session_id,
+					user_id: account_id,
+					user_profile: None,
+					chat_history: vec![],
+					trip_context: TripContext::default(),
+					active_itinerary: None,
+					events: vec![],
+					tool_history: vec![],
+					pipeline_stage: None,
+					researched_events: vec![],
+					constrained_events: vec![],
+					optimized_events: vec![],
+					constraints: vec![],
+				},
+			);
+
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_session_id,
+				"Initialized new context for chat session"
+			);
+		} else {
+			// Context exists - just update user_id in case it changed
+			if let Some(ctx) = store_guard.get_mut(&chat_session_id) {
+				ctx.user_id = account_id;
+			}
+
+			info!(
+				target: "orchestrator_pipeline",
+				chat_id = chat_session_id,
+				"Reusing existing context for chat session"
+			);
+		}
+	}
+
+	// Set the atomic so tools can look up the context
+	use std::sync::atomic::Ordering;
+	chat_session_id_atomic.store(chat_session_id, Ordering::Relaxed);
+
+	// Invoke the agent
+	let ai_text = {
+		let agent_guard = agent.lock().await;
+
+		debug!(
+			target: "orchestrator_pipeline",
+			chat_session_id = chat_session_id,
+			input_text = text,
+			"Invoking orchestrator agent"
+		);
+
+		agent_guard
+			.invoke(prompt_args! {
+				"input" => text,
+			})
+			.await
+			.map_err(|e| {
+				error!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					error = %e,
+					error_debug = ?e,
+					"Orchestrator agent error - full details"
+				);
+				info!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					error = %e,
+					"Orchestrator agent error"
+				);
+				AppError::Internal(format!("AI agent error: {}", e))
+			})?
+	};
+
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		response_length = ai_text.len(),
+		"Orchestrator agent completed"
+	);
+	debug!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		response = ai_text,
+		"Orchestrator agent output"
+	);
+
+	// Context state AFTER agent invocation is now entirely in-memory as well.
+	//
+	// SAFETY GUARD: If the orchestrator ever returns a user-visible string
+	// that still contains the internal "Ready for research" phrase, treat it
+	// as a pipeline-ready signal instead of sending it to the user.
+	if ai_text.contains("Ready for research") {
+		info!(
+			target: "orchestrator_pipeline",
+			chat_session_id = chat_session_id,
+			"Detected 'Ready for research' sentinel in orchestrator output; refusing to return it directly to user"
+		);
+
+		// Try to return the most recent non-user message instead (typically the
+		// last clarification the user already saw). If none exists, fall
+		// through and let normal handling occur.
+		let record = sqlx::query!(
+			r#"
+			SELECT id, timestamp, text, itinerary_id
+			FROM messages
+			WHERE chat_session_id = $1 AND is_user = FALSE
+			ORDER BY timestamp DESC
+			LIMIT 1
+			"#,
+			chat_session_id
+		)
+		.fetch_optional(pool)
+		.await
+		.map_err(AppError::from)?;
+
+		if let Some(msg) = record {
+			return Ok(Message {
+				id: msg.id,
+				is_user: false,
+				timestamp: msg.timestamp,
+				text: msg.text,
+				itinerary_id: msg.itinerary_id,
+			});
+		}
+	}
+
+	// Check if RespondToUserTool already inserted the message
+	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
+	if ai_text.starts_with("MESSAGE_INSERTED:") {
+		let parts: Vec<&str> = ai_text.splitn(3, ':').collect();
+		if parts.len() == 3 {
+			if let Ok(message_id) = parts[1].parse::<i32>() {
+				// Fetch the message that was already inserted by RespondToUserTool
+				let record = sqlx::query!(
+					r#"
+					SELECT id, timestamp, text, itinerary_id
+					FROM messages
+					WHERE id = $1 AND chat_session_id = $2
+					"#,
+					message_id,
+					chat_session_id
+				)
+				.fetch_optional(pool)
 				.await
-				.map_err(|e| AppError::Internal(format!("AI agent error: {}", e)))?
+				.map_err(AppError::from)?;
+
+				if let Some(msg) = record {
+					info!(
+						target: "orchestrator_pipeline",
+						chat_session_id = chat_session_id,
+						message_id = msg.id,
+						"Message already inserted by RespondToUserTool, returning it"
+					);
+					return Ok(Message {
+						id: msg.id,
+						is_user: false,
+						timestamp: msg.timestamp,
+						text: msg.text,
+						itinerary_id: msg.itinerary_id,
+					});
+				}
+			}
 		}
-		_ => {
-			// DEPLOY_LLM != "1", return dummy response
-			format!(
-				"This is a dummy response for testing. You said: \"{}\"",
-				text
-			)
+	}
+
+	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED),
+	// it's likely from ask_for_clarification tool which already inserted it
+	// Fetch the most recent non-user message for this chat session
+	if !ai_text.trim().starts_with('{')
+		&& !ai_text.trim().starts_with('[')
+		&& !ai_text.starts_with("MESSAGE_INSERTED:")
+		&& !ai_text.starts_with("FINAL_ANSWER:")
+	{
+		// This looks like plain readable text - tool already inserted it, so fetch it
+		let record = sqlx::query!(
+			r#"
+			SELECT id, timestamp, text, itinerary_id
+			FROM messages
+			WHERE chat_session_id = $1 AND is_user = FALSE
+			ORDER BY timestamp DESC
+			LIMIT 1
+			"#,
+			chat_session_id
+		)
+		.fetch_optional(pool)
+		.await
+		.map_err(AppError::from)?;
+
+		if let Some(msg) = record {
+			// Verify the text matches (tool just inserted it)
+			if msg.text.trim() == ai_text.trim() {
+				info!(
+					target: "orchestrator_pipeline",
+					chat_session_id = chat_session_id,
+					message_id = msg.id,
+					"Found matching message inserted by tool, returning it"
+				);
+				return Ok(Message {
+					id: msg.id,
+					is_user: false,
+					timestamp: msg.timestamp,
+					text: msg.text,
+					itinerary_id: msg.itinerary_id,
+				});
+			}
 		}
-	};
+	}
 
-	// Create dummy itinerary (always used when DEPLOY_LLM != "1")
-	let mut ai_itinerary = Itinerary {
-		id: 0,
-		start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-		end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
-		event_days: vec![
-			EventDay {
-				morning_events: vec![Event {
-					id: 1,
-					street_address: Some(String::from("1114 Shannon Ln")),
-					postal_code: Some(17013),
-					city: Some(String::from("Carlisle")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Hike")),
-					event_description: Some(String::from(
-						"A beautiful stroll along a river in this cute small town.",
-					)),
-					event_name: String::from("Family Walking Path"),
-					..Default::default()
-				}],
-				afternoon_events: vec![Event {
-					id: 3,
-					street_address: Some(String::from("200 E 42nd St")),
-					postal_code: Some(10017),
-					city: Some(String::from("New York")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
-					)),
-					event_name: String::from("Museum of Modern Art- MoMA"),
-					..Default::default()
-				}],
-				evening_events: vec![Event {
-					id: 4,
-					street_address: Some(String::from("1 S Broad St")),
-					postal_code: Some(19107),
-					city: Some(String::from("Philadelphia")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Concert")),
-					event_description: Some(String::from(
-						"Music center which hosts local and national bands.",
-					)),
-					event_name: String::from("Jazz night at Broad Street"),
-					..Default::default()
-				}],
-				date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
-			},
-			EventDay {
-				morning_events: vec![Event {
-					id: 5,
-					street_address: Some(String::from("1 Citizens Bank Way")),
-					postal_code: Some(19148),
-					city: Some(String::from("Philadelphia")),
-					country: Some(String::from("USA")),
-					event_type: Some(String::from("Sports")),
-					event_description: Some(String::from(
-						"A Phillies baseball game is a must-do for locals and visitors alike.",
-					)),
-					event_name: String::from("Phillies Baseball Game"),
-					..Default::default()
-				}],
-				afternoon_events: vec![Event {
-					id: 7,
-					street_address: Some(String::from("1 Rue de la Seine")),
-					postal_code: Some(0),
-					city: Some(String::from("Paris")),
-					country: Some(String::from("France")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"Explore the beautiful landmark of Paris.",
-					)),
-					event_name: String::from("Eiffel Tower"),
-					..Default::default()
-				}],
-				evening_events: vec![Event {
-					id: 8,
-					street_address: Some(String::from("3 Rue de la Museu")),
-					postal_code: Some(0),
-					city: Some(String::from("Paris")),
-					country: Some(String::from("France")),
-					event_type: Some(String::from("Museum")),
-					event_description: Some(String::from(
-						"Wander the halls of the world famous art museum.",
-					)),
-					event_name: String::from("le Louvre"),
-					..Default::default()
-				}],
-				date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
-			},
-		],
-		chat_session_id: None,
-		title: String::from("World Tour 11/5-15 2025"),
-		unassigned_events: vec![],
-	};
+	// Check if we're using MockLLM
+	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
 
-	// Insert generated itinerary into db
-	let inserted_itinerary_id = sqlx::query!(
-		r#"
-		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
-		VALUES ($1, FALSE, $2, $3, $4, FALSE, $5)
-		RETURNING id;
-		"#,
-		account_id,
-		ai_itinerary.start_date,
-		ai_itinerary.end_date,
-		chat_session_id,
-		ai_itinerary.title
-	)
-	.fetch_one(pool)
-	.await
-	.map_err(AppError::from)?
-	.id;
+	if use_mock {
+		// MockLLM fallback: Create and insert a dummy itinerary
+		let mut ai_itinerary = Itinerary {
+			id: 0,
+			start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+			end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+			event_days: vec![
+				EventDay {
+					morning_events: vec![Event {
+						id: 1,
+						street_address: Some(String::from("1114 Shannon Ln")),
+						postal_code: Some(17013),
+						city: Some(String::from("Carlisle")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Hike")),
+						event_description: Some(String::from(
+							"A beautiful stroll along a river in this cute small town.",
+						)),
+						event_name: String::from("Family Walking Path"),
+						..Default::default()
+					}],
+					afternoon_events: vec![Event {
+						id: 3,
+						street_address: Some(String::from("200 E 42nd St")),
+						postal_code: Some(10017),
+						city: Some(String::from("New York")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"World famous art museum with a focus on modern works, including Starry Starry Night by VanGough.",
+						)),
+						event_name: String::from("Museum of Modern Art- MoMA"),
+						..Default::default()
+					}],
+					evening_events: vec![Event {
+						id: 4,
+						street_address: Some(String::from("1 S Broad St")),
+						postal_code: Some(19107),
+						city: Some(String::from("Philadelphia")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Concert")),
+						event_description: Some(String::from(
+							"Music center which hosts local and national bands.",
+						)),
+						event_name: String::from("Jazz night at Broad Street"),
+						..Default::default()
+					}],
+					date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
+				},
+				EventDay {
+					morning_events: vec![Event {
+						id: 5,
+						street_address: Some(String::from("1 Citizens Bank Way")),
+						postal_code: Some(19148),
+						city: Some(String::from("Philadelphia")),
+						country: Some(String::from("USA")),
+						event_type: Some(String::from("Sports")),
+						event_description: Some(String::from(
+							"A Phillies baseball game is a must-do for locals and visitors alike.",
+						)),
+						event_name: String::from("Phillies Baseball Game"),
+						..Default::default()
+					}],
+					afternoon_events: vec![Event {
+						id: 7,
+						street_address: Some(String::from("1 Rue de la Seine")),
+						postal_code: Some(0),
+						city: Some(String::from("Paris")),
+						country: Some(String::from("France")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"Explore the beautiful landmark of Paris.",
+						)),
+						event_name: String::from("Eiffel Tower"),
+						..Default::default()
+					}],
+					evening_events: vec![Event {
+						id: 8,
+						street_address: Some(String::from("3 Rue de la Museu")),
+						postal_code: Some(0),
+						city: Some(String::from("Paris")),
+						country: Some(String::from("France")),
+						event_type: Some(String::from("Museum")),
+						event_description: Some(String::from(
+							"Wander the halls of the world famous art museum.",
+						)),
+						event_name: String::from("le Louvre"),
+						..Default::default()
+					}],
+					date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
+				},
+			],
+			chat_session_id: None,
+			title: String::from("World Tour 11/5-15 2025"),
+			unassigned_events: vec![],
+		};
 
-	ai_itinerary.id = inserted_itinerary_id;
+		// Insert generated itinerary into db
+		let inserted_itinerary_id = sqlx::query!(
+			r#"
+			INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+			VALUES ($1, FALSE, $2, $3, $4, FALSE, $5)
+			RETURNING id;
+			"#,
+			account_id,
+			ai_itinerary.start_date,
+			ai_itinerary.end_date,
+			chat_session_id,
+			ai_itinerary.title
+		)
+		.fetch_one(pool)
+		.await
+		.map_err(AppError::from)?
+		.id;
 
-	// Insert itinerary events
-	insert_event_list(ai_itinerary, pool).await?;
+		ai_itinerary.id = inserted_itinerary_id;
 
-	// Insert bot message with itinerary
+		// Insert itinerary events
+		insert_event_list(ai_itinerary, pool).await?;
+
+		// Insert bot message with itinerary
+		let record = sqlx::query!(
+			r#"
+			INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+			VALUES ($1, $2, FALSE, NOW(), $3)
+			RETURNING id, timestamp;
+			"#,
+			chat_session_id,
+			inserted_itinerary_id,
+			ai_text.clone()
+		)
+		.fetch_one(pool)
+		.await
+		.map_err(AppError::from)?;
+
+		let (bot_message_id, timestamp) = (record.id, record.timestamp);
+
+		return Ok(Message {
+			id: bot_message_id,
+			is_user: false,
+			timestamp,
+			text: ai_text,
+			itinerary_id: Some(inserted_itinerary_id),
+		});
+	}
+
+	// When using real LLM: The respond_to_user tool handles message insertion,
+	// so we should never reach this point. If we do, insert a plain message without itinerary.
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		"Fallback: Inserting message without itinerary (real LLM path)"
+	);
+
 	let record = sqlx::query!(
 		r#"
 		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
-		VALUES ($1, $2, FALSE, NOW(), $3)
+		VALUES ($1, NULL, FALSE, NOW(), $2)
 		RETURNING id, timestamp;
 		"#,
 		chat_session_id,
-		inserted_itinerary_id,
 		ai_text.clone()
 	)
 	.fetch_one(pool)
@@ -264,7 +520,7 @@ async fn send_message_to_llm(
 		is_user: false,
 		timestamp,
 		text: ai_text,
-		itinerary_id: Some(inserted_itinerary_id),
+		itinerary_id: None,
 	})
 }
 
@@ -575,6 +831,8 @@ pub async fn api_update_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
+	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(context_store): Extension<crate::agent::models::context::SharedContextStore>,
 	Json(UpdateMessageRequest {
 		message_id,
 		new_text,
@@ -642,6 +900,8 @@ pub async fn api_update_message(
 		itinerary_id,
 		&pool,
 		&agent,
+		&chat_session_id_atomic,
+		&context_store,
 	)
 	.await?;
 
@@ -719,6 +979,8 @@ pub async fn api_send_message(
 	Extension(user): Extension<AuthUser>,
 	Extension(pool): Extension<PgPool>,
 	Extension(agent): Extension<AgentType>,
+	Extension(chat_session_id_atomic): Extension<std::sync::Arc<std::sync::atomic::AtomicI32>>,
+	Extension(context_store): Extension<crate::agent::models::context::SharedContextStore>,
 	Json(SendMessageRequest {
 		chat_session_id,
 		text,
@@ -766,6 +1028,8 @@ pub async fn api_send_message(
 		itinerary_id,
 		&pool,
 		&agent,
+		&chat_session_id_atomic,
+		&context_store,
 	)
 	.await?;
 
@@ -917,7 +1181,7 @@ pub async fn api_delete_chat(
 		chat_session_id,
 		user.id
 	)
-	.fetch_optional(&pool)
+	.execute(&pool)
 	.await
 	.map_err(AppError::from)?;
 
