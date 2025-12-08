@@ -39,11 +39,13 @@ pub fn create_constraint_agent(
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	// TODO: Add tools here
-
 	// Select model (will read key from environment variable)
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4oMini);
+
+	// Get tools - pass LLM as Arc<dyn LLM> and database pool
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
+		Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc, pool);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
@@ -51,7 +53,7 @@ pub fn create_constraint_agent(
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		// TODO: Add tools here
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();
@@ -64,7 +66,9 @@ pub fn create_constraint_agent(
 /// but when DEPLOY_LLM != "1", the agent is never invoked, so this is safe.
 /// This allows tests to run without requiring a valid OPENAI_API_KEY.
 #[cfg(test)]
-pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
+pub fn create_dummy_constraint_agent(
+	pool: PgPool,
+) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
 	let original_key = std::env::var("OPENAI_API_KEY").ok();
@@ -77,11 +81,13 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 	// Create memory
 	let memory = SimpleMemory::new();
 
-	// Get tools
-	// TODO: Add tools here
-
 	// Select model
 	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+
+	// Get tools - pass LLM as Arc<dyn LLM> and database pool
+	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
+		Arc::new(llm.clone());
+	let tools = constraint_tools(llm_arc, pool);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
@@ -89,7 +95,7 @@ pub fn create_dummy_constraint_agent() -> Result<AgentExecutor<ConversationalAge
 
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(system_prompt)
-		// TODO: Add tools here
+		.tools(&tools)
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(llm)
 		.unwrap();

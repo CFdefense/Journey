@@ -354,6 +354,91 @@ impl Tool for RouteTaskTool {
 			return Ok(response);
 		}
 
+		// For research/constraint/optimize agents, inject context from context_store
+		let payload_str = if task_type_normalized == "research" {
+			// Research gets the current trip_context snapshot
+			let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+			if chat_id > 0 {
+				let store_guard = self.context_store.read().await;
+				if let Some(context_data) = store_guard.get(&chat_id) {
+					let trip_context_json = serde_json::to_string(&context_data.trip_context)
+						.unwrap_or_else(|_| "{}".to_string());
+
+					info!(
+						target: "orchestrator_pipeline",
+						agent = "research",
+						"Injecting trip context into payload"
+					);
+					debug!(
+						target: "orchestrator_pipeline",
+						trip_context = %trip_context_json,
+						"Trip context being passed to research agent"
+					);
+
+					drop(store_guard);
+					trip_context_json
+				} else {
+					payload_str
+				}
+			} else {
+				payload_str
+			}
+		} else if task_type_normalized == "constraint" {
+			// Constraint gets both trip context and the latest research results
+			let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+			if chat_id > 0 {
+				let store_guard = self.context_store.read().await;
+				if let Some(context_data) = store_guard.get(&chat_id) {
+					// Find latest successful research result from tool_history
+					let mut research_data: Value = json!(null);
+					for exec in context_data.tool_history.iter().rev() {
+						if exec.tool_name == "route_task" {
+							if let Some(agent) = exec.output.get("agent").and_then(|v| v.as_str()) {
+								if agent == "research" {
+									if exec.output.get("status").and_then(|v| v.as_str())
+										== Some("completed")
+									{
+										research_data =
+											exec.output.get("data").cloned().unwrap_or(json!(null));
+										break;
+									}
+								}
+							}
+						}
+					}
+
+					let constraint_payload = json!({
+						"trip_context": &context_data.trip_context,
+						"constraints": &context_data.constraints,
+						"events": research_data
+					});
+
+					let payload_json = serde_json::to_string(&constraint_payload)
+						.unwrap_or_else(|_| "{}".to_string());
+
+					info!(
+						target: "orchestrator_pipeline",
+						agent = "constraint",
+						"Injecting trip context and research results into constraint payload"
+					);
+					debug!(
+						target: "orchestrator_pipeline",
+						payload = %payload_json,
+						"Constraint payload being passed to agent"
+					);
+
+					drop(store_guard);
+					payload_json
+				} else {
+					payload_str
+				}
+			} else {
+				payload_str
+			}
+		} else {
+			payload_str
+		};
+
 		let result = match task_type_normalized.as_str() {
 			"research" => {
 				crate::tool_trace!(agent: "research", tool: "begin", status: "invoked");
