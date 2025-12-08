@@ -251,7 +251,7 @@ impl<'db> Tool for NearbySearchTool {
 	}
 
 	fn description(&self) -> String {
-		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria. The resulting events are inserted or updated in the database and their IDs are returned. Returns a JSON object with 'event_ids' (array of integer IDs) and 'count' (number of events found)."
+		"A tool that uses Google Maps Nearby Search to fetch a list of places in a given area with certain input criteria. The resulting events are inserted or updated in the database and their IDs are returned. Returns a JSON object with 'event_ids' (array of integer IDs) and 'count' (number of events found). This may be invoked a few times with slightly different lat and lng to get different results. The radius to search is 50 Km and 5 Km for 2 searches."
             .to_string()
 	}
 
@@ -594,19 +594,21 @@ impl<'db> Tool for NearbySearchTool {
 					query.fetch_all(&self.db).await
 				};
 
-				let (nearby_search_50, nearby_search_10, db_query_task) = tokio::join!(
+				let (nearby_search_50, nearby_search_5, db_query_task) = tokio::join!(
 					nearby_search(50_000.),
-					nearby_search(10_000.),
+					nearby_search(5_000.),
 					db_query_task
 				);
 				let mut nearby_searches = nearby_search_50?;
-				nearby_searches.append(&mut nearby_search_10?);
+				nearby_searches.append(&mut nearby_search_5?);
 				(nearby_searches, db_query_task?)
 			} else {
-				let (nearby_search_50, nearby_search_10) =
-					tokio::join!(nearby_search(50_000.), nearby_search(10_000.));
+				let (nearby_search_50, nearby_search_5) = tokio::join!(
+					nearby_search(50_000.),
+					nearby_search(5_000.)
+				);
 				let mut nearby_searches = nearby_search_50?;
-				nearby_searches.append(&mut nearby_search_10?);
+				nearby_searches.append(&mut nearby_search_5?);
 				let len = nearby_searches.len();
 				(nearby_searches, Vec::with_capacity(len))
 			};
