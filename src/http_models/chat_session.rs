@@ -31,7 +31,7 @@ pub struct ProgressRequest {
 }
 
 /// Response model from the `/api/chat/progress` endpoint
-#[derive(Serialize, ToSchema, ToResponse)]
+#[derive(Debug, Serialize, ToSchema, ToResponse)]
 pub struct ProgressResponse {
 	pub progress: LlmProgress,
 	pub title: String,
