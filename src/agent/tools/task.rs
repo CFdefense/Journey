@@ -17,9 +17,9 @@
 use crate::agent::models::context::{ContextData, SharedContextStore};
 use crate::agent::models::user::UserIntent;
 use crate::agent::tools::orchestrator::track_tool_execution;
-use crate::sql_models::LlmProgress;
 use crate::controllers::itinerary::insert_event_list;
 use crate::http_models::itinerary::Itinerary as HttpItinerary;
+use crate::sql_models::LlmProgress;
 use async_trait::async_trait;
 use chrono::Datelike;
 use langchain_rust::language_models::llm::LLM;

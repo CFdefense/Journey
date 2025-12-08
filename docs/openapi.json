@@ -1763,7 +1763,8 @@
           "CheckingConstraints",
           "Scheduling",
           "Optimizing",
-          "RankingEvents"
+          "RankingEvents",
+          "FinalizingItinerary"
         ]
       },
       "LoginRequest": {
