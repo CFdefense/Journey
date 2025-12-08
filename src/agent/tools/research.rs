@@ -12,7 +12,8 @@ use google_maps::places_new::{Field, FieldMask, PlaceType};
 use langchain_rust::tools::Tool;
 use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
+use sqlx::prelude::FromRow;
 use std::time::Instant;
 use std::{error::Error, sync::Arc};
 use tracing::{debug, info};
@@ -276,9 +277,19 @@ impl<'db> Tool for NearbySearchTool {
 					"type": "array",
 					"description": "An array of places types to exclude.",
 					"items": {"type": "string"}
+				},
+				"cities": {
+					"type": "array",
+					"description": "An array of strings representing cities the user would like to travel to. If a list of cities cannot be interpreted from the user's prompt, this must be an empty array. Cities could be obtained directly from the user's prompt or by using neighboring cities that weren't mentioned.",
+					"items": {"type": "string"},
+					"default": []
+				},
+				"country": {
+					"type": "string",
+					"description": "The country the user would like to travel to."
 				}
 			},
-			"required": ["lat", "lng"]
+			"required": ["lat", "lng", "cities"]
 		})
 	}
 
@@ -413,6 +424,13 @@ impl<'db> Tool for NearbySearchTool {
 			"Search coordinates"
 		);
 
+		let cities = parsed_input["cities"]
+			.as_array()
+			.ok_or("cities should be an array of strings")?
+			.into_iter()
+			.map(|v| v.as_str().ok_or("cities should be an array of strings"))
+			.collect::<Result<Vec<&str>, &str>>()?;
+
 		const INCLUDE_TYPES_ERR: &str = "includedTypes should be an array of strings";
 		const EXCLUDE_TYPES_ERR: &str = "excludedTypes should be an array of strings";
 		let included_types = if !parsed_input["includedTypes"].is_null() {
@@ -460,227 +478,275 @@ impl<'db> Tool for NearbySearchTool {
 			"Calling Google Maps API"
 		);
 
-		let search_res = gm_client
-			.nearby_search((lat, lng, 50_000.))?
-			.field_mask(FieldMask::Specific(vec![
-				Field::PlacesAccessibilityOptions,
-				Field::PlacesAdrFormatAddress,
-				Field::PlacesDisplayName,
-				Field::PlacesId,
-				Field::PlacesPhotos,
-				Field::PlacesUtcOffsetMinutes,
-				Field::PlacesPriceLevel,
-				Field::PlacesRegularOpeningHours,
-				Field::PlacesWebsiteUri,
-				Field::PlacesServesVegetarianFood,
-				Field::PlacesTypes,
-				Field::PlacesPrimaryType,
-				Field::PlacesEditorialSummary,
-			]))
-			// pray to our lord and savior Terry Davis that this works
-			.included_types(
-				included_types
-					.iter()
-					.map(|t| {
-						PlaceType::deserialize(t.into_deserializer()).map_err(
-							|_: serde::de::value::Error| "Could not deserialize place type within includedTypes array",
-						)
-					})
-					.collect::<Result<Vec<_>, _>>()?,
-			)
-			.excluded_types(
-				excluded_types
-					.iter()
-					.map(|t| {
-						PlaceType::deserialize(t.into_deserializer()).map_err(
-							|_: serde::de::value::Error| "Could not deserialize place type within excludedTypes array",
-						)
-					})
-					.collect::<Result<Vec<_>, _>>()?,
-			)
-			.execute()
-			.await?;
+		// Query DB and do nearby search concurrently
+		let nearby_search = async move |radius: f64| {
+			let search_res = gm_client
+				.nearby_search((lat, lng, radius))
+				.map_err(|e| e.to_string())?
+				.field_mask(FieldMask::Specific(vec![
+					Field::PlacesAccessibilityOptions,
+					Field::PlacesAdrFormatAddress,
+					Field::PlacesDisplayName,
+					Field::PlacesId,
+					Field::PlacesPhotos,
+					Field::PlacesUtcOffsetMinutes,
+					Field::PlacesPriceLevel,
+					Field::PlacesRegularOpeningHours,
+					Field::PlacesWebsiteUri,
+					Field::PlacesServesVegetarianFood,
+					Field::PlacesTypes,
+					Field::PlacesPrimaryType,
+					Field::PlacesEditorialSummary,
+				]))
+				// pray to our lord and savior Terry Davis that this works
+				.included_types(
+					included_types
+						.iter()
+						.map(|t| {
+							PlaceType::deserialize(t.into_deserializer()).map_err(
+								|_: serde::de::value::Error| "Could not deserialize place type within includedTypes array",
+							)
+						})
+						.collect::<Result<Vec<_>, _>>()
+						.map_err(|e| e.to_string())?,
+				)
+				.excluded_types(
+					excluded_types
+						.iter()
+						.map(|t| {
+							PlaceType::deserialize(t.into_deserializer()).map_err(
+								|_: serde::de::value::Error| "Could not deserialize place type within excludedTypes array",
+							)
+						})
+						.collect::<Result<Vec<_>, _>>()
+						.map_err(|e| e.to_string())?,
+				)
+				.execute()
+				.await
+				.map_err(|e| e.to_string())?;
 
-		if let Some(err) = search_res.error() {
-			let elapsed = start_time.elapsed();
-			crate::tool_trace!(
-				agent: "research",
-				tool: "nearby_search_tool",
-				status: "error",
-				details: format!("{}ms - API error: {}", elapsed.as_millis(), err)
-			);
+			if let Some(err) = search_res.error() {
+				let elapsed = start_time.elapsed();
+				crate::tool_trace!(
+					agent: "research",
+					tool: "nearby_search_tool",
+					status: "error",
+					details: format!("{}ms - API error: {}", elapsed.as_millis(), err)
+				);
+				info!(
+					target: "research_tools",
+					tool = "nearby_search_tool",
+					elapsed_ms = elapsed.as_millis() as u64,
+					error = %err,
+					"Nearby search API error"
+				);
+				return Err(format!("Nearby Search failed - {err}"));
+			}
+			let places = search_res.places();
+			if places.is_empty() {
+				let elapsed = start_time.elapsed();
+				crate::tool_trace!(
+					agent: "research",
+					tool: "nearby_search_tool",
+					status: "error",
+					details: format!("{}ms - No places found", elapsed.as_millis())
+				);
+				info!(
+					target: "research_tools",
+					tool = "nearby_search_tool",
+					elapsed_ms = elapsed.as_millis() as u64,
+					"No places found in nearby search"
+				);
+				return Err(format!("Nearby Search returned an empty array of places").into());
+			}
+
 			info!(
 				target: "research_tools",
 				tool = "nearby_search_tool",
-				elapsed_ms = elapsed.as_millis() as u64,
-				error = %err,
-				"Nearby search API error"
+				places_count = places.len(),
+				"Found places from Google Maps"
 			);
-			return Err(format!("Nearby Search failed - {err}").into());
-		}
-		let places = search_res.places();
-		if places.is_empty() {
-			let elapsed = start_time.elapsed();
-			crate::tool_trace!(
-				agent: "research",
-				tool: "nearby_search_tool",
-				status: "error",
-				details: format!("{}ms - No places found", elapsed.as_millis())
-			);
-			info!(
-				target: "research_tools",
-				tool = "nearby_search_tool",
-				elapsed_ms = elapsed.as_millis() as u64,
-				"No places found in nearby search"
-			);
-			return Err(format!("Nearby Search returned an empty array of places").into());
-		}
-
-		info!(
-			target: "research_tools",
-			tool = "nearby_search_tool",
-			places_count = places.len(),
-			"Found places from Google Maps"
-		);
-
-		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
-
-		info!(
-			target: "research_tools",
-			tool = "nearby_search_tool",
-			events_to_insert = events.len(),
-			"Inserting/updating events in database"
-		);
+			Ok(places
+				.into_iter()
+				.map(|p| Event::from(p))
+				.collect::<Vec<_>>())
+		};
 
 		// Define a struct to capture the RETURNING clause results
+		#[derive(FromRow)]
 		struct EventInsertResult {
 			id: i32,
 			event_name: String,
 		}
 
+		let (mut nearby_search_events, db_query_events) =
+			if let Some(country) = parsed_input["country"].as_str() {
+				let db_query_task = async move {
+					let mut qb = sqlx::QueryBuilder::new(
+						"SELECT id, event_name FROM events WHERE country ILIKE ",
+					);
+					qb.push_bind(country);
+					let mut separated = qb.separated(" OR ");
+					for city in cities {
+						// Add "%" wildcards here if needed
+						separated.push("city ILIKE ");
+						separated.push_bind(format!("%{}%", city));
+					}
+					let query = qb.build_query_as::<EventInsertResult>();
+					query.fetch_all(&self.db).await
+				};
+
+				let (nearby_search_50, nearby_search_10, db_query_task) = tokio::join!(
+					nearby_search(50_000.),
+					nearby_search(10_000.),
+					db_query_task
+				);
+				let mut nearby_searches = nearby_search_50?;
+				nearby_searches.append(&mut nearby_search_10?);
+				(nearby_searches, db_query_task?)
+			} else {
+				let (nearby_search_50, nearby_search_10) =
+					tokio::join!(nearby_search(50_000.), nearby_search(10_000.));
+				let mut nearby_searches = nearby_search_50?;
+				nearby_searches.append(&mut nearby_search_10?);
+				let len = nearby_searches.len();
+				(nearby_searches, Vec::with_capacity(len))
+			};
+
+		nearby_search_events.sort_unstable_by(|a, b| a.place_id.cmp(&b.place_id));
+		nearby_search_events.dedup_by(|a, b| a.place_id == b.place_id);
+
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			events_to_insert = nearby_search_events.len(),
+			"Inserting/updating events in database"
+		);
+
 		// Use query! macro for compile-time type checking
 		// Insert events one by one to use the type-safe macro
-		let mut results: Vec<EventInsertResult> = Vec::with_capacity(events.len());
+		let mut results: Vec<EventInsertResult> = db_query_events;
+		results.reserve(nearby_search_events.len());
 
-		for ev in events.iter() {
+		for ev in nearby_search_events.iter() {
 			let result = sqlx::query!(
-			r#"
-			INSERT INTO events (
-				event_name,
-				event_description,
-				street_address,
-				city,
-				country,
-				postal_code,
-				lat,
-				lng,
-				event_type,
-				user_created,
-				hard_start,
-				hard_end,
-				timezone,
-				place_id,
-				wheelchair_accessible_parking,
-				wheelchair_accessible_entrance,
-				wheelchair_accessible_restroom,
-				wheelchair_accessible_seating,
-				serves_vegetarian_food,
-				price_level,
-				utc_offset_minutes,
-				website_uri,
-				types,
-				photo_name,
-				photo_width,
-				photo_height,
-				photo_author,
-				photo_author_uri,
-				photo_author_photo_uri,
-				weekday_descriptions,
-				secondary_hours_type,
-				next_open_time,
-				next_close_time,
-				open_now,
-				periods,
-				special_days
+				r#"
+				INSERT INTO events (
+					event_name,
+					event_description,
+					street_address,
+					city,
+					country,
+					postal_code,
+					lat,
+					lng,
+					event_type,
+					user_created,
+					hard_start,
+					hard_end,
+					timezone,
+					place_id,
+					wheelchair_accessible_parking,
+					wheelchair_accessible_entrance,
+					wheelchair_accessible_restroom,
+					wheelchair_accessible_seating,
+					serves_vegetarian_food,
+					price_level,
+					utc_offset_minutes,
+					website_uri,
+					types,
+					photo_name,
+					photo_width,
+					photo_height,
+					photo_author,
+					photo_author_uri,
+					photo_author_photo_uri,
+					weekday_descriptions,
+					secondary_hours_type,
+					next_open_time,
+					next_close_time,
+					open_now,
+					periods,
+					special_days
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
+				ON CONFLICT (place_id) DO UPDATE SET
+					event_name = EXCLUDED.event_name,
+					event_description = EXCLUDED.event_description,
+					street_address = EXCLUDED.street_address,
+					city = EXCLUDED.city,
+					country = EXCLUDED.country,
+					postal_code = EXCLUDED.postal_code,
+					lat = EXCLUDED.lat,
+					lng = EXCLUDED.lng,
+					event_type = EXCLUDED.event_type,
+					user_created = EXCLUDED.user_created,
+					hard_start = EXCLUDED.hard_start,
+					hard_end = EXCLUDED.hard_end,
+					timezone = EXCLUDED.timezone,
+					wheelchair_accessible_parking = EXCLUDED.wheelchair_accessible_parking,
+					wheelchair_accessible_entrance = EXCLUDED.wheelchair_accessible_entrance,
+					wheelchair_accessible_restroom = EXCLUDED.wheelchair_accessible_restroom,
+					wheelchair_accessible_seating = EXCLUDED.wheelchair_accessible_seating,
+					serves_vegetarian_food = EXCLUDED.serves_vegetarian_food,
+					price_level = EXCLUDED.price_level,
+					utc_offset_minutes = EXCLUDED.utc_offset_minutes,
+					website_uri = EXCLUDED.website_uri,
+					types = EXCLUDED.types,
+					photo_name = EXCLUDED.photo_name,
+					photo_width = EXCLUDED.photo_width,
+					photo_height = EXCLUDED.photo_height,
+					photo_author = EXCLUDED.photo_author,
+					photo_author_uri = EXCLUDED.photo_author_uri,
+					photo_author_photo_uri = EXCLUDED.photo_author_photo_uri,
+					weekday_descriptions = EXCLUDED.weekday_descriptions,
+					secondary_hours_type = EXCLUDED.secondary_hours_type,
+					next_open_time = EXCLUDED.next_open_time,
+					next_close_time = EXCLUDED.next_close_time,
+					open_now = EXCLUDED.open_now,
+					periods = EXCLUDED.periods,
+					special_days = EXCLUDED.special_days
+				RETURNING id, event_name
+				"#,
+				&ev.event_name,
+				ev.event_description.as_ref(),
+				ev.street_address.as_ref(),
+				ev.city.as_ref(),
+				ev.country.as_ref(),
+				ev.postal_code,
+				ev.lat,
+				ev.lng,
+				ev.event_type.as_ref(),
+				ev.user_created,
+				ev.hard_start,
+				ev.hard_end,
+				ev.timezone.as_ref(),
+				ev.place_id.as_ref(),
+				ev.wheelchair_accessible_parking,
+				ev.wheelchair_accessible_entrance,
+				ev.wheelchair_accessible_restroom,
+				ev.wheelchair_accessible_seating,
+				ev.serves_vegetarian_food,
+				ev.price_level,
+				ev.utc_offset_minutes,
+				ev.website_uri.as_ref(),
+				ev.types.as_ref(),
+				ev.photo_name.as_ref(),
+				ev.photo_width,
+				ev.photo_height,
+				ev.photo_author.as_ref(),
+				ev.photo_author_uri.as_ref(),
+				ev.photo_author_photo_uri.as_ref(),
+				ev.weekday_descriptions.as_ref(),
+				ev.secondary_hours_type,
+				ev.next_open_time,
+				ev.next_close_time,
+				ev.open_now,
+				&ev.periods as _,
+				&ev.special_days as _,
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
-			ON CONFLICT (place_id) DO UPDATE SET
-				event_name = EXCLUDED.event_name,
-				event_description = EXCLUDED.event_description,
-				street_address = EXCLUDED.street_address,
-				city = EXCLUDED.city,
-				country = EXCLUDED.country,
-				postal_code = EXCLUDED.postal_code,
-				lat = EXCLUDED.lat,
-				lng = EXCLUDED.lng,
-				event_type = EXCLUDED.event_type,
-				user_created = EXCLUDED.user_created,
-				hard_start = EXCLUDED.hard_start,
-				hard_end = EXCLUDED.hard_end,
-				timezone = EXCLUDED.timezone,
-				wheelchair_accessible_parking = EXCLUDED.wheelchair_accessible_parking,
-				wheelchair_accessible_entrance = EXCLUDED.wheelchair_accessible_entrance,
-				wheelchair_accessible_restroom = EXCLUDED.wheelchair_accessible_restroom,
-				wheelchair_accessible_seating = EXCLUDED.wheelchair_accessible_seating,
-				serves_vegetarian_food = EXCLUDED.serves_vegetarian_food,
-				price_level = EXCLUDED.price_level,
-				utc_offset_minutes = EXCLUDED.utc_offset_minutes,
-				website_uri = EXCLUDED.website_uri,
-				types = EXCLUDED.types,
-				photo_name = EXCLUDED.photo_name,
-				photo_width = EXCLUDED.photo_width,
-				photo_height = EXCLUDED.photo_height,
-				photo_author = EXCLUDED.photo_author,
-				photo_author_uri = EXCLUDED.photo_author_uri,
-				photo_author_photo_uri = EXCLUDED.photo_author_photo_uri,
-				weekday_descriptions = EXCLUDED.weekday_descriptions,
-				secondary_hours_type = EXCLUDED.secondary_hours_type,
-				next_open_time = EXCLUDED.next_open_time,
-				next_close_time = EXCLUDED.next_close_time,
-				open_now = EXCLUDED.open_now,
-				periods = EXCLUDED.periods,
-				special_days = EXCLUDED.special_days
-			RETURNING id, event_name
-			"#,
-			&ev.event_name,
-			ev.event_description.as_ref(),
-			ev.street_address.as_ref(),
-			ev.city.as_ref(),
-			ev.country.as_ref(),
-			ev.postal_code,
-			ev.lat,
-			ev.lng,
-			ev.event_type.as_ref(),
-			ev.user_created,
-			ev.hard_start,
-			ev.hard_end,
-			ev.timezone.as_ref(),
-			ev.place_id.as_ref(),
-			ev.wheelchair_accessible_parking,
-			ev.wheelchair_accessible_entrance,
-			ev.wheelchair_accessible_restroom,
-			ev.wheelchair_accessible_seating,
-			ev.serves_vegetarian_food,
-			ev.price_level,
-			ev.utc_offset_minutes,
-			ev.website_uri.as_ref(),
-			ev.types.as_ref(),
-			ev.photo_name.as_ref(),
-			ev.photo_width,
-			ev.photo_height,
-			ev.photo_author.as_ref(),
-			ev.photo_author_uri.as_ref(),
-			ev.photo_author_photo_uri.as_ref(),
-			ev.weekday_descriptions.as_ref(),
-			ev.secondary_hours_type,
-			ev.next_open_time,
-			ev.next_close_time,
-			ev.open_now,
-			&ev.periods as _,
-			&ev.special_days as _,
-		)
-		.fetch_one(&self.db)
-		.await?;
+			.fetch_one(&self.db)
+			.await?;
 
 			results.push(EventInsertResult {
 				id: result.id,
@@ -691,6 +757,8 @@ impl<'db> Tool for NearbySearchTool {
 		let elapsed = start_time.elapsed();
 
 		// Extract event IDs and names for the response and debugging
+		results.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+		results.dedup_by(|a, b| a.id == b.id);
 		let event_ids: Vec<i32> = results.iter().map(|r| r.id).collect();
 		let event_names: Vec<String> = results.iter().map(|r| r.event_name.clone()).collect();
 
