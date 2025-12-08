@@ -1,9 +1,10 @@
 use chrono::{NaiveDate, NaiveDateTime};
+use serde::Deserialize;
 
 use crate::sql_models::Period;
 
-/// This model is a subset of [crate::http_models::event::Event].
-/// It contains only fields that are relevant for context in use with the LLM.
+/// A subset of [crate::http_models::event::Event] which only contains fields that the LLM might need for context.
+#[derive(Deserialize)]
 pub struct Event {
 	/// Primary key
 	pub id: i32,
@@ -20,7 +21,6 @@ pub struct Event {
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end
 	pub timezone: Option<String>,
-	pub place_id: Option<String>,
 	pub wheelchair_accessible_parking: Option<bool>,
 	pub wheelchair_accessible_entrance: Option<bool>,
 	pub wheelchair_accessible_restroom: Option<bool>,
