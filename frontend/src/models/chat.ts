@@ -88,5 +88,5 @@ export enum LlmProgress {
 	Searching,
 	Filtering,
 	Scheduling,
-	Optimizing,
+	Optimizing
 }

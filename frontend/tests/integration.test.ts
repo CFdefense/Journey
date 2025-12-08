@@ -22,7 +22,7 @@ import {
 	apiSaveItineraryChanges,
 	apiUnsaveItinerary,
 	apiGetSavedItineraries,
-    apiProgress
+	apiProgress
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 import { ChatSessionRow, LlmProgress } from "../src/models/chat";
 import {
@@ -100,7 +100,7 @@ async function test_flow() {
 
 	// get llm status
 	const progressRes = await apiProgress({
-		chat_session_id: newChatId,
+		chat_session_id: newChatId
 	});
 	expect(progressRes.status).toBe(200);
 	expect(progressRes.result!.progress).toBe(LlmProgress.Ready);
@@ -177,19 +177,19 @@ async function test_flow() {
 
 	// Create user-event
 	const userEvent: UserEventRequest = {
-        id: null,
-        event_name: "test",
-        street_address: "test",
-        postal_code: 1,
-        city: "test",
-        country: "test",
-        event_type: "test",
-        event_description: "test",
-        hard_start: "2015-11-12T23:25:00",
-        hard_end: "2025-11-12T23:25:00",
-        timezone: "UTC",
-        photo_name: null
-    };
+		id: null,
+		event_name: "test",
+		street_address: "test",
+		postal_code: 1,
+		city: "test",
+		country: "test",
+		event_type: "test",
+		event_description: "test",
+		hard_start: "2015-11-12T23:25:00",
+		hard_end: "2025-11-12T23:25:00",
+		timezone: "UTC",
+		photo_name: null
+	};
 	const createEventRes = await apiUserEvent(userEvent);
 	expect(createEventRes.status).toBe(200);
 
@@ -281,14 +281,14 @@ async function test_flow() {
 
 	// Test unsaving non-existent itinerary (should return 404)
 	const nonExistentItinerary: Itinerary = {
-        id: 999999,
-        start_date: "2025-01-01",
-        end_date: "2025-12-31",
-        event_days: [],
-        chat_session_id: null,
-        title: "Non-existent",
-        unassigned_events: []
-    };
+		id: 999999,
+		start_date: "2025-01-01",
+		end_date: "2025-12-31",
+		event_days: [],
+		chat_session_id: null,
+		title: "Non-existent",
+		unassigned_events: []
+	};
 	const unsaveNonExistent = await apiUnsaveItinerary(nonExistentItinerary);
 	expect(unsaveNonExistent.status).toBe(404);
 
@@ -352,14 +352,14 @@ describe("Integration Tests", () => {
 
 		// Test unsave errors
 		const errorItinerary2: Itinerary = {
-            id: 99999,
-            start_date: "2025-01-01",
-            end_date: "2025-12-31",
-            event_days: [],
-            chat_session_id: null,
-            title: "Error Test",
-            unassigned_events: []
-        };
+			id: 99999,
+			start_date: "2025-01-01",
+			end_date: "2025-12-31",
+			event_days: [],
+			chat_session_id: null,
+			title: "Error Test",
+			unassigned_events: []
+		};
 
 		const errorUnsave = await apiUnsaveItinerary(errorItinerary2);
 		expect(errorUnsave.status).toBeGreaterThanOrEqual(-1);

@@ -13,7 +13,9 @@ use crate::{
 	error::{ApiResult, AppError},
 	global::MESSAGE_PAGE_LEN,
 	http_models::{
-		chat_session::{ChatsResponse, NewChatResponse, ProgressRequest, ProgressResponse, RenameRequest},
+		chat_session::{
+			ChatsResponse, NewChatResponse, ProgressRequest, ProgressResponse, RenameRequest,
+		},
 		event::Event,
 		itinerary::{EventDay, Itinerary},
 		message::{
@@ -22,7 +24,10 @@ use crate::{
 		},
 	},
 	middleware::{AuthUser, middleware_auth},
-	sql_models::{LlmProgress, message::{ChatSessionRow, MessageRow}},
+	sql_models::{
+		LlmProgress,
+		message::{ChatSessionRow, MessageRow},
+	},
 	swagger::SecurityAddon,
 };
 
@@ -498,14 +503,18 @@ async fn send_message_to_llm(
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
 
 	let pool = pool.clone();
-	tokio::spawn(async move {_ = sqlx::query!(
-		r#"UPDATE chat_sessions
+	tokio::spawn(async move {
+		_ = sqlx::query!(
+			r#"UPDATE chat_sessions
 		SET llm_progress=$1
 		WHERE id=$2 AND account_id=$3;"#,
-		LlmProgress::Ready as _,
-		chat_session_id,
-		account_id,
-	).execute(&pool).await;});
+			LlmProgress::Ready as _,
+			chat_session_id,
+			account_id,
+		)
+		.execute(&pool)
+		.await;
+	});
 
 	Ok(Message {
 		id: bot_message_id,
@@ -1354,7 +1363,10 @@ pub async fn api_progress(
 	.await
 	.map_err(AppError::from)?
 	.ok_or(AppError::NotFound)?;
-	Ok(Json(ProgressResponse {progress: row.llm_progress, title: row.title}))
+	Ok(Json(ProgressResponse {
+		progress: row.llm_progress,
+		title: row.title,
+	}))
 }
 
 /// Create the chat routes with authentication middleware.

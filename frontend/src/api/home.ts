@@ -9,8 +9,8 @@ import type {
 	Message,
 	UpdateMessageRequest,
 	RenameRequest,
-    ProgressRequest,
-    ProgressResponse
+	ProgressRequest,
+	ProgressResponse
 } from "../models/chat";
 
 /// Calls chats
@@ -281,7 +281,10 @@ export async function apiProgress(
 			credentials: import.meta.env.DEV ? "include" : "same-origin",
 			body: JSON.stringify(payload)
 		});
-		return { result: response.ok? await response.json() : null, status: response.status };
+		return {
+			result: response.ok ? await response.json() : null,
+			status: response.status
+		};
 	} catch (error) {
 		console.error("apiProgress error:", error);
 		return { result: null, status: -1 };

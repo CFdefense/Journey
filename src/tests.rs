@@ -1110,22 +1110,26 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 	);
 
 	// get llm progress
-	let json = Json(ProgressRequest {chat_session_id});
-	assert_eq!(controllers::chat::api_progress(user, Extension(pool.clone()), json)
-		.await
-		.unwrap()
-		.0
-		.progress,
+	let json = Json(ProgressRequest { chat_session_id });
+	assert_eq!(
+		controllers::chat::api_progress(user, Extension(pool.clone()), json)
+			.await
+			.unwrap()
+			.0
+			.progress,
 		LlmProgress::Ready
 	);
 
 	// llm progress invalid chat session id
-	let json = Json(ProgressRequest {chat_session_id: -1});
-	assert_eq!(controllers::chat::api_progress(user, Extension(pool.clone()), json)
-		.await
-		.unwrap_err()
-		.status_code()
-		.as_u16(),
+	let json = Json(ProgressRequest {
+		chat_session_id: -1,
+	});
+	assert_eq!(
+		controllers::chat::api_progress(user, Extension(pool.clone()), json)
+			.await
+			.unwrap_err()
+			.status_code()
+			.as_u16(),
 		404
 	);
 
