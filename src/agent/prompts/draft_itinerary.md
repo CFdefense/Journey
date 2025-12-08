@@ -6,6 +6,7 @@ You are assembling a list of Points of Interest into a complete itinerary struct
 ```
 
 ## Itinerary Model (TypeScript):
+These are the TypeScript type definitions for itineraries and events used throughout the codebase.
 ```typescript
 {}
 ```

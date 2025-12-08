@@ -151,7 +151,7 @@ impl Tool for OptimizeItineraryTool {
 		// Fetch all events from database
 		let rows = sqlx::query!(
 			r#"
-			SELECT 
+			SELECT
 				id,
 				event_name,
 				event_description,
@@ -846,7 +846,7 @@ impl Tool for DraftItineraryTool {
 		let prompt = format!(
 			include_str!("../prompts/draft_itinerary.md"),
 			serde_json::to_string_pretty(&pois)?,
-			include_str!("../prompts/itinerary_model.md"),
+			include_str!("../prompts/itinerary.ts"),
 			diversity_factor.unwrap_or(Ok(0.7))?,
 			serde_json::to_string_pretty(&trip_context)?
 		);

@@ -1,8 +1,3 @@
-# Itinerary TypeScript Model
-
-These are the TypeScript type definitions for itineraries and events used throughout the codebase.
-
-```typescript
 type Itinerary = {
 	id: number;
 	/// Date format: YYYY-MM-DD
@@ -25,8 +20,16 @@ type EventDay = {
 };
 
 type Period = {
-	open: { day: number; hour: number; minute: number; };
-	close: { day: number; hour: number; minute: number; };
+	open_date: string | null;
+	open_truncated: boolean | null;
+	open_day: number;
+	open_hour: number;
+	open_minute: number;
+	close_date: string | null;
+	close_truncated: boolean | null;
+	close_day: number | null;
+	close_hour: number | null;
+	close_minute: number | null;
 };
 
 type Event = {
@@ -44,7 +47,7 @@ type Event = {
 	hard_start: string | null;
 	/// ISO 8601 datetime string (if event has fixed end time)
 	hard_end: string | null;
-	/// Timezone identifier (e.g., "America/New_York")
+	/// Timezone identifier (e.g., "America/New_York"; see TIMEZONES below)
 	timezone: string | null;
 	wheelchair_accessible_parking: boolean | null;
 	wheelchair_accessible_entrance: boolean | null;
@@ -71,5 +74,45 @@ type Event = {
 	/// Block index for ordering within time period
 	block_index: number | null;
 };
-```
 
+export const TIMEZONES: string[] = [
+	"Pacific/Niue",
+	"Pacific/Honolulu",
+	"Pacific/Marquesas",
+	"America/Anchorage",
+	"America/Los_Angeles",
+	"America/Denver",
+	"America/Chicago",
+	"America/New_York",
+	"America/Halifax",
+	"America/St_Johns",
+	"America/Sao_Paulo",
+	"Atlantic/Stanley",
+	"America/Noronha",
+	"Atlantic/Azores",
+	"UTC",
+	"Europe/Berlin",
+	"Europe/Athens",
+	"Africa/Nairobi",
+	"Europe/Moscow",
+	"Asia/Tehran",
+	"Asia/Dubai",
+	"Asia/Kabul",
+	"Antarctica/Vostok",
+	"Asia/Kolkata",
+	"Asia/Kathmandu",
+	"Asia/Dhaka",
+	"Asia/Yangon",
+	"Asia/Jakarta",
+	"Asia/Shanghai",
+	"Australia/Eucla",
+	"Asia/Tokyo",
+	"Australia/Adelaide",
+	"Australia/Brisbane",
+	"Australia/Lord_Howe",
+	"Pacific/Norfolk",
+	"Pacific/Auckland",
+	"Pacific/Chatham",
+	"Pacific/Tongatapu",
+	"Pacific/Kiritimati"
+];
