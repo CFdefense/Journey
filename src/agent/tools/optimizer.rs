@@ -8,9 +8,17 @@
  */
 
 use async_trait::async_trait;
-use langchain_rust::tools::Tool;
+use langchain_rust::{language_models::llm::LLM, tools::Tool};
 use serde_json::{Value, json};
-use std::error::Error;
+use std::{error::Error, sync::Arc};
+
+pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>) -> [Arc<dyn Tool>; 3] {
+	[
+		Arc::new(RankPOIsByPreferenceTool { llm: llm.clone() }),
+		Arc::new(DraftItineraryTool { llm }),
+		Arc::new(OptimizeRouteTool),
+	]
+}
 
 /// Tool that ranks Points of Interest based on user preferences and constraints
 ///
@@ -21,7 +29,26 @@ use std::error::Error;
 /// - Accessibility needs/disabilities
 /// - Personal interests and preferences
 #[derive(Clone)]
-pub struct RankPOIsByPreferenceTool;
+struct RankPOIsByPreferenceTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+}
+
+/// Tool that builds an itinerary from a list of events
+#[derive(Clone)]
+struct DraftItineraryTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+}
+
+/// Tool that optimizes the travel route for a day using TSP algorithms
+///
+/// This tool applies Traveling Salesman Problem optimization to minimize
+/// travel time and distance between POIs in a single day. Considers:
+/// - Geographic proximity
+/// - Transportation methods available
+/// - Traffic patterns
+/// - Walking distances
+#[derive(Clone)]
+struct OptimizeRouteTool;
 
 #[async_trait]
 impl Tool for RankPOIsByPreferenceTool {
@@ -62,28 +89,34 @@ impl Tool for RankPOIsByPreferenceTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		// TODO: Implement POI ranking logic will most likely query a LLM to rank the POIs
-		Ok("Ranked POIs placeholder".to_string())
+		let pois = input["pois"]
+			.as_array()
+			.ok_or("pois must be an array of objects")?;
+		let profile = input["user_profile"]
+			.as_object()
+			.ok_or("user_profile must be an object")?;
+
+		let prompt = format!(
+			include_str!("../prompts/rank_pois_preference.md"),
+			serde_json::to_string_pretty(&pois)?,
+			serde_json::to_string_pretty(&profile)?
+		);
+
+		let response = self.llm.invoke(&prompt).await?;
+
+		Ok(response.trim().to_string())
 	}
 }
 
-/// Tool that clusters Points of Interest to ensure diversity
-///
-/// This tool groups POIs by category/type to prevent clustering too many
-/// similar activities (e.g., multiple museums in a row). Ensures variety
-/// in the itinerary by balancing activity types throughout the trip.
-#[derive(Clone)]
-pub struct ClusterPOIsTool;
-
 #[async_trait]
-impl Tool for ClusterPOIsTool {
+impl Tool for DraftItineraryTool {
 	fn name(&self) -> String {
-		"cluster_pois".to_string()
+		"draft_itinerary".to_string()
 	}
 
 	fn description(&self) -> String {
-		"Groups Points of Interest by category and type to ensure diversity in the itinerary. Prevents clustering too many similar activities (museums, restaurants, outdoor activities, etc.) together."
-            .to_string()
+		"Assemble an itinerary from the list of POIs into the provided itinerary model structure."
+			.to_string()
 	}
 
 	fn parameters(&self) -> Value {
@@ -108,79 +141,26 @@ impl Tool for ClusterPOIsTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		// TODO: Implement POI clustering logic will most likely query a LLM to cluster the POIs
-		Ok("Clustered POIs placeholder".to_string())
+		let pois = input["pois"]
+			.as_array()
+			.ok_or("pois must be an array of objects")?;
+		let diversity_factor = input["diversity_factor"].as_number().map(|n| {
+			n.as_f64()
+				.ok_or("diversity_factor must be a 64-bit floating point number")
+		});
+
+		let prompt = format!(
+			include_str!("../prompts/draft_itinerary.md"),
+			serde_json::to_string_pretty(&pois)?,
+			include_str!("../prompts/itinerary.ts"),
+			diversity_factor.unwrap_or(Ok(0.7))?
+		);
+
+		let response = self.llm.invoke(&prompt).await?;
+
+		Ok(response.trim().to_string())
 	}
 }
-
-/// Tool that sequences POIs into a coherent daily schedule
-///
-/// This tool takes a list of POIs and arranges them into time blocks
-/// (Morning, Afternoon, Evening) for a single day. Considers:
-/// - Operating hours of venues
-/// - Typical activity duration
-/// - Energy level requirements
-/// - Natural flow of activities
-#[derive(Clone)]
-pub struct SequenceDayTool;
-
-#[async_trait]
-impl Tool for SequenceDayTool {
-	fn name(&self) -> String {
-		"sequence_day".to_string()
-	}
-
-	fn description(&self) -> String {
-		"Creates a daily schedule from POIs by organizing them into Morning, Afternoon, and Evening time blocks. Considers operating hours, activity duration, and energy levels."
-            .to_string()
-	}
-
-	fn parameters(&self) -> Value {
-		json!({
-			"type": "object",
-			"properties": {
-				"pois": {
-					"type": "array",
-					"description": "Array of POI objects for the day",
-					"items": {
-						"type": "object"
-					}
-				},
-				"date": {
-					"type": "string",
-					"description": "The date for this day's schedule (ISO 8601 format)"
-				},
-				"start_time": {
-					"type": "string",
-					"description": "Preferred start time for the day (HH:MM format)",
-					"default": "09:00"
-				},
-				"end_time": {
-					"type": "string",
-					"description": "Preferred end time for the day (HH:MM format)",
-					"default": "21:00"
-				}
-			},
-			"required": ["pois", "date"]
-		})
-	}
-
-	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		// TODO: Implement day sequencing logic will most likely query a LLM to sequence the POIs
-		Ok("Sequenced day schedule placeholder".to_string())
-	}
-}
-
-/// Tool that optimizes the travel route for a day using TSP algorithms
-///
-/// This tool applies Traveling Salesman Problem optimization to minimize
-/// travel time and distance between POIs in a single day. Considers:
-/// - Geographic proximity
-/// - Transportation methods available
-/// - Traffic patterns
-/// - Walking distances
-#[derive(Clone)]
-pub struct OptimizeRouteTool;
 
 #[async_trait]
 impl Tool for OptimizeRouteTool {
@@ -189,7 +169,7 @@ impl Tool for OptimizeRouteTool {
 	}
 
 	fn description(&self) -> String {
-		"Optimizes the order of POIs for a day to minimize travel time and distance using Traveling Salesman Problem algorithms. Returns the most efficient route."
+		"Optimizes the order of POIs for a day to minimize travel time and distance using Traveling Salesman Problem algorithms. Returns the most efficient route. Input must be a single array of events, and the output will be that array sorted to optimize for shortest routes between events."
             .to_string()
 	}
 
@@ -199,7 +179,7 @@ impl Tool for OptimizeRouteTool {
 			"properties": {
 				"day_pois": {
 					"type": "array",
-					"description": "Array of POI objects for a single day with location data",
+					"description": "Array of POI objects for a single day with location data. Should not include start_location or end_location.",
 					"items": {
 						"type": "object",
 						"properties": {
@@ -224,11 +204,6 @@ impl Tool for OptimizeRouteTool {
 						"latitude": {"type": "number"},
 						"longitude": {"type": "number"}
 					}
-				},
-				"transportation_mode": {
-					"type": "string",
-					"description": "Primary mode of transportation (walking, driving, public_transit)",
-					"default": "walking"
 				}
 			},
 			"required": ["day_pois", "start_location"]
@@ -236,57 +211,90 @@ impl Tool for OptimizeRouteTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		// TODO: Implement TSP optimization logic
-		Ok("Optimized route placeholder".to_string())
-	}
-}
+		use super::tsp::{EndpointMode, Pt, compute_route};
 
-/// Tool that deserializes and formats POI events for database storage
-///
-/// This tool converts the optimized itinerary structure into the proper
-/// database schema format. Ensures all required fields are present and
-/// properly formatted for persistence.
-#[derive(Clone)]
-pub struct DeserializeEventsTool;
+		let mut pois = input["day_pois"]
+			.as_array()
+			.ok_or("day_pois must be an array of objects")?
+			.iter()
+			.map(|poi| {
+				let poi = poi
+					.as_object()
+					.ok_or("day_pois must be an array of objects")?;
+				Ok(Pt {
+					id: Some(poi["id"].as_str().ok_or("id must be a string")?),
+					lat: poi["latitude"]
+						.as_number()
+						.ok_or("latitude must be an number")?
+						.as_f64()
+						.ok_or("latitude must be a 64-bit floating point number")?,
+					lng: poi["longitude"]
+						.as_number()
+						.ok_or("longitude must be an number")?
+						.as_f64()
+						.ok_or("longitude must be a 64-bit floating point number")?,
+				})
+			})
+			.collect::<Result<Vec<Pt>, &str>>()?;
 
-#[async_trait]
-impl Tool for DeserializeEventsTool {
-	fn name(&self) -> String {
-		"deserialize_events".to_string()
-	}
+		let start = input["start_location"]
+			.as_object()
+			.ok_or("start_location must be an object")?;
+		let start = Pt {
+			id: None,
+			lat: start["latitude"]
+				.as_number()
+				.ok_or("latitude must be an number")?
+				.as_f64()
+				.ok_or("latitude must be a 64-bit floating point number")?,
+			lng: start["longitude"]
+				.as_number()
+				.ok_or("longitude must be an number")?
+				.as_f64()
+				.ok_or("longitude must be a 64-bit floating point number")?,
+		};
 
-	fn description(&self) -> String {
-		"Converts the optimized itinerary into the proper database schema format. Transforms day POIs and schedule into structured events ready for database storage."
-            .to_string()
-	}
+		pois.insert(0, start);
 
-	fn parameters(&self) -> Value {
-		json!({
-			"type": "object",
-			"properties": {
-				"day_pois": {
-					"type": "array",
-					"description": "Array of POIs with scheduling information",
-					"items": {
-						"type": "object"
-					}
-				},
-				"trip_id": {
-					"type": "string",
-					"description": "ID of the trip this itinerary belongs to"
-				},
-				"schema_version": {
-					"type": "string",
-					"description": "Database schema version to target",
-					"default": "1.0"
-				}
-			},
-			"required": ["day_pois", "trip_id"]
-		})
-	}
+		if input["end_location"].is_null() {
+			pois = compute_route(pois.as_slice(), EndpointMode::Circle)
+				.into_iter()
+				.map(|i| pois[i])
+				.collect();
+			return Ok(json!(pois).to_string());
+		}
 
-	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-		// TODO: Implement deserialization logic
-		Ok("Deserialized events placeholder".to_string())
+		let end = input["end_location"]
+			.as_object()
+			.ok_or("end_location must be an object")?;
+		let end = Pt {
+			id: None,
+			lat: end["latitude"]
+				.as_number()
+				.ok_or("latitude must be an number")?
+				.as_f64()
+				.ok_or("latitude must be a 64-bit floating point number")?,
+			lng: end["longitude"]
+				.as_number()
+				.ok_or("longitude must be an number")?
+				.as_f64()
+				.ok_or("longitude must be a 64-bit floating point number")?,
+		};
+
+		if start.lat == end.lat && start.lng == end.lng {
+			pois = compute_route(pois.as_slice(), EndpointMode::Circle)
+				.into_iter()
+				.map(|i| pois[i])
+				.collect();
+			return Ok(json!(pois).to_string());
+		}
+
+		pois.push(end);
+
+		pois = compute_route(pois.as_slice(), EndpointMode::Path)
+			.into_iter()
+			.map(|i| pois[i])
+			.collect();
+		Ok(json!(pois).to_string())
 	}
 }

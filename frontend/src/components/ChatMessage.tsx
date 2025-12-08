@@ -10,12 +10,14 @@ export type ChatMessageParams = {
   message: Message;
   onItinerarySelect: (itineraryId: number) => void;
   onEditMessage: (messageId: number, newText: string) => void;
+  isAiResponding?: boolean;
 };
 
 export default function ChatMessage({
   message,
   onItinerarySelect,
-  onEditMessage
+  onEditMessage,
+  isAiResponding = false
 }: ChatMessageParams) {
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -72,6 +74,7 @@ export default function ChatMessage({
   }, [isEditing]);
 
   const handleEdit = () => {
+    if (isAiResponding) return;
     setIsEditing(true);
     setEditText(message.text);
   };
@@ -158,7 +161,11 @@ export default function ChatMessage({
         <div className="timestamp-and-actions">
           <span className="timestamp">{formattedTimestamp}</span>
           {message.is_user && !isEditing && (
-            <UserMessageActions messageId={message.id} onEdit={handleEdit} />
+            <UserMessageActions
+              messageId={message.id}
+              onEdit={handleEdit}
+              isAiResponding={isAiResponding}
+            />
           )}
         </div>
       </div>

@@ -12,7 +12,7 @@ use std::sync::Arc;
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
-	llm::openai::{OpenAI, OpenAIConfig, OpenAIModel},
+	llm::openai::{OpenAI, OpenAIModel},
 	memory::SimpleMemory,
 };
 
@@ -30,7 +30,6 @@ pub type AgentType = Arc<
 const SYSTEM_PROMPT: &str = include_str!("../prompts/research.md");
 
 pub fn create_research_agent(
-	llm: OpenAI<OpenAIConfig>,
 	pool: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables

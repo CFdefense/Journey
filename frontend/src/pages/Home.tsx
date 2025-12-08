@@ -47,6 +47,7 @@ export default function Home() {
   const [itineraryEndDate, setItineraryEndDate] = useState<string>("");
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
   const accountFetchedRef = useRef(false);
+  const [isAiResponding, setIsAiResponding] = useState(false);
 
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
@@ -308,7 +309,9 @@ export default function Home() {
 
   const handleSendMessage = async (txt: string) => {
     const text = txt.trim();
-    if (text === "") return;
+    if (text === "" || isAiResponding) return;
+
+    setIsAiResponding(true);
 
     const userMessage: Message = {
       id: -1, //temporary id until the server gives us the real id
@@ -388,6 +391,7 @@ export default function Home() {
     const sendResult = await apiSendMessage(payload);
     // TODO: 401 -> navigate to /login
     if (sendResult.result === null || sendResult.status !== 200) {
+      setIsAiResponding(false);
       return; // TODO: handle and display error
     }
 
@@ -415,6 +419,8 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
+
+    setIsAiResponding(false);
 
     // scroll to bottom
     requestAnimationFrame(() => {
@@ -453,6 +459,7 @@ export default function Home() {
 
     if (updateResult.result === null || updateResult.status !== 200) {
       // TODO: handle and display error, revert optimistic update
+      setIsAiResponding(false);
       return;
     }
 
@@ -481,6 +488,8 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
+
+    setIsAiResponding(false);
 
     // scroll to bottom
     requestAnimationFrame(() => {
@@ -546,6 +555,7 @@ export default function Home() {
           sidebarVisible={sidebarVisible}
           firstName={firstName}
           profileImageUrl={profileImageUrl}
+          isAiResponding={isAiResponding}
         />
 
         <div className="chat-window-wrapper">
@@ -571,6 +581,7 @@ export default function Home() {
                 })
               );
             }}
+            isAiResponding={isAiResponding}
           />
         </div>
 
