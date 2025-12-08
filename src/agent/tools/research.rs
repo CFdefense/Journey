@@ -594,19 +594,14 @@ impl<'db> Tool for NearbySearchTool {
 					query.fetch_all(&self.db).await
 				};
 
-				let (nearby_search_50, nearby_search_5, db_query_task) = tokio::join!(
-					nearby_search(50_000.),
-					nearby_search(5_000.),
-					db_query_task
-				);
+				let (nearby_search_50, nearby_search_5, db_query_task) =
+					tokio::join!(nearby_search(50_000.), nearby_search(5_000.), db_query_task);
 				let mut nearby_searches = nearby_search_50?;
 				nearby_searches.append(&mut nearby_search_5?);
 				(nearby_searches, db_query_task?)
 			} else {
-				let (nearby_search_50, nearby_search_5) = tokio::join!(
-					nearby_search(50_000.),
-					nearby_search(5_000.)
-				);
+				let (nearby_search_50, nearby_search_5) =
+					tokio::join!(nearby_search(50_000.), nearby_search(5_000.));
 				let mut nearby_searches = nearby_search_50?;
 				nearby_searches.append(&mut nearby_search_5?);
 				let len = nearby_searches.len();

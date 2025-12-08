@@ -102,17 +102,25 @@ impl From<&EventListJoinRow> for Event {
 }
 
 #[cfg(not(tarpaulin_include))]
-pub static REGEX_ST_ADDR: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r#"\\u003cspan class=\\"street-address\\"\\u003e(?P<street>.*?)\\u003c/span\\u003e"#).unwrap());
+pub static REGEX_ST_ADDR: Lazy<Regex> = Lazy::new(|| {
+	Regex::new(r#"\\u003cspan class=\\"street-address\\"\\u003e(?P<street>.*?)\\u003c/span\\u003e"#)
+		.unwrap()
+});
 #[cfg(not(tarpaulin_include))]
-pub static REGEX_LOCALITY: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r#"\\u003cspan class=\\"locality\\"\\u003e(?P<city>.*?)\\u003c/span\\u003e"#).unwrap());
+pub static REGEX_LOCALITY: Lazy<Regex> = Lazy::new(|| {
+	Regex::new(r#"\\u003cspan class=\\"locality\\"\\u003e(?P<city>.*?)\\u003c/span\\u003e"#)
+		.unwrap()
+});
 #[cfg(not(tarpaulin_include))]
-pub static REGEX_COUNTRY: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r#"\\u003cspan class=\\"country-name\\"\\u003e(?P<country>.*?)\\u003c/span\\u003e"#).unwrap());
+pub static REGEX_COUNTRY: Lazy<Regex> = Lazy::new(|| {
+	Regex::new(r#"\\u003cspan class=\\"country-name\\"\\u003e(?P<country>.*?)\\u003c/span\\u003e"#)
+		.unwrap()
+});
 #[cfg(not(tarpaulin_include))]
-pub static REGEX_POST_CODE: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r#"\\u003cspan class=\\"postal-code\\"\\u003e(?P<zip>.*?)\\u003c/span\\u003e"#).unwrap());
+pub static REGEX_POST_CODE: Lazy<Regex> = Lazy::new(|| {
+	Regex::new(r#"\\u003cspan class=\\"postal-code\\"\\u003e(?P<zip>.*?)\\u003c/span\\u003e"#)
+		.unwrap()
+});
 
 #[cfg(not(tarpaulin_include))]
 impl From<&Place> for Event {

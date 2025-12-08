@@ -100,6 +100,13 @@ impl From<std::env::VarError> for AppError {
 }
 
 #[cfg(not(tarpaulin_include))]
+impl From<google_maps::Error> for AppError {
+	fn from(e: google_maps::Error) -> Self {
+		AppError::Internal(format!("google maps error: {e:?}"))
+	}
+}
+
+#[cfg(not(tarpaulin_include))]
 impl IntoResponse for AppError {
 	fn into_response(self) -> Response {
 		// Always log; return only status code
