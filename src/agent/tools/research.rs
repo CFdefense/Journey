@@ -13,8 +13,8 @@ use langchain_rust::tools::Tool;
 use serde::{Deserialize, de::IntoDeserializer};
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
-use std::{error::Error, sync::Arc};
 use std::time::Instant;
+use std::{error::Error, sync::Arc};
 use tracing::{debug, info};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
@@ -71,9 +71,9 @@ impl Tool for GeocodeTool {
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
 		let start_time = Instant::now();
-		
+
 		crate::tool_trace!(agent: "research", tool: "geocode_tool", status: "start");
-		
+
 		info!(
 			target: "research_tools",
 			tool = "geocode_tool",
@@ -85,7 +85,7 @@ impl Tool for GeocodeTool {
 			input = %serde_json::to_string(&input).unwrap_or_else(|_| "invalid".to_string()),
 			"Tool input"
 		);
-		
+
 		// langchain-rust passes `action_input` as a STRING, but the LLM may:
 		// - pass a plain text location like "Connecticut"
 		// - pass a JSON string like "{\"location\":\"Connecticut\"}"
@@ -100,8 +100,8 @@ impl Tool for GeocodeTool {
 			}
 
 			if raw.starts_with('{') || raw.starts_with('[') {
-				let v: Value = serde_json::from_str(raw)
-					.unwrap_or_else(|_| json!({ "location": raw }));
+				let v: Value =
+					serde_json::from_str(raw).unwrap_or_else(|_| json!({ "location": raw }));
 
 				v.get("location")
 					.or_else(|| v.get("destination"))
@@ -119,14 +119,14 @@ impl Tool for GeocodeTool {
 				.ok_or("Location or destination field should be a string")?
 				.to_string()
 		};
-		
+
 		debug!(
 			target: "research_tools",
 			tool = "geocode_tool",
 			location = %location,
 			"Geocoding location"
 		);
-		
+
 		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
 		let gm_api_key =
 			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
@@ -142,8 +142,8 @@ impl Tool for GeocodeTool {
 		if let Some(err) = geocode_res.error_message {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
-				agent: "research", 
-				tool: "geocode_tool", 
+				agent: "research",
+				tool: "geocode_tool",
 				status: "error",
 				details: format!("{}ms - Geocoding API error: {}", elapsed.as_millis(), err)
 			);
@@ -156,8 +156,8 @@ impl Tool for GeocodeTool {
 		if !matches!(geocode_res.status, google_maps::geocoding::Status::Ok) {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
-				agent: "research", 
-				tool: "geocode_tool", 
+				agent: "research",
+				tool: "geocode_tool",
 				status: "error",
 				details: format!("{}ms - Bad status: {}", elapsed.as_millis(), geocode_res.status)
 			);
@@ -166,45 +166,45 @@ impl Tool for GeocodeTool {
 		if geocode_res.results.is_empty() {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
-				agent: "research", 
-				tool: "geocode_tool", 
+				agent: "research",
+				tool: "geocode_tool",
 				status: "error",
 				details: format!("{}ms - No results", elapsed.as_millis())
 			);
 			return Err(format!("Geocoding could not get coordinates for {location}").into());
 		}
 
-	let result = json!({
-		"lat": geocode_res.results[0].geometry.location.lat,
-		"lng": geocode_res.results[0].geometry.location.lng
-	});
-	
-	let elapsed = start_time.elapsed();
-	
-	info!(
-		target: "research_tools",
-		tool = "geocode_tool",
-		elapsed_ms = elapsed.as_millis() as u64,
-		lat = %geocode_res.results[0].geometry.location.lat,
-		lng = %geocode_res.results[0].geometry.location.lng,
-		"Geocoding completed successfully"
-	);
-	debug!(
-		target: "research_tools",
-		tool = "geocode_tool",
-		result = %result.to_string(),
-		"Tool output"
-	);
-	
-	crate::tool_trace!(
-		agent: "research", 
-		tool: "geocode_tool", 
-		status: "success",
-		details: format!("{}ms", elapsed.as_millis())
-	);
-	
-	Ok(result.to_string())
-}
+		let result = json!({
+			"lat": geocode_res.results[0].geometry.location.lat,
+			"lng": geocode_res.results[0].geometry.location.lng
+		});
+
+		let elapsed = start_time.elapsed();
+
+		info!(
+			target: "research_tools",
+			tool = "geocode_tool",
+			elapsed_ms = elapsed.as_millis() as u64,
+			lat = %geocode_res.results[0].geometry.location.lat,
+			lng = %geocode_res.results[0].geometry.location.lng,
+			"Geocoding completed successfully"
+		);
+		debug!(
+			target: "research_tools",
+			tool = "geocode_tool",
+			result = %result.to_string(),
+			"Tool output"
+		);
+
+		crate::tool_trace!(
+			agent: "research",
+			tool: "geocode_tool",
+			status: "success",
+			details: format!("{}ms", elapsed.as_millis())
+		);
+
+		Ok(result.to_string())
+	}
 }
 
 #[async_trait]
@@ -284,9 +284,9 @@ impl<'db> Tool for NearbySearchTool {
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
 		let start_time = Instant::now();
-		
+
 		crate::tool_trace!(agent: "research", tool: "nearby_search_tool", status: "start");
-		
+
 		info!(
 			target: "research_tools",
 			tool = "nearby_search_tool",
@@ -312,7 +312,7 @@ impl<'db> Tool for NearbySearchTool {
 		} else {
 			input
 		};
-		
+
 		// Handle multiple input formats:
 		// 1. Combined "location" field as "lat,lng" string
 		// 2. "location" field as object with lat/lng properties
@@ -330,19 +330,25 @@ impl<'db> Tool for NearbySearchTool {
 				let lat = if let Some(f) = location_val.get("lat").and_then(|v| v.as_f64()) {
 					f
 				} else if let Some(s) = location_val.get("lat").and_then(|v| v.as_str()) {
-					s.parse::<f64>()
-						.map_err(|e| format!("lat in location object should be a valid number: {}", e))?
+					s.parse::<f64>().map_err(|e| {
+						format!("lat in location object should be a valid number: {}", e)
+					})?
 				} else {
-					return Err("location object must have a 'lat' field as a number or string".into());
+					return Err(
+						"location object must have a 'lat' field as a number or string".into(),
+					);
 				};
 
 				let lng = if let Some(f) = location_val.get("lng").and_then(|v| v.as_f64()) {
 					f
 				} else if let Some(s) = location_val.get("lng").and_then(|v| v.as_str()) {
-					s.parse::<f64>()
-						.map_err(|e| format!("lng in location object should be a valid number: {}", e))?
+					s.parse::<f64>().map_err(|e| {
+						format!("lng in location object should be a valid number: {}", e)
+					})?
 				} else {
-					return Err("location object must have a 'lng' field as a number or string".into());
+					return Err(
+						"location object must have a 'lng' field as a number or string".into(),
+					);
 				};
 
 				(lat, lng)
@@ -359,9 +365,13 @@ impl<'db> Tool for NearbySearchTool {
 				if parts.len() != 2 {
 					return Err("location string should be in format 'lat,lng'".into());
 				}
-				let lat = parts[0].trim().parse::<f64>()
+				let lat = parts[0]
+					.trim()
+					.parse::<f64>()
 					.map_err(|e| format!("Invalid latitude in location string: {}", e))?;
-				let lng = parts[1].trim().parse::<f64>()
+				let lng = parts[1]
+					.trim()
+					.parse::<f64>()
 					.map_err(|e| format!("Invalid longitude in location string: {}", e))?;
 				(lat, lng)
 			} else {
@@ -494,8 +504,8 @@ impl<'db> Tool for NearbySearchTool {
 		if let Some(err) = search_res.error() {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
-				agent: "research", 
-				tool: "nearby_search_tool", 
+				agent: "research",
+				tool: "nearby_search_tool",
 				status: "error",
 				details: format!("{}ms - API error: {}", elapsed.as_millis(), err)
 			);
@@ -512,8 +522,8 @@ impl<'db> Tool for NearbySearchTool {
 		if places.is_empty() {
 			let elapsed = start_time.elapsed();
 			crate::tool_trace!(
-				agent: "research", 
-				tool: "nearby_search_tool", 
+				agent: "research",
+				tool: "nearby_search_tool",
 				status: "error",
 				details: format!("{}ms - No places found", elapsed.as_millis())
 			);
@@ -533,27 +543,27 @@ impl<'db> Tool for NearbySearchTool {
 			"Found places from Google Maps"
 		);
 
-	let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
+		let events: Vec<Event> = places.into_iter().map(|p| Event::from(p)).collect();
 
-	info!(
-		target: "research_tools",
-		tool = "nearby_search_tool",
-		events_to_insert = events.len(),
-		"Inserting/updating events in database"
-	);
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			events_to_insert = events.len(),
+			"Inserting/updating events in database"
+		);
 
-	// Define a struct to capture the RETURNING clause results
-	struct EventInsertResult {
-		id: i32,
-		event_name: String,
-	}
+		// Define a struct to capture the RETURNING clause results
+		struct EventInsertResult {
+			id: i32,
+			event_name: String,
+		}
 
-	// Use query! macro for compile-time type checking
-	// Insert events one by one to use the type-safe macro
-	let mut results: Vec<EventInsertResult> = Vec::with_capacity(events.len());
-	
-	for ev in events.iter() {
-		let result = sqlx::query!(
+		// Use query! macro for compile-time type checking
+		// Insert events one by one to use the type-safe macro
+		let mut results: Vec<EventInsertResult> = Vec::with_capacity(events.len());
+
+		for ev in events.iter() {
+			let result = sqlx::query!(
 			r#"
 			INSERT INTO events (
 				event_name,
@@ -671,47 +681,47 @@ impl<'db> Tool for NearbySearchTool {
 		)
 		.fetch_one(&self.db)
 		.await?;
-		
-		results.push(EventInsertResult {
-			id: result.id,
-			event_name: result.event_name,
-		});
-	}
 
-	let elapsed = start_time.elapsed();
-	
-	// Extract event IDs and names for the response and debugging
-	let event_ids: Vec<i32> = results.iter().map(|r| r.id).collect();
-	let event_names: Vec<String> = results.iter().map(|r| r.event_name.clone()).collect();
-	
-	// Return only the IDs to keep the context window clean
-	let result = json!({
-		"event_ids": event_ids,
-		"count": event_ids.len()
-	});
-	
-	info!(
-		target: "research_tools",
-		tool = "nearby_search_tool",
-		elapsed_ms = elapsed.as_millis() as u64,
-		events_count = event_ids.len(),
-		event_ids = ?event_ids,
-		"Nearby search completed successfully"
-	);
-	debug!(
-		target: "research_tools",
-		tool = "nearby_search_tool",
-		events_sample = %serde_json::to_string(&results.iter().take(3).map(|r| json!({"id": r.id, "name": &r.event_name})).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
-		"Sample of events (first 3)"
-	);
-	
-	crate::tool_trace!(
-		agent: "research", 
-		tool: "nearby_search_tool", 
-		status: "success",
-		details: format!("{}ms - {} events - [{}]", elapsed.as_millis(), event_ids.len(), event_names.join(", "))
-	);
-		
+			results.push(EventInsertResult {
+				id: result.id,
+				event_name: result.event_name,
+			});
+		}
+
+		let elapsed = start_time.elapsed();
+
+		// Extract event IDs and names for the response and debugging
+		let event_ids: Vec<i32> = results.iter().map(|r| r.id).collect();
+		let event_names: Vec<String> = results.iter().map(|r| r.event_name.clone()).collect();
+
+		// Return only the IDs to keep the context window clean
+		let result = json!({
+			"event_ids": event_ids,
+			"count": event_ids.len()
+		});
+
+		info!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			elapsed_ms = elapsed.as_millis() as u64,
+			events_count = event_ids.len(),
+			event_ids = ?event_ids,
+			"Nearby search completed successfully"
+		);
+		debug!(
+			target: "research_tools",
+			tool = "nearby_search_tool",
+			events_sample = %serde_json::to_string(&results.iter().take(3).map(|r| json!({"id": r.id, "name": &r.event_name})).collect::<Vec<_>>()).unwrap_or_else(|_| "error".to_string()),
+			"Sample of events (first 3)"
+		);
+
+		crate::tool_trace!(
+			agent: "research",
+			tool: "nearby_search_tool",
+			status: "success",
+			details: format!("{}ms - {} events - [{}]", elapsed.as_millis(), event_ids.len(), event_names.join(", "))
+		);
+
 		Ok(result.to_string())
 	}
 }

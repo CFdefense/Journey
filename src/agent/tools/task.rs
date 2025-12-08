@@ -186,7 +186,7 @@ Return ONLY the JSON object, no other text."#,
 
 		// Return serialized UserIntent
 		let result = serde_json::to_string(&intent)?;
-		
+
 		let elapsed = start_time.elapsed();
 		info!(
 			target: "orchestrator_tool",
@@ -373,7 +373,7 @@ impl Tool for RetrieveChatContextTool {
 
 		// Return full context including pipeline state
 		drop(store_guard);
-		
+
 		let elapsed = start_time.elapsed();
 		info!(
 			target: "orchestrator_tool",
@@ -493,33 +493,33 @@ impl Tool for RetrieveUserProfileTool {
 				"disabilities": ""
 			});
 
-		// Save empty profile into in-memory context for this chat (if any)
-		let mut store_guard = self.context_store.write().await;
-		if let Some(context_data) = store_guard.get_mut(&chat_id) {
-			context_data.user_profile = Some(empty_profile.clone());
+			// Save empty profile into in-memory context for this chat (if any)
+			let mut store_guard = self.context_store.write().await;
+			if let Some(context_data) = store_guard.get_mut(&chat_id) {
+				context_data.user_profile = Some(empty_profile.clone());
+			}
+
+			let result = serde_json::to_string(&empty_profile)?;
+
+			let elapsed = start_time.elapsed();
+			info!(
+				target: "orchestrator_tool",
+				tool = "retrieve_user_profile",
+				elapsed_ms = elapsed.as_millis() as u64,
+				"Tool completed (no user logged in)"
+			);
+
+			track_tool_execution(
+				&self.context_store,
+				&self.chat_session_id,
+				"retrieve_user_profile",
+				&input_clone,
+				&result,
+			)
+			.await?;
+
+			return Ok(result);
 		}
-
-		let result = serde_json::to_string(&empty_profile)?;
-		
-		let elapsed = start_time.elapsed();
-		info!(
-			target: "orchestrator_tool",
-			tool = "retrieve_user_profile",
-			elapsed_ms = elapsed.as_millis() as u64,
-			"Tool completed (no user logged in)"
-		);
-		
-		track_tool_execution(
-			&self.context_store,
-			&self.chat_session_id,
-			"retrieve_user_profile",
-			&input_clone,
-			&result,
-		)
-		.await?;
-
-		return Ok(result);
-	}
 
 		info!(target: "orchestrator_tool", tool = "retrieve_user_profile", user_id = user_id, "Retrieving user profile");
 		debug!(target: "orchestrator_tool", tool = "retrieve_user_profile", input = %serde_json::to_string(&input)?, "Tool input");
@@ -614,31 +614,31 @@ impl Tool for RetrieveUserProfileTool {
 					"Pre-filled constraints from user profile"
 				);
 			}
+		}
+
+		let result = serde_json::to_string(&profile)?;
+
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "retrieve_user_profile",
+			elapsed_ms = elapsed.as_millis() as u64,
+			user_id = user_id,
+			"Tool completed"
+		);
+
+		// Track this tool execution
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"retrieve_user_profile",
+			&input_clone,
+			&result,
+		)
+		.await?;
+
+		Ok(result)
 	}
-
-	let result = serde_json::to_string(&profile)?;
-	
-	let elapsed = start_time.elapsed();
-	info!(
-		target: "orchestrator_tool",
-		tool = "retrieve_user_profile",
-		elapsed_ms = elapsed.as_millis() as u64,
-		user_id = user_id,
-		"Tool completed"
-	);
-
-	// Track this tool execution
-	track_tool_execution(
-		&self.context_store,
-		&self.chat_session_id,
-		"retrieve_user_profile",
-		&input_clone,
-		&result,
-	)
-	.await?;
-
-	Ok(result)
-}
 }
 
 /// Tool: Ask for Clarification
@@ -815,32 +815,32 @@ impl Tool for AskForClarificationTool {
 			"".to_string()
 		};
 
-	info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
-	debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
+		info!(target: "orchestrator_tool", tool = "ask_for_clarification", missing_info_count = missing_info.len(), "Asking for clarification");
+		debug!(target: "orchestrator_tool", tool = "ask_for_clarification", input = %serde_json::to_string(&parsed_input)?, "Tool input");
 
-	// Retrieve chat context to extract known information
-	let chat_id = self.chat_session_id.load(Ordering::Relaxed);
-	if chat_id == 0 {
-		return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
-	}
-	
-	// ANTI-LOOP PROTECTION: Check if we've already asked for clarification
-	// If asked_clarification flag is already true in trip context, we should NOT ask again
-	{
-		let store_guard = self.context_store.read().await;
-		if let Some(context_data) = store_guard.get(&chat_id) {
-			if context_data.trip_context.asked_clarification {
-				info!(
-					target: "orchestrator_tool",
-					tool = "ask_for_clarification",
-					chat_id = chat_id,
-					"Already asked for clarification before - returning ready signal to prevent loop"
-				);
-				// Return a signal that tells the agent we're ready to proceed
-				return Ok("Ready for research pipeline.".to_string());
+		// Retrieve chat context to extract known information
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id == 0 {
+			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
+		}
+
+		// ANTI-LOOP PROTECTION: Check if we've already asked for clarification
+		// If asked_clarification flag is already true in trip context, we should NOT ask again
+		{
+			let store_guard = self.context_store.read().await;
+			if let Some(context_data) = store_guard.get(&chat_id) {
+				if context_data.trip_context.asked_clarification {
+					info!(
+						target: "orchestrator_tool",
+						tool = "ask_for_clarification",
+						chat_id = chat_id,
+						"Already asked for clarification before - returning ready signal to prevent loop"
+					);
+					// Return a signal that tells the agent we're ready to proceed
+					return Ok("Ready for research pipeline.".to_string());
+				}
 			}
 		}
-	}
 
 		// Get chat history to extract known information
 		let messages = sqlx::query!(
@@ -1030,31 +1030,31 @@ Return ONLY the message text, nothing else."#,
 			}
 		}
 
-	// Return the clarification text directly.
-	// The message is already inserted in the database with the ID in record.id
-	// The agent prompt instructs to use this as Final Answer immediately.
-	let result = clarification.clone();
-	
-	let elapsed = start_time.elapsed();
-	info!(
-		target: "orchestrator_tool",
-		tool = "ask_for_clarification",
-		elapsed_ms = elapsed.as_millis() as u64,
-		"Tool completed - pipeline stopped"
-	);
+		// Return the clarification text directly.
+		// The message is already inserted in the database with the ID in record.id
+		// The agent prompt instructs to use this as Final Answer immediately.
+		let result = clarification.clone();
 
-	// Track this tool execution
-	track_tool_execution(
-		&self.context_store,
-		&self.chat_session_id,
-		"ask_for_clarification",
-		&input_clone,
-		&result,
-	)
-	.await?;
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "ask_for_clarification",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed - pipeline stopped"
+		);
 
-	Ok(result)
-}
+		// Track this tool execution
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"ask_for_clarification",
+			&input_clone,
+			&result,
+		)
+		.await?;
+
+		Ok(result)
+	}
 }
 
 /// Tool: Respond to User
@@ -1246,30 +1246,30 @@ impl Tool for RespondToUserTool {
 			(message, record.id)
 		};
 
-	// Return a special marker that send_message_to_llm can detect
-	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
-	let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
-	
-	let elapsed = start_time.elapsed();
-	info!(
-		target: "orchestrator_tool",
-		tool = "respond_to_user",
-		elapsed_ms = elapsed.as_millis() as u64,
-		"Tool completed"
-	);
+		// Return a special marker that send_message_to_llm can detect
+		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
+		let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
 
-	// Track this tool execution
-	track_tool_execution(
-		&self.context_store,
-		&self.chat_session_id,
-		"respond_to_user",
-		&input_clone,
-		&result,
-	)
-	.await?;
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "respond_to_user",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
 
-	Ok(result)
-}
+		// Track this tool execution
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"respond_to_user",
+			&input_clone,
+			&result,
+		)
+		.await?;
+
+		Ok(result)
+	}
 }
 
 /// Tool: Update Trip Context
@@ -1548,35 +1548,35 @@ Return valid JSON only."#,
 			"asked_clarification_before": has_asked_before
 		});
 
-	let result_str = serde_json::to_string(&result)?;
-	
-	let elapsed = start_time.elapsed();
-	info!(
-		target: "orchestrator_tool",
-		tool = "update_trip_context",
-		elapsed_ms = elapsed.as_millis() as u64,
-		chat_id = chat_id,
-		missing_count = missing.len(),
-		ready = missing.is_empty(),
-		"Trip context update complete - SUMMARY",
-	);
-	debug!(
-		target: "trip_context",
-		missing_fields = ?missing,
-		"Missing information details"
-	);
+		let result_str = serde_json::to_string(&result)?;
 
-	track_tool_execution(
-		&self.context_store,
-		&self.chat_session_id,
-		"update_trip_context",
-		&input_clone,
-		&result_str,
-	)
-	.await?;
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "update_trip_context",
+			elapsed_ms = elapsed.as_millis() as u64,
+			chat_id = chat_id,
+			missing_count = missing.len(),
+			ready = missing.is_empty(),
+			"Trip context update complete - SUMMARY",
+		);
+		debug!(
+			target: "trip_context",
+			missing_fields = ?missing,
+			"Missing information details"
+		);
 
-	Ok(result_str)
-}
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"update_trip_context",
+			&input_clone,
+			&result_str,
+		)
+		.await?;
+
+		Ok(result_str)
+	}
 }
 
 /// Tool 6: Update Chat Title
@@ -1730,30 +1730,30 @@ impl Tool for UpdateChatTitleTool {
 			"Updated chat session title"
 		);
 
-	let result = json!({
-		"updated": true,
-		"new_title": new_title
-	});
-	
-	let elapsed = start_time.elapsed();
-	info!(
-		target: "orchestrator_tool",
-		tool = "update_chat_title",
-		elapsed_ms = elapsed.as_millis() as u64,
-		"Tool completed"
-	);
+		let result = json!({
+			"updated": true,
+			"new_title": new_title
+		});
 
-	track_tool_execution(
-		&self.context_store,
-		&self.chat_session_id,
-		"update_chat_title",
-		&input_clone,
-		&result.to_string(),
-	)
-	.await?;
+		let elapsed = start_time.elapsed();
+		info!(
+			target: "orchestrator_tool",
+			tool = "update_chat_title",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Tool completed"
+		);
 
-	Ok(result.to_string())
-}
+		track_tool_execution(
+			&self.context_store,
+			&self.chat_session_id,
+			"update_chat_title",
+			&input_clone,
+			&result.to_string(),
+		)
+		.await?;
+
+		Ok(result.to_string())
+	}
 }
 
 /// Gets the tools used by the Task Agent to build planning context.

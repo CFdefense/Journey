@@ -220,7 +220,7 @@ async fn send_message_to_llm(
 		response = ai_text,
 		"Orchestrator agent output"
 	);
-	
+
 	// Context state AFTER agent invocation is now entirely in-memory as well.
 	//
 	// SAFETY GUARD: If the orchestrator ever returns a user-visible string
@@ -260,7 +260,7 @@ async fn send_message_to_llm(
 			});
 		}
 	}
-	
+
 	// Check if RespondToUserTool already inserted the message
 	// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
 	if ai_text.starts_with("MESSAGE_INSERTED:") {
@@ -299,7 +299,6 @@ async fn send_message_to_llm(
 			}
 		}
 	}
-
 
 	// If the response is plain readable text (not JSON, not MESSAGE_INSERTED),
 	// it's likely from ask_for_clarification tool which already inserted it

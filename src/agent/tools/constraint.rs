@@ -8,9 +8,9 @@
  */
 
 use async_trait::async_trait;
-use langchain_rust::tools::Tool;
 use langchain_rust::language_models::llm::LLM;
-use serde_json::{json, Value};
+use langchain_rust::tools::Tool;
+use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
@@ -30,7 +30,7 @@ async fn should_include_event(
 	// Serialize the event as JSON for the LLM to analyze
 	let event_json = serde_json::to_string_pretty(event)
 		.unwrap_or_else(|_| format!("Event: {}", event.event_name));
-	
+
 	// Create a prompt with all event details
 	let prompt = format!(
 		r#"You are evaluating whether a place/event is relevant for a vacation trip.
@@ -52,26 +52,47 @@ RULES:
 Should this place be INCLUDED in the vacation itinerary?
 Respond with ONLY a JSON object in this exact format:
 {{"include": true/false, "reason": "brief reason"}}"#,
-		if preferences.is_empty() { "none specified".to_string() } else { preferences.join(", ") },
-		if constraints.is_empty() { "none".to_string() } else { constraints.join(", ") },
+		if preferences.is_empty() {
+			"none specified".to_string()
+		} else {
+			preferences.join(", ")
+		},
+		if constraints.is_empty() {
+			"none".to_string()
+		} else {
+			constraints.join(", ")
+		},
 		event_json
 	);
 
 	let response = llm.invoke(&prompt).await?;
-	
+
 	// Parse the LLM response
-	let cleaned = response.trim().trim_start_matches("```json").trim_end_matches("```").trim();
-	
+	let cleaned = response
+		.trim()
+		.trim_start_matches("```json")
+		.trim_end_matches("```")
+		.trim();
+
 	match serde_json::from_str::<Value>(cleaned) {
 		Ok(parsed) => {
-			let include = parsed.get("include").and_then(|v| v.as_bool()).unwrap_or(false);
-			let reason = parsed.get("reason").and_then(|v| v.as_str()).map(|s| s.to_string());
+			let include = parsed
+				.get("include")
+				.and_then(|v| v.as_bool())
+				.unwrap_or(false);
+			let reason = parsed
+				.get("reason")
+				.and_then(|v| v.as_str())
+				.map(|s| s.to_string());
 			Ok((include, reason))
-		},
+		}
 		Err(_) => {
 			// If parsing fails, default to including the event
 			debug!(target: "constraint_tools", "Failed to parse LLM response for event: {}, response: {}", event.event_name, response);
-			Ok((true, Some("LLM response parsing failed, including by default".to_string())))
+			Ok((
+				true,
+				Some("LLM response parsing failed, including by default".to_string()),
+			))
 		}
 	}
 }
@@ -171,8 +192,18 @@ impl Tool for FilterEventsByConstraintsTool {
 		let mut event_ids_val = parsed_input
 			.get("event_ids")
 			.cloned()
-			.or_else(|| parsed_input.get("events").and_then(|v| v.get("event_ids")).cloned())
-			.or_else(|| parsed_input.get("data").and_then(|v| v.get("event_ids")).cloned())
+			.or_else(|| {
+				parsed_input
+					.get("events")
+					.and_then(|v| v.get("event_ids"))
+					.cloned()
+			})
+			.or_else(|| {
+				parsed_input
+					.get("data")
+					.and_then(|v| v.get("event_ids"))
+					.cloned()
+			})
 			.unwrap_or(Value::Null);
 
 		// If event_ids is a JSON string, parse it into an array
@@ -318,7 +349,10 @@ impl Tool for FilterEventsByConstraintsTool {
 
 		// Extract constraints (strings, lowercased for matching)
 		let mut constraints_val = if parsed_input.get("constraints").is_some() {
-			parsed_input.get("constraints").cloned().unwrap_or(Value::Null)
+			parsed_input
+				.get("constraints")
+				.cloned()
+				.unwrap_or(Value::Null)
 		} else {
 			parsed_input
 				.get("trip_context")
@@ -390,14 +424,15 @@ impl Tool for FilterEventsByConstraintsTool {
 					if should_include {
 						filtered_ids.push(event.id);
 					} else {
-						let reason_text = reason.unwrap_or_else(|| "not relevant for trip".to_string());
+						let reason_text =
+							reason.unwrap_or_else(|| "not relevant for trip".to_string());
 						removed.push(json!({
 							"event_id": event.id,
 							"event_name": &event.event_name,
 							"reasons": [reason_text],
 						}));
 					}
-				},
+				}
 				Err(e) => {
 					debug!(
 						target: "constraint_tools",
@@ -426,7 +461,7 @@ impl Tool for FilterEventsByConstraintsTool {
 			.filter(|e| filtered_ids.contains(&e.id))
 			.map(|e| e.event_name.clone())
 			.collect();
-		
+
 		let removed_names: Vec<String> = result["removed_events"]
 			.as_array()
 			.map(|arr| {
