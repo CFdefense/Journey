@@ -1,4 +1,6 @@
 use crate::agent::configs::orchestrator::create_dummy_orchestrator_agent;
+use crate::http_models::chat_session::ProgressRequest;
+use crate::sql_models::LlmProgress;
 use crate::{
 	agent, controllers, db,
 	global::*,
@@ -1107,6 +1109,30 @@ async fn test_chat_flow(mut cookies: CookieJar, key: Extension<Key>, pool: Exten
 		404
 	);
 
+	// get llm progress
+	let json = Json(ProgressRequest { chat_session_id });
+	assert_eq!(
+		controllers::chat::api_progress(user, Extension(pool.clone()), json)
+			.await
+			.unwrap()
+			.0
+			.progress,
+		LlmProgress::Ready
+	);
+
+	// llm progress invalid chat session id
+	let json = Json(ProgressRequest {
+		chat_session_id: -1,
+	});
+	assert_eq!(
+		controllers::chat::api_progress(user, Extension(pool.clone()), json)
+			.await
+			.unwrap_err()
+			.status_code()
+			.as_u16(),
+		404
+	);
+
 	// get latest messages and make sure messages are in chronological order
 	let chat_session = controllers::chat::api_chats(user, Extension(pool.clone()))
 		.await
@@ -1554,6 +1580,9 @@ async fn test_auth_for_all_required() {
 		"new_title": "Updated Title",
 		"id": 1
 	});
+	let chat_progress_payload = json!({
+		"chat_session_id": 10
+	});
 	let itinerary_save_payload = json!({
 		"id": 1,
 		"start_date": "2025-11-05 00:00:00",
@@ -1595,6 +1624,7 @@ async fn test_auth_for_all_required() {
 		hc.do_post("/api/chat/updateMessage", chat_update_message_payload),
 		hc.do_post("/api/chat/sendMessage", chat_send_message_payload),
 		hc.do_post("/api/chat/rename", chat_rename_payload),
+		hc.do_post("/api/chat/progress", chat_progress_payload),
 		hc.do_post("/api/itinerary/save", itinerary_save_payload),
 		hc.do_post("/api/itinerary/userEvent", itinerary_user_event_payload),
 		hc.do_post("/api/itinerary/searchEvent", itinerary_search_event_payload),

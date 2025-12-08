@@ -21,7 +21,8 @@ import {
 	apiDeleteUserEvent,
 	apiSaveItineraryChanges,
 	apiUnsaveItinerary,
-	apiGetSavedItineraries
+	apiGetSavedItineraries,
+	apiProgress
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
 import { ChatSessionRow } from "../src/models/chat";
 import {
@@ -96,6 +97,14 @@ async function test_flow() {
 	const messageId = messageResult.result!.user_message_id;
 	const botMessage = messageResult.result!.bot_message;
 	expect(botMessage.itinerary_id === null).toBe(false);
+
+	// get llm status
+	const progressRes = await apiProgress({
+		chat_session_id: newChatId
+	});
+	expect(progressRes.status).toBe(200);
+	expect(progressRes.result!.progress).toBe("Ready");
+	expect(progressRes.result!.title).toBe("New Chat");
 
 	// get itinerary info
 	const itineraryResult = await apiItineraryDetails(botMessage.itinerary_id!);
@@ -178,7 +187,8 @@ async function test_flow() {
 		event_description: "test",
 		hard_start: "2015-11-12T23:25:00",
 		hard_end: "2025-11-12T23:25:00",
-		timezone: "UTC"
+		timezone: "UTC",
+		photo_name: null
 	};
 	const createEventRes = await apiUserEvent(userEvent);
 	expect(createEventRes.status).toBe(200);
@@ -251,7 +261,7 @@ async function test_flow() {
 	expect(savedItineraries.status).toBe(200);
 	expect(
 		savedItineraries.result!.itineraries.some(
-			(i: { id: any }) => i.id === savedItineraryId
+			(i: { id: number }) => i.id === savedItineraryId
 		)
 	).toBe(true);
 
@@ -265,7 +275,7 @@ async function test_flow() {
 	expect(savedItinerariesAfterUnsave.status).toBe(200);
 	expect(
 		savedItinerariesAfterUnsave.result!.itineraries.some(
-			(i: { id: any }) => i.id === savedItineraryId
+			(i: { id: number }) => i.id === savedItineraryId
 		)
 	).toBe(false);
 
@@ -276,7 +286,8 @@ async function test_flow() {
 		end_date: "2025-12-31",
 		event_days: [],
 		chat_session_id: null,
-		title: "Non-existent"
+		title: "Non-existent",
+		unassigned_events: []
 	};
 	const unsaveNonExistent = await apiUnsaveItinerary(nonExistentItinerary);
 	expect(unsaveNonExistent.status).toBe(404);
@@ -346,7 +357,8 @@ describe("Integration Tests", () => {
 			end_date: "2025-12-31",
 			event_days: [],
 			chat_session_id: null,
-			title: "Error Test"
+			title: "Error Test",
+			unassigned_events: []
 		};
 
 		const errorUnsave = await apiUnsaveItinerary(errorItinerary2);
