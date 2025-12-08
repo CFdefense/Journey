@@ -71,3 +71,21 @@ export type RenameRequest = {
 	new_title: string;
 	id: number;
 };
+
+/// Request model for the `/api/chat/progress` endpoint
+export type ProgressRequest = {
+	chat_session_id: number;
+};
+
+/// Response model for the `/api/chat/progress` endpoint
+export type ProgressResponse = {
+	progress: LlmProgress;
+	title: string;
+};
+
+export enum LlmProgress {
+	Ready,
+	Searching,
+	Scheduling,
+	Optimizing,
+}
