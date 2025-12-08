@@ -31,6 +31,7 @@ pub type AgentType = Arc<
 
 pub fn create_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
+	db: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
@@ -47,7 +48,7 @@ pub fn create_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(Arc::new(llm)))
+		.tools(&optimizer_tools(Arc::new(llm), db))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();
@@ -62,6 +63,7 @@ pub fn create_optimize_agent(
 #[cfg(test)]
 pub fn create_dummy_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
+	db: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
@@ -81,7 +83,7 @@ pub fn create_dummy_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(Arc::new(llm)))
+		.tools(&optimizer_tools(Arc::new(llm), db))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();

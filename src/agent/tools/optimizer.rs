@@ -10,14 +10,436 @@
 use async_trait::async_trait;
 use langchain_rust::{language_models::llm::LLM, tools::Tool};
 use serde_json::{Value, json};
-use std::{error::Error, sync::Arc};
+use sqlx::PgPool;
+use std::{error::Error, sync::Arc, time::Instant};
+use tracing::{debug, info};
 
-pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>) -> [Arc<dyn Tool>; 3] {
-	[
-		Arc::new(RankPOIsByPreferenceTool { llm: llm.clone() }),
-		Arc::new(DraftItineraryTool { llm }),
-		Arc::new(OptimizeRouteTool),
+use crate::http_models::event::Event;
+
+pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<dyn Tool>> {
+	vec![
+		Arc::new(OptimizeItineraryTool::new(llm.clone(), db.clone())),
 	]
+}
+
+/// Main tool that orchestrates the full optimization workflow.
+/// This tool:
+/// 1. Accepts filtered event IDs from the constraint agent
+/// 2. Fetches events from the database
+/// 3. Retrieves user profile from context
+/// 4. Ranks POIs by preference
+/// 5. Drafts an itinerary
+/// 6. Optimizes routes for each day
+/// 7. Returns a complete structured itinerary
+#[derive(Clone)]
+struct OptimizeItineraryTool {
+	llm: Arc<dyn LLM + Send + Sync>,
+	db: PgPool,
+}
+
+impl OptimizeItineraryTool {
+	pub fn new(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Self {
+		Self { llm, db }
+	}
+}
+
+#[async_trait]
+impl Tool for OptimizeItineraryTool {
+	fn name(&self) -> String {
+		"optimize_itinerary".to_string()
+	}
+
+	fn description(&self) -> String {
+		"Main optimization workflow tool. Accepts filtered event IDs from constraint agent, fetches events from database, ranks them by user preference, drafts an itinerary, and optimizes routes. Returns a complete structured itinerary ready for storage."
+			.to_string()
+	}
+
+	fn parameters(&self) -> Value {
+		json!({
+			"type": "object",
+			"properties": {},
+			"required": []
+		})
+	}
+
+	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "optimize_itinerary",
+			status: "start"
+		);
+
+		info!(
+			target: "optimize_tools",
+			tool = "optimize_itinerary",
+			"Starting itinerary optimization workflow"
+		);
+		debug!(
+			target: "optimize_tools",
+			input = %serde_json::to_string(&input).unwrap_or_else(|_| "invalid".to_string()),
+			"Tool input"
+		);
+
+		// Parse input (handle both string and object formats from langchain_rust)
+		let parsed_input: Value = if input.is_string() {
+			serde_json::from_str(input.as_str().unwrap_or("{}")).unwrap_or_else(|_| json!({}))
+		} else {
+			input
+		};
+
+		// Extract and parse filtered_event_ids
+		let mut event_ids_val = parsed_input
+			.get("filtered_event_ids")
+			.cloned()
+			.or_else(|| {
+				// Try alternative paths from orchestrator payload
+				parsed_input
+					.get("events")
+					.and_then(|v| v.get("filtered_event_ids"))
+					.cloned()
+			})
+			.unwrap_or(Value::Null);
+
+		// If event_ids is a JSON string, parse it
+		if event_ids_val.is_string() {
+			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
+			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		}
+
+		// Check if we already have a result (agent calling tool on previous output)
+		if event_ids_val.is_null() && parsed_input.get("event_days").is_some() {
+			// Agent is trying to call the tool on its own previous output (an itinerary)
+			// Just return that output directly
+			info!(
+				target: "optimize_tools",
+				"Tool called with previous output, returning it directly"
+			);
+			return Ok(serde_json::to_string(&parsed_input)?);
+		}
+
+		let event_ids: Vec<i32> = event_ids_val
+			.as_array()
+			.ok_or("filtered_event_ids should be an array of integers")?
+			.iter()
+			.filter_map(|v| v.as_i64().map(|i| i as i32))
+			.collect();
+
+		if event_ids.is_empty() {
+			crate::tool_trace!(
+				agent: "optimize",
+				tool: "optimize_itinerary",
+				status: "error",
+				details: "no event IDs provided"
+			);
+			return Err("No event IDs provided to optimize agent".into());
+		}
+
+		info!(
+			target: "optimize_tools",
+			event_count = event_ids.len(),
+			"Fetching events from database"
+		);
+
+		// Fetch all events from database
+		let rows = sqlx::query!(
+			r#"
+			SELECT 
+				id,
+				event_name,
+				event_description,
+				street_address,
+				city,
+				country,
+				postal_code,
+				lat,
+				lng,
+				event_type,
+				user_created,
+				hard_start,
+				hard_end,
+				timezone,
+				place_id,
+				wheelchair_accessible_parking,
+				wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom,
+				wheelchair_accessible_seating,
+				serves_vegetarian_food,
+				price_level,
+				utc_offset_minutes,
+				website_uri,
+				types,
+				photo_name,
+				photo_width,
+				photo_height,
+				photo_author,
+				photo_author_uri,
+				photo_author_photo_uri,
+				weekday_descriptions,
+				secondary_hours_type,
+				next_open_time,
+				next_close_time,
+				open_now,
+				periods as "periods!: Vec<crate::sql_models::Period>",
+				special_days
+			FROM events
+			WHERE id = ANY($1)
+			"#,
+			&event_ids
+		)
+		.fetch_all(&self.db)
+		.await?;
+
+		let events: Vec<Event> = rows
+			.into_iter()
+			.map(|row| Event {
+				id: row.id,
+				event_name: row.event_name,
+				event_description: row.event_description,
+				street_address: row.street_address,
+				city: row.city,
+				country: row.country,
+				postal_code: row.postal_code,
+				lat: row.lat,
+				lng: row.lng,
+				event_type: row.event_type,
+				user_created: row.user_created,
+				hard_start: row.hard_start,
+				hard_end: row.hard_end,
+				timezone: row.timezone,
+				place_id: row.place_id,
+				wheelchair_accessible_parking: row.wheelchair_accessible_parking,
+				wheelchair_accessible_entrance: row.wheelchair_accessible_entrance,
+				wheelchair_accessible_restroom: row.wheelchair_accessible_restroom,
+				wheelchair_accessible_seating: row.wheelchair_accessible_seating,
+				serves_vegetarian_food: row.serves_vegetarian_food,
+				price_level: row.price_level,
+				utc_offset_minutes: row.utc_offset_minutes,
+				website_uri: row.website_uri,
+				types: row.types,
+				photo_name: row.photo_name,
+				photo_width: row.photo_width,
+				photo_height: row.photo_height,
+				photo_author: row.photo_author,
+				photo_author_uri: row.photo_author_uri,
+				photo_author_photo_uri: row.photo_author_photo_uri,
+				weekday_descriptions: row.weekday_descriptions,
+				secondary_hours_type: row.secondary_hours_type,
+				next_open_time: row.next_open_time,
+				next_close_time: row.next_close_time,
+				open_now: row.open_now,
+				periods: row.periods,
+				special_days: row.special_days,
+				block_index: None,
+			})
+			.collect();
+
+		if events.is_empty() {
+			crate::tool_trace!(
+				agent: "optimize",
+				tool: "optimize_itinerary",
+				status: "error",
+				details: "no events found in database"
+			);
+			return Err("No events found in database for provided IDs".into());
+		}
+
+		info!(
+			target: "optimize_tools",
+			events_fetched = events.len(),
+			"Events fetched successfully"
+		);
+
+		// Extract trip_context and user_profile
+		let mut trip_context_val = parsed_input.get("trip_context").cloned().unwrap_or(Value::Null);
+		if trip_context_val.is_string() {
+			trip_context_val = serde_json::from_str(trip_context_val.as_str().unwrap_or("{}"))
+				.unwrap_or(json!({}));
+		}
+
+		let mut user_profile_val = parsed_input.get("user_profile").cloned().unwrap_or(Value::Null);
+		if user_profile_val.is_string() {
+			user_profile_val = serde_json::from_str(user_profile_val.as_str().unwrap_or("{}"))
+				.unwrap_or(json!({}));
+		}
+
+		// STEP 1: Rank POIs by preference
+		info!(
+			target: "optimize_tools",
+			"Step 1: Ranking POIs by user preference"
+		);
+
+		let events_json = serde_json::to_value(&events)?;
+		let rank_input = json!({
+			"pois": events_json,
+			"user_profile": user_profile_val
+		});
+
+		let rank_tool = RankPOIsByPreferenceTool {
+			llm: self.llm.clone(),
+		};
+		let ranked_result = rank_tool.run(rank_input).await?;
+
+		// Parse the ranked POIs (should be JSON array with rank fields added)
+		let ranked_pois: Vec<Value> = serde_json::from_str(&ranked_result)
+			.unwrap_or_else(|_| events_json.as_array().cloned().unwrap_or_default());
+
+		info!(
+			target: "optimize_tools",
+			ranked_count = ranked_pois.len(),
+			"POIs ranked successfully"
+		);
+
+		// STEP 2: Draft the itinerary
+		info!(
+			target: "optimize_tools",
+			"Step 2: Drafting itinerary structure"
+		);
+
+		let draft_input = json!({
+			"pois": ranked_pois,
+			"diversity_factor": 0.7
+		});
+
+		let draft_tool = DraftItineraryTool {
+			llm: self.llm.clone(),
+		};
+		let draft_result = draft_tool.run(draft_input).await?;
+
+		// Parse the draft itinerary
+		let mut itinerary: Value = serde_json::from_str(&draft_result)
+			.unwrap_or_else(|_| json!({
+				"event_days": [],
+				"unassigned_events": []
+			}));
+
+		info!(
+			target: "optimize_tools",
+			"Draft itinerary created"
+		);
+
+		// STEP 3: Optimize routes for each day
+		info!(
+			target: "optimize_tools",
+			"Step 3: Optimizing routes for each day"
+		);
+
+		let optimize_route_tool = OptimizeRouteTool;
+
+		// Get event_days array
+		if let Some(event_days) = itinerary.get_mut("event_days").and_then(|v| v.as_array_mut()) {
+			for day in event_days.iter_mut() {
+				// Optimize morning events
+				if let Some(morning) = day.get("morning_events").cloned() {
+					if let Some(morning_arr) = morning.as_array() {
+						if !morning_arr.is_empty() && morning_arr.len() > 1 {
+							// Get first event location as start
+							if let Some(first) = morning_arr.first() {
+								let start_location = json!({
+									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+								});
+
+								let route_input = json!({
+									"day_pois": morning,
+									"start_location": start_location
+								});
+
+								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
+									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+										day["morning_events"] = optimized_arr;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Optimize afternoon events
+				if let Some(afternoon) = day.get("afternoon_events").cloned() {
+					if let Some(afternoon_arr) = afternoon.as_array() {
+						if !afternoon_arr.is_empty() && afternoon_arr.len() > 1 {
+							if let Some(first) = afternoon_arr.first() {
+								let start_location = json!({
+									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+								});
+
+								let route_input = json!({
+									"day_pois": afternoon,
+									"start_location": start_location
+								});
+
+								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
+									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+										day["afternoon_events"] = optimized_arr;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Optimize evening events
+				if let Some(evening) = day.get("evening_events").cloned() {
+					if let Some(evening_arr) = evening.as_array() {
+						if !evening_arr.is_empty() && evening_arr.len() > 1 {
+							if let Some(first) = evening_arr.first() {
+								let start_location = json!({
+									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+								});
+
+								let route_input = json!({
+									"day_pois": evening,
+									"start_location": start_location
+								});
+
+								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
+									if let Ok(optimized_arr) = serde_json::from_str::<Value>(&optimized) {
+										day["evening_events"] = optimized_arr;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		info!(
+			target: "optimize_tools",
+			"Routes optimized for all days"
+		);
+
+		// Add metadata to itinerary
+		itinerary["start_date"] = trip_context_val.get("start_date").cloned().unwrap_or(Value::Null);
+		itinerary["end_date"] = trip_context_val.get("end_date").cloned().unwrap_or(Value::Null);
+		itinerary["title"] = trip_context_val
+			.get("destination")
+			.cloned()
+			.unwrap_or(json!("Trip Itinerary"));
+
+		let elapsed = start_time.elapsed();
+		let result = serde_json::to_string(&itinerary)?;
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "optimize_itinerary",
+			status: "success",
+			details: format!("elapsed_ms={}, events_processed={}", elapsed.as_millis(), events.len())
+		);
+
+		info!(
+			target: "optimize_tools",
+			elapsed_ms = elapsed.as_millis() as u64,
+			events_processed = events.len(),
+			"Optimization workflow completed successfully"
+		);
+
+		Ok(result)
+	}
 }
 
 /// Tool that ranks Points of Interest based on user preferences and constraints
@@ -89,12 +511,32 @@ impl Tool for RankPOIsByPreferenceTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "rank_pois_by_preference",
+			status: "start"
+		);
+
+		info!(
+			target: "optimize_tools",
+			tool = "rank_pois_by_preference",
+			"Starting POI ranking"
+		);
+
 		let pois = input["pois"]
 			.as_array()
 			.ok_or("pois must be an array of objects")?;
 		let profile = input["user_profile"]
 			.as_object()
 			.ok_or("user_profile must be an object")?;
+
+		info!(
+			target: "optimize_tools",
+			pois_count = pois.len(),
+			"Ranking POIs by preference"
+		);
 
 		let prompt = format!(
 			include_str!("../prompts/rank_pois_preference.md"),
@@ -103,6 +545,22 @@ impl Tool for RankPOIsByPreferenceTool {
 		);
 
 		let response = self.llm.invoke(&prompt).await?;
+
+		let elapsed = start_time.elapsed();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "rank_pois_by_preference",
+			status: "success",
+			details: format!("elapsed_ms={}, pois_count={}", elapsed.as_millis(), pois.len())
+		);
+
+		info!(
+			target: "optimize_tools",
+			elapsed_ms = elapsed.as_millis() as u64,
+			pois_count = pois.len(),
+			"POI ranking completed"
+		);
 
 		Ok(response.trim().to_string())
 	}
@@ -141,6 +599,20 @@ impl Tool for DraftItineraryTool {
 	}
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
+		let start_time = Instant::now();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "draft_itinerary",
+			status: "start"
+		);
+
+		info!(
+			target: "optimize_tools",
+			tool = "draft_itinerary",
+			"Starting itinerary drafting"
+		);
+
 		let pois = input["pois"]
 			.as_array()
 			.ok_or("pois must be an array of objects")?;
@@ -148,6 +620,13 @@ impl Tool for DraftItineraryTool {
 			n.as_f64()
 				.ok_or("diversity_factor must be a 64-bit floating point number")
 		});
+
+		info!(
+			target: "optimize_tools",
+			pois_count = pois.len(),
+			diversity_factor = diversity_factor.unwrap_or(Ok(0.7)).unwrap_or(0.7),
+			"Drafting itinerary from POIs"
+		);
 
 		let prompt = format!(
 			include_str!("../prompts/draft_itinerary.md"),
@@ -157,6 +636,22 @@ impl Tool for DraftItineraryTool {
 		);
 
 		let response = self.llm.invoke(&prompt).await?;
+
+		let elapsed = start_time.elapsed();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "draft_itinerary",
+			status: "success",
+			details: format!("elapsed_ms={}, pois_count={}", elapsed.as_millis(), pois.len())
+		);
+
+		info!(
+			target: "optimize_tools",
+			elapsed_ms = elapsed.as_millis() as u64,
+			pois_count = pois.len(),
+			"Itinerary draft completed"
+		);
 
 		Ok(response.trim().to_string())
 	}
@@ -212,6 +707,20 @@ impl Tool for OptimizeRouteTool {
 
 	async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
 		use super::tsp::{EndpointMode, Pt, compute_route};
+
+		let start_time = Instant::now();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "optimize_route",
+			status: "start"
+		);
+
+		info!(
+			target: "optimize_tools",
+			tool = "optimize_route",
+			"Starting route optimization"
+		);
 
 		let mut pois = input["day_pois"]
 			.as_array()
@@ -295,6 +804,22 @@ impl Tool for OptimizeRouteTool {
 			.into_iter()
 			.map(|i| pois[i])
 			.collect();
+
+		let elapsed = start_time.elapsed();
+
+		crate::tool_trace!(
+			agent: "optimize",
+			tool: "optimize_route",
+			status: "success",
+			details: format!("elapsed_ms={}", elapsed.as_millis())
+		);
+
+		info!(
+			target: "optimize_tools",
+			elapsed_ms = elapsed.as_millis() as u64,
+			"Route optimization completed"
+		);
+
 		Ok(json!(pois).to_string())
 	}
 }

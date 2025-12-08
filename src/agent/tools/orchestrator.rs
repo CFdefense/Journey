@@ -435,6 +435,75 @@ impl Tool for RouteTaskTool {
 			} else {
 				payload_str
 			}
+		} else if task_type_normalized == "optimize" {
+			// Optimize gets trip context, user profile, and constraint results
+			let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+			if chat_id > 0 {
+				let store_guard = self.context_store.read().await;
+				if let Some(context_data) = store_guard.get(&chat_id) {
+					// Find latest successful constraint result from tool_history
+					let mut constraint_data: Value = json!(null);
+					for exec in context_data.tool_history.iter().rev() {
+						if exec.tool_name == "route_task" {
+							if let Some(agent) = exec.output.get("agent").and_then(|v| v.as_str()) {
+								if agent == "constraint" {
+									if exec.output.get("status").and_then(|v| v.as_str())
+										== Some("completed")
+									{
+										constraint_data =
+											exec.output.get("data").cloned().unwrap_or(json!(null));
+										break;
+									}
+								}
+							}
+						}
+					}
+
+					// Extract filtered_event_ids from constraint result
+					let filtered_ids = if let Some(ids) = constraint_data.get("filtered_event_ids") {
+						ids.clone()
+					} else {
+						// Parse constraint result if it's a string
+						if constraint_data.is_string() {
+							let constraint_str = constraint_data.as_str().unwrap_or("{}");
+							if let Ok(parsed) = serde_json::from_str::<Value>(constraint_str) {
+								parsed.get("filtered_event_ids").cloned().unwrap_or(json!([]))
+							} else {
+								json!([])
+							}
+						} else {
+							json!([])
+						}
+					};
+
+					let optimize_payload = json!({
+						"trip_context": &context_data.trip_context,
+						"user_profile": &context_data.user_profile,
+						"filtered_event_ids": filtered_ids
+					});
+
+					let payload_json = serde_json::to_string(&optimize_payload)
+						.unwrap_or_else(|_| "{}".to_string());
+
+					info!(
+						target: "orchestrator_pipeline",
+						agent = "optimize",
+						"Injecting trip context, user profile, and constraint results into optimize payload"
+					);
+					debug!(
+						target: "orchestrator_pipeline",
+						payload = %payload_json,
+						"Optimize payload being passed to agent"
+					);
+
+					drop(store_guard);
+					payload_json
+				} else {
+					payload_str
+				}
+			} else {
+				payload_str
+			}
 		} else {
 			payload_str
 		};
@@ -493,6 +562,13 @@ impl Tool for RouteTaskTool {
 					.await
 				{
 					Ok(response) => {
+						debug!(
+							target: "orchestrator_pipeline",
+							agent = "constraint",
+							raw_response = %response,
+							"Constraint agent raw response before parsing"
+						);
+
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
 
@@ -531,6 +607,13 @@ impl Tool for RouteTaskTool {
 					.await
 				{
 					Ok(response) => {
+						debug!(
+							target: "orchestrator_pipeline",
+							agent = "optimize",
+							raw_response = %response,
+							"Optimize agent raw response before parsing"
+						);
+
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
 

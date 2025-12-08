@@ -146,16 +146,7 @@ impl Tool for FilterEventsByConstraintsTool {
 	fn parameters(&self) -> Value {
 		json!({
 			"type": "object",
-			"properties": {
-				"event_ids": {
-					"type": "string",
-					"description": "JSON stringified array of event IDs to filter (e.g., '[1, 2, 3]'). If omitted, the tool will extract event_ids from the input payload."
-				},
-				"constraints": {
-					"type": "string",
-					"description": "JSON stringified array of constraint strings (e.g., '[\"No Tree Nuts\", \"Wheelchair accessible\"]'). If omitted, the tool will extract constraints from the input payload."
-				}
-			},
+			"properties": {},
 			"required": []
 		})
 	}
@@ -210,6 +201,17 @@ impl Tool for FilterEventsByConstraintsTool {
 		if event_ids_val.is_string() {
 			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
 			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		}
+
+		// Check if we already have a result (agent calling tool on previous output)
+		if event_ids_val.is_null() && parsed_input.get("filtered_event_ids").is_some() {
+			// Agent is trying to call the tool on its own previous output
+			// Just return that output directly
+			info!(
+				target: "constraint_tools",
+				"Tool called with previous output, returning it directly"
+			);
+			return Ok(serde_json::to_string(&parsed_input)?);
 		}
 
 		let event_ids: Vec<i32> = event_ids_val
