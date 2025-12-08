@@ -343,13 +343,12 @@ async fn send_message_to_llm(
 		}
 	}
 
-	// Default behavior: Create itinerary based on whether MockLLM is used
 	// Check if we're using MockLLM
 	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
 
-	let mut ai_itinerary = if use_mock {
-		// Create dummy itinerary when MockLLM is active
-		Itinerary {
+	if use_mock {
+		// MockLLM fallback: Create and insert a dummy itinerary
+		let mut ai_itinerary = Itinerary {
 			id: 0,
 			start_date: NaiveDate::parse_from_str("2025-11-05", "%Y-%m-%d").unwrap(),
 			end_date: NaiveDate::parse_from_str("2025-11-06", "%Y-%m-%d").unwrap(),
@@ -442,52 +441,72 @@ async fn send_message_to_llm(
 			chat_session_id: None,
 			title: String::from("World Tour 11/5-15 2025"),
 			unassigned_events: vec![],
-		}
-	} else {
-		// Return empty itinerary when real LLM is used
-		Itinerary {
-			id: 0,
-			start_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-			end_date: NaiveDate::parse_from_str("2025-01-01", "%Y-%m-%d").unwrap(),
-			event_days: vec![],
-			chat_session_id: None,
-			title: String::from("Empty Itinerary"),
-			unassigned_events: vec![],
-		}
-	};
+		};
 
-	// Insert generated itinerary into db
-	let inserted_itinerary_id = sqlx::query!(
-		r#"
-		INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
-		VALUES ($1, FALSE, $2, $3, $4, FALSE, $5)
-		RETURNING id;
-		"#,
-		account_id,
-		ai_itinerary.start_date,
-		ai_itinerary.end_date,
-		chat_session_id,
-		ai_itinerary.title
-	)
-	.fetch_one(pool)
-	.await
-	.map_err(AppError::from)?
-	.id;
+		// Insert generated itinerary into db
+		let inserted_itinerary_id = sqlx::query!(
+			r#"
+			INSERT INTO itineraries (account_id, is_public, start_date, end_date, chat_session_id, saved, title)
+			VALUES ($1, FALSE, $2, $3, $4, FALSE, $5)
+			RETURNING id;
+			"#,
+			account_id,
+			ai_itinerary.start_date,
+			ai_itinerary.end_date,
+			chat_session_id,
+			ai_itinerary.title
+		)
+		.fetch_one(pool)
+		.await
+		.map_err(AppError::from)?
+		.id;
 
-	ai_itinerary.id = inserted_itinerary_id;
+		ai_itinerary.id = inserted_itinerary_id;
 
-	// Insert itinerary events
-	insert_event_list(ai_itinerary, pool).await?;
+		// Insert itinerary events
+		insert_event_list(ai_itinerary, pool).await?;
 
-	// Insert bot message with itinerary
+		// Insert bot message with itinerary
+		let record = sqlx::query!(
+			r#"
+			INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
+			VALUES ($1, $2, FALSE, NOW(), $3)
+			RETURNING id, timestamp;
+			"#,
+			chat_session_id,
+			inserted_itinerary_id,
+			ai_text.clone()
+		)
+		.fetch_one(pool)
+		.await
+		.map_err(AppError::from)?;
+
+		let (bot_message_id, timestamp) = (record.id, record.timestamp);
+
+		return Ok(Message {
+			id: bot_message_id,
+			is_user: false,
+			timestamp,
+			text: ai_text,
+			itinerary_id: Some(inserted_itinerary_id),
+		});
+	}
+
+	// When using real LLM: The respond_to_user tool handles message insertion,
+	// so we should never reach this point. If we do, insert a plain message without itinerary.
+	info!(
+		target: "orchestrator_pipeline",
+		chat_session_id = chat_session_id,
+		"Fallback: Inserting message without itinerary (real LLM path)"
+	);
+
 	let record = sqlx::query!(
 		r#"
 		INSERT INTO messages (chat_session_id, itinerary_id, is_user, timestamp, text)
-		VALUES ($1, $2, FALSE, NOW(), $3)
+		VALUES ($1, NULL, FALSE, NOW(), $2)
 		RETURNING id, timestamp;
 		"#,
 		chat_session_id,
-		inserted_itinerary_id,
 		ai_text.clone()
 	)
 	.fetch_one(pool)
@@ -501,7 +520,7 @@ async fn send_message_to_llm(
 		is_user: false,
 		timestamp,
 		text: ai_text,
-		itinerary_id: Some(inserted_itinerary_id),
+		itinerary_id: None,
 	})
 }
 
