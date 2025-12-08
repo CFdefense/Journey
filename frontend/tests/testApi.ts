@@ -197,7 +197,9 @@ import type {
 	ChatsResponse,
 	Message,
 	UpdateMessageRequest,
-	RenameRequest
+	RenameRequest,
+    ProgressRequest,
+    ProgressResponse
 } from "../src/models/chat";
 
 /// Calls chats
@@ -441,6 +443,39 @@ export async function apiUpdateMessage(
 	}
 }
 
+/// Gets the status of the llm progress and the title of the chat session
+///
+/// # Method
+/// Sends a `POST /api/chat/progress` request to get the status and title.
+///
+/// # Parameters
+/// - `payload`: An `ProgressRequest` object containing:
+///   - `chat_session_id`: The ID of the chat session
+///
+/// # Returns
+/// - On success: `ProgressResponse` object containing the llm status and chat session title
+/// - On failure: Returns null result with appropriate status code:
+///
+/// # Exceptions
+/// Never throws an exception
+export async function apiProgress(
+	payload: ProgressRequest
+): Promise<ApiResult<ProgressResponse>> {
+	try {
+		const response = await customFetch(`${API_BASE_URL}/api/chat/progress`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			credentials: test_state.dev_mode ? "include" : "same-origin",
+			body: JSON.stringify(payload)
+		});
+		return { result: response.ok? await response.json() : null, status: response.status };
+	} catch (error) {
+		console.error("apiProgress error:", error);
+		return { result: null, status: -1 };
+	}
+}
 
 
 import type {

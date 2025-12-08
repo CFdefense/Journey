@@ -21,9 +21,10 @@ import {
 	apiDeleteUserEvent,
 	apiSaveItineraryChanges,
 	apiUnsaveItinerary,
-	apiGetSavedItineraries
+	apiGetSavedItineraries,
+    apiProgress
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
-import { ChatSessionRow } from "../src/models/chat";
+import { ChatSessionRow, LlmProgress } from "../src/models/chat";
 import {
 	SearchEventRequest,
 	UserEventRequest,
@@ -97,6 +98,14 @@ async function test_flow() {
 	const botMessage = messageResult.result!.bot_message;
 	expect(botMessage.itinerary_id === null).toBe(false);
 
+	// get llm status
+	const progressRes = await apiProgress({
+		chat_session_id: newChatId,
+	});
+	expect(progressRes.status).toBe(200);
+	expect(progressRes.result!.progress).toBe(LlmProgress.Ready);
+	expect(progressRes.result!.title).toBe("New Chat");
+
 	// get itinerary info
 	const itineraryResult = await apiItineraryDetails(botMessage.itinerary_id!);
 	expect(itineraryResult.status).toBe(200);
@@ -168,18 +177,19 @@ async function test_flow() {
 
 	// Create user-event
 	const userEvent: UserEventRequest = {
-		id: null,
-		event_name: "test",
-		street_address: "test",
-		postal_code: 1,
-		city: "test",
-		country: "test",
-		event_type: "test",
-		event_description: "test",
-		hard_start: "2015-11-12T23:25:00",
-		hard_end: "2025-11-12T23:25:00",
-		timezone: "UTC"
-	};
+        id: null,
+        event_name: "test",
+        street_address: "test",
+        postal_code: 1,
+        city: "test",
+        country: "test",
+        event_type: "test",
+        event_description: "test",
+        hard_start: "2015-11-12T23:25:00",
+        hard_end: "2025-11-12T23:25:00",
+        timezone: "UTC",
+        photo_name: null
+    };
 	const createEventRes = await apiUserEvent(userEvent);
 	expect(createEventRes.status).toBe(200);
 
@@ -251,7 +261,7 @@ async function test_flow() {
 	expect(savedItineraries.status).toBe(200);
 	expect(
 		savedItineraries.result!.itineraries.some(
-			(i: { id: any }) => i.id === savedItineraryId
+			(i: { id: number }) => i.id === savedItineraryId
 		)
 	).toBe(true);
 
@@ -265,19 +275,20 @@ async function test_flow() {
 	expect(savedItinerariesAfterUnsave.status).toBe(200);
 	expect(
 		savedItinerariesAfterUnsave.result!.itineraries.some(
-			(i: { id: any }) => i.id === savedItineraryId
+			(i: { id: number }) => i.id === savedItineraryId
 		)
 	).toBe(false);
 
 	// Test unsaving non-existent itinerary (should return 404)
 	const nonExistentItinerary: Itinerary = {
-		id: 999999,
-		start_date: "2025-01-01",
-		end_date: "2025-12-31",
-		event_days: [],
-		chat_session_id: null,
-		title: "Non-existent"
-	};
+        id: 999999,
+        start_date: "2025-01-01",
+        end_date: "2025-12-31",
+        event_days: [],
+        chat_session_id: null,
+        title: "Non-existent",
+        unassigned_events: []
+    };
 	const unsaveNonExistent = await apiUnsaveItinerary(nonExistentItinerary);
 	expect(unsaveNonExistent.status).toBe(404);
 
@@ -341,13 +352,14 @@ describe("Integration Tests", () => {
 
 		// Test unsave errors
 		const errorItinerary2: Itinerary = {
-			id: 99999,
-			start_date: "2025-01-01",
-			end_date: "2025-12-31",
-			event_days: [],
-			chat_session_id: null,
-			title: "Error Test"
-		};
+            id: 99999,
+            start_date: "2025-01-01",
+            end_date: "2025-12-31",
+            event_days: [],
+            chat_session_id: null,
+            title: "Error Test",
+            unassigned_events: []
+        };
 
 		const errorUnsave = await apiUnsaveItinerary(errorItinerary2);
 		expect(errorUnsave.status).toBeGreaterThanOrEqual(-1);
