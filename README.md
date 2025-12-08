@@ -191,7 +191,7 @@ Studies in personalized recommendation systems show that incorporating persisten
 
 ### Use Cases / User Stories
 
-Use Case diagram included in [HERE](/docs/use_cases.png)
+Use Case diagram included in [HERE](/docs/use-case.png)
 
 The user accesses our application via her browser. She has never used it before and creates an account with her email and chosen password. After being prompted, she goes to the account page to upload a profile picture and select her preferences for budget, risk, and food likes. She notes that she does not eat any cheese and leaves the accessibility section blank and continues to the create itinerary page. She is able to chat with the agent regarding her upcoming spring break trip to puerto rico, and after a minute the agent provides her with a complete itinerary for her 6-day trip. She views the itinerary in the view itinerary pop out and is able to drag around a few events and add the sunday brunch she was really excited to try. The itinerary is saved in her account and she is able to visit it over the next few months to view and update her plans.
 
@@ -236,7 +236,7 @@ https://developers.google.com/maps/documentation/places/web-service/overview
 
 Our database schema consists of 6 tables: accounts, chat-sessions, events, event-list, itineraries, and messages
 
-ER Diagram is included in [HERE](/docs/er_diagram.png)
+ER Diagram is included in [HERE](/docs/er-diagram.png)
 
 
 
