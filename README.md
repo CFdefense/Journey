@@ -238,7 +238,7 @@ https://developers.google.com/maps/documentation/places/web-service/overview
 
 Our database schema consists of 6 tables: accounts, chat-sessions, events, event-list, itineraries, and messages
 
-ER Diagram is included in [HERE](/docs/er-diagram.png)
+ER Diagram is included in [HERE](/docs/erd-diagram.png)
 
 
 
