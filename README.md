@@ -212,10 +212,12 @@ flowchart TB
     Orchestrator --> Research[Research Subagent]
     Orchestrator --> Constraint[Constraint Subagent]
     Orchestrator --> Optimizer[Schedule Optimizer]
+    Orchestrator --> Task[Task Subagent]
    
+    Research --> GooglePlaces[Google Places API]    
     Backend --> DB[(PostgreSQL)]
     Agents --> OpenAI[OpenAI API]
-    Agents --> GooglePlaces[Google Places API]
+    
 ```
 
 ### Technology Stack
