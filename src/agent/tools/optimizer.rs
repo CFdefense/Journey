@@ -425,10 +425,28 @@ impl Tool for OptimizeItineraryTool {
 			}
 		};
 
-		// Build schedule summary
+		// Build schedule summary and a type map we can use for diversity enforcement.
 		use std::collections::HashMap;
 		let name_by_id: HashMap<i32, String> =
 			events.iter().map(|e| (e.id, e.event_name.clone())).collect();
+
+		let mut type_by_id: HashMap<i32, String> = HashMap::new();
+		for e in events.iter() {
+			// Prefer structured event_type; fall back to first entry in `types`.
+			let category = if let Some(t) = &e.event_type {
+				t.to_lowercase()
+			} else if let Some(types) = &e.types {
+				types
+					.split(',')
+					.next()
+					.unwrap_or("unknown")
+					.trim()
+					.to_lowercase()
+			} else {
+				"unknown".to_string()
+			};
+			type_by_id.insert(e.id, category);
+		}
 
 		let mut schedule_summary: Vec<String> = Vec::new();
 		if let Some(event_days) = itinerary.get("event_days").and_then(|v| v.as_array()) {
@@ -542,6 +560,59 @@ impl Tool for OptimizeItineraryTool {
 			status: "success",
 			details: format!("schedule=[{}]", schedule_summary.join(" | "))
 		);
+
+		// STEP 2.5: Enforce basic activity diversity per day.
+		//
+		// Even though the draft_itinerary prompt asks the LLM to "avoid 3+ similar
+		// activities in a row", in practice we still see clusters like three
+		// PUBLIC_BATH entries in the same afternoon block. To make the behavior
+		// more robust, we enforce a simple deterministic rule:
+		//
+		// - For each day, allow at most TWO events of the same primary category
+		//   (derived from event_type or the first entry in `types`).
+		// - Any additional events of that category are simply dropped from the
+		//   scheduled blocks (they will not appear in the final itinerary).
+		if let Some(days) = itinerary
+			.get_mut("event_days")
+			.and_then(|v| v.as_array_mut())
+		{
+			for day in days.iter_mut() {
+				let mut per_day_counts: HashMap<String, usize> = HashMap::new();
+
+				for block in &["morning_events", "afternoon_events", "evening_events"] {
+					if let Some(events_arr) = day.get_mut(*block).and_then(|v| v.as_array_mut()) {
+						let mut keep: Vec<Value> = Vec::new();
+
+						for ev in events_arr.drain(..) {
+							let id_opt = ev.get("id").and_then(|v| v.as_i64()).map(|i| i as i32);
+
+							if let Some(id) = id_opt {
+								let category = type_by_id
+									.get(&id)
+									.cloned()
+									.unwrap_or_else(|| "unknown".to_string());
+
+								let count = per_day_counts.entry(category).or_insert(0);
+
+								// Allow at most 2 events of the same category per day.
+								if *count >= 2 {
+									// Drop this event from the itinerary; we don't
+									// add it back to any other collection.
+								} else {
+									*count += 1;
+									keep.push(ev);
+								}
+							} else {
+								// Synthetic / LLM-created events without ids are kept as-is.
+								keep.push(ev);
+							}
+						}
+
+						*events_arr = keep;
+					}
+				}
+			}
+		}
 
 		// STEP 3: Optimize routes for each day
 		info!(
