@@ -47,7 +47,10 @@ RULES:
 2. INCLUDE places that match user preferences (e.g., if they want to "eat a lot", include restaurants, cafes, bars, wineries)
 3. INCLUDE potentially interesting vacation spots: parks, museums, theaters, attractions, hotels, landmarks
 4. For food preferences, only include actual dining establishments (restaurants, cafes, bars, bakeries, wineries) - NOT grocery stores
-5. If user requires wheelchair accessibility, check the wheelchair_accessible fields and EXCLUDE places that are not accessible
+5. If user requires wheelchair accessibility, check the wheelchair_accessible fields and prefer places that are not accessible
+
+Do not be too strict if it's not necessary.
+It's ok if some places are outside the user's budget preference, or if some places are a little less interesting, for example.
 
 Should this place be INCLUDED in the vacation itinerary?
 Respond with ONLY a JSON object in this exact format:
@@ -246,7 +249,7 @@ impl Tool for FilterEventsByConstraintsTool {
 		// Fetch all events from database by their IDs
 		let rows = sqlx::query!(
 			r#"
-			SELECT 
+			SELECT
 				id,
 				event_name,
 				event_description,
