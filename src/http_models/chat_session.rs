@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{ToResponse, ToSchema};
 
-use crate::sql_models::message::ChatSessionRow;
+use crate::sql_models::{LlmProgress, message::ChatSessionRow};
 
 /// Response model from the `/api/chat/chats` endpoint
 #[derive(Serialize, ToSchema, ToResponse)]
@@ -22,4 +22,17 @@ pub struct NewChatResponse {
 pub struct RenameRequest {
 	pub new_title: String,
 	pub id: i32,
+}
+
+/// Request model for the `/api/chat/progress` endpoint
+#[derive(Deserialize, ToSchema)]
+pub struct ProgressRequest {
+	pub chat_session_id: i32,
+}
+
+/// Response model from the `/api/chat/progress` endpoint
+#[derive(Debug, Serialize, ToSchema, ToResponse)]
+pub struct ProgressResponse {
+	pub progress: LlmProgress,
+	pub title: String,
 }

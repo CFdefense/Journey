@@ -13,7 +13,9 @@ use crate::{
 	error::{ApiResult, AppError},
 	global::MESSAGE_PAGE_LEN,
 	http_models::{
-		chat_session::{ChatsResponse, NewChatResponse, RenameRequest},
+		chat_session::{
+			ChatsResponse, NewChatResponse, ProgressRequest, ProgressResponse, RenameRequest,
+		},
 		event::Event,
 		itinerary::{EventDay, Itinerary},
 		message::{
@@ -22,7 +24,10 @@ use crate::{
 		},
 	},
 	middleware::{AuthUser, middleware_auth},
-	sql_models::message::{ChatSessionRow, MessageRow},
+	sql_models::{
+		LlmProgress,
+		message::{ChatSessionRow, MessageRow},
+	},
 	swagger::SecurityAddon,
 };
 
@@ -39,7 +44,8 @@ use tracing::{debug, error, info};
 		api_send_message,
 		api_update_message,
 		api_delete_chat,
-		api_rename
+		api_rename,
+		api_progress
 	),
 	modifiers(&SecurityAddon),
 	security(("set-cookie"=[])),
@@ -514,6 +520,20 @@ async fn send_message_to_llm(
 	.map_err(AppError::from)?;
 
 	let (bot_message_id, timestamp) = (record.id, record.timestamp);
+
+	let pool = pool.clone();
+	tokio::spawn(async move {
+		_ = sqlx::query!(
+			r#"UPDATE chat_sessions
+		SET llm_progress=$1
+		WHERE id=$2 AND account_id=$3;"#,
+			LlmProgress::Ready as _,
+			chat_session_id,
+			account_id,
+		)
+		.execute(&pool)
+		.await;
+	});
 
 	Ok(Message {
 		id: bot_message_id,
@@ -1289,6 +1309,85 @@ pub async fn api_rename(
 	Ok(())
 }
 
+/// Fetches the progress of the llm pipeline for this chat session
+///
+/// # Method
+/// `POST /api/chat/progress`
+///
+/// # Request Body
+/// - [ProgressRequest]
+///
+/// # Responses
+/// - `200 OK` - [ProgressResponse] - status of the llm pipeline
+/// - `400 BAD_REQUEST` - Request payload contains invalid data (public error)
+/// - `401 UNAUTHORIZED` - When authentication fails (handled in middleware, public error)
+/// - `404 NOT_FOUND` - The provided chat session id does not belong to the user or does not exist (public error)
+/// - `500 INTERNAL_SERVER_ERROR` - Internal error (private)
+///
+/// # Examples
+/// ```bash
+/// curl -X POST http://localhost:3001/api/chat/progress
+///   -H "Content-Type: application/json"
+///   -d '{
+///         "chat_session_id": 4
+///       }'
+/// ```
+#[utoipa::path(
+	post,
+	path="/progress",
+	summary="Get status of LLM pipeline",
+	description="Fetches the progress of the llm pipeline for this chat session.",
+	request_body(
+		content=ProgressRequest,
+		content_type="application/json",
+		description="Chat session ID must belong to the user who sent the request. New Title must not be empty string.",
+		example=json!({
+			"chat_session_id": 4
+		})
+	),
+	responses(
+		(
+			status=200,
+			description="The status of the LLM pipeline for the quested chat session",
+			body=ProgressResponse,
+			content_type="application/json",
+			example=json!({
+				"progress": "Ready",
+				"title": "Possibly Updated Chat Title"
+			})
+		),
+		(status=400, description="Bad Request"),
+		(status=401, description="User has an invalid cookie/no cookie"),
+		(status=404, description="Chat session not found for this user"),
+		(status=405, description="Method Not Allowed - Must be POST"),
+		(status=408, description="Request Timed Out"),
+		(status=500, description="Internal Server Error")
+	),
+	security(("set-cookie"=[])),
+	tag="Chat"
+)]
+pub async fn api_progress(
+	Extension(user): Extension<AuthUser>,
+	Extension(pool): Extension<PgPool>,
+	Json(ProgressRequest { chat_session_id }): Json<ProgressRequest>,
+) -> ApiResult<Json<ProgressResponse>> {
+	let row = sqlx::query!(
+		r#"SELECT llm_progress as "llm_progress: LlmProgress", title
+		FROM chat_sessions
+		WHERE account_id=$1 AND id=$2;"#,
+		user.id,
+		chat_session_id,
+	)
+	.fetch_optional(&pool)
+	.await
+	.map_err(AppError::from)?
+	.ok_or(AppError::NotFound)?;
+	Ok(Json(ProgressResponse {
+		progress: row.llm_progress,
+		title: row.title,
+	}))
+}
+
 /// Create the chat routes with authentication middleware.
 ///
 /// # Routes
@@ -1299,6 +1398,7 @@ pub async fn api_rename(
 /// - `GET /newChat` - Gets a chat session id for an empty chat (protected)
 /// - `DELETE /:id` - Delete a chat session and associated messages (protected)
 /// - `POST /rename` - Renames the title of a chat session (protected)
+/// - `POST /progress` - Fetches the progress of the llm pipeline for this chat session (protected)
 ///
 /// # Middleware
 /// All routes are protected by `middleware_auth` which validates the `auth-token` cookie.
@@ -1311,5 +1411,6 @@ pub fn chat_routes() -> AxumRouter {
 		.route("/newChat", get(api_new_chat))
 		.route("/{id}", delete(api_delete_chat))
 		.route("/rename", post(api_rename))
+		.route("/progress", post(api_progress))
 		.route_layer(axum::middleware::from_fn(middleware_auth))
 }

@@ -19,6 +19,7 @@ use crate::agent::models::user::UserIntent;
 use crate::agent::tools::orchestrator::track_tool_execution;
 use crate::controllers::itinerary::insert_event_list;
 use crate::http_models::itinerary::Itinerary as HttpItinerary;
+use crate::sql_models::LlmProgress;
 use async_trait::async_trait;
 use chrono::Datelike;
 use langchain_rust::language_models::llm::LLM;
@@ -1113,6 +1114,20 @@ impl Tool for RespondToUserTool {
 
 		crate::tool_trace!(agent: "orchestrator", tool: "respond_to_user", status: "start");
 
+		// Update progress to FinalizingItinerary
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		if chat_id > 0 {
+			_ = sqlx::query!(
+				r#"UPDATE chat_sessions
+				SET llm_progress=$1
+				WHERE id=$2;"#,
+				LlmProgress::FinalizingItinerary as _,
+				chat_id
+			)
+			.execute(&self.pool)
+			.await;
+		}
+
 		debug!(
 			target: "orchestrator_tool",
 			tool = "respond_to_user",
@@ -1121,7 +1136,6 @@ impl Tool for RespondToUserTool {
 		);
 
 		// Get chat_session_id from shared atomic (set by controller before agent invocation)
-		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
 		if chat_id == 0 {
 			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
 		}

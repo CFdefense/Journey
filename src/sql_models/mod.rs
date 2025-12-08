@@ -44,6 +44,33 @@ pub enum TimeOfDay {
 	Evening,
 }
 
+/// The status of the LLM pipeline
+#[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, ToSchema)]
+#[sqlx(type_name = "llm_progress")]
+pub enum LlmProgress {
+	Ready,
+	// Task Agent Tools
+	RetrieveUserProfile,
+	RetrieveChatContext,
+	UpdateTripContext,
+	UpdateChatTitle,
+	AskForClarification,
+	// Research Agent
+	Searching,
+	Geocoding,
+	SearchingEvents,
+	// Constraint Agent
+	Filtering,
+	CheckingConstraints,
+	// Scheduling
+	Scheduling,
+	// Optimizer Agent
+	Optimizing,
+	RankingEvents,
+	// Final Response
+	FinalizingItinerary,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, ToSchema)]
 #[sqlx(type_name = "event_period")]
 pub struct Period {

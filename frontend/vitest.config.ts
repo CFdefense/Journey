@@ -11,6 +11,7 @@ export default defineConfig({
 			reportsDirectory: "../docs/frontend-codecov",
 			exclude: [
 				"src/api/",
+				"src/config/",
 				"src/helpers/config.ts",
 				"src/helpers/global.ts",
 				"src/models",
