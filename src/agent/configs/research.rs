@@ -32,9 +32,6 @@ const SYSTEM_PROMPT: &str = include_str!("../prompts/research.md");
 pub fn create_research_agent(
 	pool: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	// Load environment variables
-	dotenvy::dotenv().ok();
-
 	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
 	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
 

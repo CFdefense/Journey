@@ -43,9 +43,6 @@ pub fn create_orchestrator_agent(
 	),
 	AgentError,
 > {
-	// Load environment variables
-	dotenvy::dotenv().ok();
-
 	// Create a shared LLM instance for the orchestrator and its tools
 	// Use MockLLM if DEPLOY_LLM != "1", otherwise use OpenAI
 	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";

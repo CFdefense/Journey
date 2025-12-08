@@ -128,7 +128,6 @@ impl Tool for GeocodeTool {
 			"Geocoding location"
 		);
 
-		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
 		let gm_api_key =
 			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
 
@@ -464,7 +463,6 @@ impl<'db> Tool for NearbySearchTool {
 			"Place type filters"
 		);
 
-		dotenvy::dotenv().map_err(|_| "Failed to load environment variables")?;
 		let gm_api_key =
 			std::env::var(GOOGLE_MAPS_API_KEY).map_err(|_| "GOOGLE_MAPS_API_KEY is not set")?;
 

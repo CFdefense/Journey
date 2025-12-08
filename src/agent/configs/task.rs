@@ -42,9 +42,6 @@ pub fn create_task_agent(
 	user_id: Arc<AtomicI32>,
 	context_store: SharedContextStore,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	// Load environment variables
-	dotenvy::dotenv().ok();
-
 	// Use MockLLM when DEPLOY_LLM != "1" so local/dev can run without a real key
 	let use_mock = std::env::var("DEPLOY_LLM").unwrap_or_default() != "1";
 

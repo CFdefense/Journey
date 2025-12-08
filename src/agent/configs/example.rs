@@ -27,9 +27,6 @@ pub type AgentType = Arc<
 >;
 
 pub fn create_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	// Load environment variables
-	dotenvy::dotenv().ok();
-
 	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
 	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
 

@@ -33,9 +33,6 @@ pub fn create_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
 	db: PgPool,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	// Load environment variables
-	dotenvy::dotenv().ok();
-
 	// Note: Even when DEPLOY_LLM != "1", we still need to create an agent
 	// (it won't be used at runtime). OpenAI API key is still required for agent creation.
 
