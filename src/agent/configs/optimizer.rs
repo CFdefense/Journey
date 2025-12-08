@@ -53,7 +53,10 @@ pub fn create_optimize_agent(
 		.build(agent_llm)
 		.unwrap();
 
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+	// Limit to 3 iterations - agent should: 1) call tool, 2) get result, 3) return final answer
+	Ok(AgentExecutor::from_agent(agent)
+		.with_memory(memory.into())
+		.with_max_iterations(3))
 }
 
 /// Creates a dummy agent for testing purposes.
@@ -97,5 +100,7 @@ pub fn create_dummy_optimize_agent(
 		}
 	}
 
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
+	Ok(AgentExecutor::from_agent(agent)
+		.with_memory(memory.into())
+		.with_max_iterations(3))
 }

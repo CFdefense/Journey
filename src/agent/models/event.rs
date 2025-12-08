@@ -1,10 +1,10 @@
 use chrono::{NaiveDate, NaiveDateTime};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::sql_models::Period;
 
 /// A subset of [crate::http_models::event::Event] which only contains fields that the LLM might need for context.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Event {
 	/// Primary key
 	pub id: i32,
@@ -16,7 +16,7 @@ pub struct Event {
 	pub postal_code: Option<i32>,
 	pub lat: Option<f64>,
 	pub lng: Option<f64>,
-	pub event_type: Option<String>,
+	pub event_type: Option<String>, 
 	pub hard_start: Option<NaiveDateTime>,
 	pub hard_end: Option<NaiveDateTime>,
 	/// Timezone of hard start and hard end

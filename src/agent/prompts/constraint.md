@@ -41,12 +41,19 @@ You will receive input as a JSON object containing:
 ## Tool Usage Instructions
 
 **IMPORTANT**: When calling the `filter_events_by_constraints` tool:
-1. The input already contains all the data you need in the payload
-2. You do NOT need to pass individual parameters - the tool will extract them from the input automatically
-3. Simply call the tool without specifying event_ids or constraints parameters
-4. The tool will automatically extract event IDs from the input payload and fetch full event data from the database
+1. You received a JSON input containing event_ids, constraints, and trip_context
+2. Pass that ENTIRE JSON input as the action_input to the tool
+3. Do NOT pass an empty string - pass the full JSON you received
 
-Example: Simply call `filter_events_by_constraints` without additional parameters. The tool is designed to extract everything it needs from the input you receive.
+Example:
+```json
+{
+  "action": "filter_events_by_constraints",
+  "action_input": "{\"event_ids\":[9,10,11...],\"constraints\":[...],\"trip_context\":{...}}"
+}
+```
+
+The tool will extract what it needs from the JSON you pass.
 
 The tool will:
 - Extract event IDs from the input payload automatically

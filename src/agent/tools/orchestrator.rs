@@ -407,10 +407,18 @@ impl Tool for RouteTaskTool {
 						}
 					}
 
+					// Extract event_ids from research data
+					let event_ids = if let Some(ids) = research_data.get("event_ids") {
+						ids.clone()
+					} else {
+						// Research data might be wrapped differently
+						json!([])
+					};
+
 					let constraint_payload = json!({
 						"trip_context": &context_data.trip_context,
 						"constraints": &context_data.constraints,
-						"events": research_data
+						"event_ids": event_ids
 					});
 
 					let payload_json = serde_json::to_string(&constraint_payload)
@@ -438,9 +446,21 @@ impl Tool for RouteTaskTool {
 		} else if task_type_normalized == "optimize" {
 			// Optimize gets trip context, user profile, and constraint results
 			let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+			debug!(
+				target: "orchestrator_pipeline",
+				agent = "optimize",
+				chat_id = chat_id,
+				"Building optimize payload from context"
+			);
 			if chat_id > 0 {
 				let store_guard = self.context_store.read().await;
 				if let Some(context_data) = store_guard.get(&chat_id) {
+					debug!(
+						target: "orchestrator_pipeline",
+						agent = "optimize",
+						tool_history_count = context_data.tool_history.len(),
+						"Found context data with tool history"
+					);
 					// Find latest successful constraint result from tool_history
 					let mut constraint_data: Value = json!(null);
 					for exec in context_data.tool_history.iter().rev() {
@@ -452,6 +472,12 @@ impl Tool for RouteTaskTool {
 									{
 										constraint_data =
 											exec.output.get("data").cloned().unwrap_or(json!(null));
+										debug!(
+											target: "orchestrator_pipeline",
+											agent = "optimize",
+											constraint_data = %serde_json::to_string(&constraint_data).unwrap_or_else(|_| "error".to_string()),
+											"Found constraint result in tool_history"
+										);
 										break;
 									}
 								}
@@ -460,13 +486,15 @@ impl Tool for RouteTaskTool {
 					}
 
 					// Extract filtered_event_ids from constraint result
+					// Handle multiple possible structures:
+					// 1. Direct: {"filtered_event_ids": [...]}
+					// 2. Wrapped in raw string: {"raw": "{\"filtered_event_ids\":[...]}"}
 					let filtered_ids = if let Some(ids) = constraint_data.get("filtered_event_ids") {
 						ids.clone()
-					} else {
-						// Parse constraint result if it's a string
-						if constraint_data.is_string() {
-							let constraint_str = constraint_data.as_str().unwrap_or("{}");
-							if let Ok(parsed) = serde_json::from_str::<Value>(constraint_str) {
+					} else if let Some(raw) = constraint_data.get("raw") {
+						// Parse the raw string
+						if let Some(raw_str) = raw.as_str() {
+							if let Ok(parsed) = serde_json::from_str::<Value>(raw_str) {
 								parsed.get("filtered_event_ids").cloned().unwrap_or(json!([]))
 							} else {
 								json!([])
@@ -474,7 +502,25 @@ impl Tool for RouteTaskTool {
 						} else {
 							json!([])
 						}
+					} else if constraint_data.is_string() {
+						// Parse constraint result if it's a string itself
+						let constraint_str = constraint_data.as_str().unwrap_or("{}");
+						if let Ok(parsed) = serde_json::from_str::<Value>(constraint_str) {
+							parsed.get("filtered_event_ids").cloned().unwrap_or(json!([]))
+						} else {
+							json!([])
+						}
+					} else {
+						json!([])
 					};
+
+					// Log what we extracted for debugging
+					debug!(
+						target: "orchestrator_pipeline",
+						agent = "optimize",
+						filtered_ids = %serde_json::to_string(&filtered_ids).unwrap_or_else(|_| "error".to_string()),
+						"Extracted filtered_event_ids from constraint result"
+					);
 
 					let optimize_payload = json!({
 						"trip_context": &context_data.trip_context,
@@ -499,9 +545,20 @@ impl Tool for RouteTaskTool {
 					drop(store_guard);
 					payload_json
 				} else {
+					debug!(
+						target: "orchestrator_pipeline",
+						agent = "optimize",
+						chat_id = chat_id,
+						"No context data found for chat_id, using original payload"
+					);
 					payload_str
 				}
 			} else {
+				debug!(
+					target: "orchestrator_pipeline",
+					agent = "optimize",
+					"chat_id is 0, using original payload"
+				);
 				payload_str
 			}
 		} else {
@@ -616,6 +673,26 @@ impl Tool for RouteTaskTool {
 
 						let data: Value = serde_json::from_str(&response)
 							.unwrap_or_else(|_| json!({ "raw": response }));
+
+						// Store the complete itinerary in active_itinerary context
+						let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+						if chat_id > 0 {
+							let mut store_guard = self.context_store.write().await;
+							if let Some(context_data) = store_guard.get_mut(&chat_id) {
+								context_data.active_itinerary = Some(data.clone());
+								info!(
+									target: "orchestrator_pipeline",
+									agent = "optimize",
+									"Stored itinerary in active_itinerary context"
+								);
+								debug!(
+									target: "orchestrator_pipeline",
+									itinerary = %serde_json::to_string(&data).unwrap_or_else(|_| "error".to_string()),
+									"Itinerary stored in context"
+								);
+							}
+							drop(store_guard);
+						}
 
 						crate::tool_trace!(agent: "optimize", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "optimize", status = "completed", "Optimize agent completed");
