@@ -6,6 +6,7 @@ import type { Message } from "../models/chat";
 import ChatMessage from "./ChatMessage";
 import { apiMessages } from "../api/home";
 import { useNavigate } from "react-router-dom";
+import { AgentProgress, AGENT_PROGRESS_MAP } from "../config/agentProgress";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -18,6 +19,7 @@ interface ChatWindowProps {
   prevMsgId: number | null | undefined;
   setPrevMsgId: (id: number | null | undefined) => void;
   isAiResponding?: boolean;
+  agentProgress?: AgentProgress;
 }
 
 const BASE_TEXT = "What are your ";
@@ -38,13 +40,15 @@ export default function ChatWindow({
   set_messages,
   prevMsgId,
   setPrevMsgId,
-  isAiResponding = false
+  isAiResponding = false,
+  agentProgress = AgentProgress.Ready
 }: ChatWindowProps) {
   const [emptyStateInput, setEmptyStateInput] = useState("");
   const [displayedText, setDisplayedText] = useState("");
   const [isExpanding, setIsExpanding] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isSendingEmpty, setIsSendingEmpty] = useState(false);
+  const [progressExpanding, setProgressExpanding] = useState(false);
   // const [allMsgLoaded, setAllMsgLoaded] = useState(false);
 
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +63,7 @@ export default function ChatWindow({
   const animationStartedRef = useRef<boolean>(false);
   const shouldPreserveAnimationRef = useRef<boolean>(false);
   const initialFadeInDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const prevAgentProgressRef = useRef<AgentProgress>(AgentProgress.Ready);
 
   const navigate = useNavigate();
 
@@ -303,6 +308,35 @@ export default function ChatWindow({
     return createCleanup();
   }, [messages]);
 
+  // Auto-scroll when agent progress changes (shows progress indicator)
+  useEffect(() => {
+    if (
+      agentProgress !== AgentProgress.Ready &&
+      agentProgress !== prevAgentProgressRef.current &&
+      isAiResponding
+    ) {
+      requestAnimationFrame(() => {
+        const chatMsgWindow = document.getElementById("chat-messages");
+        if (chatMsgWindow) {
+          chatMsgWindow.scrollTop = chatMsgWindow.scrollHeight;
+        }
+      });
+    }
+    prevAgentProgressRef.current = agentProgress;
+  }, [agentProgress, isAiResponding]);
+
+  // Detect when AI finishes responding to trigger expand animation
+  useEffect(() => {
+    if (!isAiResponding && prevAgentProgressRef.current !== AgentProgress.Ready) {
+      // AI just finished responding - trigger expand animation
+      setProgressExpanding(true);
+      const timer = setTimeout(() => {
+        setProgressExpanding(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAiResponding]);
+
   const typeText = (
     endingIndex: number,
     startFromBeginning: boolean = false
@@ -460,11 +494,6 @@ export default function ChatWindow({
         <>
           {/* Header Section */}
           <div className="chat-header">
-            <img
-              src="/ai-pic.png"
-              alt="AI Assistant"
-              className="chat-header-image"
-            />
             <div className="chat-header-text">
               <div className="chat-header-title">Travel Assistant</div>
               <div className="chat-header-subtitle">
@@ -489,6 +518,25 @@ export default function ChatWindow({
                 />
               );
             })}
+            {isAiResponding && agentProgress !== AgentProgress.Ready && (
+              <div className={`chat-message-wrapper bot ${progressExpanding ? "expanding" : ""}`}>
+                <img
+                  src={AGENT_PROGRESS_MAP[agentProgress]?.profilePic || "/logo.png"}
+                  alt={AGENT_PROGRESS_MAP[agentProgress]?.name || "Agent"}
+                  className="message-avatar"
+                  key={agentProgress}
+                />
+                <div className="chat-message-content">
+                  <div className="chat-message bot">
+                    <div className="message-text progress-text">
+                      <p style={{ margin: 0 }}>
+                        {AGENT_PROGRESS_MAP[agentProgress]?.message || "Processing your request"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <MessageInput onSend={onSend} isAiResponding={isAiResponding} />

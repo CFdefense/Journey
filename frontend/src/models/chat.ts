@@ -79,14 +79,6 @@ export type ProgressRequest = {
 
 /// Response model for the `/api/chat/progress` endpoint
 export type ProgressResponse = {
-	progress: LlmProgress;
+	progress: string;
 	title: string;
 };
-
-export enum LlmProgress {
-	Ready,
-	Searching,
-	Filtering,
-	Scheduling,
-	Optimizing
-}

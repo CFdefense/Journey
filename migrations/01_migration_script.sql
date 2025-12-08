@@ -40,10 +40,20 @@ CREATE TYPE time_of_day AS ENUM (
 
 CREATE TYPE llm_progress AS ENUM (
     'Ready',
+    'RetrieveUserProfile',
+    'RetrieveChatContext',
+    'UpdateTripContext',
+    'UpdateChatTitle',
+    'AskForClarification',
     'Searching',
+    'Geocoding',
+    'SearchingEvents',
     'Filtering',
+    'CheckingConstraints',
     'Scheduling',
-    'Optimizing'
+    'Optimizing',
+    'RankingEvents',
+    'FinalizingItinerary'
 );
 
 CREATE TYPE event_period AS (

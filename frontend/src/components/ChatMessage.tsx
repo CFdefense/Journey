@@ -111,7 +111,7 @@ export default function ChatMessage({
   return (
     <div className={`chat-message-wrapper ${message.is_user ? "user" : "bot"}`}>
       {!message.is_user && (
-        <img src="/ai-pic.png" alt="AI Assistant" className="message-avatar" />
+        <img src="/logo.png" alt="AI Assistant" className="message-avatar" />
       )}
 
       <div className={`chat-message-content ${isEditing ? "editing" : ""}`}>

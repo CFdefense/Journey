@@ -10,13 +10,15 @@ import {
   apiMessages,
   apiNewChatId,
   apiSendMessage,
-  apiUpdateMessage
+  apiUpdateMessage,
+  apiProgress
 } from "../api/home";
 import type {
   MessagePageRequest,
   SendMessageRequest,
   UpdateMessageRequest,
-  Message
+  Message,
+  ProgressRequest
 } from "../models/chat";
 import type { ChatSession } from "../models/home";
 import { apiCurrent } from "../api/account";
@@ -24,6 +26,7 @@ import { fetchItinerary, convertToApiFormat } from "../helpers/itinerary";
 import type { DayItinerary } from "../models/itinerary";
 import { apiItineraryDetails, apiSaveItineraryChanges } from "../api/itinerary";
 import { toast } from "../components/Toast";
+import { AgentProgress } from "../config/agentProgress";
 
 export const ACTIVE_CHAT_SESSION: string = "activeChatSession";
 
@@ -48,6 +51,10 @@ export default function Home() {
   const [initialStateProcessed, setInitialStateProcessed] = useState(false);
   const accountFetchedRef = useRef(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const [agentProgress, setAgentProgress] = useState<AgentProgress>(
+    AgentProgress.Ready
+  );
+  const progressIntervalRef = useRef<number | null>(null);
 
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
@@ -223,6 +230,56 @@ export default function Home() {
 
     fetchChats();
   }, [activeChatId, setActiveChatId, navigate]);
+
+  // Poll for agent progress when AI is responding
+  useEffect(() => {
+    // Clear any existing interval
+    if (progressIntervalRef.current !== null) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+
+    // Only poll when AI is responding and we have an active chat
+    if (!isAiResponding || activeChatId === null) {
+      setAgentProgress(AgentProgress.Ready);
+      return;
+    }
+
+    // Poll immediately
+    const pollProgress = async () => {
+      const payload: ProgressRequest = {
+        chat_session_id: activeChatId
+      };
+
+      const result = await apiProgress(payload);
+      
+      if (result.result && result.status === 200) {
+        // Update progress state
+        setAgentProgress(result.result.progress as AgentProgress);
+
+        // Update chat title if it changed
+        setChats((prevChats) =>
+          (prevChats ?? []).map((c) =>
+            c.id === activeChatId ? { ...c, title: result.result!.title } : c
+          )
+        );
+      }
+    };
+
+    // Initial poll
+    pollProgress();
+
+    // Set up interval for subsequent polls (every 500ms)
+    progressIntervalRef.current = window.setInterval(pollProgress, 500);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (progressIntervalRef.current !== null) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [isAiResponding, activeChatId]);
 
   // Fetch itinerary data when selectedItineraryId changes
   useEffect(() => {
@@ -582,6 +639,7 @@ export default function Home() {
               );
             }}
             isAiResponding={isAiResponding}
+            agentProgress={agentProgress}
           />
         </div>
 

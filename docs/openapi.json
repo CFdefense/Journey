@@ -1751,10 +1751,19 @@
         "description": "The status of the LLM pipeline",
         "enum": [
           "Ready",
+          "RetrieveUserProfile",
+          "RetrieveChatContext",
+          "UpdateTripContext",
+          "UpdateChatTitle",
+          "AskForClarification",
           "Searching",
+          "Geocoding",
+          "SearchingEvents",
           "Filtering",
+          "CheckingConstraints",
           "Scheduling",
-          "Optimizing"
+          "Optimizing",
+          "RankingEvents"
         ]
       },
       "LoginRequest": {

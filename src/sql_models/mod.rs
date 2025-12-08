@@ -49,10 +49,26 @@ pub enum TimeOfDay {
 #[sqlx(type_name = "llm_progress")]
 pub enum LlmProgress {
 	Ready,
+	// Task Agent Tools
+	RetrieveUserProfile,
+	RetrieveChatContext,
+	UpdateTripContext,
+	UpdateChatTitle,
+	AskForClarification,
+	// Research Agent
 	Searching,
+	Geocoding,
+	SearchingEvents,
+	// Constraint Agent
 	Filtering,
+	CheckingConstraints,
+	// Scheduling
 	Scheduling,
+	// Optimizer Agent
 	Optimizing,
+	RankingEvents,
+	// Final Response
+	FinalizingItinerary,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, ToSchema)]

@@ -37,7 +37,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 use tokio::sync::Mutex;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 /// Helper function to automatically track tool executions in context.
 /// This is called by every tool to record its execution in the tool_history.
@@ -301,6 +301,35 @@ impl Tool for RouteTaskTool {
 			details: format!("task_type={}", task_type)
 		);
 
+		// Update LLM progress status in database BEFORE processing
+		if let Some(progress) = match task_type_normalized.as_str() {
+			"research" => Some(LlmProgress::Searching),
+			"constraint" => Some(LlmProgress::Filtering),
+			"optimize" => Some(LlmProgress::Optimizing),
+			"task" => Some(LlmProgress::Scheduling),
+			_ => None,
+		} {
+			let chat_session_id = self.chat_session_id.load(Ordering::Relaxed);
+			info!(target: "orchestrator_pipeline", chat_session_id = chat_session_id, progress = ?progress, "Updating LLM progress");
+			
+			match sqlx::query!(
+				r#"UPDATE chat_sessions
+				SET llm_progress=$1
+				WHERE id=$2;"#,
+				progress as _,
+				chat_session_id
+			)
+			.execute(&self.pool)
+			.await {
+				Ok(result) => {
+					info!(target: "orchestrator_pipeline", chat_session_id = chat_session_id, rows_affected = result.rows_affected(), "LLM progress updated successfully");
+				}
+				Err(e) => {
+					error!(target: "orchestrator_pipeline", chat_session_id = chat_session_id, error = %e, "Failed to update LLM progress");
+				}
+			}
+		}
+
 		// SPECIAL HANDLING: High-level Task Agent
 		//
 		// When task_type == "task", we want to delegate the entire planning pipeline
@@ -439,23 +468,6 @@ impl Tool for RouteTaskTool {
 		} else {
 			payload_str
 		};
-
-		if let Some(progress) = match task_type_normalized.as_str() {
-			"research" => Some(LlmProgress::Searching),
-			"constraint" => Some(LlmProgress::Filtering),
-			"optimize" => Some(LlmProgress::Optimizing),
-			_ => None,
-		} {
-			_ = sqlx::query!(
-				r#"UPDATE chat_sessions
-				SET llm_progress=$1
-				WHERE id=$2;"#,
-				progress as _,
-				self.chat_session_id.load(Ordering::Relaxed)
-			)
-			.execute(&self.pool)
-			.await;
-		}
 
 		let result = match task_type_normalized.as_str() {
 			"research" => {
