@@ -426,6 +426,10 @@ impl Tool for OptimizeItineraryTool {
 		};
 
 		// Build schedule summary
+		use std::collections::HashMap;
+		let name_by_id: HashMap<i32, String> =
+			events.iter().map(|e| (e.id, e.event_name.clone())).collect();
+
 		let mut schedule_summary: Vec<String> = Vec::new();
 		if let Some(event_days) = itinerary.get("event_days").and_then(|v| v.as_array()) {
 			for (day_idx, day) in event_days.iter().enumerate() {
@@ -439,7 +443,18 @@ impl Tool for OptimizeItineraryTool {
 					.and_then(|e| e.as_array())
 					.map(|arr| {
 						arr.iter()
-							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.filter_map(|e| {
+								if let Some(name) =
+									e.get("event_name").and_then(|n| n.as_str())
+								{
+									Some(name.to_string())
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
+								{
+									name_by_id.get(&(id as i32)).cloned()
+								} else {
+									None
+								}
+							})
 							.collect::<Vec<_>>()
 							.join(", ")
 					})
@@ -450,7 +465,18 @@ impl Tool for OptimizeItineraryTool {
 					.and_then(|e| e.as_array())
 					.map(|arr| {
 						arr.iter()
-							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.filter_map(|e| {
+								if let Some(name) =
+									e.get("event_name").and_then(|n| n.as_str())
+								{
+									Some(name.to_string())
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
+								{
+									name_by_id.get(&(id as i32)).cloned()
+								} else {
+									None
+								}
+							})
 							.collect::<Vec<_>>()
 							.join(", ")
 					})
@@ -461,7 +487,18 @@ impl Tool for OptimizeItineraryTool {
 					.and_then(|e| e.as_array())
 					.map(|arr| {
 						arr.iter()
-							.filter_map(|e| e.get("event_name").and_then(|n| n.as_str()))
+							.filter_map(|e| {
+								if let Some(name) =
+									e.get("event_name").and_then(|n| n.as_str())
+								{
+									Some(name.to_string())
+								} else if let Some(id) = e.get("id").and_then(|v| v.as_i64())
+								{
+									name_by_id.get(&(id as i32)).cloned()
+								} else {
+									None
+								}
+							})
 							.collect::<Vec<_>>()
 							.join(", ")
 					})
@@ -634,6 +671,56 @@ impl Tool for OptimizeItineraryTool {
 			.get("destination")
 			.cloned()
 			.unwrap_or(json!("Trip Itinerary"));
+
+		// Normalize itinerary events to reference-only shape for downstream tools.
+		//
+		// Design goal:
+		// - The optimizer works with full Event objects internally.
+		// - The final itinerary we hand back to the orchestrator should use
+		//   *event ids* as the durable reference, not full embedded records.
+		// - `respond_to_user` (and the HTTP layer) will hydrate those ids back
+		//   into full Event structs from the database.
+		//
+		// Implementation:
+		// - For every event in `event_days[*].{morning,afternoon,evening}_events`
+		//   and in `unassigned_events`:
+		//     * If it has a valid `id` that came from our input set, collapse it
+		//       to `{ "id": <int> }`.
+		//     * If it does not have an `id`, leave it as-is (these are rare
+		//       LLM-synthesized events; `respond_to_user` has defensive logic
+		//       to persist and hydrate them).
+		let allowed_ids: std::collections::HashSet<i32> = event_ids.iter().cloned().collect();
+
+		if let Some(days) = itinerary.get_mut("event_days").and_then(|v| v.as_array_mut()) {
+			for day in days.iter_mut() {
+				for block in &["morning_events", "afternoon_events", "evening_events"] {
+					if let Some(events_arr) = day.get_mut(*block).and_then(|v| v.as_array_mut()) {
+						for ev in events_arr.iter_mut() {
+							if let Some(id_val) = ev.get("id").and_then(|v| v.as_i64()) {
+								let id = id_val as i32;
+								if allowed_ids.contains(&id) {
+									*ev = json!({ "id": id });
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if let Some(unassigned) = itinerary
+			.get_mut("unassigned_events")
+			.and_then(|v| v.as_array_mut())
+		{
+			for ev in unassigned.iter_mut() {
+				if let Some(id_val) = ev.get("id").and_then(|v| v.as_i64()) {
+					let id = id_val as i32;
+					if allowed_ids.contains(&id) {
+						*ev = json!({ "id": id });
+					}
+				}
+			}
+		}
 
 		let elapsed = start_time.elapsed();
 		let result = serde_json::to_string(&itinerary)?;

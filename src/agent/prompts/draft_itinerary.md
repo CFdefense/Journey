@@ -64,17 +64,17 @@ Return ONLY a valid JSON object matching the Itinerary model (without id, chat_s
   "event_days": [
     {{
       "date": "2025-01-15",
-      "morning_events": [/* full Event objects */],
-      "afternoon_events": [/* full Event objects */],
-      "evening_events": [/* full Event objects */]
+      "morning_events": [/* Event references, each MUST include an \"id\" field */],
+      "afternoon_events": [/* Event references, each MUST include an \"id\" field */],
+      "evening_events": [/* Event references, each MUST include an \"id\" field */]
     }}
   ],
-  "unassigned_events": [/* full Event objects that couldn't be scheduled */]
+  "unassigned_events": [/* Event references, each MUST include an \"id\" field, for events that couldn't be scheduled */]
 }}
 ```
 
 **CRITICAL JSON FORMATTING RULES**:
-1. Include the COMPLETE Event object (all fields) in each array, not just the id
+1. For every event in `event_days` and `unassigned_events`, you MUST include a valid numeric `id` field that matches the original POI's `id`. Other fields are optional and may be omitted, because the system will hydrate the full event details from the database using this `id`.
 2. **NO TRAILING COMMAS** - Remove any trailing commas after the last item in arrays or objects
 3. Ensure all strings are properly quoted
 4. Ensure all property names use double quotes
