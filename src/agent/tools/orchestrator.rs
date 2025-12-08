@@ -516,37 +516,133 @@ impl Tool for RouteTaskTool {
 						}
 					}
 
+					// Helper: best-effort extraction of filtered_event_ids from arbitrary text.
+					//
+					// In some failure cases the constraint agent returns *truncated* JSON inside
+					// markdown fences, so `serde_json::from_str` cannot parse it. However, the
+					// `filtered_event_ids` segment is usually intact near the top:
+					//
+					//   ..."filtered_event_ids":[26,9,12,...],\"removed_events\":[{...  (truncated)
+					//
+					// Rather than giving up, we scan the raw text for that slice and pull out the
+					// comma-separated integers between the first '[' and the following ']'.
+					fn extract_ids_from_text(text: &str) -> Value {
+						if let Some(start) = text.find("filtered_event_ids") {
+							let tail = &text[start..];
+							if let Some(bracket_start) = tail.find('[') {
+								let after_bracket = &tail[bracket_start + 1..];
+								if let Some(bracket_end) = after_bracket.find(']') {
+									let ids_segment = &after_bracket[..bracket_end];
+									let ids: Vec<Value> = ids_segment
+										.split(|c: char| c == ',' || c.is_whitespace())
+										.filter_map(|s| s.trim().parse::<i64>().ok())
+										.map(|n| json!(n as i32))
+										.collect();
+
+									return json!(ids);
+								}
+							}
+						}
+
+						// Fallback: nothing usable found
+						json!([])
+					}
+
 					// Extract filtered_event_ids from constraint result
-					// Handle multiple possible structures:
-					// 1. Direct: {"filtered_event_ids": [...]}
-					// 2. Wrapped in raw string: {"raw": "{\"filtered_event_ids\":[...]}"}
+					//
+					// We have seen a few different shapes in the wild:
+					// 1. Direct JSON from the tool:
+					//    {"filtered_event_ids":[...], "removed_events":[...], "count": N}
+					// 2. Wrapped in a "raw" string by the constraint agent when it
+					//    returns markdown code blocks:
+					//    {"raw":"```json\n{ \"filtered_event_ids\":[...] ... }\n```"}
+					// 3. Double-wrapped via the agent's "Final Answer" schema:
+					//    {
+					//      "raw":"```json\n{
+					//        \"action\":\"Final Answer\",
+					//        \"action_input\":\"{\\\"filtered_event_ids\\\":[...],...}\"
+					//      }\n```"
+					// 4. Or the whole thing as a plain string.
+					//
+					// The goal here is to be very defensive and recover the inner
+					// JSON object that actually contains `filtered_event_ids`, no
+					// matter how many layers of wrapping the LLM produced.
 					let filtered_ids = if let Some(ids) = constraint_data.get("filtered_event_ids")
 					{
+						// Fast-path: already a proper object with filtered_event_ids
 						ids.clone()
 					} else if let Some(raw) = constraint_data.get("raw") {
-						// Parse the raw string
+						// Parse the raw string, handling markdown fences and optional
+						// {"action": "...", "action_input": "..."} wrappers.
 						if let Some(raw_str) = raw.as_str() {
-							if let Ok(parsed) = serde_json::from_str::<Value>(raw_str) {
-								parsed
-									.get("filtered_event_ids")
-									.cloned()
-									.unwrap_or(json!([]))
+							// Strip common markdown code fences the agents like to add
+							let cleaned = raw_str
+								.trim()
+								.trim_start_matches("```json")
+								.trim_start_matches("```")
+								.trim_end_matches("```")
+								.trim();
+
+							if let Ok(parsed_outer) = serde_json::from_str::<Value>(cleaned) {
+								// Case 2: direct object with filtered_event_ids
+								if let Some(ids) = parsed_outer.get("filtered_event_ids") {
+									ids.clone()
+								} else if let Some(action_input) =
+									parsed_outer.get("action_input").and_then(|v| v.as_str())
+								{
+									// Case 3: inner JSON string living in action_input
+									if let Ok(inner) = serde_json::from_str::<Value>(action_input) {
+										inner
+											.get("filtered_event_ids")
+											.cloned()
+											.unwrap_or(json!([]))
+									} else {
+										// JSON inside action_input is malformed (often truncated) –
+										// fall back to a best-effort text scrape.
+										extract_ids_from_text(action_input)
+									}
+								} else {
+									// No obvious JSON structure – last resort: scan the whole blob.
+									extract_ids_from_text(cleaned)
+								}
 							} else {
-								json!([])
+								// Outer JSON is malformed – try text-based extraction directly.
+								extract_ids_from_text(cleaned)
 							}
 						} else {
 							json!([])
 						}
 					} else if constraint_data.is_string() {
-						// Parse constraint result if it's a string itself
+						// Parse constraint result if it's a string itself. This can be
+						// either the direct JSON or the agent "Final Answer" wrapper.
 						let constraint_str = constraint_data.as_str().unwrap_or("{}");
-						if let Ok(parsed) = serde_json::from_str::<Value>(constraint_str) {
-							parsed
-								.get("filtered_event_ids")
-								.cloned()
-								.unwrap_or(json!([]))
+						// Strip markdown fences first, just like above.
+						let cleaned = constraint_str
+							.trim()
+							.trim_start_matches("```json")
+							.trim_start_matches("```")
+							.trim_end_matches("```")
+							.trim();
+
+						if let Ok(parsed_outer) = serde_json::from_str::<Value>(cleaned) {
+							if let Some(ids) = parsed_outer.get("filtered_event_ids") {
+								ids.clone()
+							} else if let Some(action_input) =
+								parsed_outer.get("action_input").and_then(|v| v.as_str())
+							{
+								if let Ok(inner) = serde_json::from_str::<Value>(action_input) {
+									inner
+										.get("filtered_event_ids")
+										.cloned()
+										.unwrap_or(json!([]))
+								} else {
+									extract_ids_from_text(action_input)
+								}
+							} else {
+								extract_ids_from_text(cleaned)
+							}
 						} else {
-							json!([])
+							extract_ids_from_text(cleaned)
 						}
 					} else {
 						json!([])

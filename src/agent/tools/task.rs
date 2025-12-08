@@ -1465,6 +1465,37 @@ impl Tool for RespondToUserTool {
 			(message, record.id)
 		};
 
+		// Mark pipeline as Ready now that we've sent the final response to the user.
+		// This ensures the frontend progress indicator leaves the "FinalizingItinerary"
+		// state as soon as the itinerary/message are fully persisted.
+		{
+			let pool = self.pool.clone();
+			let chat_id_copy = chat_id;
+			tokio::spawn(async move {
+				if chat_id_copy > 0 {
+					if let Err(e) = sqlx::query!(
+						r#"
+						UPDATE chat_sessions
+						SET llm_progress = $1
+						WHERE id = $2;
+						"#,
+						crate::sql_models::LlmProgress::Ready as _,
+						chat_id_copy,
+					)
+					.execute(&pool)
+					.await
+					{
+						tracing::error!(
+							target: "orchestrator_pipeline",
+							chat_session_id = chat_id_copy,
+							error = %e,
+							"Failed to reset llm_progress to Ready after respond_to_user"
+						);
+					}
+				}
+			});
+		}
+
 		// Return a special marker that send_message_to_llm can detect
 		// Format: "MESSAGE_INSERTED:<message_id>:<message_text>"
 		let result = format!("MESSAGE_INSERTED:{}:{}", message_id, message_text);
