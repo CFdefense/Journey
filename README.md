@@ -75,10 +75,43 @@ The itineraries created in this platform are limited to solely event cards, and 
 
 ## Background and Research
 
-Summarize any prior work, similar systems, or research papers you reviewed.
-Identify key gaps your solution addresses.
+## Background and Research
 
-> Note: Cite sources using IEEE or APA format if applicable.
+### Existing Solutions
+
+The travel planning landscape includes several established platforms, each with distinct limitations that Journey addresses:
+
+**TripAdvisor and Google Travel** provide extensive reviews and booking capabilities but lack intelligent itinerary generation. Users must manually compile activities into a cohesive schedule, often requiring multiple tools and significant time investment.
+
+**TripIt and Roadtrippers** offer itinerary organization features but operate primarily as passive storage systems. They do not generate personalized recommendations or adapt to individual accessibility needs and preferences.
+
+**AI Travel Assistants** like Wanderlog and Tripnotes have emerged with basic AI features, but typically focus on singular aspects such as booking or recommendations, rather than comprehensive day-by-day itinerary creation with real-time editing capabilities.
+
+### Research Foundation
+
+Our multi-agent architecture draws from established AI agent design patterns. Research in multi-agent systems demonstrates that task delegation to specialized sub-agents improves output quality and reduces computational overhead compared to monolithic AI systems [1].
+
+The integration of real-time API data with LLM reasoning builds on recent work in retrieval-augmented generation (RAG), where external data sources enhance AI model accuracy and reduce hallucination [2]. By directing our agents to query Google Places API for current venue data, we ensure itineraries reflect actual availability, hours, and accessibility features.
+
+Studies in personalized recommendation systems show that incorporating persistent user preferences significantly improves user satisfaction and reduces planning friction [3]. Journey's approach of storing static preferences (dietary restrictions, accessibility needs, budget tolerance) aligns with these findings while extending beyond typical recommendation systems to comprehensive trip planning.
+
+### Key Gaps Addressed
+
+1. **Fragmented Planning Process**: Existing tools require users to juggle multiple platforms for research, organization, and booking. Journey consolidates the activity planning phase into a single conversational interface.
+
+2. **Limited Accessibility Integration**: While some platforms note accessibility features, few integrate these considerations directly into itinerary generation. Journey's constraint checking subagent filters activities based on user-specified accessibility needs from the outset.
+
+3. **Static Itineraries**: Traditional planners produce fixed schedules that require manual reconstruction when changes are needed. Journey enables both conversational refinement and drag-and-drop editing without regenerating the entire plan.
+
+4. **Lack of Context Awareness**: Most AI assistants treat each query independently. Journey's orchestrator agent maintains conversation context and itinerary state, allowing for iterative improvements based on user feedback.
+
+### References
+
+[1] Stone, P., & Veloso, M. (2000). Multiagent systems: A survey from a machine learning perspective. *Autonomous Robots*, 8(3), 345-383.
+
+[2] Lewis, P., et al. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks. *Advances in Neural Information Processing Systems*, 33, 9459-9474.
+
+[3] Ricci, F., Rokach, L., & Shapira, B. (2015). Recommender systems handbook. *Springer*.
 
 ---
 
@@ -445,8 +478,6 @@ We will provide this in private communication to preserve secrets.
 ## Results and Evaluation
 
 All of the goals mentioned in the functional requirements and non functional requirements have been achieved. We will include a video demo showing the full flow of the application.
-
-Include screenshots, metrics, or performance charts here.
 
 ---
 
