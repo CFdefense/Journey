@@ -252,7 +252,7 @@ export default function Home() {
       };
 
       const result = await apiProgress(payload);
-      
+
       if (result.result && result.status === 200) {
         // Update progress state
         setAgentProgress(result.result.progress as AgentProgress);

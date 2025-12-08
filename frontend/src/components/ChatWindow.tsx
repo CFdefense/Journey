@@ -327,7 +327,10 @@ export default function ChatWindow({
 
   // Detect when AI finishes responding to trigger expand animation
   useEffect(() => {
-    if (!isAiResponding && prevAgentProgressRef.current !== AgentProgress.Ready) {
+    if (
+      !isAiResponding &&
+      prevAgentProgressRef.current !== AgentProgress.Ready
+    ) {
       // AI just finished responding - trigger expand animation
       setProgressExpanding(true);
       const timer = setTimeout(() => {
@@ -519,9 +522,13 @@ export default function ChatWindow({
               );
             })}
             {isAiResponding && agentProgress !== AgentProgress.Ready && (
-              <div className={`chat-message-wrapper bot ${progressExpanding ? "expanding" : ""}`}>
+              <div
+                className={`chat-message-wrapper bot ${progressExpanding ? "expanding" : ""}`}
+              >
                 <img
-                  src={AGENT_PROGRESS_MAP[agentProgress]?.profilePic || "/logo.png"}
+                  src={
+                    AGENT_PROGRESS_MAP[agentProgress]?.profilePic || "/logo.png"
+                  }
                   alt={AGENT_PROGRESS_MAP[agentProgress]?.name || "Agent"}
                   className="message-avatar"
                   key={agentProgress}
@@ -530,7 +537,8 @@ export default function ChatWindow({
                   <div className="chat-message bot">
                     <div className="message-text progress-text">
                       <p style={{ margin: 0 }}>
-                        {AGENT_PROGRESS_MAP[agentProgress]?.message || "Processing your request"}
+                        {AGENT_PROGRESS_MAP[agentProgress]?.message ||
+                          "Processing your request"}
                       </p>
                     </div>
                   </div>

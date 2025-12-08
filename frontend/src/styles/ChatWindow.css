@@ -86,8 +86,9 @@
   object-fit: cover;
   flex-shrink: 0;
   border: 3px solid transparent;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #fa8072 0%, #ffc872 100%) border-box;
+  background:
+    linear-gradient(white, white) padding-box,
+    linear-gradient(135deg, #fa8072 0%, #ffc872 100%) border-box;
   padding: 6px;
 }
 
@@ -493,8 +494,9 @@
   flex-shrink: 0;
   margin-top: 0.25rem;
   border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #fa8072 0%, #ffc872 100%) border-box;
+  background:
+    linear-gradient(white, white) padding-box,
+    linear-gradient(135deg, #fa8072 0%, #ffc872 100%) border-box;
   transition: transform 0.3s ease;
 }
 
@@ -628,12 +630,14 @@
 
 /* Pulsing text animation for progress messages */
 .chat-message-wrapper.bot .message-text.progress-text {
-  background: linear-gradient(90deg, 
-    #333 0%, 
-    #ff6f61 25%, 
-    #ffa500 50%, 
-    #ff6f61 75%, 
-    #333 100%);
+  background: linear-gradient(
+    90deg,
+    #333 0%,
+    #ff6f61 25%,
+    #ffa500 50%,
+    #ff6f61 75%,
+    #333 100%
+  );
   background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
@@ -642,7 +646,8 @@
 }
 
 @keyframes gradientWave {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -651,7 +656,8 @@
 }
 
 @keyframes textPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -688,7 +694,9 @@
 }
 
 @keyframes dotPulse {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }

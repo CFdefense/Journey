@@ -311,7 +311,7 @@ impl Tool for RouteTaskTool {
 		} {
 			let chat_session_id = self.chat_session_id.load(Ordering::Relaxed);
 			info!(target: "orchestrator_pipeline", chat_session_id = chat_session_id, progress = ?progress, "Updating LLM progress");
-			
+
 			match sqlx::query!(
 				r#"UPDATE chat_sessions
 				SET llm_progress=$1
@@ -320,7 +320,8 @@ impl Tool for RouteTaskTool {
 				chat_session_id
 			)
 			.execute(&self.pool)
-			.await {
+			.await
+			{
 				Ok(result) => {
 					info!(target: "orchestrator_pipeline", chat_session_id = chat_session_id, rows_affected = result.rows_affected(), "LLM progress updated successfully");
 				}
