@@ -80,7 +80,7 @@ pub fn create_orchestrator_agent(
 
 	// Create optimize agent
 	let optimize_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_optimize_agent(llm_for_subagents.clone()).unwrap(),
+		create_optimize_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
 	))));
 
 	// Create Task Agent (sub-agent used to build context and user profile)

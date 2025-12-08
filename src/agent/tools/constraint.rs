@@ -139,7 +139,7 @@ impl Tool for FilterEventsByConstraintsTool {
 	}
 
 	fn description(&self) -> String {
-		"Filters a list of event IDs from the Research Agent using the user's constraints (e.g., wheelchair accessibility). Accepts event IDs (as a JSON string or from payload), fetches events from the database, evaluates each with an LLM, and returns filtered event IDs. If no constraints are available, asks the user once for their preferences and constraints."
+		"Filters a list of event IDs from the Research Agent using the user's constraints (e.g., wheelchair accessibility). IMPORTANT: Pass the entire JSON input you received (with event_ids, constraints, and trip_context) as the action_input. The tool will extract what it needs."
 			.to_string()
 	}
 
@@ -147,13 +147,9 @@ impl Tool for FilterEventsByConstraintsTool {
 		json!({
 			"type": "object",
 			"properties": {
-				"event_ids": {
+				"input_data": {
 					"type": "string",
-					"description": "JSON stringified array of event IDs to filter (e.g., '[1, 2, 3]'). If omitted, the tool will extract event_ids from the input payload."
-				},
-				"constraints": {
-					"type": "string",
-					"description": "JSON stringified array of constraint strings (e.g., '[\"No Tree Nuts\", \"Wheelchair accessible\"]'). If omitted, the tool will extract constraints from the input payload."
+					"description": "Pass the entire JSON input you received as a string. Do not pass empty string."
 				}
 			},
 			"required": []
@@ -210,6 +206,17 @@ impl Tool for FilterEventsByConstraintsTool {
 		if event_ids_val.is_string() {
 			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
 			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		}
+
+		// Check if we already have a result (agent calling tool on previous output)
+		if event_ids_val.is_null() && parsed_input.get("filtered_event_ids").is_some() {
+			// Agent is trying to call the tool on its own previous output
+			// Just return that output directly
+			info!(
+				target: "constraint_tools",
+				"Tool called with previous output, returning it directly"
+			);
+			return Ok(serde_json::to_string(&parsed_input)?);
 		}
 
 		let event_ids: Vec<i32> = event_ids_val
@@ -387,21 +394,14 @@ impl Tool for FilterEventsByConstraintsTool {
 			})
 			.unwrap_or_else(Vec::new);
 
-		// If we truly have no constraints, ask the user for them.
+		// Constraints are optional - if none exist, we proceed with no filtering
+		// The task agent should have already asked for clarification if critical info was missing
 		if constraints.is_empty() {
-			let question = "I have a list of candidate places for your trip, but I don't yet know your constraints or preferences (for example: accessibility needs, food allergies, or strict budget limits). Could you share any constraints you want me to respect when filtering these places?";
 			info!(
 				target: "constraint_tools",
 				tool = "filter_events_by_constraints",
-				"Missing constraints - asking user"
+				"No constraints provided - will include all events"
 			);
-			crate::tool_trace!(
-				agent: "constraint",
-				tool: "filter_events_by_constraints",
-				status: "no_constraints",
-				details: "asking user for constraints"
-			);
-			return Ok(question.to_string());
 		}
 
 		debug!(
