@@ -24,7 +24,7 @@ import {
 	apiGetSavedItineraries,
 	apiProgress
 } from "./testApi"; // Always use ./testApi instead of ../src/api/*
-import { ChatSessionRow, LlmProgress } from "../src/models/chat";
+import { ChatSessionRow } from "../src/models/chat";
 import {
 	SearchEventRequest,
 	UserEventRequest,
@@ -103,7 +103,7 @@ async function test_flow() {
 		chat_session_id: newChatId
 	});
 	expect(progressRes.status).toBe(200);
-	expect(progressRes.result!.progress).toBe(LlmProgress.Ready);
+	expect(progressRes.result!.progress).toBe("Ready");
 	expect(progressRes.result!.title).toBe("New Chat");
 
 	// get itinerary info

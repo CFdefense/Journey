@@ -101,15 +101,20 @@ impl From<&EventListJoinRow> for Event {
 	}
 }
 
+#[cfg(not(tarpaulin_include))]
 pub static REGEX_ST_ADDR: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r#"<span\s+class="street-address"\s*>([^<]*)</span>"#).unwrap());
+#[cfg(not(tarpaulin_include))]
 pub static REGEX_LOCALITY: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r#"<span\s+class="locality"\s*>([^<]*)</span>"#).unwrap());
+#[cfg(not(tarpaulin_include))]
 pub static REGEX_COUNTRY: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r#"<span\s+class="country-name"\s*>([^<]*)</span>"#).unwrap());
+#[cfg(not(tarpaulin_include))]
 pub static REGEX_POST_CODE: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r#"<span\s+class="postal-code"\s*>([^<]*)</span>"#).unwrap());
 
+#[cfg(not(tarpaulin_include))]
 impl From<&Place> for Event {
 	fn from(value: &Place) -> Self {
 		#[inline]
