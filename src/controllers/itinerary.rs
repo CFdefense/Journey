@@ -46,6 +46,7 @@ use crate::swagger::SecurityAddon;
     ),
     tags((name="Itinerary"))
 )]
+#[allow(dead_code)]
 pub struct ItineraryApiDoc;
 
 /// Returns the [EventDay]s associated with this itinerary

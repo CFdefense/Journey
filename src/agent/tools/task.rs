@@ -38,7 +38,6 @@ use tracing::{debug, info};
 #[derive(Clone)]
 pub struct ParseUserIntentTool {
 	llm: Arc<dyn LLM + Send + Sync>,
-	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,
 	context_store: SharedContextStore,
 }
@@ -46,13 +45,11 @@ pub struct ParseUserIntentTool {
 impl ParseUserIntentTool {
 	pub fn new(
 		llm: Arc<dyn LLM + Send + Sync>,
-		pool: PgPool,
 		chat_session_id: Arc<AtomicI32>,
 		context_store: SharedContextStore,
 	) -> Self {
 		Self {
 			llm,
-			pool,
 			chat_session_id,
 			context_store,
 		}
@@ -407,6 +404,7 @@ impl Tool for RetrieveChatContextTool {
 pub struct RetrieveUserProfileTool {
 	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,
+	#[allow(dead_code)]
 	user_id: Arc<AtomicI32>,
 	context_store: SharedContextStore,
 }
@@ -2022,7 +2020,6 @@ pub fn get_task_tools(
 	vec![
 		Arc::new(ParseUserIntentTool::new(
 			Arc::clone(&llm),
-			pool.clone(),
 			Arc::clone(&chat_session_id),
 			context_store.clone(),
 		)),

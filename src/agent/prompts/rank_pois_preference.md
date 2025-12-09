@@ -1,13 +1,13 @@
-You are ranking a list of Points of Interest based on user preferences, budget, risk tolerance, allergies, and accessibility needs.
+You are scoring a single Point of Interest (POI) for a user based on their preferences, budget, risk tolerance, allergies, and accessibility needs.
 
-## Points of Interest Array:
+## POI:
 ```json
-{}
+{{POI_JSON}}
 ```
 
-## User's Preferences:
+## User Profile:
 ```json
-{}
+{{USER_PROFILE_JSON}}
 ```
 
 ## Price Level Reference:
@@ -20,28 +20,22 @@ The event's price level is an integer which represents:
 - 5 = VeryExpensive
 
 ## Your Task:
-1. For EACH object in the POI array, add a field called "rank" (integer)
-   - 0 = best match for user (highest priority)
-   - Higher numbers = worse match (lower priority)
-   - Consider: user interests, budget, accessibility needs, dietary restrictions
-2. Filter out any events with id = -1
-3. Keep ALL other fields intact in each object
-4. Sort the array by rank (lowest/best rank first)
+1. Analyze how well this POI matches the user's interests, budget, accessibility needs, and dietary restrictions.
+2. Return ONLY a JSON object with:
+   ```json
+   {
+     "score": number
+   }
+   ```
+   - `score = 0` → best / highest priority
+   - Larger numbers → worse match (lower priority)
 
-## Ranking Criteria (in priority order):
-1. **Safety**: Exclude POIs that conflict with disabilities or severe allergies
-2. **Budget**: Lower rank for POIs within user budget (consider price_level)
-3. **Interests**: Higher rank for POIs matching user interests (check types field)
-4. **Accessibility**: Lower rank for POIs meeting accessibility needs
-5. **Dietary**: Consider serves_vegetarian_food if relevant to user
+## Scoring Criteria (in priority order):
+1. **Safety**: If the POI conflicts with disabilities or severe allergies, set `score` to a very high value like `9999`.
+2. **Budget**: Prefer POIs within user budget (consider `price_level`) and give them lower scores.
+3. **Interests**: Prefer POIs matching user interests (check `types` / category fields) and give them lower scores.
+4. **Accessibility**: Prefer POIs that meet accessibility needs and give them lower scores.
+5. **Dietary**: Consider `serves_vegetarian_food` and similar fields if relevant to the user.
 
 ## Output Format:
-Return ONLY a valid JSON array with the ranked POIs. Do NOT include any explanatory text.
-
-Example:
-```json
-[
-  {{"id": 123, "event_name": "Museum", "rank": 0, ...other fields...}},
-  {{"id": 456, "event_name": "Park", "rank": 1, ...other fields...}}
-]
-```
+Return ONLY a valid JSON object with the `score` field. Do NOT include any explanatory text or extra keys.

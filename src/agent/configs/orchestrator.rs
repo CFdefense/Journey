@@ -17,9 +17,17 @@ use langchain_rust::{
 use sqlx::PgPool;
 
 use crate::agent::configs::constraint::create_constraint_agent;
+#[cfg(test)]
+use crate::agent::configs::constraint::create_dummy_constraint_agent;
 use crate::agent::configs::mock::MockLLM;
+#[cfg(test)]
+use crate::agent::configs::optimizer::create_dummy_optimize_agent;
 use crate::agent::configs::optimizer::create_optimize_agent;
+#[cfg(test)]
+use crate::agent::configs::research::create_dummy_research_agent;
 use crate::agent::configs::research::create_research_agent;
+#[cfg(test)]
+use crate::agent::configs::task::create_dummy_task_agent;
 use crate::agent::configs::task::create_task_agent;
 use crate::agent::models::context::SharedContextStore;
 use crate::agent::tools::orchestrator::get_orchestrator_tools;
@@ -164,19 +172,37 @@ pub fn create_dummy_orchestrator_agent(
 	let context_store: SharedContextStore =
 		Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
 
-	// Dummy sub-agents (including a dummy Task Agent) share the same simple implementation
-	let dummy_agent = Arc::new(tokio::sync::Mutex::new(create_dummy_sub_agent()?));
-	let task_agent = Arc::clone(&dummy_agent);
-	let research_agent = Arc::clone(&dummy_agent);
-	let constraint_agent = Arc::clone(&dummy_agent);
-	let optimize_agent = Arc::clone(&dummy_agent);
+	// Dummy sub-agents for testing, each using its own dummy configuration
+	let task_agent_executor = create_dummy_task_agent(
+		pool.clone(),
+		Arc::clone(&chat_session_id),
+		Arc::clone(&user_id),
+	)?;
+	let task_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(task_agent_executor));
+	let task_agent = Arc::new(tokio::sync::Mutex::new(task_agent_inner));
+
+	let research_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(
+		create_dummy_research_agent(pool.clone())?,
+	));
+	let research_agent = Arc::new(tokio::sync::Mutex::new(research_agent_inner));
+
+	let constraint_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(
+		create_dummy_constraint_agent(pool.clone())?,
+	));
+	let constraint_agent = Arc::new(tokio::sync::Mutex::new(constraint_agent_inner));
+
+	let optimize_llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+	let optimize_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(
+		create_dummy_optimize_agent(optimize_llm, pool.clone())?,
+	));
+	let optimize_agent = Arc::new(tokio::sync::Mutex::new(optimize_agent_inner));
 	let tools = get_orchestrator_tools(
 		llm_arc,
 		pool,
-		Arc::new(tokio::sync::Mutex::new(task_agent)),
-		Arc::new(tokio::sync::Mutex::new(research_agent)),
-		Arc::new(tokio::sync::Mutex::new(constraint_agent)),
-		Arc::new(tokio::sync::Mutex::new(optimize_agent)),
+		task_agent,
+		research_agent,
+		constraint_agent,
+		optimize_agent,
 		chat_session_id.clone(),
 		user_id.clone(),
 		context_store.clone(),
@@ -195,20 +221,6 @@ pub fn create_dummy_orchestrator_agent(
 		user_id,
 		context_store,
 	))
-}
-
-#[cfg(test)]
-fn create_dummy_sub_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	let memory = SimpleMemory::new();
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
-
-	let agent = ConversationalAgentBuilder::new()
-		.prefix("Dummy sub-agent".to_string())
-		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
-		.unwrap();
-
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }
 
 /// The system prompt for the Orchestrator Agent.

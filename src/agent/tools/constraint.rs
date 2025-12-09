@@ -8,6 +8,7 @@
  */
 
 use async_trait::async_trait;
+use futures::future;
 use langchain_rust::language_models::llm::LLM;
 use langchain_rust::tools::Tool;
 use serde_json::{Value, json};
@@ -413,37 +414,53 @@ impl Tool for FilterEventsByConstraintsTool {
 			"Processing events with LLM-based filtering"
 		);
 
+		// Process each event with LLM evaluation. We evaluate multiple events in parallel
+		// with a bounded level of concurrency so the overall tool is faster while still
+		// respecting upstream rate limits.
+		// Evaluate all events concurrently. join_all does not require the inner
+		// futures to be Send, but still allows the HTTP calls to overlap.
+		let tasks = events.iter().cloned().map(|event| {
+			let llm = Arc::clone(&self.llm);
+			let preferences = preferences.clone();
+			let constraints = constraints.clone();
+
+			async move {
+				match should_include_event(&llm, &event, &preferences, &constraints).await {
+					Ok((should_include, reason)) => (event, should_include, reason),
+					Err(e) => {
+						debug!(
+							target: "constraint_tools",
+							tool = "filter_events_by_constraints",
+							error = %e,
+							event_name = %event.event_name,
+							"LLM evaluation failed, including event by default"
+						);
+						// On error, include the event by default to avoid over-filtering
+						(
+							event,
+							true,
+							Some("LLM evaluation failed, including by default".to_string()),
+						)
+					}
+				}
+			}
+		});
+
+		let eval_results: Vec<(Event, bool, Option<String>)> = future::join_all(tasks).await;
+
 		let mut filtered_ids: Vec<i32> = Vec::new();
 		let mut removed: Vec<Value> = Vec::new();
 
-		// Process each event with LLM evaluation
-		for event in events.iter() {
-			// Use LLM to evaluate if event should be included
-			match should_include_event(&self.llm, event, &preferences, &constraints).await {
-				Ok((should_include, reason)) => {
-					if should_include {
-						filtered_ids.push(event.id);
-					} else {
-						let reason_text =
-							reason.unwrap_or_else(|| "not relevant for trip".to_string());
-						removed.push(json!({
-							"event_id": event.id,
-							"event_name": &event.event_name,
-							"reasons": [reason_text],
-						}));
-					}
-				}
-				Err(e) => {
-					debug!(
-						target: "constraint_tools",
-						tool = "filter_events_by_constraints",
-						error = %e,
-						event_name = %event.event_name,
-						"LLM evaluation failed, including event by default"
-					);
-					// On error, include the event by default to avoid over-filtering
-					filtered_ids.push(event.id);
-				}
+		for (event, should_include, reason) in eval_results {
+			if should_include {
+				filtered_ids.push(event.id);
+			} else {
+				let reason_text = reason.unwrap_or_else(|| "not relevant for trip".to_string());
+				removed.push(json!({
+					"event_id": event.id,
+					"event_name": &event.event_name,
+					"reasons": [reason_text],
+				}));
 			}
 		}
 

@@ -22,13 +22,6 @@ use sqlx::PgPool;
 
 const SYSTEM_PROMPT: &str = include_str!("../prompts/optimize.md");
 
-// Use a type alias for the agent type to make it easier to use
-pub type AgentType = Arc<
-	tokio::sync::Mutex<
-		langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>,
-	>,
->;
-
 pub fn create_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
 	db: PgPool,

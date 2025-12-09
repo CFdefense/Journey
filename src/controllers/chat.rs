@@ -55,6 +55,7 @@ use tracing::{debug, error, info};
     ),
     tags((name="Chat"))
 )]
+#[allow(dead_code)]
 pub struct ChatApiDoc;
 
 /// Sends message and latest itinerary in chat session to llm, and waits for response.
