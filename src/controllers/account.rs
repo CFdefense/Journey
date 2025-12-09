@@ -63,6 +63,7 @@ use crate::{
     ),
     tags((name="Account"))
 )]
+#[allow(dead_code)]
 pub struct AccountApiDoc;
 
 pub trait CookieStore {

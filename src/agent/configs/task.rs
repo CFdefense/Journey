@@ -130,19 +130,5 @@ pub fn create_dummy_task_agent(
 	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
 }
 
-#[cfg(test)]
-fn create_dummy_sub_agent() -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
-	let memory = SimpleMemory::new();
-	let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
-
-	let agent = ConversationalAgentBuilder::new()
-		.prefix("Dummy sub-agent".to_string())
-		.options(ChainCallOptions::new().with_max_tokens(1000))
-		.build(llm)
-		.unwrap();
-
-	Ok(AgentExecutor::from_agent(agent).with_memory(memory.into()))
-}
-
 /// The system prompt for the Task Agent.
 pub const TASK_SYSTEM_PROMPT: &str = include_str!("../prompts/task.md");

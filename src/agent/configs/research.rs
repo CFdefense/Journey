@@ -7,8 +7,6 @@
  *   Store Research Agent Configuration
  */
 
-use std::sync::Arc;
-
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
 	chain::options::ChainCallOptions,
@@ -19,13 +17,6 @@ use langchain_rust::{
 use sqlx::PgPool;
 
 use crate::agent::tools::research::research_tools;
-
-// Use a type alias for the agent type to make it easier to use
-pub type AgentType = Arc<
-	tokio::sync::Mutex<
-		langchain_rust::agent::AgentExecutor<langchain_rust::agent::ConversationalAgent>,
-	>,
->;
 
 const SYSTEM_PROMPT: &str = include_str!("../prompts/research.md");
 
