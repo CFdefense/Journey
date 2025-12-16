@@ -1,5 +1,7 @@
 # Journey
 
+![Journey Demo](frontend/public/demo.gif)
+
 ## Team Members
 
 | Name | Role | Email |
@@ -479,7 +481,14 @@ We will provide this in private communication to preserve secrets.
 
 ## Results and Evaluation
 
-All of the goals mentioned in the functional requirements and non functional requirements have been achieved. We will include a video demo showing the full flow of the application.
+All of the goals mentioned in the functional requirements and non functional requirements have been achieved.  
+The following demo video shows the full flow of the application:
+
+<video src="frontend/public/demo.mp4" controls width="800">
+  Your browser does not support the video tag.
+  You can download the video
+  <a href="frontend/public/demo.mp4">here</a>.
+</video>
 
 ---
 
