@@ -598,9 +598,7 @@ export default function Home() {
 
         return {
           ...c,
-          messages: alreadyHasBot
-            ? baseMessages
-            : [...baseMessages, botMessage]
+          messages: alreadyHasBot ? baseMessages : [...baseMessages, botMessage]
         };
       })
     );

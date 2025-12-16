@@ -11,8 +11,8 @@ use async_trait::async_trait;
 use langchain_rust::{language_models::llm::LLM, tools::Tool};
 use serde_json::{Value, json};
 use sqlx::PgPool;
-use std::{error::Error, sync::Arc, time::Instant};
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::{error::Error, sync::Arc, time::Instant};
 use tracing::{debug, info, warn};
 
 use crate::agent::models::event::Event;
@@ -365,10 +365,7 @@ impl Tool for OptimizeItineraryTool {
 			})
 			.unwrap_or_else(|_| {
 				// Fallback: use original events and add default ranks
-				events_json
-					.as_array()
-					.cloned()
-					.unwrap_or_else(Vec::new)
+				events_json.as_array().cloned().unwrap_or_else(Vec::new)
 			});
 
 		// Ensure all POIs have a rank field (add default if missing)

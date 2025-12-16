@@ -43,11 +43,7 @@ pub fn create_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(
-			Arc::new(llm),
-			db,
-			chat_session_id,
-		))
+		.tools(&optimizer_tools(Arc::new(llm), db, chat_session_id))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();
@@ -86,11 +82,7 @@ pub fn create_dummy_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(
-			Arc::new(llm),
-			db,
-			chat_session_id,
-		))
+		.tools(&optimizer_tools(Arc::new(llm), db, chat_session_id))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();
