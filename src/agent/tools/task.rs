@@ -2010,7 +2010,7 @@ impl Tool for UpdateChatTitleTool {
 /// - retrieving chat history/context
 /// - updating trip context incrementally
 /// - asking for clarification when information is missing
-pub fn get_task_tools(
+pub fn task_tools(
 	llm: Arc<dyn LLM + Send + Sync>,
 	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,

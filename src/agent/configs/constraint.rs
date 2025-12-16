@@ -8,6 +8,7 @@
  */
 
 use std::sync::Arc;
+use std::sync::atomic::AtomicI32;
 
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
@@ -22,6 +23,7 @@ use sqlx::PgPool;
 pub fn create_constraint_agent(
 	_llm: OpenAI<OpenAIConfig>,
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
@@ -38,7 +40,7 @@ pub fn create_constraint_agent(
 	// Get tools - pass LLM as Arc<dyn LLM> and database pool
 	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
 		Arc::new(llm.clone());
-	let tools = constraint_tools(llm_arc, pool);
+	let tools = constraint_tools(llm_arc, pool, chat_session_id);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");
@@ -64,6 +66,7 @@ pub fn create_constraint_agent(
 #[cfg(test)]
 pub fn create_dummy_constraint_agent(
 	pool: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
@@ -83,7 +86,7 @@ pub fn create_dummy_constraint_agent(
 	// Get tools - pass LLM as Arc<dyn LLM> and database pool
 	let llm_arc: Arc<dyn langchain_rust::language_models::llm::LLM + Send + Sync> =
 		Arc::new(llm.clone());
-	let tools = constraint_tools(llm_arc, pool);
+	let tools = constraint_tools(llm_arc, pool, chat_session_id);
 
 	// Create agent with system prompt and tools
 	const SYSTEM_PROMPT: &str = include_str!("../prompts/constraint.md");

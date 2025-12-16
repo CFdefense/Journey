@@ -707,7 +707,7 @@ impl Tool for RouteTaskTool {
 
 				let agent_outer = self.research_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
-				match agent_inner
+				let agent_result = match agent_inner
 					.invoke(langchain_rust::prompt_args! {
 						"input" => payload_str.as_str(),
 					})
@@ -721,6 +721,47 @@ impl Tool for RouteTaskTool {
 						crate::tool_trace!(agent: "research", tool: "complete", status: "success");
 						info!(target: "orchestrator_pipeline", agent = "research", status = "completed", "Research agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "research", response = %serde_json::to_string(&data)?, "Agent output");
+
+						// Persist the current research event-id list to chat_sessions so
+						// downstream tools can fetch it directly from the database instead
+						// of relying on LLM-passed arrays in prompts.
+						if let Some(event_ids_val) = data.get("event_ids") {
+							if let Some(arr) = event_ids_val.as_array() {
+								let event_ids: Vec<i32> = arr
+									.iter()
+									.filter_map(|v| v.as_i64().map(|n| n as i32))
+									.collect();
+								let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+								if chat_id > 0 && !event_ids.is_empty() {
+									if let Err(e) = sqlx::query!(
+										r#"
+										UPDATE chat_sessions
+										SET current_event_ids = $1
+										WHERE id = $2
+										"#,
+										&event_ids,
+										chat_id
+									)
+									.execute(&self.pool)
+									.await
+									{
+										error!(
+											target: "orchestrator_pipeline",
+											chat_session_id = chat_id,
+											error = %e,
+											"Failed to update current_event_ids after research"
+										);
+									} else {
+										info!(
+											target: "orchestrator_pipeline",
+											chat_session_id = chat_id,
+											event_ids_count = event_ids.len(),
+											"Updated chat_sessions.current_event_ids from research results"
+										);
+									}
+								}
+							}
+						}
 
 						json!({
 							"agent": "research",
@@ -737,7 +778,9 @@ impl Tool for RouteTaskTool {
 							"error": format!("{}", e)
 						})
 					}
-				}
+				};
+
+				agent_result
 			}
 			"constraint" => {
 				crate::tool_trace!(agent: "constraint", tool: "begin", status: "invoked");
@@ -746,7 +789,7 @@ impl Tool for RouteTaskTool {
 
 				let agent_outer = self.constraint_agent.lock().await;
 				let agent_inner = agent_outer.lock().await;
-				match agent_inner
+				let agent_result = match agent_inner
 					.invoke(langchain_rust::prompt_args! {
 						"input" => payload_str.as_str(),
 					})
@@ -767,6 +810,47 @@ impl Tool for RouteTaskTool {
 						info!(target: "orchestrator_pipeline", agent = "constraint", status = "completed", "Constraint agent completed");
 						debug!(target: "orchestrator_pipeline", agent = "constraint", response = %serde_json::to_string(&data)?, "Agent output");
 
+						// Persist the filtered_event_ids from constraint results into
+						// chat_sessions.current_event_ids so the optimizer can read a
+						// clean list directly from the database.
+						if let Some(filtered_val) = data.get("filtered_event_ids") {
+							if let Some(arr) = filtered_val.as_array() {
+								let filtered_ids: Vec<i32> = arr
+									.iter()
+									.filter_map(|v| v.as_i64().map(|n| n as i32))
+									.collect();
+								let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+								if chat_id > 0 && !filtered_ids.is_empty() {
+									if let Err(e) = sqlx::query!(
+										r#"
+										UPDATE chat_sessions
+										SET current_event_ids = $1
+										WHERE id = $2
+										"#,
+										&filtered_ids,
+										chat_id
+									)
+									.execute(&self.pool)
+									.await
+									{
+										error!(
+											target: "orchestrator_pipeline",
+											chat_session_id = chat_id,
+											error = %e,
+											"Failed to update current_event_ids after constraint"
+										);
+									} else {
+										info!(
+											target: "orchestrator_pipeline",
+											chat_session_id = chat_id,
+											event_ids_count = filtered_ids.len(),
+											"Updated chat_sessions.current_event_ids from constraint results"
+										);
+									}
+								}
+							}
+						}
+
 						json!({
 							"agent": "constraint",
 							"status": "completed",
@@ -782,7 +866,9 @@ impl Tool for RouteTaskTool {
 							"error": format!("{}", e)
 						})
 					}
-				}
+				};
+
+				agent_result
 			}
 			"optimize" => {
 				crate::tool_trace!(agent: "optimize", tool: "begin", status: "invoked");
