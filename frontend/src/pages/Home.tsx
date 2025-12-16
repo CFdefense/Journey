@@ -55,6 +55,7 @@ export default function Home() {
     AgentProgress.Ready
   );
   const progressIntervalRef = useRef<number | null>(null);
+  const prevProgressRef = useRef<AgentProgress | null>(null);
 
   // Flag to track if we came from ViewItinerary - needs to be state to trigger useEffect
   const [cameFromViewItinerary, setCameFromViewItinerary] = useState(false);
@@ -255,7 +256,23 @@ export default function Home() {
 
       if (result.result && result.status === 200) {
         // Update progress state
-        setAgentProgress(result.result.progress as AgentProgress);
+        const currentProgress = result.result.progress as AgentProgress;
+        const previousProgress = prevProgressRef.current;
+        setAgentProgress(currentProgress);
+        prevProgressRef.current = currentProgress;
+
+        // When the pipeline transitions back to Ready from a non-ready state,
+        // force a fresh message reload so the final AI message is guaranteed
+        // to appear, and stop polling.
+        if (
+          currentProgress === AgentProgress.Ready &&
+          previousProgress !== null &&
+          previousProgress !== AgentProgress.Ready &&
+          activeChatId !== null
+        ) {
+          await refreshMessagesForChatSession(activeChatId);
+          setIsAiResponding(false);
+        }
 
         // Update chat title if it changed
         setChats((prevChats) =>
@@ -287,7 +304,6 @@ export default function Home() {
       loadItineraryData(selectedItineraryId);
     }
   }, [selectedItineraryId]);
-
   // Helper function to load itinerary data
   const loadItineraryData = async (itineraryId: number) => {
     try {
@@ -310,6 +326,43 @@ export default function Home() {
       setItineraryStartDate("");
       setItineraryEndDate("");
     }
+  };
+
+  // Helper to fully refresh messages for a chat session from the server
+  const refreshMessagesForChatSession = async (chatSessionId: number) => {
+    const payload: MessagePageRequest = {
+      chat_session_id: chatSessionId,
+      message_id: null
+    };
+
+    const messagePageResult = await apiMessages(payload);
+
+    if (messagePageResult.status !== 200 || messagePageResult.result === null) {
+      return;
+    }
+
+    const messages = messagePageResult.result.message_page;
+    const prevMessageId = messagePageResult.result.prev_message_id;
+
+    setChats((prevChats) =>
+      (prevChats ?? []).map((c) =>
+        c.id === chatSessionId
+          ? {
+              ...c,
+              messages,
+              prev_msg_id: prevMessageId
+            }
+          : c
+      )
+    );
+
+    // Ensure we scroll to the newest messages after refresh
+    requestAnimationFrame(() => {
+      const chatMsgWindow = document.getElementById("chat-messages");
+      if (chatMsgWindow) {
+        chatMsgWindow.scrollTop = chatMsgWindow.scrollHeight;
+      }
+    });
   };
 
   // Clear itinerary data when active chat changes (but not when coming from ViewItinerary)
@@ -455,29 +508,34 @@ export default function Home() {
     const botMessage = sendResult.result!.bot_message;
 
     // Thanks, React, for making this the convention for updating state
+    // Update the temporary user message id, and append the bot message
+    // only if we don't already have a message with the same id (to avoid
+    // duplicates when the progress poller has already refreshed messages).
     setChats((prevChats) =>
-      (prevChats ?? []).map((c) =>
-        c.id === currChatId!
-          ? {
-              ...c,
-              messages: c.messages
-                .map((m) =>
-                  m.id === -1
-                    ? { ...m, id: sendResult.result!.user_message_id }
-                    : m
-                )
-                .concat([sendResult.result!.bot_message])
-            }
-          : c
-      )
+      (prevChats ?? []).map((c) => {
+        if (c.id !== currChatId!) return c;
+
+        const updatedMessages = c.messages.map((m) =>
+          m.id === -1 ? { ...m, id: sendResult.result!.user_message_id } : m
+        );
+
+        const alreadyHasBot = updatedMessages.some(
+          (m) => m.id === botMessage.id
+        );
+
+        return {
+          ...c,
+          messages: alreadyHasBot
+            ? updatedMessages
+            : updatedMessages.concat([botMessage])
+        };
+      })
     );
 
     if (botMessage.itinerary_id !== null) {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
-
-    setIsAiResponding(false);
 
     // scroll to bottom
     requestAnimationFrame(() => {
@@ -488,6 +546,8 @@ export default function Home() {
 
   const handleEditMessage = async (messageId: number, newText: string) => {
     if (activeChatId === null) return;
+
+    setIsAiResponding(true);
 
     const payload: UpdateMessageRequest = {
       message_id: messageId,
@@ -523,6 +583,7 @@ export default function Home() {
     const botMessage = updateResult.result;
 
     // Remove all messages after the edited message, then add the new bot response
+    // if it is not already present (avoid duplicates when messages have been refreshed).
     setChats((prevChats) =>
       (prevChats ?? []).map((c) => {
         if (c.id !== activeChatId) return c;
@@ -532,11 +593,14 @@ export default function Home() {
         );
         if (editedMessageIndex === -1) return c;
 
-        // Keep messages up to and including the edited message, then add bot response
-        const updatedMessages = c.messages.slice(0, editedMessageIndex + 1);
+        const baseMessages = c.messages.slice(0, editedMessageIndex + 1);
+        const alreadyHasBot = baseMessages.some((m) => m.id === botMessage.id);
+
         return {
           ...c,
-          messages: [...updatedMessages, botMessage]
+          messages: alreadyHasBot
+            ? baseMessages
+            : [...baseMessages, botMessage]
         };
       })
     );
@@ -545,8 +609,6 @@ export default function Home() {
       setSelectedItineraryId(botMessage.itinerary_id);
       setItinerarySidebarVisible(true);
     }
-
-    setIsAiResponding(false);
 
     // scroll to bottom
     requestAnimationFrame(() => {

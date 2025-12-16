@@ -16,6 +16,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use tracing::{debug, info, warn};
 
 use crate::agent::models::event::Event;
+use crate::sql_models::LlmProgress;
 
 /// Main tool that orchestrates the full optimization workflow.
 /// This tool:
@@ -307,6 +308,21 @@ impl Tool for OptimizeItineraryTool {
 		}
 
 		// STEP 1: Rank POIs by preference
+		// Update progress to show that we're ranking events based on preferences.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::RankingEvents as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 1: Ranking POIs by user preference"
@@ -406,6 +422,21 @@ impl Tool for OptimizeItineraryTool {
 		);
 
 		// STEP 2: Draft the itinerary
+		// Update progress to indicate we're drafting the itinerary structure.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::Scheduling as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 2: Drafting itinerary structure"
@@ -659,6 +690,21 @@ impl Tool for OptimizeItineraryTool {
 		}
 
 		// STEP 3: Optimize routes for each day
+		// Update progress to show we're optimizing the itinerary routes.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::Optimizing as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 3: Optimizing routes for each day"
