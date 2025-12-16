@@ -32,8 +32,10 @@ use crate::controllers::{account::AccountApiDoc, chat::ChatApiDoc, itinerary::It
      	//TODO add deployed production server URL
     )
 )]
+#[allow(dead_code)]
 struct ApiDoc;
 
+#[allow(dead_code)]
 pub struct SecurityAddon;
 
 impl Modify for SecurityAddon {
@@ -51,6 +53,7 @@ impl Modify for SecurityAddon {
 }
 
 /// Merges swagger with the current routes
+#[allow(dead_code)]
 pub fn merge_swagger(router: OpenApiRouter) -> Router {
 	let doc = ApiDoc::openapi();
 	let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs");

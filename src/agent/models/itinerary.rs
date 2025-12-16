@@ -19,6 +19,7 @@ use chrono::NaiveDate;
 use serde::Deserialize;
 
 /// A complete itinerary with event details
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct Itinerary {
 	/// Primary key
@@ -39,6 +40,7 @@ pub struct Itinerary {
 }
 
 /// A single day of events in an itinerary
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct EventDay {
 	/// All the events taking place in the morning
@@ -51,6 +53,7 @@ pub struct EventDay {
 	pub date: NaiveDate,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct Event {
 	id: i32,

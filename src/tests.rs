@@ -2,7 +2,7 @@ use crate::agent::configs::orchestrator::create_dummy_orchestrator_agent;
 use crate::http_models::chat_session::ProgressRequest;
 use crate::sql_models::LlmProgress;
 use crate::{
-	agent, controllers, db,
+	controllers, db,
 	global::*,
 	http_models::{
 		account::{LoginRequest, SignupRequest, UpdateRequest},
@@ -31,7 +31,6 @@ use std::{
 	time::{Duration, SystemTime},
 };
 use tokio::net::TcpListener;
-use tokio::sync::Mutex;
 use tower_cookies::{
 	Cookie, CookieManagerLayer, Key,
 	cookie::{CookieJar, SameSite, time},
@@ -1468,7 +1467,7 @@ async fn test_endpoints() {
 	let cookie_key = Key::generate();
 
 	// Always use dummy agent for tests
-	let (agent_executor, chat_session_id_atomic, user_id_atomic, _context_store) =
+	let (agent_executor, chat_session_id_atomic, _user_id_atomic, _context_store) =
 		create_dummy_orchestrator_agent(pool.clone()).expect("Dummy agent creation failed");
 
 	// Wrap in Extension and Arc<Mutex> for router layers

@@ -613,7 +613,6 @@ impl Tool for OptimizeItineraryTool {
 			"Step 3: Optimizing routes for each day"
 		);
 
-		let optimize_route_tool = OptimizeRouteTool;
 		let mut optimized_days = 0;
 
 		// Get event_days array
@@ -622,89 +621,117 @@ impl Tool for OptimizeItineraryTool {
 			.and_then(|v| v.as_array_mut())
 		{
 			for day in event_days.iter_mut() {
-				// Optimize morning events
-				if let Some(morning) = day.get("morning_events").cloned() {
-					if let Some(morning_arr) = morning.as_array() {
-						if !morning_arr.is_empty() && morning_arr.len() > 1 {
-							// Get first event location as start
-							if let Some(first) = morning_arr.first() {
-								let start_location = json!({
-									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
-									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
-								});
+				// Take snapshots of each block so we can optimize them concurrently.
+				let morning = day.get("morning_events").cloned();
+				let afternoon = day.get("afternoon_events").cloned();
+				let evening = day.get("evening_events").cloned();
 
-								let route_input = json!({
-									"day_pois": morning,
-									"start_location": start_location
-								});
+				let morning_future = async {
+					if let Some(morning_val) = morning {
+						if let Some(morning_arr) = morning_val.as_array() {
+							if !morning_arr.is_empty() && morning_arr.len() > 1 {
+								if let Some(first) = morning_arr.first() {
+									let start_location = json!({
+										"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+										"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+									});
 
-								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) =
-										serde_json::from_str::<Value>(&optimized)
-									{
-										day["morning_events"] = optimized_arr;
-										optimized_days += 1;
+									let route_input = json!({
+										"day_pois": morning_val,
+										"start_location": start_location
+									});
+
+									let route_tool = OptimizeRouteTool;
+									if let Ok(optimized) = route_tool.run(route_input).await {
+										if let Ok(optimized_arr) =
+											serde_json::from_str::<Value>(&optimized)
+										{
+											return Some(optimized_arr);
+										}
 									}
 								}
 							}
 						}
 					}
+					None
+				};
+
+				let afternoon_future = async {
+					if let Some(afternoon_val) = afternoon {
+						if let Some(afternoon_arr) = afternoon_val.as_array() {
+							if !afternoon_arr.is_empty() && afternoon_arr.len() > 1 {
+								if let Some(first) = afternoon_arr.first() {
+									let start_location = json!({
+										"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+										"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+									});
+
+									let route_input = json!({
+										"day_pois": afternoon_val,
+										"start_location": start_location
+									});
+
+									let route_tool = OptimizeRouteTool;
+									if let Ok(optimized) = route_tool.run(route_input).await {
+										if let Ok(optimized_arr) =
+											serde_json::from_str::<Value>(&optimized)
+										{
+											return Some(optimized_arr);
+										}
+									}
+								}
+							}
+						}
+					}
+					None
+				};
+
+				let evening_future = async {
+					if let Some(evening_val) = evening {
+						if let Some(evening_arr) = evening_val.as_array() {
+							if !evening_arr.is_empty() && evening_arr.len() > 1 {
+								if let Some(first) = evening_arr.first() {
+									let start_location = json!({
+										"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
+										"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
+									});
+
+									let route_input = json!({
+										"day_pois": evening_val,
+										"start_location": start_location
+									});
+
+									let route_tool = OptimizeRouteTool;
+									if let Ok(optimized) = route_tool.run(route_input).await {
+										if let Ok(optimized_arr) =
+											serde_json::from_str::<Value>(&optimized)
+										{
+											return Some(optimized_arr);
+										}
+									}
+								}
+							}
+						}
+					}
+					None
+				};
+
+				let (morning_opt, afternoon_opt, evening_opt) =
+					futures::join!(morning_future, afternoon_future, evening_future);
+
+				if let Some(optimized_arr) = morning_opt {
+					day["morning_events"] = optimized_arr;
+					optimized_days += 1;
 				}
 
-				// Optimize afternoon events
-				if let Some(afternoon) = day.get("afternoon_events").cloned() {
-					if let Some(afternoon_arr) = afternoon.as_array() {
-						if !afternoon_arr.is_empty() && afternoon_arr.len() > 1 {
-							if let Some(first) = afternoon_arr.first() {
-								let start_location = json!({
-									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
-									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
-								});
-
-								let route_input = json!({
-									"day_pois": afternoon,
-									"start_location": start_location
-								});
-
-								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) =
-										serde_json::from_str::<Value>(&optimized)
-									{
-										day["afternoon_events"] = optimized_arr;
-										optimized_days += 1;
-									}
-								}
-							}
-						}
-					}
+				if let Some(optimized_arr) = afternoon_opt {
+					day["afternoon_events"] = optimized_arr;
+					optimized_days += 1;
 				}
 
-				// Optimize evening events
-				if let Some(evening) = day.get("evening_events").cloned() {
-					if let Some(evening_arr) = evening.as_array() {
-						if !evening_arr.is_empty() && evening_arr.len() > 1 {
-							if let Some(first) = evening_arr.first() {
-								let start_location = json!({
-									"latitude": first.get("lat").and_then(|v| v.as_f64()).unwrap_or(0.0),
-									"longitude": first.get("lng").and_then(|v| v.as_f64()).unwrap_or(0.0)
-								});
-
-								let route_input = json!({
-									"day_pois": evening,
-									"start_location": start_location
-								});
-
-								if let Ok(optimized) = optimize_route_tool.run(route_input).await {
-									if let Ok(optimized_arr) =
-										serde_json::from_str::<Value>(&optimized)
-									{
-										day["evening_events"] = optimized_arr;
-										optimized_days += 1;
-									}
-								}
-							}
-						}
-					}
+				if let Some(optimized_arr) = evening_opt {
+					day["evening_events"] = optimized_arr;
+					optimized_days += 1;
 				}
 			}
 		}
@@ -895,24 +922,78 @@ impl Tool for RankPOIsByPreferenceTool {
 
 		let pois = input["pois"]
 			.as_array()
-			.ok_or("pois must be an array of objects")?;
-		let profile = input["user_profile"]
-			.as_object()
-			.ok_or("user_profile must be an object")?;
+			.ok_or("pois must be an array of objects")?
+			.clone();
+		let profile = input["user_profile"].clone();
 
 		info!(
 			target: "optimize_tools",
 			pois_count = pois.len(),
-			"Ranking POIs by preference"
+			"Ranking POIs by preference (per-POI parallel scoring)"
 		);
 
-		let prompt = format!(
-			include_str!("../prompts/rank_pois_preference.md"),
-			serde_json::to_string_pretty(&pois)?,
-			serde_json::to_string_pretty(&profile)?
-		);
+		// Build a compact prompt and score each POI independently in parallel.
+		// Each score task returns (index, score, poi_object). We then sort by score.
+		let profile_json = serde_json::to_string_pretty(&profile)?;
 
-		let response = self.llm.invoke(&prompt).await?;
+		let template = include_str!("../prompts/rank_pois_preference.md").to_string();
+
+		let score_tasks = pois.iter().cloned().enumerate().map(|(idx, poi)| {
+			let llm = Arc::clone(&self.llm);
+			let profile_json = profile_json.clone();
+			let template = template.clone();
+
+			async move {
+				let poi_json =
+					serde_json::to_string_pretty(&poi).unwrap_or_else(|_| "{}".to_string());
+				let prompt = template
+					.replace("{{POI_JSON}}", &poi_json)
+					.replace("{{USER_PROFILE_JSON}}", &profile_json);
+
+				let raw = llm.invoke(&prompt).await;
+
+				let score = match raw {
+					Ok(text) => {
+						let cleaned = text
+							.trim()
+							.trim_start_matches("```json")
+							.trim_start_matches("```")
+							.trim_end_matches("```")
+							.trim();
+						serde_json::from_str::<Value>(cleaned)
+							.ok()
+							.and_then(|v| v.get("score").and_then(|s| s.as_f64()))
+							.unwrap_or(9999.0)
+					}
+					Err(e) => {
+						warn!(
+							target: "optimize_tools",
+							error = %e,
+							"LLM error while scoring POI; defaulting to worst score"
+						);
+						9999.0
+					}
+				};
+
+				(idx, score, poi)
+			}
+		});
+
+		let mut scored: Vec<(usize, f64, Value)> = futures::future::join_all(score_tasks).await;
+
+		// Filter out sentinel id = -1 as before and sort by score ascending.
+		scored.retain(|(_, _, poi)| poi.get("id").and_then(|v| v.as_i64()) != Some(-1));
+		scored.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+
+		// Rebuild POIs with a "rank" field (integer) based on sorted order.
+		let mut ranked_pois: Vec<Value> = Vec::with_capacity(scored.len());
+		for (rank, (_, score, mut poi)) in scored.into_iter().enumerate() {
+			if let Some(obj) = poi.as_object_mut() {
+				obj.insert("rank".to_string(), json!(rank as i64));
+				obj.insert("score".to_string(), json!(score));
+			}
+			ranked_pois.push(poi);
+		}
 
 		let elapsed = start_time.elapsed();
 
@@ -920,17 +1001,17 @@ impl Tool for RankPOIsByPreferenceTool {
 			agent: "optimize",
 			tool: "rank_pois_by_preference",
 			status: "success",
-			details: format!("elapsed_ms={}, pois_count={}", elapsed.as_millis(), pois.len())
+			details: format!("elapsed_ms={}, pois_count={}", elapsed.as_millis(), ranked_pois.len())
 		);
 
 		info!(
 			target: "optimize_tools",
 			elapsed_ms = elapsed.as_millis() as u64,
-			pois_count = pois.len(),
-			"POI ranking completed"
+			pois_count = ranked_pois.len(),
+			"POI ranking completed (per-POI parallel scoring)"
 		);
 
-		Ok(response.trim().to_string())
+		Ok(serde_json::to_string(&ranked_pois)?)
 	}
 }
 
