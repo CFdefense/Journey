@@ -10,7 +10,14 @@ export default function DemoSection() {
         </p>
         <div className="demo-container">
           <div className="demo-media reveal">
-            <div className="demo-media-placeholder">Product Demo</div>
+            <video
+              className="demo-video"
+              src="/demo.mp4"
+              muted
+              autoPlay
+              loop
+              playsInline
+            />
           </div>
           <div className="demo-text reveal delay-1">
             <p>
