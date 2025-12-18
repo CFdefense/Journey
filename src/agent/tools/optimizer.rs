@@ -11,17 +11,12 @@ use async_trait::async_trait;
 use langchain_rust::{language_models::llm::LLM, tools::Tool};
 use serde_json::{Value, json};
 use sqlx::PgPool;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::{error::Error, sync::Arc, time::Instant};
 use tracing::{debug, info, warn};
 
 use crate::agent::models::event::Event;
-
-pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<dyn Tool>> {
-	vec![Arc::new(OptimizeItineraryTool::new(
-		llm.clone(),
-		db.clone(),
-	))]
-}
+use crate::sql_models::LlmProgress;
 
 /// Main tool that orchestrates the full optimization workflow.
 /// This tool:
@@ -36,11 +31,20 @@ pub fn optimizer_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<d
 struct OptimizeItineraryTool {
 	llm: Arc<dyn LLM + Send + Sync>,
 	db: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl OptimizeItineraryTool {
-	pub fn new(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Self {
-		Self { llm, db }
+	pub fn new(
+		llm: Arc<dyn LLM + Send + Sync>,
+		db: PgPool,
+		chat_session_id: Arc<AtomicI32>,
+	) -> Self {
+		Self {
+			llm,
+			db,
+			chat_session_id,
+		}
 	}
 }
 
@@ -95,42 +99,87 @@ impl Tool for OptimizeItineraryTool {
 			input
 		};
 
-		// Extract and parse filtered_event_ids
-		let mut event_ids_val = parsed_input
-			.get("filtered_event_ids")
-			.cloned()
-			.or_else(|| {
-				// Try alternative paths from orchestrator payload
-				parsed_input
-					.get("events")
-					.and_then(|v| v.get("filtered_event_ids"))
-					.cloned()
-			})
-			.unwrap_or(Value::Null);
+		// STEP 0: Resolve the filtered event-id list.
+		//
+		// Primary source: chat_sessions.current_event_ids (per-chat current set),
+		// written by the orchestrator after research/constraint stages.
+		// Fallback: whatever the agent passed in filtered_event_ids, to preserve
+		// backward compatibility in tests/legacy flows.
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		let mut event_ids: Vec<i32> = Vec::new();
 
-		// If event_ids is a JSON string, parse it
-		if event_ids_val.is_string() {
-			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
-			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		if chat_id > 0 {
+			if let Ok(row_opt) = sqlx::query!(
+				r#"
+				SELECT current_event_ids
+				FROM chat_sessions
+				WHERE id = $1
+				"#,
+				chat_id
+			)
+			.fetch_optional(&self.db)
+			.await
+			{
+				if let Some(row) = row_opt {
+					// current_event_ids is NOT NULL in schema; use it directly as the
+					// authoritative filtered list for this chat session.
+					event_ids = row.current_event_ids;
+					info!(
+						target: "optimize_tools",
+						tool = "optimize_itinerary",
+						chat_id = chat_id,
+						event_ids_count = event_ids.len(),
+						"Loaded filtered_event_ids from chat_sessions.current_event_ids"
+					);
+				}
+			}
 		}
 
-		// Check if we already have a result (agent calling tool on previous output)
-		if event_ids_val.is_null() && parsed_input.get("event_days").is_some() {
-			// Agent is trying to call the tool on its own previous output (an itinerary)
-			// Just return that output directly
+		// Backwards-compatible fallback when DB list is empty
+		if event_ids.is_empty() {
+			let mut event_ids_val = parsed_input
+				.get("filtered_event_ids")
+				.cloned()
+				.or_else(|| {
+					// Try alternative paths from orchestrator payload
+					parsed_input
+						.get("events")
+						.and_then(|v| v.get("filtered_event_ids"))
+						.cloned()
+				})
+				.unwrap_or(Value::Null);
+
+			// If event_ids is a JSON string, parse it
+			if event_ids_val.is_string() {
+				let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
+				event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+			}
+
+			// Check if we already have a result (agent calling tool on previous output)
+			if event_ids_val.is_null() && parsed_input.get("event_days").is_some() {
+				// Agent is trying to call the tool on its own previous output (an itinerary)
+				// Just return that output directly
+				info!(
+					target: "optimize_tools",
+					"Tool called with previous output, returning it directly"
+				);
+				return Ok(serde_json::to_string(&parsed_input)?);
+			}
+
+			event_ids = event_ids_val
+				.as_array()
+				.ok_or("filtered_event_ids should be an array of integers")?
+				.iter()
+				.filter_map(|v| v.as_i64().map(|i| i as i32))
+				.collect();
+
 			info!(
 				target: "optimize_tools",
-				"Tool called with previous output, returning it directly"
+				tool = "optimize_itinerary",
+				event_ids_count = event_ids.len(),
+				"Falling back to filtered_event_ids from tool input payload"
 			);
-			return Ok(serde_json::to_string(&parsed_input)?);
 		}
-
-		let event_ids: Vec<i32> = event_ids_val
-			.as_array()
-			.ok_or("filtered_event_ids should be an array of integers")?
-			.iter()
-			.filter_map(|v| v.as_i64().map(|i| i as i32))
-			.collect();
 
 		if event_ids.is_empty() {
 			crate::tool_trace!(
@@ -259,6 +308,21 @@ impl Tool for OptimizeItineraryTool {
 		}
 
 		// STEP 1: Rank POIs by preference
+		// Update progress to show that we're ranking events based on preferences.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::RankingEvents as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 1: Ranking POIs by user preference"
@@ -301,7 +365,7 @@ impl Tool for OptimizeItineraryTool {
 			})
 			.unwrap_or_else(|_| {
 				// Fallback: use original events and add default ranks
-				events_json.as_array().cloned().unwrap_or_default()
+				events_json.as_array().cloned().unwrap_or_else(Vec::new)
 			});
 
 		// Ensure all POIs have a rank field (add default if missing)
@@ -355,6 +419,21 @@ impl Tool for OptimizeItineraryTool {
 		);
 
 		// STEP 2: Draft the itinerary
+		// Update progress to indicate we're drafting the itinerary structure.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::Scheduling as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 2: Drafting itinerary structure"
@@ -475,7 +554,7 @@ impl Tool for OptimizeItineraryTool {
 							.collect::<Vec<_>>()
 							.join(", ")
 					})
-					.unwrap_or_default();
+					.unwrap_or_else(String::new);
 
 				let afternoon = day
 					.get("afternoon_events")
@@ -608,6 +687,21 @@ impl Tool for OptimizeItineraryTool {
 		}
 
 		// STEP 3: Optimize routes for each day
+		// Update progress to show we're optimizing the itinerary routes.
+		if chat_id > 0 {
+			let _ = sqlx::query!(
+				r#"
+				UPDATE chat_sessions
+				SET llm_progress = $1
+				WHERE id = $2;
+				"#,
+				LlmProgress::Optimizing as _,
+				chat_id,
+			)
+			.execute(&self.db)
+			.await;
+		}
+
 		info!(
 			target: "optimize_tools",
 			"Step 3: Optimizing routes for each day"
@@ -1273,4 +1367,17 @@ impl Tool for OptimizeRouteTool {
 
 		Ok(json!(pois).to_string())
 	}
+}
+
+/// Export the optimizers tools
+pub fn optimizer_tools(
+	llm: Arc<dyn LLM + Send + Sync>,
+	db: PgPool,
+	chat_session_id: Arc<AtomicI32>,
+) -> Vec<Arc<dyn Tool>> {
+	vec![Arc::new(OptimizeItineraryTool::new(
+		llm.clone(),
+		db.clone(),
+		chat_session_id,
+	))]
 }

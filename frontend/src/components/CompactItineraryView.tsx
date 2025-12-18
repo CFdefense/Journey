@@ -104,19 +104,31 @@ const CompactItineraryView: React.FC<CompactItineraryViewProps> = ({
 
   const eventsByTimeBlock = getEventsByTimeBlock();
 
-  // Format date for calendar display
+  // Helper to safely parse backend NaiveDate (YYYY-MM-DD) as a UTC calendar day
+  const parseNaiveDateToUTC = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    const date = new Date(`${dateString}T00:00:00Z`);
+    if (isNaN(date.getTime())) return null;
+    return date;
+  };
+
+  // Format date for calendar display (treat backend date as UTC so it doesn't shift
+  // based on the user's local timezone, which caused off‑by‑one day issues).
   const formatDayOfWeek = (dateString: string): string => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    const date = parseNaiveDateToUTC(dateString);
+    if (!date) return "";
+    return date
+      .toLocaleDateString("en-US", {
+        weekday: "short",
+        timeZone: "UTC"
+      })
+      .toUpperCase();
   };
 
   const formatDayOfMonth = (dateString: string): string => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "";
-    const day = date.getDate();
+    const date = parseNaiveDateToUTC(dateString);
+    if (!date) return "";
+    const day = date.getUTCDate();
     return `${day}`;
   };
 

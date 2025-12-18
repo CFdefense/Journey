@@ -15,6 +15,7 @@ use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::error::Error;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::Instant;
 use tracing::{debug, info};
 
@@ -125,11 +126,24 @@ Respond with ONLY a JSON object in this exact format:
 pub struct FilterEventsByConstraintsTool {
 	llm: Arc<dyn LLM + Send + Sync>,
 	db: PgPool,
+	/// Shared atomic set by the controller before invoking the orchestrator.
+	/// The constraint agent (and its tools) reuse this to know which chat
+	/// session they are operating on so they can fetch the authoritative
+	/// event-id list from the database instead of trusting the prompt.
+	chat_session_id: Arc<AtomicI32>,
 }
 
 impl FilterEventsByConstraintsTool {
-	pub fn new(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Self {
-		Self { llm, db }
+	pub fn new(
+		llm: Arc<dyn LLM + Send + Sync>,
+		db: PgPool,
+		chat_session_id: Arc<AtomicI32>,
+	) -> Self {
+		Self {
+			llm,
+			db,
+			chat_session_id,
+		}
 	}
 }
 
@@ -178,54 +192,98 @@ impl Tool for FilterEventsByConstraintsTool {
 			"Tool input"
 		);
 
-		// Normalize input: langchain_rust passes `action_input` as a STRING.
+		// Normalize input: langchain_rust passes `action_input` as a STRING,
+		// but for event IDs we now prefer the authoritative list stored in
+		// the database for this chat session. The input is still parsed for
+		// constraints/trip_context and for backwards-compat fallback.
 		let parsed_input: Value = if input.is_string() {
 			serde_json::from_str(input.as_str().unwrap_or("{}")).unwrap_or_else(|_| json!({}))
 		} else {
 			input
 		};
 
-		// Extract event_ids array - handle both array and JSON string formats
-		let mut event_ids_val = parsed_input
-			.get("event_ids")
-			.cloned()
-			.or_else(|| {
-				parsed_input
-					.get("events")
-					.and_then(|v| v.get("event_ids"))
-					.cloned()
-			})
-			.or_else(|| {
-				parsed_input
-					.get("data")
-					.and_then(|v| v.get("event_ids"))
-					.cloned()
-			})
-			.unwrap_or(Value::Null);
+		// 1) Try to fetch the current event-id list from the database using
+		//    the chat_session_id set by the controller/orchestrator.
+		let chat_id = self.chat_session_id.load(Ordering::Relaxed);
+		let mut event_ids: Vec<i32> = Vec::new();
 
-		// If event_ids is a JSON string, parse it into an array
-		if event_ids_val.is_string() {
-			let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
-			event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+		if chat_id > 0 {
+			if let Ok(row_opt) = sqlx::query!(
+				r#"
+				SELECT current_event_ids
+				FROM chat_sessions
+				WHERE id = $1
+				"#,
+				chat_id
+			)
+			.fetch_optional(&self.db)
+			.await
+			{
+				if let Some(row) = row_opt {
+					event_ids = row.current_event_ids;
+					info!(
+						target: "constraint_tools",
+						tool = "filter_events_by_constraints",
+						chat_id = chat_id,
+						event_ids_count = event_ids.len(),
+						"Loaded event IDs from chat_sessions.current_event_ids"
+					);
+				}
+			}
 		}
 
-		// Check if we already have a result (agent calling tool on previous output)
-		if event_ids_val.is_null() && parsed_input.get("filtered_event_ids").is_some() {
-			// Agent is trying to call the tool on its own previous output
-			// Just return that output directly
+		// 2) If the DB list is empty (e.g., legacy flows/tests), fall back to
+		//    whatever the agent passed in the payload, to preserve behavior.
+		if event_ids.is_empty() {
+			// Extract event_ids array - handle both array and JSON string formats
+			let mut event_ids_val = parsed_input
+				.get("event_ids")
+				.cloned()
+				.or_else(|| {
+					parsed_input
+						.get("events")
+						.and_then(|v| v.get("event_ids"))
+						.cloned()
+				})
+				.or_else(|| {
+					parsed_input
+						.get("data")
+						.and_then(|v| v.get("event_ids"))
+						.cloned()
+				})
+				.unwrap_or(Value::Null);
+
+			// If event_ids is a JSON string, parse it into an array
+			if event_ids_val.is_string() {
+				let event_ids_str = event_ids_val.as_str().unwrap_or("[]");
+				event_ids_val = serde_json::from_str(event_ids_str).unwrap_or(Value::Null);
+			}
+
+			// Check if we already have a result (agent calling tool on previous output)
+			if event_ids_val.is_null() && parsed_input.get("filtered_event_ids").is_some() {
+				// Agent is trying to call the tool on its own previous output
+				// Just return that output directly
+				info!(
+					target: "constraint_tools",
+					"Tool called with previous output, returning it directly"
+				);
+				return Ok(serde_json::to_string(&parsed_input)?);
+			}
+
+			event_ids = event_ids_val
+				.as_array()
+				.ok_or("event_ids should be an array of integers")?
+				.iter()
+				.filter_map(|v| v.as_i64().map(|i| i as i32))
+				.collect();
+
 			info!(
 				target: "constraint_tools",
-				"Tool called with previous output, returning it directly"
+				tool = "filter_events_by_constraints",
+				event_ids_count = event_ids.len(),
+				"Falling back to event_ids from tool input payload"
 			);
-			return Ok(serde_json::to_string(&parsed_input)?);
 		}
-
-		let event_ids: Vec<i32> = event_ids_val
-			.as_array()
-			.ok_or("event_ids should be an array of integers")?
-			.iter()
-			.filter_map(|v| v.as_i64().map(|i| i as i32))
-			.collect();
 
 		if event_ids.is_empty() {
 			crate::tool_trace!(
@@ -519,6 +577,15 @@ impl Tool for FilterEventsByConstraintsTool {
 	}
 }
 
-pub fn constraint_tools(llm: Arc<dyn LLM + Send + Sync>, db: PgPool) -> Vec<Arc<dyn Tool>> {
-	vec![Arc::new(FilterEventsByConstraintsTool::new(llm, db))]
+/// Export Constraint Tools
+pub fn constraint_tools(
+	llm: Arc<dyn LLM + Send + Sync>,
+	db: PgPool,
+	chat_session_id: Arc<AtomicI32>,
+) -> Vec<Arc<dyn Tool>> {
+	vec![Arc::new(FilterEventsByConstraintsTool::new(
+		llm,
+		db,
+		chat_session_id,
+	))]
 }

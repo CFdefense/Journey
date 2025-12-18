@@ -81,14 +81,24 @@ pub fn create_orchestrator_agent(
 		create_research_agent(pool.clone()).unwrap(),
 	))));
 
-	// Create constraint agent
+	// Create constraint agent (wired with shared chat_session_id)
 	let constraint_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_constraint_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
+		create_constraint_agent(
+			llm_for_subagents.clone(),
+			pool.clone(),
+			Arc::clone(&chat_session_id),
+		)
+		.unwrap(),
 	))));
 
-	// Create optimize agent
+	// Create optimize agent (wired with shared chat_session_id)
 	let optimize_agent = Arc::new(tokio::sync::Mutex::new(Arc::new(tokio::sync::Mutex::new(
-		create_optimize_agent(llm_for_subagents.clone(), pool.clone()).unwrap(),
+		create_optimize_agent(
+			llm_for_subagents.clone(),
+			pool.clone(),
+			Arc::clone(&chat_session_id),
+		)
+		.unwrap(),
 	))));
 
 	// Create Task Agent (sub-agent used to build context and user profile)
@@ -187,13 +197,13 @@ pub fn create_dummy_orchestrator_agent(
 	let research_agent = Arc::new(tokio::sync::Mutex::new(research_agent_inner));
 
 	let constraint_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(
-		create_dummy_constraint_agent(pool.clone())?,
+		create_dummy_constraint_agent(pool.clone(), Arc::clone(&chat_session_id))?,
 	));
 	let constraint_agent = Arc::new(tokio::sync::Mutex::new(constraint_agent_inner));
 
 	let optimize_llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
 	let optimize_agent_inner: AgentType = Arc::new(tokio::sync::Mutex::new(
-		create_dummy_optimize_agent(optimize_llm, pool.clone())?,
+		create_dummy_optimize_agent(optimize_llm, pool.clone(), Arc::clone(&chat_session_id))?,
 	));
 	let optimize_agent = Arc::new(tokio::sync::Mutex::new(optimize_agent_inner));
 	let tools = get_orchestrator_tools(

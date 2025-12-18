@@ -29,7 +29,7 @@ use sqlx::PgPool;
 
 use crate::agent::configs::mock::MockLLM;
 use crate::agent::models::context::SharedContextStore;
-use crate::agent::tools::task::get_task_tools;
+use crate::agent::tools::task::task_tools;
 use langchain_rust::language_models::llm::LLM;
 
 /// Creates the Task Agent used as a sub-agent by the Orchestrator.
@@ -59,7 +59,7 @@ pub fn create_task_agent(
 	let memory = SimpleMemory::new();
 
 	// Tools focused on context building (profile, chat history, intent, clarification, respond)
-	let tools = get_task_tools(
+	let tools = task_tools(
 		llm_for_tools,
 		pool,
 		Arc::clone(&chat_session_id),
@@ -112,7 +112,7 @@ pub fn create_dummy_task_agent(
 	let context_store: SharedContextStore =
 		Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
 
-	let tools = get_task_tools(
+	let tools = task_tools(
 		llm_arc,
 		pool,
 		Arc::clone(&chat_session_id),

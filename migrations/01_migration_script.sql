@@ -136,6 +136,7 @@ CREATE TABLE chat_sessions (
 	account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
 	title VARCHAR(255) NOT NULL,
 	context JSONB DEFAULT '{"tool_history": []}'::jsonb,
+	current_event_ids INTEGER[] NOT NULL DEFAULT ARRAY[]::INTEGER[],
 	llm_progress llm_progress NOT NULL DEFAULT 'Ready'
 );
 

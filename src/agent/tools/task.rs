@@ -825,6 +825,21 @@ impl Tool for AskForClarificationTool {
 			return Err("chat_session_id not set. This should be set by the controller before invoking the agent.".into());
 		}
 
+		// Update progress to AskForClarification so the frontend can show
+		// a dedicated clarification status instead of a generic scheduling
+		// message while we generate the question.
+		_ = sqlx::query!(
+			r#"
+			UPDATE chat_sessions
+			SET llm_progress = $1
+			WHERE id = $2;
+			"#,
+			LlmProgress::AskForClarification as _,
+			chat_id,
+		)
+		.execute(&self.pool)
+		.await;
+
 		// ANTI-LOOP PROTECTION: Check if we've already asked for clarification
 		// If asked_clarification flag is already true in trip context, we should NOT ask again
 		{
@@ -1035,6 +1050,27 @@ Return ONLY the message text, nothing else."#,
 		// The message is already inserted in the database with the ID in record.id
 		// The agent prompt instructs to use this as Final Answer immediately.
 		let result = clarification.clone();
+
+		// Reset progress back to Ready now that we've sent the clarification
+		// message to the user so the frontend stops showing an in-progress
+		// status for this chat session.
+		_ = sqlx::query!(
+			r#"
+			UPDATE chat_sessions
+			SET llm_progress = $1
+			WHERE id = $2;
+			"#,
+			LlmProgress::Ready as _,
+			chat_id,
+		)
+		.execute(&self.pool)
+		.await;
+
+		crate::tool_trace!(
+			agent: "task",
+			tool: "ask_for_clarification",
+			status: "complete"
+		);
 
 		let elapsed = start_time.elapsed();
 		info!(
@@ -2010,7 +2046,7 @@ impl Tool for UpdateChatTitleTool {
 /// - retrieving chat history/context
 /// - updating trip context incrementally
 /// - asking for clarification when information is missing
-pub fn get_task_tools(
+pub fn task_tools(
 	llm: Arc<dyn LLM + Send + Sync>,
 	pool: PgPool,
 	chat_session_id: Arc<AtomicI32>,

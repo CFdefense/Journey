@@ -19,14 +19,6 @@ use tracing::{debug, info};
 
 use crate::{global::GOOGLE_MAPS_API_KEY, http_models::event::Event};
 
-pub fn research_tools(db: PgPool) -> [Arc<dyn Tool>; 2] {
-	[
-		Arc::new(GeocodeTool),
-		// Arc::new(QueryDbEventsTool { db: db.clone() }),
-		Arc::new(NearbySearchTool { db }),
-	]
-}
-
 /// This tool takes an address and converts it into coordinates using Google Maps Geocoding API.
 #[derive(Clone)]
 struct GeocodeTool;
@@ -848,4 +840,13 @@ impl<'db> Tool for NearbySearchTool {
 
 		Ok(result.to_string())
 	}
+}
+
+/// Export Research Tools
+pub fn research_tools(db: PgPool) -> [Arc<dyn Tool>; 2] {
+	[
+		Arc::new(GeocodeTool),
+		// Arc::new(QueryDbEventsTool { db: db.clone() }),
+		Arc::new(NearbySearchTool { db }),
+	]
 }

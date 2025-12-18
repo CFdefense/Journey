@@ -8,6 +8,7 @@
  */
 
 use std::sync::Arc;
+use std::sync::atomic::AtomicI32;
 
 use langchain_rust::{
 	agent::{AgentError, AgentExecutor, ConversationalAgent, ConversationalAgentBuilder},
@@ -25,6 +26,7 @@ const SYSTEM_PROMPT: &str = include_str!("../prompts/optimize.md");
 pub fn create_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
 	db: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Load environment variables
 	dotenvy::dotenv().ok();
@@ -41,7 +43,7 @@ pub fn create_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(Arc::new(llm), db))
+		.tools(&optimizer_tools(Arc::new(llm), db, chat_session_id))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();
@@ -60,6 +62,7 @@ pub fn create_optimize_agent(
 pub fn create_dummy_optimize_agent(
 	llm: OpenAI<OpenAIConfig>,
 	db: PgPool,
+	chat_session_id: Arc<AtomicI32>,
 ) -> Result<AgentExecutor<ConversationalAgent>, AgentError> {
 	// Set a dummy API key temporarily so agent creation doesn't fail
 	// The agent won't actually be used when DEPLOY_LLM != "1"
@@ -79,7 +82,7 @@ pub fn create_dummy_optimize_agent(
 	// Create agent
 	let agent = ConversationalAgentBuilder::new()
 		.prefix(SYSTEM_PROMPT.to_string())
-		.tools(&optimizer_tools(Arc::new(llm), db))
+		.tools(&optimizer_tools(Arc::new(llm), db, chat_session_id))
 		.options(ChainCallOptions::new().with_max_tokens(1000))
 		.build(agent_llm)
 		.unwrap();

@@ -92,20 +92,20 @@ export const AGENT_PROGRESS_MAP: Record<AgentProgress, AgentInfo> = {
 	},
 	// Scheduling
 	[AgentProgress.Scheduling]: {
-		name: "Task Agent",
-		profilePic: "/task-white.png",
-		message: "Scheduling your itinerary"
+		name: "Orchestrator",
+		profilePic: "/orchestrator-white-crop.png",
+		message: "Drafting your itinerary"
 	},
 	// Optimizer
 	[AgentProgress.Optimizing]: {
 		name: "Optimizer",
 		profilePic: "/optimizer-white.png",
-		message: "Optimizing your travel plan"
+		message: "Optimizing your itinerary"
 	},
 	[AgentProgress.RankingEvents]: {
 		name: "Optimizer",
 		profilePic: "/optimizer-white.png",
-		message: "Ranking and organizing activities"
+		message: "Ranking events based on your preferences"
 	},
 	// Final Response
 	[AgentProgress.FinalizingItinerary]: {
