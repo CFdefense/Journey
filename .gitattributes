@@ -1,0 +1,2 @@
+frontend/public/demo.gif filter=lfs diff=lfs merge=lfs -text
+frontend/public/demo.mp4 filter=lfs diff=lfs merge=lfs -text
