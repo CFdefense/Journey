@@ -2,6 +2,9 @@
 
 ![Journey Demo](frontend/public/demo.gif)
 
+Full-resolution demo GIF (hosted on GitHub):  
+[View on GitHub](https://github.com/CFdefense/Capping2025/raw/main/frontend/public/demo.gif)
+
 ## Team Members
 
 | Name | Role | Email |
