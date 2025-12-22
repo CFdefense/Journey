@@ -1,4 +1,8 @@
-# Journey
+<h1 align="center">Journey</h1>
+<h4 align="center">
+An AI-driven, full-stack travel itinerary platform that employs a multi-agent LLM architecture, real-time geospatial API integration, and persistent user preference modeling to generate and iteratively refine constraint-aware travel plans.
+    <br/>
+</h4>
 
 ![Journey Demo](frontend/public/demo.gif)
 
