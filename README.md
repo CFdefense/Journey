@@ -81,8 +81,6 @@ The itineraries created in this platform are limited to solely event cards, and 
 
 ## Background and Research
 
-## Background and Research
-
 ### Existing Solutions
 
 The travel planning landscape includes several established platforms, each with distinct limitations that Journey addresses:
